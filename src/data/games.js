@@ -17,7 +17,7 @@ export const GAMES_DATA = [
     popular: true,
     moongoldCode: 'FREEFIRE_SG',
     packages: [
-      { id: 'ff-weekly', name: 'Weekly Membership', amount: 450, bonus: 'Daily Rewards', priceLkr: 720, moongoldCost: 620, priceUsd: 2.36, image: '/product_images/prod_FWeekly_Card_1768964388_PhotoshopExtension_Image_5.png', isPopular: true, isSpecial: true },
+      { id: 'ff-weekly', name: 'Weekly Membership', amount: 450, bonus: 'Daily Rewards', priceLkr: 720, moongoldCost: 620, priceUsd: 2.36, image: '/product_images/prod_Weekly_1769672449_logo_2.png', isPopular: true, isSpecial: true },
       { id: 'ff-monthly', name: 'Monthly Membership', amount: 2600, bonus: 'Super Discount', priceLkr: 3450, moongoldCost: 3100, priceUsd: 11.31, image: '/product_images/prod_Monthly_Membership_1768967679_mmm_1.png', isPopular: false, isSpecial: true },
       { id: 'ff-100', name: '100 + 10 Diamonds', amount: 110, bonus: '+10 Bonus', priceLkr: 370, moongoldCost: 310, priceUsd: 1.21, image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.png', isPopular: false },
       { id: 'ff-310', name: '310 + 31 Diamonds', amount: 341, bonus: '+31 Bonus', priceLkr: 1050, moongoldCost: 920, priceUsd: 3.44, image: '/product_images/prod_220_Diamonds_1768964821_diamondpng.png', isPopular: false },
@@ -116,7 +116,7 @@ export const GAMES_DATA = [
     popular: true,
     moongoldCode: 'FREEFIRE_ID',
     packages: [
-      { id: 'ff-id-weekly', name: 'Weekly Membership', amount: 450, bonus: 'Indo Region', priceLkr: 720, moongoldCost: 620, priceUsd: 2.36, image: '/product_images/prod_FWeekly_Card_1768964388_PhotoshopExtension_Image_5.png', isPopular: true, isSpecial: true },
+      { id: 'ff-id-weekly', name: 'Weekly Membership', amount: 450, bonus: 'Indo Region', priceLkr: 720, moongoldCost: 620, priceUsd: 2.36, image: '/product_images/prod_Weekly_1769672449_logo_2.png', isPopular: true, isSpecial: true },
       { id: 'ff-id-monthly', name: 'Monthly Membership', amount: 2600, bonus: 'Indo Region', priceLkr: 3450, moongoldCost: 3100, priceUsd: 11.31, image: '/product_images/prod_Monthly_Membership_1768967679_mmm_1.png', isPopular: false, isSpecial: true },
       { id: 'ff-id-100', name: '100 + 10 Diamonds', amount: 110, bonus: 'Indo Region', priceLkr: 370, moongoldCost: 310, priceUsd: 1.21, image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.png', isPopular: false },
       { id: 'ff-id-310', name: '310 + 31 Diamonds', amount: 341, bonus: 'Indo Region', priceLkr: 1050, moongoldCost: 920, priceUsd: 3.44, image: '/product_images/prod_220_Diamonds_1768964821_diamondpng.png', isPopular: false },
