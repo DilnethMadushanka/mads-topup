@@ -17,6 +17,7 @@ export const ServicesSection = () => {
       description: 'Instant in-game currency delivered to your account at unbeatable LKR rates',
       buttonText: 'SHOP NOW',
       icon: Gamepad2,
+      image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.png',
       tileGradient: 'from-[#00B4D8] to-blue-600',
       tileGlow: 'shadow-lg shadow-cyan-500/20',
       iconColor: 'text-white',
@@ -28,6 +29,7 @@ export const ServicesSection = () => {
       description: 'Garena Shells, Hot Recharge Codes & premium digital gift vouchers',
       buttonText: 'SHOP NOW',
       icon: CreditCard,
+      image: '/gift_cards/shell.png',
       tileGradient: 'from-[#3B2896] to-indigo-700',
       tileGlow: 'shadow-lg shadow-purple-500/20',
       iconColor: 'text-white',
@@ -39,6 +41,7 @@ export const ServicesSection = () => {
       description: 'Dedicated live WhatsApp support team ready to assist your top-up orders',
       buttonText: 'CHAT NOW',
       icon: Headphones,
+      image: '/gift_cards/admin.png',
       tileGradient: 'from-[#00B4D8] to-teal-500',
       tileGlow: 'shadow-lg shadow-cyan-500/20',
       iconColor: 'text-white',
@@ -46,10 +49,11 @@ export const ServicesSection = () => {
     },
     {
       id: 'other',
-      title: 'Other Services',
-      description: 'Explore our growing catalog of automated free & premium gaming tools',
+      title: 'Automated Shell Bot',
+      description: 'Explore our automated Garena Shell Bot & instant credit gaming tools',
       buttonText: 'VIEW MORE',
       icon: Sparkles,
+      image: '/gift_cards/shellbot.png',
       tileGradient: 'from-slate-800 to-slate-950',
       tileGlow: 'shadow-lg shadow-slate-900/40',
       iconColor: 'text-[#00B4D8]',
@@ -88,8 +92,12 @@ export const ServicesSection = () => {
 
                 {/* 3D App Icon Tile */}
                 <div className="mb-7 relative">
-                  <div className={`w-24 h-24 rounded-2xl bg-gradient-to-br ${service.tileGradient} ${service.tileGlow} flex items-center justify-center relative overflow-hidden transform group-hover:scale-105 transition-all duration-300`}>
-                    <Icon className={`w-12 h-12 ${service.iconColor} stroke-[1.8] relative z-10`} />
+                  <div className={`w-24 h-24 rounded-2xl bg-gradient-to-br ${service.tileGradient} ${service.tileGlow} flex items-center justify-center relative overflow-hidden transform group-hover:scale-105 transition-all duration-300 p-3`}>
+                    {service.image ? (
+                      <img src={service.image} alt={service.title} className="w-full h-full object-contain filter drop-shadow-md relative z-10" />
+                    ) : (
+                      <Icon className={`w-12 h-12 ${service.iconColor} stroke-[1.8] relative z-10`} />
+                    )}
                   </div>
                 </div>
 

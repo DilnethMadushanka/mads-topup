@@ -324,15 +324,19 @@ export const TopupModal = () => {
                         }`}
                       >
                         {pkg.isPopular && (
-                          <span className="absolute -top-2.5 right-2 px-2 py-0.5 rounded-full bg-[#3B2896] text-white text-[9px] font-black uppercase tracking-wider shadow">
+                          <span className="absolute -top-2.5 right-2 px-2 py-0.5 rounded-full bg-[#3B2896] text-white text-[9px] font-black uppercase tracking-wider shadow z-10">
                             POPULAR
                           </span>
                         )}
 
                         <div>
-                          <div className="flex items-center gap-1 mb-1">
-                            <span className="text-sm">{selectedGame.currencyIcon}</span>
-                            <span className="font-extrabold text-sm text-white font-heading">
+                          <div className="flex items-center gap-2 mb-2">
+                            {pkg.image ? (
+                              <img src={pkg.image} alt={pkg.name} className="w-8 h-8 object-contain rounded-lg bg-slate-900/60 p-0.5 border border-slate-700/50" />
+                            ) : (
+                              <span className="text-sm">{selectedGame.currencyIcon}</span>
+                            )}
+                            <span className="font-extrabold text-xs sm:text-sm text-white font-heading leading-tight">
                               {pkg.name}
                             </span>
                           </div>

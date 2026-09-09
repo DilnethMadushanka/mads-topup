@@ -9,6 +9,7 @@ import { GameGrid } from './components/GameGrid';
 import { WhyChooseUs } from './components/WhyChooseUs';
 import { ReviewsSection } from './components/ReviewsSection';
 import { PromoSection } from './components/PromoSection';
+import { BlogSection } from './components/BlogSection';
 import { TopupModal } from './components/TopupModal';
 import { UserProfileModal } from './components/UserProfileModal';
 import { AdminDashboard } from './components/AdminDashboard';
@@ -35,6 +36,7 @@ const MainContent = () => {
         <GameGrid />
         <WhyChooseUs />
         <ReviewsSection />
+        <BlogSection />
         <PromoSection />
       </div>
 
