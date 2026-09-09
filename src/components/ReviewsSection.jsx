@@ -8,39 +8,39 @@ export const ReviewsSection = () => {
   const reviews = [
     {
       id: 1,
-      name: 'sahan_peiris',
-      location: 'San Juan, Puerto Rico',
-      flag: '🇵🇷',
-      avatarBg: 'bg-[#3B2896]',
-      initials: 'SP',
-      text: '"Lankave thiyena ikmantama top up vatena website eka vagema vadima payment options premanayak thiyena website eka"'
+      name: 'YDTECH2008',
+      location: 'Colombo, Sri Lanka',
+      flag: '🇱🇰',
+      avatar: '/uploads/profile_pics/1344_4bf2414e.png',
+      initials: 'YD',
+      text: '"I recently used the Nova top-up service and I am very satisfied. The process was fast, secure, and easy to understand. My top-up was delivered instantly without any issues."'
     },
     {
       id: 2,
-      name: 'Sehan topup store',
+      name: 'YDTECHTOPUP',
       location: 'Colombo, Sri Lanka',
       flag: '🇱🇰',
-      avatarBg: 'bg-[#00B4D8]',
-      initials: 'S',
+      avatar: '/uploads/profile_pics/11442_c1754a6f.png',
+      initials: 'YT',
       text: '"Maru bam me vidihata kollo kellange hitha sathutu karanavata. Vishvasaneeyathva saha aduma milata top up karanavanam MADS TOPUP thamai"'
     },
     {
       id: 3,
-      name: 'YDTECH2008',
-      location: 'Colombo, Sri Lanka',
-      flag: '🇱🇰',
-      avatarBg: 'bg-slate-800',
-      initials: 'YD',
-      text: '"I recently used the MADS top-up service and I am very satisfied. The process was fast, secure, and easy to understand. My top-up was delivered instantly."'
-    },
-    {
-      id: 4,
       name: 'Akthar',
       location: 'Kandy, Sri Lanka',
       flag: '🇱🇰',
-      avatarBg: 'bg-cyan-600',
+      avatar: '/uploads/profile_pics/10175_871f5dc4.png',
       initials: 'A',
-      text: '"MADS top-up is so cool very convenient, also very reliable price just few seconds to get my top up done & no issues at all. Especially hats off for their fast service!"'
+      text: '"Nova top-up is so cool very convenient, also very reliable price just few seconds to get my top up done & no issues at all. Especially hats off for their fast service!"'
+    },
+    {
+      id: 4,
+      name: 'Lekzii',
+      location: 'Colombo, Sri Lanka',
+      flag: '🇱🇰',
+      avatar: '/uploads/profile_pics/15_6d8c0304.png',
+      initials: 'L',
+      text: '"This app is so cool 😍 very convenient, also very reliable. Just took few seconds to get my top up done & no issues at all. LOVE THE EXPERIENCE & 100% RECOMMENDED!!"'
     }
   ];
 
@@ -70,9 +70,17 @@ export const ReviewsSection = () => {
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-2xl ${review.avatarBg} text-white font-extrabold text-xs flex items-center justify-center shadow`}>
-                    {review.initials}
-                  </div>
+                  {review.avatar ? (
+                    <img 
+                      src={review.avatar} 
+                      alt={review.name} 
+                      className="w-11 h-11 rounded-full object-cover border-2 border-[#00B4D8]/40 shadow-md"
+                    />
+                  ) : (
+                    <div className="w-11 h-11 rounded-full bg-[#3B2896] text-white font-extrabold text-xs flex items-center justify-center shadow">
+                      {review.initials}
+                    </div>
+                  )}
                   <div>
                     <h4 className="font-extrabold text-white text-sm">{review.name}</h4>
                     <p className="text-[11px] text-slate-400 font-bold flex items-center gap-1">
@@ -112,4 +120,3 @@ export const ReviewsSection = () => {
     </section>
   );
 };
-

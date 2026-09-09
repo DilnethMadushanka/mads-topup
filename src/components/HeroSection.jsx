@@ -1,9 +1,23 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Zap, Layers, Mouse } from 'lucide-react';
 
 export const HeroSection = () => {
   const { openTopup } = useApp();
+  const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
+
+  const heroImages = [
+    '/uploads/hero_media/hero_03f995f15258.jpg',
+    '/uploads/hero_media/hero_5915a6b90d1b.jpg',
+    '/uploads/hero_media/hero_cc64b9056d35.jpg'
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentHeroIndex((prev) => (prev + 1) % heroImages.length);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, []);
 
   const scrollToServices = () => {
     const el = document.getElementById('services-section');
@@ -17,13 +31,18 @@ export const HeroSection = () => {
 
   return (
     <section className="relative bg-[#090D16] text-white min-h-[92vh] flex flex-col justify-between items-center overflow-hidden py-16 px-4">
-      {/* Background Artwork - Dark Ancient Treasure Battle Royale Wallpaper */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-luminosity scale-105 pointer-events-none"
-        style={{
-          backgroundImage: `url('/hero-slider/hero-1.jpg')`
-        }}
-      ></div>
+      {/* Background Artwork Slider - Nova Hero Media */}
+      {heroImages.map((img, idx) => (
+        <div 
+          key={img}
+          className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out scale-105 pointer-events-none ${
+            idx === currentHeroIndex ? 'opacity-40' : 'opacity-0'
+          }`}
+          style={{
+            backgroundImage: `url('${img}')`
+          }}
+        ></div>
+      ))}
 
       {/* Ambient Dark Navy Vignette & Cyan Aura */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#090D16]/80 via-[#090D16]/50 to-[#090D16] pointer-events-none"></div>
