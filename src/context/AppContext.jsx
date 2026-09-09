@@ -119,7 +119,8 @@ export const AppProvider = ({ children }) => {
 
   const openTopup = (game) => {
     setSelectedGame(game);
-    setIsTopupModalOpen(true);
+    setIsTopupModalOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const addOrder = (newOrder) => {

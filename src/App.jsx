@@ -10,7 +10,6 @@ import { ReviewsSection } from './components/ReviewsSection';
 import { PromoSection } from './components/PromoSection';
 import { BlogSection } from './components/BlogSection';
 import { GameTopupPage } from './components/GameTopupPage';
-import { TopupModal } from './components/TopupModal';
 import { UserProfileModal } from './components/UserProfileModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { MobileBottomNav } from './components/MobileBottomNav';
@@ -98,7 +97,6 @@ const MainContent = () => {
       </footer>
 
       {/* Modals & Popups */}
-      <TopupModal />
       <UserProfileModal />
       <AdminDashboard />
       <MobileBottomNav />
