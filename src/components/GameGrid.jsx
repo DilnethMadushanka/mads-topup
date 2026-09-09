@@ -93,13 +93,13 @@ export const GameGrid = () => {
                 className="group relative bg-[#0F172A]/90 rounded-3xl border border-slate-800/80 hover:border-[#00B4D8]/60 hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-300 overflow-hidden cursor-pointer flex flex-col justify-between"
               >
                 {/* Banner Artwork */}
-                <div className="relative h-48 overflow-hidden bg-slate-950">
+                <div className="relative h-48 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-[#0A0F1E] flex items-center justify-center p-4">
                   <img
                     src={game.banner}
                     alt={game.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-85 group-hover:opacity-100"
+                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100 filter drop-shadow-xl"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-[#0F172A]/40 to-transparent"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-transparent to-black/20 pointer-events-none"></div>
 
                   {/* Top Badges */}
                   <div className="absolute top-3 left-3">

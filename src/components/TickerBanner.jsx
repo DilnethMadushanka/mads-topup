@@ -13,12 +13,12 @@ export const TickerBanner = () => {
   ];
 
   return (
-    <div className="bg-slate-900 text-white py-3.5 overflow-hidden border-y border-slate-800 relative select-none">
-      <div className="animate-marquee whitespace-nowrap text-xs font-black tracking-widest uppercase flex items-center gap-8">
+    <div className="bg-[#060911] text-slate-200 py-3.5 overflow-hidden border-y border-slate-800/80 relative select-none">
+      <div className="animate-marquee whitespace-nowrap text-xs font-black tracking-widest uppercase flex items-center gap-8 font-mono">
         {[...items, ...items, ...items, ...items].map((text, index) => (
           <span key={index} className="flex items-center gap-8">
-            <span className="text-red-500">•</span>
-            <span className="hover:text-red-400 transition-colors">{text}</span>
+            <span className="text-[#00B4D8] animate-pulse">•</span>
+            <span className="hover:text-[#00B4D8] transition-colors">{text}</span>
           </span>
         ))}
       </div>

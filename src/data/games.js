@@ -7,7 +7,7 @@ export const GAMES_DATA = [
     currencyName: 'Diamonds',
     currencyIcon: '💎',
     badge: 'HOT & INSTANT',
-    banner: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1200&q=80',
+    banner: '/product_images/prod_100_Diamonds_1768964745_diamondpng.png',
     logo: '/product_images/prod_100_Diamonds_1768964745_diamondpng.png',
     gradient: 'from-red-600 via-rose-500 to-amber-500',
     requiresServer: false,
@@ -33,7 +33,7 @@ export const GAMES_DATA = [
     currencyName: 'UC',
     currencyIcon: '🪙',
     badge: 'AUTOMATED 24/7',
-    banner: 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?auto=format&fit=crop&w=1200&q=80',
+    banner: '/product_images/prod_60UC_1769659496_prod_UC1800_1768626430_prod.webp',
     logo: '/product_images/prod_60UC_1769659496_prod_UC1800_1768626430_prod.webp',
     gradient: 'from-amber-500 via-orange-600 to-red-600',
     requiresServer: false,
@@ -57,7 +57,7 @@ export const GAMES_DATA = [
     currencyName: 'Gold',
     currencyIcon: '⚡',
     badge: 'INSTANT TOPUP',
-    banner: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1200&q=80',
+    banner: '/product_images/prod_1000210Gold_1768633835_Blood_Strike_105.webp',
     logo: '/product_images/prod_10016Gold_1768633617_Blood_Strike_105.webp',
     gradient: 'from-red-700 to-rose-900',
     requiresServer: false,
@@ -80,7 +80,7 @@ export const GAMES_DATA = [
     currencyName: 'VP',
     currencyIcon: '🎯',
     badge: 'RIOT CODES',
-    banner: 'https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=1200&q=80',
+    banner: '/product_images/prod_1000_VP_1776444995_valorant-topup.png',
     logo: '/product_images/prod_1000_VP_1776444995_valorant-topup.png',
     gradient: 'from-rose-600 to-red-700',
     requiresServer: false,
@@ -102,7 +102,7 @@ export const GAMES_DATA = [
     currencyName: 'Shells',
     currencyIcon: '🐚',
     badge: 'GARENA CODES',
-    banner: 'https://images.unsplash.com/photo-1579373903781-fd5c0c30c4cd?auto=format&fit=crop&w=1200&q=80',
+    banner: '/gift_cards/shell.png',
     logo: '/gift_cards/shell.png',
     gradient: 'from-purple-600 to-indigo-700',
     requiresServer: false,
@@ -125,7 +125,7 @@ export const BLOG_POSTS = [
     date: 'Sep 08, 2026',
     author: 'MADS Admin',
     summary: 'Discover how MADS TOPUP delivers Free Fire diamonds directly to your UID in under 2 seconds with zero password risks.',
-    image: '/blog_images/cover_d18ea674c7.jpg',
+    image: '/uploads/blog_images/cover_d18ea674c7.jpg',
     tag: 'GUIDE'
   },
   {
@@ -134,7 +134,7 @@ export const BLOG_POSTS = [
     date: 'Sep 05, 2026',
     author: 'Esports News',
     summary: 'Everything you need to know about purchasing cheap Garena Shells, Weekly Cards, and PUBG UC with local bank transfer and eZ Cash.',
-    image: '/blog_images/cover_d3246d118d.jpg',
+    image: '/uploads/blog_images/cover_d3246d118d.jpg',
     tag: 'UPDATES'
   }
 ];
