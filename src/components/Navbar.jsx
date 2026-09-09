@@ -9,7 +9,8 @@ export const Navbar = () => {
     orders,
     openCatalog,
     closeCatalog,
-    isGameCatalogOpen
+    isGameCatalogOpen,
+    openAuth
   } = useApp();
 
   const pendingCount = orders.filter(o => o.status === 'PROCESSING' || o.status === 'PENDING').length;
@@ -96,14 +97,14 @@ export const Navbar = () => {
         {/* Right Controls (Login text link & REGISTER purple pill button) */}
         <div className="flex items-center gap-4">
           <button 
-            onClick={() => setIsAdminOpen(true)}
+            onClick={() => openAuth('login')}
             className="text-xs font-black text-slate-700 hover:text-slate-950 uppercase tracking-wider cursor-pointer font-heading"
           >
             Login
           </button>
 
           <button
-            onClick={() => setIsUserProfileOpen(true)}
+            onClick={() => openAuth('register')}
             className="btn-purple-pill px-6 py-2 text-xs font-black uppercase tracking-wider cursor-pointer shadow-md flex items-center gap-1.5"
           >
             <User className="w-3.5 h-3.5" />

@@ -15,6 +15,14 @@ export const AppProvider = ({ children }) => {
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isGameCatalogOpen, setIsGameCatalogOpen] = useState(false);
 
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
+
+  const openAuth = (mode = 'login') => {
+    setAuthMode(mode);
+    setIsAuthModalOpen(true);
+  };
+
   const openCatalog = () => {
     setIsGameCatalogOpen(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -195,7 +203,12 @@ export const AppProvider = ({ children }) => {
       toast,
       showToast,
       formatPrice,
-      savePlayerId
+      savePlayerId,
+      isAuthModalOpen,
+      setIsAuthModalOpen,
+      authMode,
+      setAuthMode,
+      openAuth
     }}>
       {children}
     </AppContext.Provider>
