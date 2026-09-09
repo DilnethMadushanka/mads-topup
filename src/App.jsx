@@ -25,7 +25,7 @@ const MainContent = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-between pb-16 md:pb-0 font-sans">
+    <div className="min-h-screen bg-slate-950 flex flex-col justify-between pb-16 md:pb-0 font-sans text-white">
       <div>
         <Navbar />
         <HeroSection />
@@ -39,7 +39,7 @@ const MainContent = () => {
       </div>
 
       {/* Footer Matching Reference Screenshot */}
-      <footer className="bg-slate-950 text-white border-t border-slate-900 pt-16 pb-10">
+      <footer className="bg-slate-950 text-white border-t border-red-600/20 pt-16 pb-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 pb-12 border-b border-slate-900/80">
             
@@ -49,7 +49,7 @@ const MainContent = () => {
               <p className="text-xs text-slate-400 leading-relaxed font-semibold">
                 MADS TOPUP IS THE PREMIER AUTOMATED PLATFORM IN SRI LANKA FOR INSTANT TOP-UP FOR POPULAR GAMES STRIKE, GARENA SHELLS, AND MORE. WE ARE COMMITTED TO PROVIDING THE BEST SERVICE FOR OUR PARTNERS.
               </p>
-              <div className="flex items-center gap-2 pt-1 text-xs font-bold text-slate-300">
+              <div className="flex items-center gap-2 pt-1 text-xs font-bold text-slate-300 font-mono">
                 <span>🇱🇰</span>
                 <span>MADS TOPUP ENTERPRISE SRI LANKA</span>
               </div>
@@ -58,13 +58,13 @@ const MainContent = () => {
             {/* Col 2: Quick Links */}
             <div>
               <h4 className="font-extrabold text-sm text-white uppercase tracking-wider mb-4 font-heading">Quick Links</h4>
-              <ul className="space-y-2.5 text-xs text-slate-400 font-bold uppercase tracking-wide">
-                <li onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="hover:text-cyan-400 cursor-pointer transition-colors">ABOUT US</li>
-                <li onClick={() => scrollToSection('why-choose-us')} className="hover:text-cyan-400 cursor-pointer transition-colors">CONTACT</li>
-                <li onClick={() => setIsUserProfileOpen(true)} className="hover:text-cyan-400 cursor-pointer transition-colors">MY ORDERS</li>
-                <li onClick={() => setIsAdminOpen(true)} className="hover:text-cyan-400 cursor-pointer transition-colors">ADMIN PORTAL</li>
-                <li className="hover:text-cyan-400 cursor-pointer transition-colors">TERMS OF SERVICE</li>
-                <li className="hover:text-cyan-400 cursor-pointer transition-colors">PRIVACY POLICY</li>
+              <ul className="space-y-2.5 text-xs text-slate-400 font-bold uppercase tracking-wide font-mono">
+                <li onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="hover:text-red-400 cursor-pointer transition-colors">ABOUT US</li>
+                <li onClick={() => scrollToSection('why-choose-us')} className="hover:text-red-400 cursor-pointer transition-colors">CONTACT</li>
+                <li onClick={() => setIsUserProfileOpen(true)} className="hover:text-red-400 cursor-pointer transition-colors">MY ORDERS</li>
+                <li onClick={() => setIsAdminOpen(true)} className="hover:text-red-400 cursor-pointer transition-colors">ADMIN PORTAL</li>
+                <li className="hover:text-red-400 cursor-pointer transition-colors">TERMS OF SERVICE</li>
+                <li className="hover:text-red-400 cursor-pointer transition-colors">PRIVACY POLICY</li>
               </ul>
             </div>
 

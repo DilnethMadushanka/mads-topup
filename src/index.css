@@ -4,8 +4,10 @@
   :root {
     --primary-red: #FF1A3C;
     --primary-red-hover: #D90429;
-    --accent-red-glow: rgba(255, 26, 60, 0.25);
-    --bg-light: #FAFAFC;
+    --crimson-dark: #99001C;
+    --deep-charcoal: #0B0E14;
+    --charcoal-surface: #121824;
+    --accent-red-glow: rgba(255, 26, 60, 0.4);
     --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   }
@@ -13,8 +15,8 @@
   html {
     scroll-behavior: smooth;
     font-family: var(--font-body);
-    background-color: var(--bg-light);
-    color: #0F172A;
+    background-color: var(--deep-charcoal);
+    color: #F8FAFC;
   }
 
   h1, h2, h3, h4, h5, h6, .font-heading {
@@ -22,102 +24,126 @@
   }
 }
 
-/* Custom Scrollbar */
+/* Custom Cyber Scrollbar */
 ::-webkit-scrollbar {
-  width: 7px;
+  width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #F1F5F9;
+  background: #0B0E14;
 }
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
-  border-radius: 99px;
+  background: linear-gradient(180deg, #FF1A3C 0%, #800016 100%);
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #FF1A3C;
+  box-shadow: 0 0 10px #FF1A3C;
 }
 
-/* Glassmorphism & UI Utilities */
-.glass-panel-light {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(241, 245, 249, 0.9);
+/* Metallic Crimson Polished Font Effect */
+.crimson-metallic-text {
+  background: linear-gradient(180deg, #FFFFFF 0%, #FF8093 30%, #FF1A3C 65%, #99001C 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 25px rgba(255, 26, 60, 0.7)) drop-shadow(0 4px 10px rgba(0, 0, 0, 0.9));
+  animation: internalPulse 3s ease-in-out infinite alternate;
 }
 
-.glass-panel-dark {
-  background: rgba(15, 23, 42, 0.85);
+@keyframes internalPulse {
+  0% {
+    filter: drop-shadow(0 0 18px rgba(255, 26, 60, 0.6)) drop-shadow(0 4px 10px rgba(0, 0, 0, 0.9));
+  }
+  100% {
+    filter: drop-shadow(0 0 35px rgba(255, 26, 60, 0.95)) drop-shadow(0 0 10px rgba(255, 255, 255, 0.4));
+  }
+}
+
+/* Brushed Metallic Crimson Cyber Button Plate */
+.btn-crimson-plate {
+  position: relative;
+  background: linear-gradient(135deg, #1C0509 0%, #2E080E 40%, #170407 100%);
+  border: 1px solid #FF1A3C;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 20px rgba(255, 26, 60, 0.35);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+.btn-crimson-plate::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.6s ease;
+}
+.btn-crimson-plate:hover::before {
+  left: 100%;
+}
+.btn-crimson-plate:hover {
+  border-color: #FF526F;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 0 30px rgba(255, 26, 60, 0.65);
+  transform: translateY(-2px);
+}
+
+/* Cybernetic Crimson Glass Panel */
+.cyber-panel-crimson {
+  background: rgba(18, 24, 36, 0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 26, 60, 0.15);
+  border: 1px solid rgba(255, 26, 60, 0.25);
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(255, 26, 60, 0.05);
 }
 
-.card-shadow-premium {
-  box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.05), 0 0 1px 1px rgba(15, 23, 42, 0.02);
+/* Laser Tracing Line Animation */
+@keyframes laserTrace {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
-.card-shadow-hover {
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.card-shadow-hover:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 20px 40px -10px rgba(255, 26, 60, 0.15), 0 0 1px 1px rgba(255, 26, 60, 0.2);
-}
-
-.red-glow-btn {
-  background: linear-gradient(135deg, #FF1A3C 0%, #D90429 100%);
-  box-shadow: 0 8px 25px -4px rgba(255, 26, 60, 0.4);
-  transition: all 0.25s ease;
-}
-.red-glow-btn:hover {
-  box-shadow: 0 12px 30px -2px rgba(255, 26, 60, 0.55);
-  transform: translateY(-1px);
+.laser-beam-horizontal {
+  position: absolute;
+  height: 1px;
+  width: 100%;
+  background: linear-gradient(90deg, transparent, #FF1A3C, #FFFFFF, #FF1A3C, transparent);
+  animation: laserTrace 4s linear infinite;
 }
 
-/* Float Animations */
-@keyframes floatSlow {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-14px) rotate(5deg); }
+/* Crimson Diamond Pulse */
+@keyframes crimsonDiamondPulse {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+    filter: drop-shadow(0 0 10px rgba(255, 26, 60, 0.8));
+  }
+  50% {
+    transform: translateY(-16px) scale(1.1);
+    filter: drop-shadow(0 0 25px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 15px rgba(255, 26, 60, 1));
+  }
 }
 
-.animate-float-slow {
-  animation: floatSlow 5s ease-in-out infinite;
+.animate-crimson-diamond {
+  animation: crimsonDiamondPulse 4s ease-in-out infinite;
 }
 
-@keyframes floatFast {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-8px) rotate(-4deg); }
-}
-
-.animate-float-fast {
-  animation: floatFast 3s ease-in-out infinite;
-}
-
-/* Marquee */
-@keyframes marquee {
-  0% { transform: translateX(0%); }
-  100% { transform: translateX(-50%); }
-}
-
-.animate-marquee {
-  display: flex;
-  width: 200%;
-  animation: marquee 28s linear infinite;
-}
-.animate-marquee:hover {
-  animation-play-state: paused;
+/* Holographic Data Grid Pattern */
+.bg-cyber-grid {
+  background-image: 
+    linear-gradient(to right, rgba(255, 26, 60, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 26, 60, 0.05) 1px, transparent 1px);
+  background-size: 32px 32px;
 }
 
 /* Modal Overlay */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(11, 15, 25, 0.75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(7, 10, 15, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1rem;
 }
+
