@@ -4,7 +4,6 @@ import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
 import { ServicesSection } from './components/ServicesSection';
 import { StatsSection } from './components/StatsSection';
-import { TickerBanner } from './components/TickerBanner';
 import { GameGrid } from './components/GameGrid';
 import { WhyChooseUs } from './components/WhyChooseUs';
 import { ReviewsSection } from './components/ReviewsSection';
@@ -32,7 +31,6 @@ const MainContent = () => {
         <HeroSection />
         <ServicesSection />
         <StatsSection />
-        <TickerBanner />
         <GameGrid />
         <WhyChooseUs />
         <ReviewsSection />
