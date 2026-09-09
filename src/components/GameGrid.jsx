@@ -115,11 +115,11 @@ export const GameGrid = () => {
                 className="group relative bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 overflow-hidden cursor-pointer flex flex-col justify-between"
               >
                 {/* Poster Artwork Area */}
-                <div className="relative aspect-square overflow-hidden bg-slate-950 flex items-center justify-center">
+                <div className="relative aspect-square overflow-hidden bg-slate-100 flex items-center justify-center">
                   <img
                     src={game.banner}
                     alt={game.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-95 group-hover:opacity-100"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
 
                   {/* Active Status Badge (Top Right) */}
