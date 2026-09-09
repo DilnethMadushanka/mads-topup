@@ -30,10 +30,10 @@ export const GameGrid = () => {
             <Sparkles className="w-4 h-4" />
             <span>Select Your Favorite Game</span>
           </div>
-          <h2 className="text-4xl font-black text-white font-heading tracking-tight">
+          <h2 className="text-4xl font-black text-slate-900 font-heading tracking-tight">
             TOP UP GAMES & VOUCHERS
           </h2>
-          <p className="text-sm text-slate-400 font-semibold mt-1">
+          <p className="text-sm text-slate-600 font-semibold mt-1">
             Choose a game to top up diamonds, UC, or Battle Passes with 24/7 instant crediting.
           </p>
         </div>
@@ -47,7 +47,7 @@ export const GameGrid = () => {
               className={`px-5 py-2.5 rounded-full text-xs font-extrabold transition-all whitespace-nowrap cursor-pointer ${
                 activeCategory === cat
                   ? 'bg-[#00B4D8] text-white shadow-lg shadow-cyan-500/30'
-                  : 'bg-[#0F172A] text-slate-300 hover:bg-[#1E293B] border border-slate-800'
+                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 shadow-xs'
               }`}
             >
               {cat === 'POPULAR' && '🔥 '}
@@ -66,15 +66,15 @@ export const GameGrid = () => {
             placeholder="Search games..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-11 pr-4 py-3 bg-[#0F172A] border border-slate-800 rounded-2xl text-sm text-white font-semibold focus:outline-none focus:border-[#00B4D8] shadow-sm"
+            className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm text-slate-900 font-semibold focus:outline-none focus:border-[#00B4D8] shadow-xs"
           />
         </div>
       </div>
 
       {/* Games Cards Grid */}
       {filteredGames.length === 0 ? (
-        <div className="text-center py-20 bg-[#0F172A] rounded-3xl border border-slate-800 shadow-sm">
-          <p className="text-slate-400 text-base font-semibold">No games found matching "{searchQuery}"</p>
+        <div className="text-center py-20 bg-white rounded-3xl border border-slate-200 shadow-sm">
+          <p className="text-slate-600 text-base font-semibold">No games found matching "{searchQuery}"</p>
           <button 
             onClick={() => { setSearchQuery(''); setActiveCategory('ALL'); }}
             className="mt-4 px-5 py-2.5 text-xs font-black bg-[#00B4D8]/20 text-[#00B4D8] border border-[#00B4D8]/30 rounded-xl"
@@ -90,7 +90,7 @@ export const GameGrid = () => {
               <div
                 key={game.id}
                 onClick={() => openTopup(game)}
-                className="group relative bg-[#0F172A]/90 rounded-3xl border border-slate-800/80 hover:border-[#00B4D8]/60 hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-300 overflow-hidden cursor-pointer flex flex-col justify-between"
+                className="group relative bg-white rounded-3xl border border-slate-200 shadow-sm hover:border-[#00B4D8]/60 hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-300 overflow-hidden cursor-pointer flex flex-col justify-between"
               >
                 {/* Banner Artwork */}
                 <div className="relative h-48 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-[#0A0F1E] flex items-center justify-center p-4">
@@ -99,7 +99,7 @@ export const GameGrid = () => {
                     alt={game.name}
                     className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100 filter drop-shadow-xl"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-transparent to-black/20 pointer-events-none"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-black/20 pointer-events-none"></div>
 
                   {/* Top Badges */}
                   <div className="absolute top-3 left-3">
@@ -122,7 +122,7 @@ export const GameGrid = () => {
                         <h3 className="text-xl font-black text-white font-heading tracking-tight leading-tight drop-shadow">
                           {game.name}
                         </h3>
-                        <p className="text-[11px] text-slate-300 font-bold">
+                        <p className="text-[11px] text-slate-200 font-bold">
                           {game.publisher} • {game.currencyName}
                         </p>
                       </div>
@@ -133,14 +133,14 @@ export const GameGrid = () => {
                 {/* Bottom Details & Pricing */}
                 <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                   <div>
-                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">
+                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2">
                       Popular Packages
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {game.packages.slice(0, 3).map(p => (
                         <span 
                           key={p.id} 
-                          className="px-2.5 py-1 rounded-lg bg-slate-900 text-slate-300 text-xs font-bold border border-slate-800"
+                          className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200"
                         >
                           {p.name}
                         </span>
@@ -148,9 +148,9 @@ export const GameGrid = () => {
                     </div>
                   </div>
 
-                  <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between">
+                  <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
                     <div>
-                      <span className="text-[10px] text-slate-400 font-bold block uppercase">Starting from</span>
+                      <span className="text-[10px] text-slate-500 font-bold block uppercase">Starting from</span>
                       <span className="text-xl font-black text-[#00B4D8] font-heading">
                         {formatPrice(minPrice)}
                       </span>

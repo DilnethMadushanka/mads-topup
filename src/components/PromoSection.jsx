@@ -3,9 +3,9 @@ import { ShieldCheck, Zap, MessageCircle, Lock, Award, CheckCircle2 } from 'luci
 
 export const PromoSection = () => {
   return (
-    <section className="py-16 bg-[#090D16] border-b border-slate-800/80">
+    <section className="py-16 bg-white border-b border-slate-200/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative bg-[#0F172A]/90 text-white rounded-3xl p-8 sm:p-14 overflow-hidden border border-slate-800 shadow-2xl">
+        <div className="relative bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-white rounded-3xl p-8 sm:p-14 overflow-hidden border border-slate-800 shadow-2xl">
           
           <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             

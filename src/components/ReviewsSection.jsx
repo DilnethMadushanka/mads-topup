@@ -45,7 +45,7 @@ export const ReviewsSection = () => {
   ];
 
   return (
-    <section id="reviews-section" className="py-24 bg-[#0A0F1E] border-t border-slate-800/80">
+    <section id="reviews-section" className="py-24 bg-white border-t border-slate-200/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         
         {/* Header */}
@@ -53,10 +53,10 @@ export const ReviewsSection = () => {
           <span className="text-xs font-black text-[#00B4D8] tracking-widest uppercase font-mono bg-[#00B4D8]/10 px-4 py-1.5 rounded-full border border-[#00B4D8]/20">
             — COMMUNITY —
           </span>
-          <h2 className="text-4xl sm:text-5xl font-black text-white font-heading tracking-tight">
+          <h2 className="text-4xl sm:text-5xl font-black text-slate-900 font-heading tracking-tight">
             What Our <span className="text-[#00B4D8]">Customers Say</span>
           </h2>
-          <p className="text-slate-400 text-sm sm:text-base font-semibold max-w-lg mx-auto">
+          <p className="text-slate-600 text-sm sm:text-base font-semibold max-w-lg mx-auto">
             Real reviews from our gaming community worldwide
           </p>
         </div>
@@ -66,7 +66,7 @@ export const ReviewsSection = () => {
           {reviews.map((review) => (
             <div 
               key={review.id}
-              className="bg-[#0F172A]/90 p-7 rounded-3xl border border-slate-800/80 hover:border-[#00B4D8]/50 hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-300 flex flex-col justify-between text-left space-y-4"
+              className="bg-[#F8FAFF] p-7 rounded-3xl border border-slate-200 shadow-sm hover:border-[#00B4D8]/50 hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-300 flex flex-col justify-between text-left space-y-4"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -82,14 +82,14 @@ export const ReviewsSection = () => {
                     </div>
                   )}
                   <div>
-                    <h4 className="font-extrabold text-white text-sm">{review.name}</h4>
-                    <p className="text-[11px] text-slate-400 font-bold flex items-center gap-1">
+                    <h4 className="font-extrabold text-slate-900 text-sm">{review.name}</h4>
+                    <p className="text-[11px] text-slate-500 font-bold flex items-center gap-1">
                       <span>{review.flag}</span>
                       <span>{review.location}</span>
                     </p>
                   </div>
                 </div>
-                <Quote className="w-6 h-6 text-slate-700/60" />
+                <Quote className="w-6 h-6 text-slate-300" />
               </div>
 
               {/* Stars */}
@@ -100,7 +100,7 @@ export const ReviewsSection = () => {
               </div>
 
               {/* Quote */}
-              <p className="text-xs text-slate-300 italic font-semibold leading-relaxed flex-1">
+              <p className="text-xs text-slate-700 italic font-semibold leading-relaxed flex-1">
                 {review.text}
               </p>
             </div>

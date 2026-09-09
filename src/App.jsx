@@ -26,7 +26,7 @@ const MainContent = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#090D16] flex flex-col justify-between pb-16 md:pb-0 font-sans text-white">
+    <div className="min-h-screen bg-[#F8FAFF] flex flex-col justify-between pb-16 md:pb-0 font-sans text-slate-900">
       <div>
         <Navbar />
         <HeroSection />

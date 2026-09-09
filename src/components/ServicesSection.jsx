@@ -62,7 +62,7 @@ export const ServicesSection = () => {
   ];
 
   return (
-    <section id="services-section" className="py-24 bg-[#0A0F1E] border-b border-slate-800/80">
+    <section id="services-section" className="py-24 bg-[#F8FAFF] border-b border-slate-200/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         
         {/* Section Header */}
@@ -70,10 +70,10 @@ export const ServicesSection = () => {
           <span className="text-xs font-black text-[#00B4D8] tracking-widest uppercase font-mono bg-[#00B4D8]/10 px-4 py-1.5 rounded-full border border-[#00B4D8]/20">
             — WHAT WE OFFER —
           </span>
-          <h2 className="text-4xl sm:text-5xl font-black text-white font-heading tracking-tight uppercase">
+          <h2 className="text-4xl sm:text-5xl font-black text-slate-900 font-heading tracking-tight uppercase">
             Our Premium <span className="text-[#00B4D8]">Services</span>
           </h2>
-          <p className="text-slate-400 text-sm sm:text-base font-semibold max-w-lg mx-auto">
+          <p className="text-slate-600 text-sm sm:text-base font-semibold max-w-lg mx-auto">
             Elevate your gaming experience with our top-tier minimalist digital services
           </p>
         </div>
@@ -85,7 +85,7 @@ export const ServicesSection = () => {
             return (
               <div
                 key={service.id}
-                className="group bg-[#0F172A]/90 rounded-3xl p-8 border border-slate-800/80 hover:border-[#00B4D8]/60 hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300 flex flex-col justify-between items-center text-center relative overflow-hidden"
+                className="group bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:border-[#00B4D8]/60 hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-300 flex flex-col justify-between items-center text-center relative overflow-hidden"
               >
                 {/* Top Subtle Cyan Glow Line */}
                 <div className="absolute top-0 inset-x-0 h-1 bg-[#00B4D8] opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -103,10 +103,10 @@ export const ServicesSection = () => {
 
                 {/* Content */}
                 <div className="space-y-2 mb-8">
-                  <h3 className="text-xl font-black text-white font-heading">
+                  <h3 className="text-xl font-black text-slate-900 font-heading">
                     {service.title}
                   </h3>
-                  <p className="text-slate-400 text-xs leading-relaxed font-medium">
+                  <p className="text-slate-600 text-xs leading-relaxed font-medium">
                     {service.description}
                   </p>
                 </div>

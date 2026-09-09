@@ -30,7 +30,7 @@ export const StatsSection = () => {
   ];
 
   return (
-    <section className="py-12 bg-[#090D16] border-y border-slate-800/80">
+    <section className="py-12 bg-white border-y border-slate-200/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {stats.map((stat, idx) => {
@@ -38,15 +38,15 @@ export const StatsSection = () => {
             return (
               <div 
                 key={idx}
-                className="bg-[#0F172A]/90 p-6 rounded-3xl border border-slate-800/80 shadow-xl flex flex-col items-center text-center space-y-3 hover:border-[#00B4D8]/40 transition-all"
+                className="bg-slate-50 p-6 rounded-3xl border border-slate-200 shadow-xs flex flex-col items-center text-center space-y-3 hover:border-[#00B4D8]/40 hover:bg-white transition-all"
               >
                 <div className={`w-12 h-12 rounded-2xl ${stat.iconBg} flex items-center justify-center`}>
                   <Icon className="w-6 h-6 stroke-[2.5]" />
                 </div>
-                <div className="text-3xl sm:text-4xl font-black text-white font-heading tracking-tight">
+                <div className="text-3xl sm:text-4xl font-black text-slate-900 font-heading tracking-tight">
                   {stat.value}
                 </div>
-                <div className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
+                <div className="text-xs font-extrabold text-slate-600 uppercase tracking-wider">
                   {stat.label}
                 </div>
               </div>

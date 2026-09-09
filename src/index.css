@@ -13,8 +13,8 @@
   html {
     scroll-behavior: smooth;
     font-family: var(--font-body);
-    background-color: var(--brand-dark);
-    color: #F8FAFC;
+    background-color: #F8FAFF;
+    color: #0F172A;
   }
 
   h1, h2, h3, h4, h5, h6, .font-heading {
@@ -27,7 +27,7 @@
   width: 7px;
 }
 ::-webkit-scrollbar-track {
-  background: #090D16;
+  background: #F1F5F9;
 }
 ::-webkit-scrollbar-thumb {
   background: #00B4D8;

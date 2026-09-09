@@ -156,10 +156,10 @@ export const TopupModal = () => {
 
   return (
     <div className="modal-overlay">
-      <div className="bg-[#090D16] text-white w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-800 overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-white text-slate-900 w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-200">
         
         {/* Modal Header */}
-        <div className="bg-[#0F172A] text-white p-5 flex items-center justify-between border-b border-slate-800">
+        <div className="bg-slate-950 text-white p-5 flex items-center justify-between border-b border-slate-800">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#00B4D8] to-cyan-400 flex items-center justify-center font-bold text-xl shadow-md text-white">
               {selectedGame.currencyIcon}
@@ -184,32 +184,32 @@ export const TopupModal = () => {
         </div>
 
         {/* Step Progress Bar */}
-        <div className="bg-[#0D1527] px-6 py-3 border-b border-slate-800/80 flex items-center justify-between text-xs font-bold">
-          <div className={`flex items-center gap-1.5 ${step >= 1 ? 'text-[#00B4D8]' : 'text-slate-500'}`}>
-            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${step >= 1 ? 'bg-[#00B4D8] text-white' : 'bg-slate-800 text-slate-500'}`}>1</span>
+        <div className="bg-slate-100 px-6 py-3 border-b border-slate-200 flex items-center justify-between text-xs font-bold">
+          <div className={`flex items-center gap-1.5 ${step >= 1 ? 'text-[#00B4D8]' : 'text-slate-400'}`}>
+            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${step >= 1 ? 'bg-[#00B4D8] text-white' : 'bg-slate-300 text-slate-600'}`}>1</span>
             <span>Account ID</span>
           </div>
-          <ChevronRight className="w-4 h-4 text-slate-700" />
-          <div className={`flex items-center gap-1.5 ${step >= 2 ? 'text-[#00B4D8]' : 'text-slate-500'}`}>
-            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${step >= 2 ? 'bg-[#00B4D8] text-white' : 'bg-slate-800 text-slate-500'}`}>2</span>
+          <ChevronRight className="w-4 h-4 text-slate-400" />
+          <div className={`flex items-center gap-1.5 ${step >= 2 ? 'text-[#00B4D8]' : 'text-slate-400'}`}>
+            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${step >= 2 ? 'bg-[#00B4D8] text-white' : 'bg-slate-300 text-slate-600'}`}>2</span>
             <span>Package</span>
           </div>
-          <ChevronRight className="w-4 h-4 text-slate-700" />
-          <div className={`flex items-center gap-1.5 ${step >= 3 ? 'text-[#00B4D8]' : 'text-slate-500'}`}>
-            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${step >= 3 ? 'bg-[#00B4D8] text-white' : 'bg-slate-800 text-slate-500'}`}>3</span>
+          <ChevronRight className="w-4 h-4 text-slate-400" />
+          <div className={`flex items-center gap-1.5 ${step >= 3 ? 'text-[#00B4D8]' : 'text-slate-400'}`}>
+            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${step >= 3 ? 'bg-[#00B4D8] text-white' : 'bg-slate-300 text-slate-600'}`}>3</span>
             <span>Payment</span>
           </div>
         </div>
 
         {/* Modal Body Content */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1 bg-[#090D16]">
+        <div className="p-6 overflow-y-auto space-y-6 flex-1 bg-white text-slate-900">
           
           {step < 4 && (
             <>
               {/* SECTION 1: Player ID & Server Verification */}
-              <div className="bg-[#0F172A]/90 p-4 rounded-2xl border border-slate-800 space-y-3">
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-extrabold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <label className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-[#00B4D8]"></span>
                     Step 1: Enter Game Account ID
                   </label>
@@ -247,7 +247,7 @@ export const TopupModal = () => {
                         setPlayerId(e.target.value);
                         setIgnVerified(false);
                       }}
-                      className="w-full px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white font-semibold focus:outline-none focus:border-[#00B4D8] shadow-sm"
+                      className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 font-semibold focus:outline-none focus:border-[#00B4D8] shadow-xs"
                     />
                   </div>
 
@@ -258,7 +258,7 @@ export const TopupModal = () => {
                         placeholder={selectedGame.serverPlaceholder}
                         value={zoneId}
                         onChange={(e) => setZoneId(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white font-semibold focus:outline-none focus:border-[#00B4D8] shadow-sm"
+                        className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 font-semibold focus:outline-none focus:border-[#00B4D8] shadow-xs"
                       />
                     </div>
                   )}
@@ -281,9 +281,9 @@ export const TopupModal = () => {
 
                 {/* IGN Result Box */}
                 {ignVerified && (
-                  <div className="p-3 bg-emerald-950/80 border border-emerald-500/40 rounded-xl flex items-center justify-between text-xs text-emerald-300 font-semibold animate-in fade-in">
+                  <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl flex items-center justify-between text-xs text-emerald-800 font-semibold animate-in fade-in">
                     <div className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                       <span>In-Game Name: <strong>{ign}</strong></span>
                     </div>
                     <button 
@@ -299,7 +299,7 @@ export const TopupModal = () => {
 
               {/* SECTION 2: Package Selection */}
               <div className="space-y-3">
-                <label className="text-xs font-extrabold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                <label className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-[#00B4D8]"></span>
                     Step 2: Select Diamond / UC Package
@@ -320,7 +320,7 @@ export const TopupModal = () => {
                         className={`relative p-3.5 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
                           isSelected
                             ? 'bg-[#00B4D8]/10 border-[#00B4D8] shadow-lg shadow-cyan-500/10'
-                            : 'bg-[#0F172A]/90 border-slate-800 hover:border-slate-700'
+                            : 'bg-white border-slate-200 text-slate-900 hover:border-slate-400'
                         }`}
                       >
                         {pkg.isPopular && (
@@ -332,27 +332,27 @@ export const TopupModal = () => {
                         <div>
                           <div className="flex items-center gap-2 mb-2">
                             {pkg.image ? (
-                              <img src={pkg.image} alt={pkg.name} className="w-8 h-8 object-contain rounded-lg bg-slate-900/60 p-0.5 border border-slate-700/50" />
+                              <img src={pkg.image} alt={pkg.name} className="w-8 h-8 object-contain rounded-lg bg-slate-100 p-0.5 border border-slate-200" />
                             ) : (
                               <span className="text-sm">{selectedGame.currencyIcon}</span>
                             )}
-                            <span className="font-extrabold text-xs sm:text-sm text-white font-heading leading-tight">
+                            <span className="font-extrabold text-xs sm:text-sm text-slate-900 font-heading leading-tight">
                               {pkg.name}
                             </span>
                           </div>
                           {pkg.bonus && (
-                            <span className="text-[10px] text-[#00B4D8] font-bold bg-[#00B4D8]/20 px-1.5 py-0.5 rounded inline-block">
+                            <span className="text-[10px] text-[#00B4D8] font-bold bg-[#00B4D8]/15 px-1.5 py-0.5 rounded inline-block">
                               {pkg.bonus}
                             </span>
                           )}
                         </div>
 
-                        <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                        <div className="mt-3 pt-2 border-t border-slate-200 flex items-center justify-between">
                           <span className="text-sm font-black text-[#00B4D8] font-heading">
                             {formatPrice(pkg.priceLkr)}
                           </span>
                           <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                            isSelected ? 'bg-[#00B4D8] border-[#00B4D8] text-white' : 'border-slate-600'
+                            isSelected ? 'bg-[#00B4D8] border-[#00B4D8] text-white' : 'border-slate-300'
                           }`}>
                             {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
                           </div>
@@ -365,8 +365,8 @@ export const TopupModal = () => {
 
               {/* STEP 3: Payment Method Selection */}
               {step >= 3 && (
-                <div className="space-y-4 pt-2 border-t border-slate-800 animate-in fade-in">
-                  <label className="text-xs font-extrabold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <div className="space-y-4 pt-2 border-t border-slate-200 animate-in fade-in">
+                  <label className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-[#00B4D8]"></span>
                     Step 3: Select Payment Method
                   </label>
@@ -381,7 +381,7 @@ export const TopupModal = () => {
                           className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between ${
                             isSelected
                               ? 'bg-[#00B4D8] text-white border-[#00B4D8] shadow-lg shadow-cyan-500/20'
-                              : 'bg-[#0F172A]/90 text-white border-slate-800 hover:border-slate-700'
+                              : 'bg-white text-slate-900 border-slate-200 hover:border-slate-400'
                           }`}
                         >
                           <div className="flex items-center gap-3">
@@ -395,7 +395,7 @@ export const TopupModal = () => {
                                   {method.badge}
                                 </span>
                               </div>
-                              <div className={`text-[10px] ${isSelected ? 'text-slate-100' : 'text-slate-400'}`}>
+                              <div className={`text-[10px] ${isSelected ? 'text-slate-100' : 'text-slate-500'}`}>
                                 {method.subtitle}
                               </div>
                             </div>
@@ -407,14 +407,14 @@ export const TopupModal = () => {
 
                   {/* Payment Transfer Info Box */}
                   {selectedPayment.accountDetails && (
-                    <div className="p-4 bg-[#0F172A] rounded-2xl border border-slate-800 text-xs space-y-2">
-                      <div className="font-bold text-slate-200 flex items-center gap-1">
+                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-2">
+                      <div className="font-bold text-slate-900 flex items-center gap-1">
                         <CreditCard className="w-4 h-4 text-[#00B4D8]" />
                         <span>Payment Instructions ({selectedPayment.name}):</span>
                       </div>
                       
                       {selectedPayment.id === 'bank' && (
-                        <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1 font-mono text-[11px] text-slate-300">
+                        <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1 font-mono text-[11px] text-slate-800">
                           <div>Bank: <strong>{selectedPayment.accountDetails.bankName}</strong></div>
                           <div>Account Name: <strong>{selectedPayment.accountDetails.accountName}</strong></div>
                           <div>Account No: <strong>{selectedPayment.accountDetails.accountNumber}</strong></div>
@@ -423,24 +423,24 @@ export const TopupModal = () => {
                       )}
 
                       {selectedPayment.id === 'ezcash' && (
-                        <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-[11px] text-slate-300">
+                        <div className="bg-white p-3 rounded-xl border border-slate-200 font-mono text-[11px] text-slate-800">
                           <div>eZ Cash Number: <strong className="text-[#00B4D8] font-extrabold">{selectedPayment.accountDetails.number}</strong></div>
                         </div>
                       )}
 
-                      <p className="text-[11px] text-slate-400 italic">
+                      <p className="text-[11px] text-slate-500 italic">
                         {selectedPayment.accountDetails.instructions}
                       </p>
 
                       {/* Cloudflare R2 Receipt Upload Widget */}
-                      <div className="pt-2 border-t border-slate-800">
-                        <label className="block text-[11px] font-extrabold text-slate-300 mb-1 flex items-center justify-between">
+                      <div className="pt-2 border-t border-slate-200">
+                        <label className="block text-[11px] font-extrabold text-slate-800 mb-1 flex items-center justify-between">
                           <span className="flex items-center gap-1 text-[#00B4D8]">
                             <UploadCloud className="w-3.5 h-3.5" />
                             Upload Payment Slip / Screenshot
                           </span>
-                          <span className="text-[9px] bg-cyan-950 text-cyan-400 px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1 border border-cyan-800/40">
-                            <Cloud className="w-3 h-3" />
+                          <span className="text-[9px] bg-cyan-100 text-cyan-800 px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1 border border-cyan-300">
+                            <Cloud className="w-3 h-3 text-cyan-600" />
                             Cloudflare R2 Storage
                           </span>
                         </label>
@@ -451,10 +451,10 @@ export const TopupModal = () => {
                             accept="image/*,.pdf"
                             onChange={handleReceiptUpload}
                             disabled={isUploadingReceipt}
-                            className="text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#00B4D8] file:text-white hover:file:bg-[#0096C7] cursor-pointer"
+                            className="text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#00B4D8] file:text-white hover:file:bg-[#0096C7] cursor-pointer"
                           />
                           {isUploadingReceipt && (
-                            <span className="text-xs text-cyan-400 font-bold flex items-center gap-1">
+                            <span className="text-xs text-cyan-600 font-bold flex items-center gap-1">
                               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                               <span>Uploading to R2...</span>
                             </span>
@@ -462,9 +462,9 @@ export const TopupModal = () => {
                         </div>
 
                         {receiptR2Url && (
-                          <div className="mt-2 text-[10px] bg-emerald-950/80 text-emerald-300 border border-emerald-500/30 p-2 rounded-xl flex items-center justify-between font-mono">
+                          <div className="mt-2 text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-300 p-2 rounded-xl flex items-center justify-between font-mono">
                             <span className="truncate max-w-[320px]">R2 Object: {receiptR2Url}</span>
-                            <span className="font-bold text-emerald-400">✔ Uploaded</span>
+                            <span className="font-bold text-emerald-600">✔ Uploaded</span>
                           </div>
                         )}
                       </div>
@@ -478,37 +478,37 @@ export const TopupModal = () => {
           {/* STEP 4: Success Screen */}
           {step === 4 && completedOrder && (
             <div className="text-center py-6 space-y-5 animate-in zoom-in-95">
-              <div className="w-16 h-16 rounded-full bg-emerald-950/90 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20">
+              <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 border border-emerald-300 flex items-center justify-center mx-auto shadow-md">
                 <CheckCircle2 className="w-10 h-10" />
               </div>
 
               <div>
-                <h3 className="text-2xl font-black text-white font-heading">TOP-UP SUCCESSFUL!</h3>
-                <p className="text-sm text-slate-400 font-medium">
+                <h3 className="text-2xl font-black text-slate-900 font-heading">TOP-UP SUCCESSFUL!</h3>
+                <p className="text-sm text-slate-600 font-medium">
                   Your top-up order has been automatically dispatched via Moongold API.
                 </p>
               </div>
 
               {/* Order Receipt Box */}
-              <div className="bg-[#0F172A] p-4 rounded-2xl border border-slate-800 text-left max-w-md mx-auto space-y-2 text-xs">
-                <div className="flex justify-between border-b border-slate-800 pb-2">
-                  <span className="text-slate-400">Order ID:</span>
-                  <span className="font-mono font-bold text-white">{completedOrder.id}</span>
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-left max-w-md mx-auto space-y-2 text-xs">
+                <div className="flex justify-between border-b border-slate-200 pb-2">
+                  <span className="text-slate-500">Order ID:</span>
+                  <span className="font-mono font-bold text-slate-900">{completedOrder.id}</span>
                 </div>
-                <div className="flex justify-between border-b border-slate-800 pb-2">
-                  <span className="text-slate-400">Moongold Reference:</span>
+                <div className="flex justify-between border-b border-slate-200 pb-2">
+                  <span className="text-slate-500">Moongold Reference:</span>
                   <span className="font-mono font-bold text-[#00B4D8]">{completedOrder.moongoldRef}</span>
                 </div>
-                <div className="flex justify-between border-b border-slate-800 pb-2">
-                  <span className="text-slate-400">Game / Package:</span>
-                  <span className="font-bold text-white">{completedOrder.gameName} - {completedOrder.packageName}</span>
+                <div className="flex justify-between border-b border-slate-200 pb-2">
+                  <span className="text-slate-500">Game / Package:</span>
+                  <span className="font-bold text-slate-900">{completedOrder.gameName} - {completedOrder.packageName}</span>
                 </div>
-                <div className="flex justify-between border-b border-slate-800 pb-2">
-                  <span className="text-slate-400">Player ID / IGN:</span>
-                  <span className="font-bold text-white">{completedOrder.playerId} ({completedOrder.ign})</span>
+                <div className="flex justify-between border-b border-slate-200 pb-2">
+                  <span className="text-slate-500">Player ID / IGN:</span>
+                  <span className="font-bold text-slate-900">{completedOrder.playerId} ({completedOrder.ign})</span>
                 </div>
                 <div className="flex justify-between pt-1 font-bold text-sm">
-                  <span className="text-slate-300">Total Paid:</span>
+                  <span className="text-slate-700">Total Paid:</span>
                   <span className="text-[#00B4D8]">{formatPrice(completedOrder.priceLkr)}</span>
                 </div>
               </div>
