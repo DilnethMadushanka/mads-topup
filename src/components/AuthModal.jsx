@@ -99,7 +99,7 @@ export const AuthModal = () => {
         </button>
 
         {/* LEFT SECTION (Vibrant Blue Branding Side - Matching Screenshots) */}
-        <div className="w-full md:w-5/12 bg-[#1E64E8] p-8 text-white flex flex-col items-center justify-between relative overflow-hidden text-center shrink-0">
+        <div className="w-full md:w-5/12 bg-[#1E64E8] p-5 sm:p-8 text-white flex flex-col items-center justify-between relative overflow-hidden text-center shrink-0">
           
           {/* Subtle Background Blur Shapes */}
           <div className="absolute -top-10 -left-10 w-48 h-48 bg-blue-400/20 rounded-full blur-3xl pointer-events-none"></div>
@@ -107,18 +107,18 @@ export const AuthModal = () => {
 
           <div className="relative z-10 flex flex-col items-center my-auto">
             {/* App Logo Box */}
-            <div className="w-24 h-24 rounded-2xl bg-white shadow-xl flex items-center justify-center p-4 mb-6 border border-white/20">
-              <div className="w-16 h-16 rounded-xl bg-gradient-to-tr from-[#1E64E8] to-cyan-400 flex items-center justify-center text-white font-black text-2xl font-heading shadow-md">
+            <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl bg-white shadow-xl flex items-center justify-center p-3 sm:p-4 mb-3 sm:mb-6 border border-white/20">
+              <div className="w-10 h-10 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-tr from-[#1E64E8] to-cyan-400 flex items-center justify-center text-white font-black text-xl sm:text-2xl font-heading shadow-md">
                 N
               </div>
             </div>
 
-            <p className="text-sm font-semibold text-white/95 leading-relaxed max-w-xs mb-8">
+            <p className="text-xs sm:text-sm font-semibold text-white/95 leading-relaxed max-w-xs mb-3 sm:mb-8">
               Join thousands of users enjoying fast & secure top-ups
             </p>
 
-            {/* Feature List Box */}
-            <div className="w-full bg-white/10 backdrop-blur-md rounded-2xl border border-white/15 p-4 space-y-3.5 text-left shadow-inner">
+            {/* Feature List Box (Hidden on small mobile to give priority to form) */}
+            <div className="hidden md:block w-full bg-white/10 backdrop-blur-md rounded-2xl border border-white/15 p-4 space-y-3.5 text-left shadow-inner">
               <div className="flex items-center gap-3 text-xs font-extrabold text-white">
                 <div className="w-7 h-7 rounded-xl bg-white/15 flex items-center justify-center text-white shrink-0">
                   <Zap className="w-4 h-4 fill-white" />

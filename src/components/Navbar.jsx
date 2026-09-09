@@ -105,7 +105,7 @@ export const Navbar = () => {
 
           <button
             onClick={() => openAuth('register')}
-            className="btn-purple-pill px-6 py-2 text-xs font-black uppercase tracking-wider cursor-pointer shadow-md flex items-center gap-1.5"
+            className="btn-purple-pill px-4 sm:px-6 py-2 text-xs font-black uppercase tracking-wider cursor-pointer shadow-md flex items-center gap-1.5"
           >
             <User className="w-3.5 h-3.5" />
             <span>REGISTER</span>

@@ -563,22 +563,22 @@ export const GameTopupPage = () => {
             </div>
 
             {/* Payment Method Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 mb-6">
               {PAYMENT_METHODS.map((method) => {
                 const isSelected = selectedPayment.id === method.id;
                 return (
                   <div
                     key={method.id}
                     onClick={() => setSelectedPayment(method)}
-                    className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
+                    className={`p-3.5 sm:p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
                       isSelected
                         ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20'
                         : 'bg-white text-slate-900 border-slate-200 hover:border-slate-300'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-2xl">{method.icon}</span>
-                      <span className={`text-[9px] font-black px-2 py-0.5 rounded ${
+                      <span className="text-xl sm:text-2xl">{method.icon}</span>
+                      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${
                         isSelected ? 'bg-white text-slate-900' : 'bg-blue-100 text-blue-800'
                       }`}>
                         {method.badge}
@@ -683,6 +683,24 @@ export const GameTopupPage = () => {
               </button>
             </div>
           </div>
+
+          {/* STICKY MOBILE CART SUMMARY BAR */}
+          {totalItemsCount > 0 && (
+            <div className="sm:hidden fixed bottom-14 left-0 right-0 z-30 bg-slate-900/95 text-white backdrop-blur-md px-4 py-3 border-t border-slate-800 shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom">
+              <div>
+                <span className="text-[10px] text-slate-400 font-bold uppercase block">Total ({totalItemsCount} item)</span>
+                <span className="text-lg font-black text-cyan-400 font-heading">{formatPrice(totalLkr)}</span>
+              </div>
+              <button
+                onClick={handleCompleteOrder}
+                disabled={isSubmitting}
+                className="px-6 py-2.5 bg-blue-600 text-white font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-md cursor-pointer"
+              >
+                <Zap className="w-3.5 h-3.5 fill-white" />
+                <span>Top Up Now</span>
+              </button>
+            </div>
+          )}
 
           {/* HOW IT WORKS ACCORDION SECTION (Matching Screenshot 3) */}
           <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden mb-6">
