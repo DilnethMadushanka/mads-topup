@@ -50,27 +50,6 @@ export const GAMES_DATA = [
     ]
   },
   {
-    id: 'deltaforce',
-    name: 'Delta Force Mobile',
-    category: 'FPS',
-    publisher: 'Tencent Games',
-    currencyName: 'Delta Coins',
-    currencyIcon: '⚡',
-    badge: 'ACTIVE',
-    banner: '/game_logos/delta_force.jpg',
-    logo: '/game_logos/delta_force.jpg',
-    gradient: 'from-emerald-600 to-teal-800',
-    requiresServer: false,
-    idLabel: 'User ID (UID)',
-    idPlaceholder: 'e.g. 78201948',
-    popular: true,
-    moongoldCode: 'DELTAFORCE_GLOBAL',
-    packages: [
-      { id: 'df-60', name: '60 Delta Coins', amount: 60, bonus: '', priceLkr: 360, priceUsd: 1.15, image: '/product_images/prod_60DeltaCoins_1768629924_Delta_Coins.webp', isPopular: false },
-      { id: 'df-300', name: '300 Delta Coins', amount: 300, bonus: '+30 Extra', priceLkr: 1820, priceUsd: 5.90, image: '/product_images/prod_30020DeltaCoins_1768630034_Delta_Coins.webp', isPopular: true }
-    ]
-  },
-  {
     id: 'bloodstrike',
     name: 'Blood Strike',
     category: 'FPS',
@@ -93,48 +72,6 @@ export const GAMES_DATA = [
     ]
   },
   {
-    id: 'farlight84',
-    name: 'Farlight84',
-    category: 'Battle Royale',
-    publisher: 'Lilith Games',
-    currencyName: 'Diamonds',
-    currencyIcon: '💎',
-    badge: 'ACTIVE',
-    banner: '/game_logos/farlight84.jpg',
-    logo: '/game_logos/farlight84.jpg',
-    gradient: 'from-cyan-500 to-blue-600',
-    requiresServer: false,
-    idLabel: 'Character ID (UID)',
-    idPlaceholder: 'e.g. 10294710',
-    popular: true,
-    moongoldCode: 'FARLIGHT_GLOBAL',
-    packages: [
-      { id: 'fl-100', name: '100 Diamonds', amount: 100, bonus: '', priceLkr: 330, priceUsd: 1.10, image: '/game_logos/farlight84.jpg', isPopular: true },
-      { id: 'fl-500', name: '500 Diamonds', amount: 500, bonus: '+50 Extra', priceLkr: 1650, priceUsd: 5.40, image: '/game_logos/farlight84.jpg', isPopular: false }
-    ]
-  },
-  {
-    id: 'pubg_new_state',
-    name: 'PUBG New State',
-    category: 'Battle Royale',
-    publisher: 'Krafton',
-    currencyName: 'NC',
-    currencyIcon: '🪙',
-    badge: 'ACTIVE',
-    banner: '/game_logos/pubg_new_state.jpg',
-    logo: '/game_logos/pubg_new_state.jpg',
-    gradient: 'from-amber-600 to-yellow-500',
-    requiresServer: false,
-    idLabel: 'Account ID',
-    idPlaceholder: 'e.g. 89201947',
-    popular: true,
-    moongoldCode: 'PUBG_NEWSTATE',
-    packages: [
-      { id: 'nc-300', name: '300 NC', amount: 300, bonus: '', priceLkr: 350, priceUsd: 1.15, image: '/product_images/prod_300_NC_1768965811_PhotoshopExtension_Image_6.png', isPopular: true },
-      { id: 'nc-1500', name: '1,500 NC', amount: 1500, bonus: '+80 Extra', priceLkr: 1750, priceUsd: 5.75, image: '/product_images/prod_1500__80_NC_1768965842_PhotoshopExtension_Image_6.png', isPopular: false }
-    ]
-  },
-  {
     id: 'freefire_id',
     name: 'Free Fire (Indonesia)',
     category: 'Battle Royale',
@@ -154,50 +91,6 @@ export const GAMES_DATA = [
     packages: [
       { id: 'ff-id-100', name: '100 Diamonds', amount: 100, bonus: 'Indo Region', priceLkr: 310, priceUsd: 1.00, image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.png', isPopular: true },
       { id: 'ff-id-530', name: '530 Diamonds', amount: 530, bonus: 'Indo Region', priceLkr: 1550, priceUsd: 5.10, image: '/product_images/prod_520_1769709482_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: false }
-    ]
-  },
-  {
-    id: 'where_winds_meet',
-    name: 'Where Winds Meet',
-    category: 'RPG',
-    publisher: 'NetEase Games',
-    currencyName: 'Echo Beads',
-    currencyIcon: '📜',
-    badge: 'ACTIVE',
-    banner: '/game_logos/where_winds_meet.jpg',
-    logo: '/game_logos/where_winds_meet.jpg',
-    gradient: 'from-slate-700 to-stone-900',
-    requiresServer: false,
-    idLabel: 'Account ID',
-    idPlaceholder: 'e.g. 99120482',
-    popular: true,
-    moongoldCode: 'WHERE_WINDS_MEET',
-    packages: [
-      { id: 'wwm-60', name: '60 Echo Beads', amount: 60, bonus: '', priceLkr: 350, priceUsd: 1.15, image: '/product_images/prod_60_Echo_Beads_1776442426_PhotoshopExtension_Image.png', isPopular: false },
-      { id: 'wwm-300', name: '300 Echo Beads', amount: 300, bonus: '+30 Extra', priceLkr: 1750, priceUsd: 5.75, image: '/product_images/prod_300_Echo_Beads_1776442628_PhotoshopExtension_Image.png', isPopular: true }
-    ]
-  },
-  {
-    id: 'valorant',
-    name: 'Valorant (Singapore)',
-    category: 'FPS',
-    publisher: 'Riot Games',
-    currencyName: 'VP',
-    currencyIcon: '🎯',
-    badge: 'ACTIVE',
-    flag: '🇸🇬',
-    banner: '/product_images/prod_1000_VP_1776444995_valorant-topup.png',
-    logo: '/product_images/prod_1000_VP_1776444995_valorant-topup.png',
-    gradient: 'from-rose-600 to-red-700',
-    requiresServer: false,
-    idLabel: 'Riot ID',
-    idPlaceholder: 'e.g. Player#SL1',
-    popular: true,
-    moongoldCode: 'VALORANT_SG',
-    packages: [
-      { id: 'val-475', name: '475 VP', amount: 475, bonus: '', priceLkr: 1650, priceUsd: 5.40, image: '/product_images/prod_475_VP_1776444960_valorant-topup.png', isPopular: false },
-      { id: 'val-1000', name: '1,000 VP', amount: 1000, bonus: '', priceLkr: 3350, priceUsd: 11.00, image: '/product_images/prod_1000_VP_1776444995_valorant-topup.png', isPopular: true },
-      { id: 'val-2050', name: '2,050 VP', amount: 2050, bonus: '', priceLkr: 6700, priceUsd: 22.00, image: '/product_images/prod_2050_VP_1776445046_valorant-topup.png', isPopular: false }
     ]
   },
   {
