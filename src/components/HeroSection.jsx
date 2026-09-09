@@ -1,9 +1,49 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { Zap, Layers, Mouse, ShieldCheck, Sparkles, CheckCircle2, Flame, Terminal, Activity } from 'lucide-react';
+import { Zap, Layers, Mouse, ShieldCheck, Sparkles, CheckCircle2, Flame, Terminal, Activity, ChevronLeft, ChevronRight } from 'lucide-react';
+
+const HERO_SLIDES = [
+  {
+    id: 1,
+    title: 'FREE FIRE ANCIENT TREASURE',
+    subtitle: 'Exclusive Free Fire Diamonds Top-Up & Special Mystery Vouchers',
+    r2Url: 'https://bfda3f43ac31b00be80bcb82772eb8fa.r2.cloudflarestorage.com/mads-topup/hero-slider/hero-1.jpg',
+    localUrl: '/hero-slider/hero-1.jpg'
+  },
+  {
+    id: 2,
+    title: 'TACTICAL WARFARE SQUAD',
+    subtitle: 'Call of Duty & PUBG Mobile UC Direct Account Crediting',
+    r2Url: 'https://bfda3f43ac31b00be80bcb82772eb8fa.r2.cloudflarestorage.com/mads-topup/hero-slider/hero-2.jpg',
+    localUrl: '/hero-slider/hero-2.jpg'
+  },
+  {
+    id: 3,
+    title: 'PUBG BATTLE ROYALE DISPATCH',
+    subtitle: 'Automated 24/7 Moongold UC Delivery with 100% LKR Price Guarantee',
+    r2Url: 'https://bfda3f43ac31b00be80bcb82772eb8fa.r2.cloudflarestorage.com/mads-topup/hero-slider/hero-3.jpg',
+    localUrl: '/hero-slider/hero-3.jpg'
+  }
+];
 
 export const HeroSection = () => {
   const { openTopup } = useApp();
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+    }, 5500);
+    return () => clearInterval(timer);
+  }, []);
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + HERO_SLIDES.length) % HERO_SLIDES.length);
+  };
 
   const scrollToServices = () => {
     const el = document.getElementById('services-section');
@@ -15,18 +55,26 @@ export const HeroSection = () => {
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const activeSlideData = HERO_SLIDES[currentSlide];
+
   return (
     <section className="relative bg-slate-950 text-white min-h-[92vh] flex flex-col justify-between items-center overflow-hidden py-16 px-4 border-b border-red-600/20 bg-cyber-grid">
-      {/* Dark Charcoal Tactical Cyber Background Artwork */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center opacity-30 mix-blend-luminosity scale-105 pointer-events-none"
-        style={{
-          backgroundImage: `url('/hero-bg.jpg')`
-        }}
-      ></div>
+      
+      {/* Dynamic Background Image Slider (Loaded via R2 Bucket with local fallback) */}
+      {HERO_SLIDES.map((slide, idx) => (
+        <div
+          key={slide.id}
+          className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out pointer-events-none scale-105 ${
+            idx === currentSlide ? 'opacity-40 mix-blend-luminosity' : 'opacity-0'
+          }`}
+          style={{
+            backgroundImage: `url('${slide.r2Url}'), url('${slide.localUrl}')`
+          }}
+        ></div>
+      ))}
 
-      {/* Holographic Datastreams & Crimson Laser Beams Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/50 to-slate-950 pointer-events-none"></div>
+      {/* Holographic Datastreams & Crimson Laser Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-950/85 via-slate-950/60 to-slate-950 pointer-events-none"></div>
 
       {/* Deep Charcoal Aura with Crimson Plasma Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[850px] bg-red-600/20 rounded-full blur-[180px] pointer-events-none animate-pulse"></div>
@@ -42,18 +90,33 @@ export const HeroSection = () => {
           <Terminal className="w-3 h-3 text-red-500" />
           <span>SYSTEM_STATUS: ONLINE</span>
         </div>
-        <div>LATENCY: 0.02ms [DIRECT_MOONGOLD]</div>
+        <div>R2_BUCKET: mads-topup/hero-slider</div>
         <div>PROT: SECURE_SSL_SHA256</div>
       </div>
 
       <div className="hidden lg:flex absolute top-10 right-10 text-[10px] font-mono text-red-500/80 bg-slate-950/80 p-3 rounded-lg border border-red-500/30 backdrop-blur-md space-y-1 z-10 shadow-[0_0_15px_rgba(255,26,60,0.2)]">
         <div className="flex items-center gap-1.5 text-white font-bold">
           <Activity className="w-3 h-3 text-red-500" />
-          <span>TOPUP_NODES: ACTIVE</span>
+          <span>ACTIVE_SLIDE: {currentSlide + 1} / {HERO_SLIDES.length}</span>
         </div>
-        <div>FREE_FIRE // PUBG // MLBB</div>
-        <div>LKR_DISCOUNT: 100% VERIFIED</div>
+        <div className="truncate max-w-[200px]">{activeSlideData.title}</div>
+        <div>DISCOUNT: 100% VERIFIED</div>
       </div>
+
+      {/* Slider Left / Right Navigation Buttons */}
+      <button
+        onClick={prevSlide}
+        className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-slate-950/80 border border-red-500/40 hover:border-red-500 text-white flex items-center justify-center backdrop-blur-md transition-all hover:scale-110 shadow-[0_0_15px_rgba(255,26,60,0.4)]"
+      >
+        <ChevronLeft className="w-5 h-5 text-red-500" />
+      </button>
+
+      <button
+        onClick={nextSlide}
+        className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-slate-950/80 border border-red-500/40 hover:border-red-500 text-white flex items-center justify-center backdrop-blur-md transition-all hover:scale-110 shadow-[0_0_15px_rgba(255,26,60,0.4)]"
+      >
+        <ChevronRight className="w-5 h-5 text-red-500" />
+      </button>
 
       {/* Floating Crimson Diamonds with White Pulse */}
       <div className="absolute top-20 left-16 text-4xl animate-crimson-diamond pointer-events-none select-none">
@@ -85,6 +148,9 @@ export const HeroSection = () => {
           <h1 className="text-7xl sm:text-8xl lg:text-9xl font-black font-heading tracking-tighter uppercase leading-none crimson-metallic-text">
             MADS TOPUP
           </h1>
+          <p className="text-xs font-mono text-red-400 font-bold uppercase tracking-widest pt-2">
+            // {activeSlideData.subtitle}
+          </p>
         </div>
 
         {/* Subtitle */}
@@ -111,8 +177,23 @@ export const HeroSection = () => {
           </button>
         </div>
 
+        {/* Slide Indicators */}
+        <div className="flex justify-center items-center gap-2 pt-2">
+          {HERO_SLIDES.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrentSlide(i)}
+              className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                i === currentSlide
+                  ? 'w-8 bg-red-500 shadow-[0_0_10px_#FF1A3C]'
+                  : 'w-2 bg-slate-700 hover:bg-slate-500'
+              }`}
+            ></button>
+          ))}
+        </div>
+
         {/* Guarantee Bullet Tags with Glowing Icons */}
-        <div className="pt-6 flex flex-wrap justify-center items-center gap-8 text-xs text-slate-300 font-bold uppercase tracking-wider font-mono">
+        <div className="pt-4 flex flex-wrap justify-center items-center gap-8 text-xs text-slate-300 font-bold uppercase tracking-wider font-mono">
           <div className="flex items-center gap-2 bg-slate-900/60 px-3 py-1.5 rounded-lg border border-red-500/20">
             <CheckCircle2 className="w-4 h-4 text-red-500" />
             <span>Instant Moongold Crediting</span>
@@ -142,4 +223,5 @@ export const HeroSection = () => {
     </section>
   );
 };
+
 
