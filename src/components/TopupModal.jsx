@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { PAYMENT_METHODS } from '../data/games';
 import { checkPlayerIGN, dispatchMoongoldOrder } from '../services/moongoldApi';
+import { uploadToR2Storage } from '../services/storageService';
 import confetti from 'canvas-confetti';
 import { 
   X, Check, ShieldCheck, Zap, AlertCircle, RefreshCw, 
-  CreditCard, ChevronRight, BookmarkPlus, CheckCircle2, Copy
+  CreditCard, ChevronRight, BookmarkPlus, CheckCircle2, Copy, UploadCloud, Cloud
 } from 'lucide-react';
 
 export const TopupModal = () => {
@@ -31,7 +32,24 @@ export const TopupModal = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedOrder, setCompletedOrder] = useState(null);
   const [receiptFile, setReceiptFile] = useState(null);
+  const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
+  const [receiptR2Url, setReceiptR2Url] = useState('');
   const [savedSelection, setSavedSelection] = useState('');
+
+  const handleReceiptUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setReceiptFile(file);
+    setIsUploadingReceipt(true);
+    const result = await uploadToR2Storage(file, 'receipts');
+    setIsUploadingReceipt(false);
+    if (result.success) {
+      setReceiptR2Url(result.url);
+      showToast('Payment receipt uploaded to Cloudflare R2 Bucket!');
+    } else {
+      showToast('Failed to upload receipt', 'error');
+    }
+  };
 
   useEffect(() => {
     if (selectedGame && selectedGame.packages.length > 0) {
@@ -409,6 +427,43 @@ export const TopupModal = () => {
                       <p className="text-[11px] text-slate-600 italic">
                         {selectedPayment.accountDetails.instructions}
                       </p>
+
+                      {/* Cloudflare R2 Receipt Upload Widget */}
+                      <div className="pt-2 border-t border-slate-200">
+                        <label className="block text-[11px] font-extrabold text-slate-800 mb-1 flex items-center justify-between">
+                          <span className="flex items-center gap-1 text-sky-700">
+                            <UploadCloud className="w-3.5 h-3.5" />
+                            Upload Payment Slip / Screenshot
+                          </span>
+                          <span className="text-[9px] bg-sky-100 text-sky-800 px-1.5 py-0.5 rounded font-mono font-bold flex items-center gap-1">
+                            <Cloud className="w-3 h-3" />
+                            Cloudflare R2 Secure Storage
+                          </span>
+                        </label>
+
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="file"
+                            accept="image/*,.pdf"
+                            onChange={handleReceiptUpload}
+                            disabled={isUploadingReceipt}
+                            className="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-900 file:text-white hover:file:bg-slate-800 cursor-pointer"
+                          />
+                          {isUploadingReceipt && (
+                            <span className="text-xs text-sky-600 font-bold flex items-center gap-1">
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <span>Uploading to R2...</span>
+                            </span>
+                          )}
+                        </div>
+
+                        {receiptR2Url && (
+                          <div className="mt-2 text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-200 p-2 rounded-xl flex items-center justify-between font-mono">
+                            <span className="truncate max-w-[320px]">R2 Object: {receiptR2Url}</span>
+                            <span className="font-bold text-emerald-600">✔ Uploaded</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

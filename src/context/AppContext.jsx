@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { GAMES_DATA } from '../data/games';
 import { getMoongoldConfig, saveMoongoldConfig } from '../services/moongoldApi';
+import { getR2Config, saveR2Config } from '../services/storageService';
 
 const AppContext = createContext();
 
@@ -15,6 +16,9 @@ export const AppProvider = ({ children }) => {
   
   // Moongold state
   const [moongoldConfig, setMoongoldConfigState] = useState(getMoongoldConfig());
+  
+  // Cloudflare R2 Storage State
+  const [r2Config, setR2ConfigState] = useState(getR2Config());
 
   // User Profile
   const [userProfile, setUserProfile] = useState(() => {
@@ -96,6 +100,12 @@ export const AppProvider = ({ children }) => {
     showToast('Moongold API settings saved successfully!');
   };
 
+  const updateR2Config = (newConfig) => {
+    setR2ConfigState(newConfig);
+    saveR2Config(newConfig);
+    showToast('Cloudflare R2 Bucket settings saved successfully!');
+  };
+
   const openTopup = (game) => {
     setSelectedGame(game);
     setIsTopupModalOpen(true);
@@ -164,6 +174,8 @@ export const AppProvider = ({ children }) => {
       updateOrderStatus,
       moongoldConfig,
       updateMoongoldConfig,
+      r2Config,
+      updateR2Config,
       toast,
       showToast,
       formatPrice,
