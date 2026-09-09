@@ -94,7 +94,7 @@ export const GameGrid = () => {
         </div>
       </div>
 
-      {/* Games Cards Grid (Matching Nova TopUp Reference Screenshot) */}
+      {/* Games Cards Grid (Matching MADS TopUp Reference Screenshot) */}
       {filteredGames.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-3xl border border-slate-200 shadow-sm">
           <p className="text-slate-600 text-base font-semibold">No games found matching "{searchQuery}"</p>

@@ -147,7 +147,7 @@ export const AuthModal = () => {
           </div>
 
           <div className="relative z-10 text-[10px] text-white/70 font-semibold mt-4">
-            © 2026 MADS TOPUP • NOVA ENGINE
+            © 2026 MADS TOPUP • MADS ENGINE
           </div>
         </div>
 
@@ -162,7 +162,7 @@ export const AuthModal = () => {
                   Welcome Back!
                 </h2>
                 <p className="text-xs font-semibold text-slate-400 mt-1">
-                  Log in to continue to NOVA Topup
+                  Log in to continue to MADS Topup
                 </p>
               </div>
 

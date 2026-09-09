@@ -13,7 +13,7 @@ export const ReviewsSection = () => {
       flag: '🇱🇰',
       avatar: '/uploads/profile_pics/1344_4bf2414e.png',
       initials: 'YD',
-      text: '"I recently used the Nova top-up service and I am very satisfied. The process was fast, secure, and easy to understand. My top-up was delivered instantly without any issues."'
+      text: '"I recently used the MADS top-up service and I am very satisfied. The process was fast, secure, and easy to understand. My top-up was delivered instantly without any issues."'
     },
     {
       id: 2,
@@ -31,7 +31,7 @@ export const ReviewsSection = () => {
       flag: '🇱🇰',
       avatar: '/uploads/profile_pics/10175_871f5dc4.png',
       initials: 'A',
-      text: '"Nova top-up is so cool very convenient, also very reliable price just few seconds to get my top up done & no issues at all. Especially hats off for their fast service!"'
+      text: '"MADS top-up is so cool very convenient, also very reliable price just few seconds to get my top up done & no issues at all. Especially hats off for their fast service!"'
     },
     {
       id: 4,
@@ -66,7 +66,7 @@ export const ReviewsSection = () => {
           {reviews.map((review) => (
             <div 
               key={review.id}
-              className="nova-card p-7 flex flex-col justify-between text-left space-y-4 group cursor-pointer"
+              className="mads-card p-7 flex flex-col justify-between text-left space-y-4 group cursor-pointer"
             >
               <div className="flex items-center justify-between relative z-10">
                 <div className="flex items-center gap-3">
@@ -105,7 +105,7 @@ export const ReviewsSection = () => {
               </p>
 
               {/* Animated Bottom Cyan Glow Line */}
-              <div className="nova-card-glow-bar"></div>
+              <div className="mads-card-glow-bar"></div>
             </div>
           ))}
         </div>

@@ -80,7 +80,7 @@ export const ServicesSection = () => {
             return (
               <div
                 key={service.id}
-                className="nova-card p-8 flex flex-col justify-between items-center text-center group cursor-pointer"
+                className="mads-card p-8 flex flex-col justify-between items-center text-center group cursor-pointer"
               >
                 {/* 3D App Icon Tile */}
                 <div className="mb-7 relative z-10">
@@ -113,7 +113,7 @@ export const ServicesSection = () => {
                 </button>
 
                 {/* Animated Bottom Cyan Glow Line */}
-                <div className="nova-card-glow-bar"></div>
+                <div className="mads-card-glow-bar"></div>
               </div>
             );
           })}

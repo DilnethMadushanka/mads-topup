@@ -31,7 +31,7 @@ export const HeroSection = () => {
 
   return (
     <section className="relative bg-[#090D16] text-white min-h-[92vh] flex flex-col justify-between items-center overflow-hidden py-16 px-4">
-      {/* Background Artwork Slider - Nova Hero Media */}
+      {/* Background Artwork Slider - MADS Hero Media */}
       {heroImages.map((img, idx) => (
         <div 
           key={img}

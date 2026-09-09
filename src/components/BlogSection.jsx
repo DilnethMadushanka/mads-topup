@@ -29,7 +29,7 @@ export const BlogSection = () => {
           {BLOG_POSTS.map((post) => (
             <div 
               key={post.id}
-              className="nova-card flex flex-col justify-between group cursor-pointer"
+              className="mads-card flex flex-col justify-between group cursor-pointer"
             >
               {/* Image Container */}
               <div className="relative h-60 overflow-hidden bg-slate-950">
@@ -83,7 +83,7 @@ export const BlogSection = () => {
               </div>
 
               {/* Animated Bottom Cyan Glow Line */}
-              <div className="nova-card-glow-bar"></div>
+              <div className="mads-card-glow-bar"></div>
             </div>
           ))}
         </div>

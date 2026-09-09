@@ -110,8 +110,8 @@
   padding: 1rem;
 }
 
-/* Nova Card Lift & Cyan Glow Animation */
-.nova-card {
+/* MADS Card Lift & Cyan Glow Animation */
+.mads-card {
   background: #FFFFFF;
   border-radius: 1.75rem;
   border: 1px solid rgba(226, 232, 240, 0.9);
@@ -121,13 +121,13 @@
   overflow: hidden;
 }
 
-.nova-card:hover {
+.mads-card:hover {
   transform: translateY(-8px);
   border-color: rgba(0, 180, 216, 0.5);
   box-shadow: 0 22px 50px -10px rgba(0, 180, 216, 0.3), 0 0 25px rgba(0, 180, 216, 0.15);
 }
 
-.nova-card-glow-bar {
+.mads-card-glow-bar {
   position: absolute;
   bottom: 0;
   left: 0;
@@ -138,7 +138,7 @@
   transition: opacity 0.35s ease;
 }
 
-.nova-card:hover .nova-card-glow-bar {
+.mads-card:hover .mads-card-glow-bar {
   opacity: 1;
 }
 

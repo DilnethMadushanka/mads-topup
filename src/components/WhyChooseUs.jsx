@@ -50,7 +50,7 @@ export const WhyChooseUs = () => {
             return (
               <div 
                 key={item.num}
-                className="nova-card p-9 flex flex-col justify-between text-left space-y-6 group cursor-pointer"
+                className="mads-card p-9 flex flex-col justify-between text-left space-y-6 group cursor-pointer"
               >
                 {/* Giant Translucent Background Number */}
                 <div className="absolute top-4 right-6 text-8xl font-black text-slate-100 font-heading pointer-events-none group-hover:text-[#00B4D8]/20 group-hover:scale-105 transition-all duration-300 select-none">
@@ -72,7 +72,7 @@ export const WhyChooseUs = () => {
                 </div>
 
                 {/* Animated Bottom Cyan Glow Line (Matching Reference Screenshot) */}
-                <div className="nova-card-glow-bar"></div>
+                <div className="mads-card-glow-bar"></div>
               </div>
             );
           })}
