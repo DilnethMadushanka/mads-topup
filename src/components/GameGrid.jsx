@@ -90,14 +90,14 @@ export const GameGrid = () => {
               <div
                 key={game.id}
                 onClick={() => openTopup(game)}
-                className="group relative bg-white rounded-3xl border border-slate-200 shadow-sm hover:border-[#00B4D8]/60 hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-300 overflow-hidden cursor-pointer flex flex-col justify-between"
+                className="nova-card cursor-pointer flex flex-col justify-between group"
               >
                 {/* Banner Artwork */}
                 <div className="relative h-48 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-[#0A0F1E] flex items-center justify-center p-4">
                   <img
                     src={game.banner}
                     alt={game.name}
-                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100 filter drop-shadow-xl"
+                    className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500 opacity-90 group-hover:opacity-100 filter drop-shadow-xl"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-black/20 pointer-events-none"></div>
 
@@ -119,7 +119,7 @@ export const GameGrid = () => {
                     <div className="flex items-center gap-2.5">
                       <span className="text-2xl drop-shadow">{game.currencyIcon}</span>
                       <div>
-                        <h3 className="text-xl font-black text-white font-heading tracking-tight leading-tight drop-shadow">
+                        <h3 className="text-xl font-black text-white font-heading tracking-tight leading-tight drop-shadow group-hover:text-cyan-300 transition-colors">
                           {game.name}
                         </h3>
                         <p className="text-[11px] text-slate-200 font-bold">
@@ -131,7 +131,7 @@ export const GameGrid = () => {
                 </div>
 
                 {/* Bottom Details & Pricing */}
-                <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                <div className="p-5 flex-1 flex flex-col justify-between space-y-4 relative z-10">
                   <div>
                     <div className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2">
                       Popular Packages
@@ -162,6 +162,9 @@ export const GameGrid = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Animated Bottom Cyan Glow Line */}
+                <div className="nova-card-glow-bar"></div>
               </div>
             );
           })}

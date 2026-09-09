@@ -66,15 +66,15 @@ export const ReviewsSection = () => {
           {reviews.map((review) => (
             <div 
               key={review.id}
-              className="bg-[#F8FAFF] p-7 rounded-3xl border border-slate-200 shadow-sm hover:border-[#00B4D8]/50 hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-300 flex flex-col justify-between text-left space-y-4"
+              className="nova-card p-7 flex flex-col justify-between text-left space-y-4 group cursor-pointer"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between relative z-10">
                 <div className="flex items-center gap-3">
                   {review.avatar ? (
                     <img 
                       src={review.avatar} 
                       alt={review.name} 
-                      className="w-11 h-11 rounded-full object-cover border-2 border-[#00B4D8]/40 shadow-md"
+                      className="w-11 h-11 rounded-full object-cover border-2 border-[#00B4D8]/40 shadow-md group-hover:scale-105 transition-transform"
                     />
                   ) : (
                     <div className="w-11 h-11 rounded-full bg-[#3B2896] text-white font-extrabold text-xs flex items-center justify-center shadow">
@@ -82,27 +82,30 @@ export const ReviewsSection = () => {
                     </div>
                   )}
                   <div>
-                    <h4 className="font-extrabold text-slate-900 text-sm">{review.name}</h4>
+                    <h4 className="font-extrabold text-slate-900 text-sm group-hover:text-[#00B4D8] transition-colors">{review.name}</h4>
                     <p className="text-[11px] text-slate-500 font-bold flex items-center gap-1">
                       <span>{review.flag}</span>
                       <span>{review.location}</span>
                     </p>
                   </div>
                 </div>
-                <Quote className="w-6 h-6 text-slate-300" />
+                <Quote className="w-6 h-6 text-slate-300 group-hover:text-[#00B4D8]/60 transition-colors" />
               </div>
 
               {/* Stars */}
-              <div className="flex text-[#00B4D8] gap-1 text-xs">
+              <div className="flex text-[#00B4D8] gap-1 text-xs relative z-10">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className="w-4 h-4 fill-[#00B4D8]" />
                 ))}
               </div>
 
               {/* Quote */}
-              <p className="text-xs text-slate-700 italic font-semibold leading-relaxed flex-1">
+              <p className="text-xs text-slate-700 italic font-semibold leading-relaxed flex-1 relative z-10">
                 {review.text}
               </p>
+
+              {/* Animated Bottom Cyan Glow Line */}
+              <div className="nova-card-glow-bar"></div>
             </div>
           ))}
         </div>

@@ -110,5 +110,37 @@
   padding: 1rem;
 }
 
+/* Nova Card Lift & Cyan Glow Animation */
+.nova-card {
+  background: #FFFFFF;
+  border-radius: 1.75rem;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 10px 30px -10px rgba(0, 180, 216, 0.08);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.nova-card:hover {
+  transform: translateY(-8px);
+  border-color: rgba(0, 180, 216, 0.5);
+  box-shadow: 0 22px 50px -10px rgba(0, 180, 216, 0.3), 0 0 25px rgba(0, 180, 216, 0.15);
+}
+
+.nova-card-glow-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #00B4D8 0%, #38BDF8 50%, #3B2896 100%);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.nova-card:hover .nova-card-glow-bar {
+  opacity: 1;
+}
+
 
 

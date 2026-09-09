@@ -85,14 +85,11 @@ export const ServicesSection = () => {
             return (
               <div
                 key={service.id}
-                className="group bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:border-[#00B4D8]/60 hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-300 flex flex-col justify-between items-center text-center relative overflow-hidden"
+                className="nova-card p-8 flex flex-col justify-between items-center text-center group cursor-pointer"
               >
-                {/* Top Subtle Cyan Glow Line */}
-                <div className="absolute top-0 inset-x-0 h-1 bg-[#00B4D8] opacity-0 group-hover:opacity-100 transition-opacity"></div>
-
                 {/* 3D App Icon Tile */}
-                <div className="mb-7 relative">
-                  <div className={`w-24 h-24 rounded-2xl bg-gradient-to-br ${service.tileGradient} ${service.tileGlow} flex items-center justify-center relative overflow-hidden transform group-hover:scale-105 transition-all duration-300 p-3`}>
+                <div className="mb-7 relative z-10">
+                  <div className={`w-24 h-24 rounded-2xl bg-gradient-to-br ${service.tileGradient} ${service.tileGlow} flex items-center justify-center relative overflow-hidden transform group-hover:scale-110 group-hover:rotate-2 transition-all duration-300 p-3`}>
                     {service.image ? (
                       <img src={service.image} alt={service.title} className="w-full h-full object-contain filter drop-shadow-md relative z-10" />
                     ) : (
@@ -102,8 +99,8 @@ export const ServicesSection = () => {
                 </div>
 
                 {/* Content */}
-                <div className="space-y-2 mb-8">
-                  <h3 className="text-xl font-black text-slate-900 font-heading">
+                <div className="space-y-2 mb-8 relative z-10">
+                  <h3 className="text-xl font-black text-slate-900 font-heading group-hover:text-[#00B4D8] transition-colors">
                     {service.title}
                   </h3>
                   <p className="text-slate-600 text-xs leading-relaxed font-medium">
@@ -114,11 +111,14 @@ export const ServicesSection = () => {
                 {/* Action Button */}
                 <button
                   onClick={service.action}
-                  className="btn-cyan-pill w-full py-3 px-6 rounded-full font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 group-hover:gap-3 cursor-pointer shadow-md shadow-cyan-500/20"
+                  className="btn-cyan-pill w-full py-3 px-6 rounded-full font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 group-hover:gap-3 cursor-pointer shadow-md shadow-cyan-500/20 relative z-10"
                 >
                   <span className="font-mono">{service.buttonText}</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
+
+                {/* Animated Bottom Cyan Glow Line */}
+                <div className="nova-card-glow-bar"></div>
               </div>
             );
           })}

@@ -29,14 +29,14 @@ export const BlogSection = () => {
           {BLOG_POSTS.map((post) => (
             <div 
               key={post.id}
-              className="group bg-white rounded-3xl border border-slate-200 shadow-sm hover:border-[#00B4D8]/50 hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300 overflow-hidden flex flex-col justify-between"
+              className="nova-card flex flex-col justify-between group cursor-pointer"
             >
               {/* Image Container */}
               <div className="relative h-60 overflow-hidden bg-slate-950">
                 <img 
                   src={post.image} 
                   alt={post.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-90 group-hover:opacity-100"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent"></div>
 
@@ -48,7 +48,7 @@ export const BlogSection = () => {
               </div>
 
               {/* Content */}
-              <div className="p-8 space-y-4 flex-1 flex flex-col justify-between">
+              <div className="p-8 space-y-4 flex-1 flex flex-col justify-between relative z-10">
                 <div className="space-y-3">
                   <div className="flex items-center gap-4 text-xs text-slate-500 font-medium">
                     <span className="flex items-center gap-1">
@@ -81,6 +81,9 @@ export const BlogSection = () => {
                   </button>
                 </div>
               </div>
+
+              {/* Animated Bottom Cyan Glow Line */}
+              <div className="nova-card-glow-bar"></div>
             </div>
           ))}
         </div>

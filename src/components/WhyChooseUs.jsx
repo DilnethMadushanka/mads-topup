@@ -50,26 +50,29 @@ export const WhyChooseUs = () => {
             return (
               <div 
                 key={item.num}
-                className="relative bg-white p-9 rounded-3xl border border-slate-200 shadow-sm hover:border-[#00B4D8]/50 hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-300 flex flex-col justify-between text-left space-y-6 overflow-hidden group"
+                className="nova-card p-9 flex flex-col justify-between text-left space-y-6 group cursor-pointer"
               >
-                {/* Giant Faded Translucent Number */}
-                <div className="absolute top-4 right-6 text-7xl font-black text-slate-200 font-heading pointer-events-none group-hover:text-[#00B4D8]/20 transition-colors select-none">
+                {/* Giant Translucent Background Number */}
+                <div className="absolute top-4 right-6 text-8xl font-black text-slate-100 font-heading pointer-events-none group-hover:text-[#00B4D8]/20 group-hover:scale-105 transition-all duration-300 select-none">
                   {item.num}
                 </div>
 
-                <div className="relative z-10 space-y-4">
-                  <div className={`w-12 h-12 rounded-2xl ${item.badgeBg} text-white flex items-center justify-center shadow-lg shadow-cyan-500/20`}>
-                    <Icon className="w-6 h-6 stroke-[2.5]" />
+                <div className="relative z-10 space-y-5">
+                  <div className={`w-14 h-14 rounded-2xl ${item.badgeBg} text-white flex items-center justify-center shadow-lg shadow-cyan-500/30 transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
+                    <Icon className="w-7 h-7 stroke-[2.5]" />
                   </div>
 
-                  <h3 className="text-xl font-black text-slate-900 font-heading">
+                  <h3 className="text-xl font-black text-slate-900 font-heading group-hover:text-[#00B4D8] transition-colors">
                     {item.title}
                   </h3>
 
-                  <p className="text-slate-600 text-xs leading-relaxed font-semibold">
+                  <p className="text-slate-600 text-xs leading-relaxed font-medium">
                     {item.description}
                   </p>
                 </div>
+
+                {/* Animated Bottom Cyan Glow Line (Matching Reference Screenshot) */}
+                <div className="nova-card-glow-bar"></div>
               </div>
             );
           })}
