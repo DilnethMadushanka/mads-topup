@@ -116,8 +116,13 @@ export const GAMES_DATA = [
     popular: true,
     moongoldCode: 'FREEFIRE_ID',
     packages: [
-      { id: 'ff-id-100', name: '100 + 10 Diamonds', amount: 110, bonus: 'Indo Region', priceLkr: 370, moongoldCost: 310, priceUsd: 1.21, image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.png', isPopular: true },
-      { id: 'ff-id-520', name: '520 + 52 Diamonds', amount: 572, bonus: 'Indo Region', priceLkr: 1720, moongoldCost: 1520, priceUsd: 5.63, image: '/product_images/prod_520_1769709482_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: false }
+      { id: 'ff-id-weekly', name: 'Weekly Membership', amount: 450, bonus: 'Indo Region', priceLkr: 720, moongoldCost: 620, priceUsd: 2.36, image: '/product_images/prod_FWeekly_Card_1768964388_PhotoshopExtension_Image_5.png', isPopular: true, isSpecial: true },
+      { id: 'ff-id-monthly', name: 'Monthly Membership', amount: 2600, bonus: 'Indo Region', priceLkr: 3450, moongoldCost: 3100, priceUsd: 11.31, image: '/product_images/prod_FMonthly_Card_1768964434_PhotoshopExtension_Image_5.png', isPopular: false, isSpecial: true },
+      { id: 'ff-id-100', name: '100 + 10 Diamonds', amount: 110, bonus: 'Indo Region', priceLkr: 370, moongoldCost: 310, priceUsd: 1.21, image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.png', isPopular: false },
+      { id: 'ff-id-310', name: '310 + 31 Diamonds', amount: 341, bonus: 'Indo Region', priceLkr: 1050, moongoldCost: 920, priceUsd: 3.44, image: '/product_images/prod_220_Diamonds_1768964821_diamondpng.png', isPopular: false },
+      { id: 'ff-id-520', name: '520 + 52 Diamonds', amount: 572, bonus: 'Indo Region', priceLkr: 1720, moongoldCost: 1520, priceUsd: 5.63, image: '/product_images/prod_520_1769709482_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: true },
+      { id: 'ff-id-1060', name: '1060 + 106 Diamonds', amount: 1166, bonus: 'Indo Region', priceLkr: 3400, moongoldCost: 3050, priceUsd: 11.14, image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: false },
+      { id: 'ff-id-2180', name: '2180 + 218 Diamonds', amount: 2398, bonus: 'Indo Region', priceLkr: 6750, moongoldCost: 6100, priceUsd: 22.13, image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: false }
     ]
   },
   {
