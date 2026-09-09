@@ -94,100 +94,65 @@ export const GameGrid = () => {
         </div>
       </div>
 
-      {/* Games Cards Grid */}
+      {/* Games Cards Grid (Matching Nova TopUp Reference Screenshot) */}
       {filteredGames.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-3xl border border-slate-200 shadow-sm">
           <p className="text-slate-600 text-base font-semibold">No games found matching "{searchQuery}"</p>
           <button 
             onClick={() => { setSearchQuery(''); setActiveCategory('ALL'); }}
-            className="mt-4 px-5 py-2.5 text-xs font-black bg-[#00B4D8]/20 text-[#00B4D8] border border-[#00B4D8]/30 rounded-xl"
+            className="mt-4 px-5 py-2.5 text-xs font-black bg-[#00B4D8]/20 text-[#00B4D8] border border-[#00B4D8]/30 rounded-xl cursor-pointer"
           >
             Reset Filters
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-7">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-5">
           {filteredGames.map((game) => {
-            const minPrice = Math.min(...game.packages.map(p => p.priceLkr));
             return (
               <div
                 key={game.id}
                 onClick={() => openTopup(game)}
-                className="nova-card cursor-pointer flex flex-col justify-between group"
+                className="group relative bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 overflow-hidden cursor-pointer flex flex-col justify-between"
               >
-                {/* Banner Artwork */}
-                <div className="relative h-48 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-[#0A0F1E] flex items-center justify-center p-4">
+                {/* Poster Artwork Area */}
+                <div className="relative aspect-square overflow-hidden bg-slate-950 flex items-center justify-center">
                   <img
                     src={game.banner}
                     alt={game.name}
-                    className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500 opacity-90 group-hover:opacity-100 filter drop-shadow-xl"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-95 group-hover:opacity-100"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-black/20 pointer-events-none"></div>
 
-                  {/* Top Badges */}
-                  <div className="absolute top-3 left-3">
-                    <span className="px-3 py-1 rounded-full bg-[#00B4D8] text-white text-[10px] font-black uppercase tracking-wider shadow-md">
-                      {game.badge}
+                  {/* Active Status Badge (Top Right) */}
+                  <div className="absolute top-2.5 right-2.5 z-10">
+                    <span className="inline-flex items-center gap-1 bg-emerald-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-md uppercase tracking-wider">
+                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                      ACTIVE
                     </span>
                   </div>
 
-                  {/* Moongold Sync Tag */}
-                  <div className="absolute top-3 right-3 flex items-center gap-1 bg-slate-950/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 text-[10px] font-extrabold text-white">
-                    <Zap className="w-3 h-3 text-[#00B4D8] fill-[#00B4D8]" />
-                    <span>Moongold</span>
-                  </div>
-
-                  {/* Title & Currency Info */}
-                  <div className="absolute bottom-3 left-4 right-4">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-2xl drop-shadow">{game.currencyIcon}</span>
-                      <div>
-                        <h3 className="text-xl font-black text-white font-heading tracking-tight leading-tight drop-shadow group-hover:text-cyan-300 transition-colors">
-                          {game.name}
-                        </h3>
-                        <p className="text-[11px] text-slate-200 font-bold">
-                          {game.publisher} • {game.currencyName}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bottom Details & Pricing */}
-                <div className="p-5 flex-1 flex flex-col justify-between space-y-4 relative z-10">
-                  <div>
-                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2">
-                      Popular Packages
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {game.packages.slice(0, 3).map(p => (
-                        <span 
-                          key={p.id} 
-                          className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200"
-                        >
-                          {p.name}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
-                    <div>
-                      <span className="text-[10px] text-slate-500 font-bold block uppercase">Starting from</span>
-                      <span className="text-xl font-black text-[#00B4D8] font-heading">
-                        {formatPrice(minPrice)}
+                  {/* Flag Badge (Top Left) */}
+                  {game.flag && (
+                    <div className="absolute top-2.5 left-2.5 z-10">
+                      <span className="text-xs bg-white/90 backdrop-blur-md px-1.5 py-0.5 rounded-md shadow-sm border border-white">
+                        {game.flag}
                       </span>
                     </div>
+                  )}
 
-                    <div className="px-5 py-2.5 rounded-full bg-[#00B4D8] text-white font-black text-xs group-hover:bg-[#0096C7] transition-all flex items-center gap-1 shadow-md shadow-cyan-500/20">
-                      <span>Top Up</span>
-                      <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                  {/* Garena Flame Logo (Bottom Right) */}
+                  {game.publisher === 'Garena' && (
+                    <div className="absolute bottom-2.5 right-2.5 z-10 w-7 h-7 rounded-full bg-white shadow-md p-1 flex items-center justify-center border border-slate-100">
+                      <span className="text-red-600 font-bold text-xs">🔥</span>
                     </div>
-                  </div>
+                  )}
                 </div>
 
-                {/* Animated Bottom Cyan Glow Line */}
-                <div className="nova-card-glow-bar"></div>
+                {/* Bottom Title Bar */}
+                <div className="p-3 bg-white text-center border-t border-slate-100 flex items-center justify-center min-h-[46px]">
+                  <h3 className="text-xs sm:text-sm font-black text-slate-900 font-heading tracking-tight leading-tight group-hover:text-[#00B4D8] transition-colors truncate">
+                    {game.name}
+                  </h3>
+                </div>
               </div>
             );
           })}
