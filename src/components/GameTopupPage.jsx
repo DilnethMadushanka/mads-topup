@@ -468,8 +468,8 @@ export const GameTopupPage = () => {
               </div>
             </div>
 
-            {/* Packages Grid (6 Columns Desktop) */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {/* Packages Grid (Larger Beautiful Cards matching screenshot) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
               {selectedGame.packages.map((pkg) => {
                 const qty = cartQuantities[pkg.id] || 0;
                 const isSelected = qty > 0;
@@ -477,60 +477,67 @@ export const GameTopupPage = () => {
                 return (
                   <div
                     key={pkg.id}
-                    className={`bg-white rounded-2xl border transition-all p-4 flex flex-col justify-between items-center text-center relative shadow-xs group ${
+                    className={`bg-white rounded-2xl sm:rounded-3xl border transition-all duration-300 p-5 flex flex-col justify-between items-center text-center relative shadow-xs hover:shadow-md cursor-pointer group hover:-translate-y-1 ${
                       isSelected 
-                        ? 'border-blue-600 ring-2 ring-blue-500/20 bg-blue-50/10' 
-                        : 'border-slate-200 hover:border-slate-300'
+                        ? 'border-[#2563EB] ring-4 ring-blue-500/15 bg-blue-50/20' 
+                        : 'border-slate-200/90 hover:border-slate-300'
                     }`}
                   >
                     {pkg.isPopular && (
-                      <span className="absolute -top-2.5 px-2.5 py-0.5 rounded-full bg-indigo-950 text-white text-[9px] font-black uppercase tracking-wider shadow-sm">
-                        POPULAR
+                      <span className="absolute -top-3 px-3 py-1 rounded-full bg-slate-900 text-white text-[10px] font-black uppercase tracking-wider shadow-md z-10">
+                        🔥 POPULAR
                       </span>
                     )}
 
-                    {/* Image Thumbnail */}
-                    <div className="w-16 h-16 rounded-xl bg-slate-50 p-2 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform border border-slate-100">
+                    {/* Larger Image Thumbnail Container */}
+                    <div className="w-full h-24 sm:h-28 rounded-2xl bg-[#F8FAFC] p-3 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform duration-300 border border-slate-100 shadow-inner">
                       {pkg.image ? (
-                        <img src={pkg.image} alt={pkg.name} className="w-full h-full object-contain" />
+                        <img src={pkg.image} alt={pkg.name} className="w-20 h-20 sm:w-24 sm:h-24 object-contain drop-shadow-sm" />
                       ) : (
-                        <span className="text-2xl">{selectedGame.currencyIcon}</span>
+                        <span className="text-4xl">{selectedGame.currencyIcon}</span>
                       )}
                     </div>
 
                     {/* Package Title */}
-                    <div className="font-extrabold text-xs text-slate-900 font-heading leading-tight min-h-[32px] flex items-center justify-center">
+                    <div className="font-black text-xs sm:text-sm text-slate-900 font-heading leading-tight min-h-[36px] flex items-center justify-center text-center mb-1">
                       {pkg.name}
                     </div>
 
+                    {/* Bonus Tag */}
+                    {pkg.bonus && (
+                      <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full mb-1">
+                        {pkg.bonus}
+                      </span>
+                    )}
+
                     {/* Price */}
-                    <div className="font-black text-sm text-[#1E40AF] font-heading my-2">
+                    <div className="font-black text-base sm:text-lg text-[#2563EB] font-heading my-1 tracking-tight">
                       {formatPrice(pkg.priceLkr)}
                     </div>
 
                     {/* Counter Buttons (- 0 +) */}
-                    <div className="w-full pt-2 border-t border-slate-100 flex items-center justify-between">
+                    <div className="w-full pt-3 border-t border-slate-100 flex items-center justify-between px-0.5">
                       <button
                         type="button"
                         onClick={() => updateQuantity(pkg.id, -1)}
                         disabled={qty === 0}
-                        className={`w-7 h-7 rounded-lg font-black text-sm flex items-center justify-center transition-colors cursor-pointer ${
+                        className={`w-9 h-9 rounded-xl font-black text-base flex items-center justify-center transition-all cursor-pointer ${
                           qty > 0 
-                            ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' 
-                            : 'bg-slate-50 text-slate-300 cursor-not-allowed'
+                            ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200' 
+                            : 'bg-slate-50 text-slate-300 border border-slate-100 cursor-not-allowed'
                         }`}
                       >
                         -
                       </button>
 
-                      <span className={`font-black text-sm font-heading px-1 ${qty > 0 ? 'text-blue-600' : 'text-slate-400'}`}>
+                      <span className={`font-black text-base sm:text-lg font-heading px-1 ${qty > 0 ? 'text-blue-600' : 'text-slate-400'}`}>
                         {qty}
                       </span>
 
                       <button
                         type="button"
                         onClick={() => updateQuantity(pkg.id, 1)}
-                        className="w-7 h-7 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-black text-sm flex items-center justify-center transition-colors cursor-pointer shadow-xs"
+                        className="w-9 h-9 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-black text-base flex items-center justify-center transition-all cursor-pointer shadow-md shadow-blue-500/25"
                       >
                         +
                       </button>
