@@ -31,18 +31,6 @@ export const ServicesSection = () => {
       action: openCatalog
     },
     {
-      id: 'support',
-      title: 'Post & Designs',
-      description: 'Custom gaming poster design, banner artwork & esports graphics',
-      buttonText: 'EXPLORE NOW',
-      icon: Headphones,
-      image: '/uploads/index_page/post_design.webp',
-      tileGradient: 'from-[#00B4D8] to-teal-500',
-      tileGlow: 'shadow-lg shadow-cyan-500/20',
-      iconColor: 'text-white',
-      action: () => window.open('https://wa.me/94771234567', '_blank')
-    },
-    {
       id: 'other',
       title: 'Other Services',
       description: 'Explore our growing catalog of automated free & premium gaming tools',
@@ -73,8 +61,8 @@ export const ServicesSection = () => {
           </p>
         </div>
 
-        {/* 4 Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        {/* 3 Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {services.map((service) => {
             const Icon = service.icon;
             return (
