@@ -6,15 +6,24 @@ export const Navbar = () => {
   const { 
     setIsUserProfileOpen, 
     setIsAdminOpen,
-    orders
+    orders,
+    openCatalog,
+    closeCatalog,
+    isGameCatalogOpen
   } = useApp();
 
   const pendingCount = orders.filter(o => o.status === 'PROCESSING' || o.status === 'PENDING').length;
 
-  const scrollToSection = (id) => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
+  const handleNavClick = (sectionId) => {
+    if (isGameCatalogOpen) {
+      closeCatalog();
+      setTimeout(() => {
+        const el = document.getElementById(sectionId);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    } else {
+      const el = document.getElementById(sectionId);
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
@@ -22,9 +31,9 @@ export const Navbar = () => {
     <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-xl border-b border-slate-200/80 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         
-        {/* Brand Logo (Matching Reference Screenshot) */}
+        {/* Brand Logo */}
         <div 
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          onClick={closeCatalog}
           className="flex items-center gap-2 cursor-pointer group"
         >
           <div className="w-9 h-9 rounded-full bg-slate-950 border border-slate-800 flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform duration-300">
@@ -41,11 +50,11 @@ export const Navbar = () => {
           </div>
         </div>
 
-        {/* Center Navigation Links (Matching Reference Screenshot Icons) */}
+        {/* Center Navigation Links */}
         <nav className="hidden lg:flex items-center gap-7 text-xs font-bold text-slate-800 uppercase tracking-wide">
           <button 
-            onClick={() => scrollToSection('game-catalog')}
-            className="flex items-center gap-2 hover:text-cyan-600 transition-colors cursor-pointer group py-2"
+            onClick={openCatalog}
+            className={`flex items-center gap-2 hover:text-cyan-600 transition-colors cursor-pointer group py-2 ${isGameCatalogOpen ? 'text-cyan-600' : ''}`}
           >
             <span className="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
               <Gamepad2 className="w-3.5 h-3.5" />
@@ -54,7 +63,7 @@ export const Navbar = () => {
           </button>
 
           <button 
-            onClick={() => scrollToSection('services-section')}
+            onClick={() => handleNavClick('services-section')}
             className="flex items-center gap-2 hover:text-cyan-600 transition-colors cursor-pointer group py-2"
           >
             <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
@@ -64,7 +73,7 @@ export const Navbar = () => {
           </button>
 
           <button 
-            onClick={() => scrollToSection('why-choose-us')}
+            onClick={() => handleNavClick('why-choose-us')}
             className="flex items-center gap-2 hover:text-cyan-600 transition-colors cursor-pointer group py-2"
           >
             <span className="w-6 h-6 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center">
@@ -74,7 +83,7 @@ export const Navbar = () => {
           </button>
 
           <button 
-            onClick={() => scrollToSection('reviews-section')}
+            onClick={() => handleNavClick('reviews-section')}
             className="flex items-center gap-2 hover:text-cyan-600 transition-colors cursor-pointer group py-2"
           >
             <span className="w-6 h-6 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center">

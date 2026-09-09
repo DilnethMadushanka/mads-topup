@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { GAMES_DATA } from '../data/games';
-import { Sparkles, Zap, ChevronRight, Search, Flame } from 'lucide-react';
+import { Sparkles, Zap, ChevronRight, Search, Flame, ArrowLeft } from 'lucide-react';
 
 export const GameGrid = () => {
-  const { searchQuery, setSearchQuery, openTopup, formatPrice } = useApp();
+  const { searchQuery, setSearchQuery, openTopup, formatPrice, closeCatalog } = useApp();
   const [activeCategory, setActiveCategory] = useState('ALL');
 
   const categories = ['ALL', 'POPULAR', 'Battle Royale', 'MOBA', 'FPS'];
@@ -22,7 +22,30 @@ export const GameGrid = () => {
   });
 
   return (
-    <section id="game-catalog" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+    <section id="game-catalog" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {/* Back to Home Button & Search Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-slate-200">
+        <button
+          onClick={closeCatalog}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-slate-800 hover:bg-slate-100 font-extrabold text-xs border border-slate-200 cursor-pointer transition-all shadow-xs w-fit"
+        >
+          <ArrowLeft className="w-4 h-4 text-[#00B4D8]" />
+          <span>Back to Main Home</span>
+        </button>
+
+        {/* Search Bar */}
+        <div className="relative w-full sm:w-80">
+          <Search className="w-4 h-4 absolute left-4 top-3 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search games & vouchers..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 font-semibold focus:outline-none focus:border-[#00B4D8] shadow-xs"
+          />
+        </div>
+      </div>
+
       {/* Catalog Title & Category Filters */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
         <div>

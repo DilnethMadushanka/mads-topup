@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { Zap, Layers, Mouse } from 'lucide-react';
 
 export const HeroSection = () => {
-  const { openTopup } = useApp();
+  const { openCatalog } = useApp();
   const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
 
   const heroImages = [
@@ -96,7 +96,7 @@ export const HeroSection = () => {
           </button>
 
           <button
-            onClick={scrollToCatalog}
+            onClick={openCatalog}
             className="btn-dark-pill w-full sm:w-auto px-8 py-3.5 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 cursor-pointer"
           >
             <Zap className="w-4 h-4 text-white fill-white" />

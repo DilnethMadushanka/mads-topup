@@ -3,12 +3,7 @@ import { useApp } from '../context/AppContext';
 import { Gamepad2, CreditCard, Headphones, Sparkles, ArrowRight } from 'lucide-react';
 
 export const ServicesSection = () => {
-  const { showToast } = useApp();
-
-  const scrollToCatalog = () => {
-    const el = document.getElementById('game-catalog');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
-  };
+  const { showToast, openCatalog } = useApp();
 
   const services = [
     {
@@ -21,7 +16,7 @@ export const ServicesSection = () => {
       tileGradient: 'from-[#00B4D8] to-blue-600',
       tileGlow: 'shadow-lg shadow-cyan-500/20',
       iconColor: 'text-white',
-      action: scrollToCatalog
+      action: openCatalog
     },
     {
       id: 'cards',
@@ -33,7 +28,7 @@ export const ServicesSection = () => {
       tileGradient: 'from-[#3B2896] to-indigo-700',
       tileGlow: 'shadow-lg shadow-purple-500/20',
       iconColor: 'text-white',
-      action: () => showToast('Garena Shells & Digital Vouchers section active!')
+      action: openCatalog
     },
     {
       id: 'support',
@@ -57,7 +52,7 @@ export const ServicesSection = () => {
       tileGradient: 'from-slate-800 to-slate-950',
       tileGlow: 'shadow-lg shadow-slate-900/40',
       iconColor: 'text-[#00B4D8]',
-      action: scrollToCatalog
+      action: openCatalog
     }
   ];
 

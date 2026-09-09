@@ -17,7 +17,7 @@ import { ToastNotification } from './components/ToastNotification';
 import { Flame } from 'lucide-react';
 
 const MainContent = () => {
-  const { setIsAdminOpen, setIsUserProfileOpen } = useApp();
+  const { setIsAdminOpen, setIsUserProfileOpen, isGameCatalogOpen } = useApp();
 
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
@@ -28,14 +28,19 @@ const MainContent = () => {
     <div className="min-h-screen bg-[#F8FAFF] flex flex-col justify-between pb-16 md:pb-0 font-sans text-slate-900">
       <div>
         <Navbar />
-        <HeroSection />
-        <ServicesSection />
-        <StatsSection />
-        <GameGrid />
-        <WhyChooseUs />
-        <ReviewsSection />
-        <BlogSection />
-        <PromoSection />
+        {isGameCatalogOpen ? (
+          <GameGrid />
+        ) : (
+          <>
+            <HeroSection />
+            <ServicesSection />
+            <StatsSection />
+            <WhyChooseUs />
+            <ReviewsSection />
+            <BlogSection />
+            <PromoSection />
+          </>
+        )}
       </div>
 
       {/* Footer Matching Clean Minimalist Screenshot */}

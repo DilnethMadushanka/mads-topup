@@ -13,6 +13,17 @@ export const AppProvider = ({ children }) => {
   const [isTopupModalOpen, setIsTopupModalOpen] = useState(false);
   const [isUserProfileOpen, setIsUserProfileOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [isGameCatalogOpen, setIsGameCatalogOpen] = useState(false);
+
+  const openCatalog = () => {
+    setIsGameCatalogOpen(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const closeCatalog = () => {
+    setIsGameCatalogOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   
   // Moongold state
   const [moongoldConfig, setMoongoldConfigState] = useState(getMoongoldConfig());
@@ -167,6 +178,10 @@ export const AppProvider = ({ children }) => {
       setIsUserProfileOpen,
       isAdminOpen,
       setIsAdminOpen,
+      isGameCatalogOpen,
+      setIsGameCatalogOpen,
+      openCatalog,
+      closeCatalog,
       userProfile,
       setUserProfile,
       orders,
