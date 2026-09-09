@@ -9,6 +9,7 @@ import { WhyChooseUs } from './components/WhyChooseUs';
 import { ReviewsSection } from './components/ReviewsSection';
 import { PromoSection } from './components/PromoSection';
 import { BlogSection } from './components/BlogSection';
+import { GameTopupPage } from './components/GameTopupPage';
 import { TopupModal } from './components/TopupModal';
 import { UserProfileModal } from './components/UserProfileModal';
 import { AdminDashboard } from './components/AdminDashboard';
@@ -17,7 +18,7 @@ import { ToastNotification } from './components/ToastNotification';
 import { Flame } from 'lucide-react';
 
 const MainContent = () => {
-  const { setIsAdminOpen, setIsUserProfileOpen, isGameCatalogOpen } = useApp();
+  const { setIsAdminOpen, setIsUserProfileOpen, isGameCatalogOpen, selectedGame } = useApp();
 
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
@@ -28,7 +29,9 @@ const MainContent = () => {
     <div className="min-h-screen bg-[#F8FAFF] flex flex-col justify-between pb-16 md:pb-0 font-sans text-slate-900">
       <div>
         <Navbar />
-        {isGameCatalogOpen ? (
+        {selectedGame ? (
+          <GameTopupPage />
+        ) : isGameCatalogOpen ? (
           <GameGrid />
         ) : (
           <>
