@@ -14,7 +14,7 @@ export const HeroSlider = () => {
       subtitle: '⚡ Instant Auto Delivery via Moongold API',
       discount: '10% EXTRA BONUS DIAMONDS',
       badge: 'TOP SELLING SRI LANKA',
-      game: GAMES_DATA.find(g => g.id === 'freefire'),
+      game: GAMES_DATA.find(g => g.id === 'freefire_sg' || g.id === 'freefire'),
       bgGradient: 'from-slate-900 via-red-950 to-slate-900',
       accentColor: '#FF1A3C'
     },
@@ -29,14 +29,14 @@ export const HeroSlider = () => {
       accentColor: '#F59E0B'
     },
     {
-      id: 'mlbb',
-      title: 'MOBILE LEGENDS',
-      subtitle: '💎 Weekly Pass & Diamond Bundles',
-      discount: 'INSTANT USER ID + SERVER REFILL',
-      badge: 'SAFE & VERIFIED',
-      game: GAMES_DATA.find(g => g.id === 'mlbb'),
-      bgGradient: 'from-slate-900 via-blue-950 to-slate-900',
-      accentColor: '#3B82F6'
+      id: 'bloodstrike',
+      title: 'BLOOD STRIKE & DELTA FORCE',
+      subtitle: '⚡ Instant Gold & Delta Coins Refill',
+      discount: 'STRIKE PASS & SPECIAL RATES',
+      badge: 'POPULAR FPS GAMES',
+      game: GAMES_DATA.find(g => g.id === 'bloodstrike'),
+      bgGradient: 'from-slate-900 via-emerald-950 to-slate-900',
+      accentColor: '#10B981'
     }
   ];
 
