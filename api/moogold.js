@@ -64,20 +64,20 @@ export default async function handler(req, res) {
       body: payloadStr
     });
 
-    let outgoingIp = 'unknown';
-    try {
-      const ipRes = await fetch('https://api.ipify.org?format=json');
-      const ipData = await ipRes.json();
-      outgoingIp = ipData.ip;
-    } catch (e) {}
-
     const text = await apiRes.text();
     res.status(apiRes.status);
     try {
       const json = JSON.parse(text);
-      res.json({ ...json, vercel_outgoing_ip: outgoingIp });
+      res.json(json);
     } catch (e) {
       if (apiRes.status !== 200) {
+        let outgoingIp = 'unknown';
+        try {
+          const ipRes = await fetch('https://api.ipify.org?format=json');
+          const ipData = await ipRes.json();
+          outgoingIp = ipData.ip;
+        } catch (ipErr) {}
+
         res.json({
           status: apiRes.status,
           vercel_outgoing_ip: outgoingIp,
