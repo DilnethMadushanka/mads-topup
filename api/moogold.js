@@ -54,21 +54,38 @@ export default async function handler(req, res) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         'Authorization': basicAuth,
         'auth': authSignature,
         'timestamp': timestamp.toString(),
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9'
       },
       body: payloadStr
     });
+
+    let outgoingIp = 'unknown';
+    try {
+      const ipRes = await fetch('https://api.ipify.org?format=json');
+      const ipData = await ipRes.json();
+      outgoingIp = ipData.ip;
+    } catch (e) {}
 
     const text = await apiRes.text();
     res.status(apiRes.status);
     try {
       const json = JSON.parse(text);
-      res.json(json);
+      res.json({ ...json, vercel_outgoing_ip: outgoingIp });
     } catch (e) {
-      res.send(text);
+      if (apiRes.status !== 200) {
+        res.json({
+          status: apiRes.status,
+          vercel_outgoing_ip: outgoingIp,
+          moogold_raw_response: text.substring(0, 300)
+        });
+      } else {
+        res.send(text);
+      }
     }
   } catch (err) {
     console.error('Serverless function error:', err);
