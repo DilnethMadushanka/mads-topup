@@ -107,20 +107,20 @@ export const Navbar = () => {
 
         {/* Right Controls (Matching Reference Screenshot) */}
         {isLoggedIn ? (
-          <div className="flex items-center gap-2.5 sm:gap-3.5">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             {/* 1. Red Wallet LKR Pill */}
             <div 
               onClick={() => setIsUserProfileOpen(true)}
-              className="bg-[#cc040a] hover:bg-[#990207] text-white text-xs sm:text-[13px] font-black px-3.5 sm:px-4 py-1.5 rounded-full flex items-center gap-2 shadow-xs cursor-pointer transition-all shrink-0"
+              className="bg-[#cc040a] hover:bg-[#990207] text-white text-[11px] sm:text-[13px] font-black px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full flex items-center gap-1.5 shadow-xs cursor-pointer transition-all shrink-0"
             >
-              <Wallet className="w-3.5 h-3.5 text-white fill-white shrink-0" />
+              <Wallet className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-white fill-white shrink-0" />
               <span className="tracking-wide">{(userProfile.walletBalance || 0).toFixed(2)} LKR</span>
             </div>
 
-            {/* 2. Green Crypto USDT Pill */}
+            {/* 2. Green Crypto USDT Pill (Hidden on mobile to avoid header overflow) */}
             <div 
               onClick={() => setIsUserProfileOpen(true)}
-              className="bg-[#0E8A50] hover:bg-[#0C7A46] text-white text-xs sm:text-[13px] font-black px-3.5 sm:px-4 py-1.5 rounded-full flex items-center gap-2 shadow-xs cursor-pointer transition-all shrink-0"
+              className="hidden md:flex bg-[#0E8A50] hover:bg-[#0C7A46] text-white text-xs sm:text-[13px] font-black px-3.5 sm:px-4 py-1.5 rounded-full items-center gap-2 shadow-xs cursor-pointer transition-all shrink-0"
             >
               <div className="w-4 h-4 rounded-full bg-white text-[#0E8A50] font-black text-[10px] flex items-center justify-center italic shrink-0 leading-none">
                 B
@@ -131,15 +131,15 @@ export const Navbar = () => {
             {/* 3. User Profile Dropdown Pill (Avatar + Name + Chevron) */}
             <div 
               onClick={() => setIsUserProfileOpen(true)}
-              className="flex items-center gap-2 cursor-pointer group shrink-0 ml-1"
+              className="flex items-center gap-1 sm:gap-2 cursor-pointer group shrink-0 ml-0.5"
             >
-              <div className="w-8 sm:w-9 h-8 sm:h-9 rounded-full bg-[#cc040a] border-2 border-white ring-1 ring-slate-200/60 flex items-center justify-center font-black text-white text-xs shadow-xs shrink-0 tracking-wider">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#cc040a] border-2 border-white ring-1 ring-slate-200/60 flex items-center justify-center font-black text-white text-[11px] sm:text-xs shadow-xs shrink-0 tracking-wider">
                 {getInitials(userProfile.name)}
               </div>
-              <span className="hidden sm:inline-block text-[#6366F1] font-black text-sm sm:text-[15px] group-hover:text-[#4F46E5] transition-colors">
+              <span className="hidden md:inline-block text-[#6366F1] font-black text-sm sm:text-[15px] group-hover:text-[#4F46E5] transition-colors">
                 {userProfile.name}
               </span>
-              <ChevronDown className="w-4 h-4 text-[#6366F1] fill-[#6366F1] group-hover:translate-y-0.5 transition-transform" />
+              <ChevronDown className="hidden sm:inline-block w-4 h-4 text-[#6366F1] fill-[#6366F1] group-hover:translate-y-0.5 transition-transform" />
             </div>
           </div>
         ) : (
