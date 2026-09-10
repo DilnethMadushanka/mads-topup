@@ -3,20 +3,22 @@
 // Reseller Portal: https://reseller.moogold.com
 
 export const getMoongoldConfig = () => {
-  const stored = localStorage.getItem('mads_moongold_config');
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored);
-      if (parsed.apiKey && parsed.secretKey) {
-        return parsed;
+  if (typeof localStorage !== 'undefined') {
+    const stored = localStorage.getItem('mads_moongold_config');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed.apiKey && parsed.secretKey) {
+          return parsed;
+        }
+      } catch (e) {
+        // fallback
       }
-    } catch (e) {
-      // fallback
     }
   }
 
-  const apiKey = import.meta.env.VITE_MOONGOLD_PARTNER_ID || 'f27cabc8d2c2122bbedacabce632db68';
-  const secretKey = import.meta.env.VITE_MOONGOLD_SECRET_KEY || 'PM67SGqyed';
+  const apiKey = import.meta?.env?.VITE_MOONGOLD_PARTNER_ID || 'f27cabc8d2c2122bbedacabce632db68';
+  const secretKey = import.meta?.env?.VITE_MOONGOLD_SECRET_KEY || 'PM67SGqyed';
 
   return {
     apiKey: apiKey,
@@ -157,7 +159,7 @@ export const checkMoongoldBalance = async () => {
   };
 };
 
-import { lookupFreePlayerIgn, saveCachedIgn } from './playerLookup';
+import { lookupFreePlayerIgn, saveCachedIgn } from './playerLookup.js';
 
 /**
  * Player IGN Lookup Verification via Official MooGold API 1.0 & Free Community Lookup
