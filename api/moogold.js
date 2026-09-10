@@ -20,9 +20,28 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const { path, bodyObj } = req.body || {};
+  let body = req.body;
+  if (!body && req.on) {
+    try {
+      let bodyStr = '';
+      await new Promise((resolve) => {
+        req.on('data', chunk => { bodyStr += chunk; });
+        req.on('end', resolve);
+      });
+      if (bodyStr) body = JSON.parse(bodyStr);
+    } catch (e) {}
+  }
+  if (typeof body === 'string') {
+    try {
+      body = JSON.parse(body);
+    } catch (e) {
+      body = {};
+    }
+  }
+
+  const { path, bodyObj } = body || {};
   if (!path || !bodyObj) {
-    res.status(400).json({ error: 'Missing path or bodyObj' });
+    res.status(400).json({ error: 'Missing path or bodyObj', received: req.body });
     return;
   }
 
