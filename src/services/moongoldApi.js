@@ -295,19 +295,26 @@ export const dispatchMoongoldOrder = async (orderData) => {
     };
   }
 
+  const productId = orderData.package?.moongoldProductId || '4085924';
+  const dataPayload = {
+    category: '1',
+    'product-id': productId,
+    quantity: '1'
+  };
+
+  if (orderData.gameId === 'pubg' || orderData.idLabel?.includes('Character')) {
+    dataPayload['Character ID'] = orderData.playerId || '';
+  } else {
+    dataPayload['User ID'] = orderData.playerId || '';
+    if (orderData.zoneId) {
+      dataPayload['Server'] = orderData.zoneId;
+    }
+  }
+
   const path = 'order/create_order';
   const bodyObj = {
     path,
-    data: {
-      category: '1',
-      'product-id': orderData.package?.moongoldProductId || '215570',
-      product_id: orderData.package?.moongoldProductId || '215570',
-      quantity: '1',
-      'User ID': orderData.playerId || '',
-      user_id: orderData.playerId || '',
-      Server: orderData.zoneId || '',
-      server: orderData.zoneId || ''
-    },
+    data: dataPayload,
     partnerOrderId
   };
 

@@ -44,14 +44,14 @@ export const GAMES_DATA = [
     popular: true,
     moongoldCode: 'PUBGM_GLOBAL',
     packages: [
-      { id: 'pubg-60', name: '60 UC', amount: 60, bonus: '', priceLkr: 360, moongoldCost: 300, priceUsd: 1.18, image: '/product_images/prod_60UC_1769659496_prod_UC1800_1768626430_prod.webp', isPopular: false },
-      { id: 'pubg-300', name: '300 + 25 UC', amount: 325, bonus: '+25 Extra', priceLkr: 1690, moongoldCost: 1480, priceUsd: 5.54, image: '/product_images/prod_UC325_1769659505_prod_UC1800_1768626430_prod.webp', isPopular: true },
-      { id: 'pubg-600', name: '600 + 60 UC', amount: 660, bonus: '+60 Extra', priceLkr: 3350, moongoldCost: 2950, priceUsd: 10.98, image: '/product_images/prod_UC660_1769659516_prod_UC1800_1768626430_prod.webp', isPopular: false },
-      { id: 'pubg-1500', name: '1500 + 300 UC', amount: 1800, bonus: '+300 Extra', priceLkr: 8300, moongoldCost: 7400, priceUsd: 27.21, image: '/product_images/prod_UC1800_1768626430_prod.webp', isPopular: true },
-      { id: 'pubg-3000', name: '3000 + 850 UC', amount: 3850, bonus: '+850 Extra', priceLkr: 16300, moongoldCost: 14700, priceUsd: 53.44, image: '/product_images/prod_UC1800_1768626430_prod.webp', isPopular: false },
-      { id: 'pubg-6000', name: '6000 + 2100 UC', amount: 8100, bonus: '+2100 Extra', priceLkr: 32500, moongoldCost: 29500, priceUsd: 106.55, image: '/product_images/prod_UC1800_1768626430_prod.webp', isPopular: false },
-      { id: 'pubg-rp', name: 'Royale Pass (Upgrade)', amount: 1, bonus: 'Pass Included', priceLkr: 3350, moongoldCost: 2950, priceUsd: 10.98, image: '/product_images/prod_UC660_1769659516_prod_UC1800_1768626430_prod.webp', isPopular: true, isSpecial: true },
-      { id: 'pubg-ep', name: 'Elite Pass Plus', amount: 1, bonus: 'Pass Plus Included', priceLkr: 8300, moongoldCost: 7400, priceUsd: 27.21, image: '/product_images/prod_UC1800_1768626430_prod.webp', isPopular: false, isSpecial: true }
+      { id: 'pubg-60', name: '60 UC', amount: 60, bonus: '', priceLkr: 360, moongoldCost: 300, priceUsd: 1.18, moongoldProductId: '4085924', image: '/product_images/prod_60UC_1769659496_prod_UC1800_1768626430_prod.webp', isPopular: false },
+      { id: 'pubg-300', name: '300 + 25 UC', amount: 325, bonus: '+25 Extra', priceLkr: 1690, moongoldCost: 1480, priceUsd: 5.54, moongoldProductId: '4085925', image: '/product_images/prod_UC325_1769659505_prod_UC1800_1768626430_prod.webp', isPopular: true },
+      { id: 'pubg-600', name: '600 + 60 UC', amount: 660, bonus: '+60 Extra', priceLkr: 3350, moongoldCost: 2950, priceUsd: 10.98, moongoldProductId: '4085927', image: '/product_images/prod_UC660_1769659516_prod_UC1800_1768626430_prod.webp', isPopular: false },
+      { id: 'pubg-1500', name: '1500 + 300 UC', amount: 1800, bonus: '+300 Extra', priceLkr: 8300, moongoldCost: 7400, priceUsd: 27.21, moongoldProductId: '4085929', image: '/product_images/prod_UC1800_1768626430_prod.webp', isPopular: true },
+      { id: 'pubg-3000', name: '3000 + 850 UC', amount: 3850, bonus: '+850 Extra', priceLkr: 16300, moongoldCost: 14700, priceUsd: 53.44, moongoldProductId: '4085931', image: '/product_images/prod_UC1800_1768626430_prod.webp', isPopular: false },
+      { id: 'pubg-6000', name: '6000 + 2100 UC', amount: 8100, bonus: '+2100 Extra', priceLkr: 32500, moongoldCost: 29500, priceUsd: 106.55, moongoldProductId: '4085933', image: '/product_images/prod_UC1800_1768626430_prod.webp', isPopular: false },
+      { id: 'pubg-rp', name: 'Royale Pass (Upgrade)', amount: 1, bonus: 'Pass Included', priceLkr: 3350, moongoldCost: 2950, priceUsd: 10.98, moongoldProductId: '4085941', image: '/product_images/prod_UC660_1769659516_prod_UC1800_1768626430_prod.webp', isPopular: true, isSpecial: true },
+      { id: 'pubg-ep', name: 'Elite Pass Plus', amount: 1, bonus: 'Pass Plus Included', priceLkr: 8300, moongoldCost: 7400, priceUsd: 27.21, moongoldProductId: '4085940', image: '/product_images/prod_UC1800_1768626430_prod.webp', isPopular: false, isSpecial: true }
     ]
   },
   {
