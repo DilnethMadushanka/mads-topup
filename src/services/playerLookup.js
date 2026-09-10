@@ -42,18 +42,23 @@ export const lookupFreePlayerIgn = async (gameId, playerId, zoneId = '') => {
   const rapidApiKey = import.meta.env.VITE_RAPIDAPI_KEY;
   if (rapidApiKey) {
     try {
-      const res = await fetch(`https://game-player-lookup.p.rapidapi.com/v1/lookup?game=${gameId}&uid=${cleanId}&zone=${zoneId}`, {
-        headers: {
-          'X-RapidAPI-Key': rapidApiKey,
-          'X-RapidAPI-Host': 'game-player-lookup.p.rapidapi.com'
-        }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const realName = data.username || data.nickname || data.name;
-        if (realName) {
-          saveCachedIgn(cleanId, realName);
-          return { success: true, ign: realName, isReal: true, source: 'RAPID_API' };
+      // Endpoint 1: Check ID Game (Free Fire)
+      const isFreeFire = gameId?.toLowerCase().includes('freefire') || gameId?.toLowerCase().includes('ff');
+      if (isFreeFire) {
+        const res = await fetch(`https://check-id-game.p.rapidapi.com/api/rapid_api/ff_idgame/${cleanId}`, {
+          headers: {
+            'x-rapidapi-host': 'check-id-game.p.rapidapi.com',
+            'x-rapidapi-key': rapidApiKey,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const realName = data.username || data.nickname || data.name || data.data?.username || data.result?.username;
+          if (realName) {
+            saveCachedIgn(cleanId, realName);
+            return { success: true, ign: realName, isReal: true, source: 'RAPID_API' };
+          }
         }
       }
     } catch (e) {
