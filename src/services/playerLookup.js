@@ -26,9 +26,9 @@ export const saveCachedIgn = (playerId, ignName) => {
 };
 
 /**
- * Perform Free Live IGN Lookup & RapidAPI Support
+ * Perform Live IGN Lookup & RapidAPI Support for All Games
  */
-export const lookupFreePlayerIgn = async (gameId, playerId, zoneId = '') => {
+export const lookupFreePlayerIgn = async (gameId = '', playerId = '', zoneId = '') => {
   const cleanId = String(playerId).trim();
   if (!cleanId) return null;
 
@@ -38,26 +38,40 @@ export const lookupFreePlayerIgn = async (gameId, playerId, zoneId = '') => {
     return { success: true, ign: cached, isReal: true, source: 'CACHE' };
   }
 
-  // 2. Try RapidAPI if key is configured in .env
   const rapidApiKey = import.meta.env.VITE_RAPIDAPI_KEY || '59700d286cmsh2ce0c96f798ab10p15ad77jsnb92bdbb87d29';
-  if (rapidApiKey) {
+  const gKey = String(gameId).toLowerCase();
+
+  // Determine RapidAPI path for the specific game
+  let apiPath = '';
+  if (gKey.includes('freefire') || gKey.includes('ff')) {
+    apiPath = `ff-global/${cleanId}`;
+  } else if (gKey.includes('pubg')) {
+    apiPath = `pubgm-global/${cleanId}`;
+  } else if (gKey.includes('mobilelegend') || gKey.includes('mlbb') || gKey.includes('ml')) {
+    apiPath = `mobile-legends/${cleanId}/${zoneId || ''}`;
+  } else if (gKey.includes('blood')) {
+    apiPath = `blood-strike/${cleanId}`;
+  } else if (gKey.includes('honor') || gKey.includes('hok')) {
+    apiPath = `honor-of-kings/${cleanId}`;
+  }
+
+  // 2. Query RapidAPI if path matches
+  if (rapidApiKey && apiPath) {
     try {
-      const isFreeFire = gameId?.toLowerCase().includes('freefire') || gameId?.toLowerCase().includes('ff');
-      if (isFreeFire) {
-        const res = await fetch(`https://id-game-checker.p.rapidapi.com/ff-global/${cleanId}`, {
-          headers: {
-            'x-rapidapi-host': 'id-game-checker.p.rapidapi.com',
-            'x-rapidapi-key': rapidApiKey,
-            'Content-Type': 'application/json'
-          }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const realName = data.data?.username || data.username || data.nickname || data.name;
-          if (realName) {
-            saveCachedIgn(cleanId, realName);
-            return { success: true, ign: realName, isReal: true, source: 'RAPID_API' };
-          }
+      const res = await fetch(`https://id-game-checker.p.rapidapi.com/${apiPath}`, {
+        headers: {
+          'x-rapidapi-host': 'id-game-checker.p.rapidapi.com',
+          'x-rapidapi-key': rapidApiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const realName = data.data?.username || data.username || data.nickname || data.name || data.result?.username;
+        if (realName) {
+          saveCachedIgn(cleanId, realName);
+          return { success: true, ign: realName, isReal: true, source: 'RAPID_API', data };
         }
       }
     } catch (e) {
