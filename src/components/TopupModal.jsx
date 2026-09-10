@@ -288,22 +288,21 @@ export const TopupModal = () => {
                   <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-emerald-800 font-semibold animate-in fade-in">
                     <div className="flex items-center gap-2 flex-wrap">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span className="shrink-0 font-bold">In-Game Username (IGN):</span>
+                      <span className="shrink-0 font-bold">Verified IGN:</span>
                       <div className="relative flex items-center">
                         <input 
                           type="text" 
                           value={ign} 
                           onChange={(e) => setIgn(e.target.value)} 
-                          className="bg-white border border-emerald-400 rounded-md px-2.5 py-1 text-xs font-black text-slate-900 focus:outline-none focus:ring-1 focus:ring-emerald-500 shadow-xs min-w-[160px]"
-                          placeholder="Type your exact Username"
-                          title="Type your real game username"
-                          autoFocus={!ign}
+                          className="bg-white border border-emerald-400 rounded-md px-2.5 py-1 text-xs font-black text-emerald-950 focus:outline-none focus:ring-1 focus:ring-emerald-500 shadow-xs min-w-[160px]"
+                          placeholder="Enter In-Game Name"
+                          title="Click to edit your In-Game Name"
                         />
                         <Edit3 className="w-3 h-3 text-emerald-500 absolute right-1.5 pointer-events-none" />
                       </div>
                     </div>
                     <button 
-                      onClick={() => savePlayerId(selectedGame.id, selectedGame.name, playerId, ign || 'Gamer')}
+                      onClick={() => savePlayerId(selectedGame.id, selectedGame.name, playerId, ign)}
                       className="text-[11px] bg-emerald-600 text-white px-2.5 py-1 rounded font-bold hover:bg-emerald-700 transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
                     >
                       <BookmarkPlus className="w-3 h-3" />

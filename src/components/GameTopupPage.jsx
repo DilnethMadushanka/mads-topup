@@ -85,13 +85,9 @@ export const GameTopupPage = () => {
     setIsVerifyingIgn(false);
 
     if (result.success) {
-      setIgn(result.ign || '');
+      setIgn(result.ign);
       setIgnVerified(true);
-      if (result.isReal && result.ign) {
-        showToast(`Real IGN Verified: ${result.ign}`);
-      } else {
-        showToast('Player ID Verified! Please enter your exact In-Game Username.');
-      }
+      showToast(`Verified IGN: ${result.ign}`);
     } else {
       showToast('Could not verify Player ID. Please double check.', 'error');
     }
@@ -415,25 +411,22 @@ export const GameTopupPage = () => {
               <div className="mt-3 p-3 bg-emerald-50 border border-emerald-300 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs text-emerald-800 font-semibold animate-in fade-in">
                 <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
                   <CheckCircle2 className="w-4.5 h-4.5 text-emerald-600 shrink-0" />
-                  <span className="shrink-0 font-bold">In-Game Username (IGN):</span>
+                  <span className="shrink-0 font-bold">Verified IGN:</span>
                   <div className="relative flex items-center">
                     <input 
                       type="text" 
                       value={ign} 
                       onChange={(e) => setIgn(e.target.value)} 
-                      className="bg-white border border-emerald-400 rounded-lg px-3 py-1.5 text-xs font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm min-w-[200px]"
-                      placeholder="Type your exact In-Game Username"
-                      title="Type your real game username"
-                      autoFocus={!ign}
+                      className="bg-white border border-emerald-400 rounded-lg px-3 py-1 text-xs font-black text-emerald-950 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm min-w-[180px] sm:min-w-[220px]"
+                      placeholder="Enter In-Game Name"
+                      title="Click to edit your In-Game Name"
                     />
                     <Edit3 className="w-3.5 h-3.5 text-emerald-500 absolute right-2.5 pointer-events-none" />
                   </div>
-                  <span className="text-[11px] text-emerald-700 font-medium">
-                    {ign ? '(Verified)' : '(Please enter your real game name)'}
-                  </span>
+                  <span className="text-[11px] text-emerald-600 font-normal hidden sm:inline">(Click name to edit)</span>
                 </div>
                 <button 
-                  onClick={() => savePlayerId(selectedGame.id, selectedGame.name, playerId, ign || 'Gamer')}
+                  onClick={() => savePlayerId(selectedGame.id, selectedGame.name, playerId, ign)}
                   className="text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm shrink-0"
                 >
                   <BookmarkPlus className="w-3.5 h-3.5" />
