@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { GAMES_DATA } from '../data/games';
 import { 
@@ -26,14 +26,23 @@ export const UserProfileModal = () => {
   const [isEditMode, setIsEditMode] = useState(false);
 
   // Edit profile form state
-  const [editName, setEditName] = useState(userProfile.name);
-  const [editEmail, setEditEmail] = useState(userProfile.email);
-  const [editPhone, setEditPhone] = useState(userProfile.phone);
+  const [editName, setEditName] = useState(userProfile?.name || '');
+  const [editEmail, setEditEmail] = useState(userProfile?.email || '');
+  const [editPhone, setEditPhone] = useState(userProfile?.phone || '');
+
+  useEffect(() => {
+    if (userProfile) {
+      setEditName(userProfile.name || '');
+      setEditEmail(userProfile.email || '');
+      setEditPhone(userProfile.phone || '');
+    }
+  }, [userProfile]);
 
   if (!isUserProfileOpen) return null;
 
-  const completedOrders = orders.filter(o => o.status === 'COMPLETED');
-  const totalSpentLkr = completedOrders.reduce((sum, o) => sum + o.priceLkr, 0);
+  const savedIds = userProfile?.savedIds || [];
+  const completedOrders = (orders || []).filter(o => o.status === 'COMPLETED');
+  const totalSpentLkr = completedOrders.reduce((sum, o) => sum + (o.priceLkr || 0), 0);
 
   // Derive initials for avatar
   const getInitials = (name) => {
@@ -60,7 +69,7 @@ export const UserProfileModal = () => {
   const handleDeleteSavedId = (id) => {
     setUserProfile(prev => ({
       ...prev,
-      savedIds: prev.savedIds.filter(s => s.id !== id)
+      savedIds: (prev.savedIds || []).filter(s => s.id !== id)
     }));
     showToast('Saved Player ID deleted.');
   };
@@ -137,7 +146,7 @@ export const UserProfileModal = () => {
                 </div>
                 <div className="text-left">
                   <span className="text-[9px] font-black text-purple-200 uppercase tracking-wider block">LIFETIME SPEND</span>
-                  <span className="text-base font-black text-white font-heading">{totalSpentLkr.toFixed(2)} LKR</span>
+                  <span className="text-base font-black text-white font-heading">{(totalSpentLkr || 0).toFixed(2)} LKR</span>
                 </div>
               </div>
 
@@ -148,7 +157,7 @@ export const UserProfileModal = () => {
                 </div>
                 <div className="text-left">
                   <span className="text-[9px] font-black text-purple-200 uppercase tracking-wider block">EZ WALLET</span>
-                  <span className="text-base font-black text-white font-heading">{userProfile.walletBalance.toFixed(2)} LKR</span>
+                  <span className="text-base font-black text-white font-heading">{(userProfile?.walletBalance || 0).toFixed(2)} LKR</span>
                 </div>
               </div>
 
@@ -159,7 +168,7 @@ export const UserProfileModal = () => {
                 </div>
                 <div className="text-left">
                   <span className="text-[9px] font-black text-purple-200 uppercase tracking-wider block">BINANCE</span>
-                  <span className="text-base font-black text-white font-heading">0.00 USDT</span>
+                  <span className="text-base font-black text-white font-heading">{(userProfile?.walletUsdt || 0).toFixed(2)} USDT</span>
                 </div>
               </div>
             </div>
