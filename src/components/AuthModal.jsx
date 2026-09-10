@@ -17,6 +17,9 @@ export const AuthModal = () => {
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
+  const [pendingGoogleUser, setPendingGoogleUser] = useState(null);
+  const [googleWhatsAppPhone, setGoogleWhatsAppPhone] = useState('');
+
   if (!isAuthModalOpen) return null;
 
   const handleSendCode = () => {
@@ -83,15 +86,7 @@ export const AuthModal = () => {
     try {
       const res = await loginWithGoogle();
       if (res.success && res.user) {
-        setUserProfile(prev => ({
-          ...prev,
-          name: res.user.name || 'Google Gamer',
-          email: res.user.email || 'gamer.google@gmail.com',
-          avatar: res.user.photoURL || prev.avatar,
-          provider: 'Google'
-        }));
-        showToast(`Welcome back, ${res.user.name}! Signed in with Google successfully.`);
-        setIsAuthModalOpen(false);
+        setPendingGoogleUser(res.user);
       }
     } catch (err) {
       showToast(err.message || 'Google Authentication failed', 'error');
@@ -100,9 +95,97 @@ export const AuthModal = () => {
     }
   };
 
+  const handleCompleteGoogleSetup = (e) => {
+    e.preventDefault();
+    if (!googleWhatsAppPhone) {
+      showToast('Please enter your WhatsApp number!', 'error');
+      return;
+    }
+    if (pendingGoogleUser) {
+      setUserProfile(prev => ({
+        ...prev,
+        uid: pendingGoogleUser.uid || prev.uid,
+        name: pendingGoogleUser.name || 'Verified Gamer',
+        email: pendingGoogleUser.email || '',
+        avatar: pendingGoogleUser.photoURL || prev.avatar,
+        phone: `+94 ${googleWhatsAppPhone}`,
+        provider: 'Google'
+      }));
+      showToast(`Registration completed! Welcome, ${pendingGoogleUser.name}.`);
+      setPendingGoogleUser(null);
+      setIsAuthModalOpen(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
-      <div className="bg-white text-slate-900 w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row relative border border-slate-100 max-h-[92vh]">
+      {pendingGoogleUser ? (
+        /* COMPLETE GOOGLE ACCOUNT SETUP CARD (Matching Screenshot) */
+        <div className="w-full max-w-md bg-white text-slate-900 rounded-3xl p-8 shadow-2xl border border-slate-200/90 text-center relative animate-in zoom-in-95 duration-200 my-auto">
+          {/* Close Button */}
+          <button
+            onClick={() => { setPendingGoogleUser(null); setIsAuthModalOpen(false); }}
+            className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 flex items-center justify-center transition-colors cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+
+          {/* User's Google Profile Picture at Top */}
+          <div className="flex justify-center mb-5">
+            <div className="w-20 h-20 rounded-full border-4 border-white shadow-xl overflow-hidden bg-slate-900 flex items-center justify-center ring-2 ring-slate-200">
+              {pendingGoogleUser.photoURL ? (
+                <img src={pendingGoogleUser.photoURL} alt={pendingGoogleUser.name} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-2xl font-black text-white">{pendingGoogleUser.name?.slice(0, 2).toUpperCase()}</span>
+              )}
+            </div>
+          </div>
+
+          {/* Welcome Title */}
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading tracking-tight">
+            Welcome, {pendingGoogleUser.name}!
+          </h2>
+          <p className="text-xs text-slate-500 font-semibold mt-1 mb-6">
+            Just one more step to complete your account setup.
+          </p>
+
+          {/* WhatsApp Phone Form */}
+          <form onSubmit={handleCompleteGoogleSetup} className="space-y-5 text-left">
+            <div>
+              <label className="block text-center text-xs sm:text-sm font-black text-slate-900 mb-2">
+                Please provide your WhatsApp Number
+              </label>
+
+              <div className="flex items-center gap-2">
+                <div className="px-3.5 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-xs font-black text-slate-700 shrink-0 flex items-center gap-1.5 shadow-xs">
+                  <span>LK +94 (S</span>
+                  <span className="text-[10px] text-slate-400">▼</span>
+                </div>
+                <input
+                  type="tel"
+                  placeholder="e.g., 771234567"
+                  value={googleWhatsAppPhone}
+                  onChange={(e) => setGoogleWhatsAppPhone(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-[#2A1B70] focus:ring-2 focus:ring-purple-500/20 transition-all shadow-xs"
+                />
+              </div>
+              <p className="text-[11px] text-slate-400 font-semibold text-center mt-1.5">
+                This is required for order updates and support.
+              </p>
+            </div>
+
+            {/* Complete Registration Button */}
+            <button
+              type="submit"
+              className="w-full py-3.5 bg-[#2A1B70] hover:bg-[#1E1156] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-purple-900/30 flex items-center justify-center cursor-pointer mt-2"
+            >
+              COMPLETE REGISTRATION
+            </button>
+          </form>
+        </div>
+      ) : (
+        <div className="bg-white text-slate-900 w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row relative border border-slate-100 max-h-[92vh]">
         
         {/* Close Button */}
         <button
@@ -474,6 +557,7 @@ export const AuthModal = () => {
 
         </div>
       </div>
+      )}
     </div>
   );
 };
