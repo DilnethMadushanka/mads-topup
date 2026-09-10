@@ -50,7 +50,16 @@ export const AppProvider = ({ children }) => {
   // Cloudflare R2 Storage State
   const [r2Config, setR2ConfigState] = useState(getR2Config());
 
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    const saved = localStorage.getItem('mads_user_profile');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && (parsed.email || parsed.name || parsed.uid)) return true;
+      } catch (e) {}
+    }
+    return false;
+  });
 
   // User Profile
   const [userProfile, setUserProfileState] = useState(() => {
@@ -74,8 +83,11 @@ export const AppProvider = ({ children }) => {
   const setUserProfile = (updater) => {
     setUserProfileState(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      if (next && next.uid) {
-        updateUserProfileInFirestore(next.uid, next);
+      if (next && (next.uid || next.name || next.email)) {
+        setIsLoggedIn(true);
+        if (next.uid) {
+          updateUserProfileInFirestore(next.uid, next);
+        }
       }
       return next;
     });

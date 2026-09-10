@@ -119,7 +119,7 @@ export const Navbar = () => {
         </nav>
 
         {/* Right Controls (Matching Reference Screenshot) */}
-        {isLoggedIn ? (
+        {(isLoggedIn || Boolean(userProfile?.name || userProfile?.email)) ? (
           <div className="flex items-center gap-1.5 sm:gap-3">
             {/* 1. Red Wallet LKR Pill */}
             <div 

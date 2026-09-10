@@ -4,7 +4,7 @@ import { loginWithGoogle } from '../services/firebaseAuth';
 import { X, Eye, EyeOff, Shield, Zap, Clock, User, Mail, Phone, Lock, Check, Send, LogIn, ArrowRight, Loader2 } from 'lucide-react';
 
 export const AuthModal = () => {
-  const { isAuthModalOpen, setIsAuthModalOpen, authMode, setAuthMode, showToast, setUserProfile } = useApp();
+  const { isAuthModalOpen, setIsAuthModalOpen, authMode, setAuthMode, showToast, setUserProfile, setIsLoggedIn } = useApp();
 
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -44,10 +44,11 @@ export const AuthModal = () => {
       showToast('Please enter your password!', 'error');
       return;
     }
+    setIsLoggedIn(true);
     setUserProfile(prev => ({
       ...prev,
       name: username || 'Verified Gamer',
-      email: username.includes('@') ? username : prev.email
+      email: username.includes('@') ? username : (prev.email || `${username}@gmail.com`)
     }));
     showToast(`Welcome back, ${username}! Successfully logged in.`);
     setIsAuthModalOpen(false);
@@ -71,6 +72,7 @@ export const AuthModal = () => {
       showToast('Passwords do not match!', 'error');
       return;
     }
+    setIsLoggedIn(true);
     setUserProfile(prev => ({
       ...prev,
       name: username,
@@ -102,6 +104,7 @@ export const AuthModal = () => {
       return;
     }
     if (pendingGoogleUser) {
+      setIsLoggedIn(true);
       setUserProfile(prev => ({
         ...prev,
         uid: pendingGoogleUser.uid || prev.uid,

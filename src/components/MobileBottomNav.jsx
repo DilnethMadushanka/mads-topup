@@ -13,11 +13,13 @@ export const MobileBottomNav = () => {
     setSelectedGame,
     selectedGame,
     openAuth,
-    isLoggedIn
+    isLoggedIn,
+    userProfile
   } = useApp();
   
   const safeOrders = orders || [];
   const activeOrders = safeOrders.filter(o => o.status === 'PROCESSING' || o.status === 'PENDING').length;
+  const isUserLoggedIn = isLoggedIn || Boolean(userProfile?.name || userProfile?.email);
 
   const handleHomeClick = () => {
     setSelectedGame(null);
@@ -31,7 +33,7 @@ export const MobileBottomNav = () => {
   };
 
   const handleProfileClick = () => {
-    if (isLoggedIn) {
+    if (isUserLoggedIn) {
       setIsUserProfileOpen(true);
     } else {
       openAuth('login');
@@ -56,7 +58,7 @@ export const MobileBottomNav = () => {
         <span>Games</span>
       </button>
 
-      {isLoggedIn ? (
+      {isUserLoggedIn ? (
         <button 
           onClick={handleProfileClick}
           className="flex flex-col items-center gap-1 text-[#cc040a] font-bold text-[10px] uppercase tracking-wider relative cursor-pointer"
