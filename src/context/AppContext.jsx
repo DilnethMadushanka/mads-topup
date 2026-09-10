@@ -308,12 +308,24 @@ export const AppProvider = ({ children }) => {
   };
 
   const creditUserWallet = (amountLkr, amountUsdt = 0) => {
-    setUserProfile(prev => ({
-      ...prev,
-      walletBalance: (prev.walletBalance || 0) + amountLkr,
-      walletUsdt: (prev.walletUsdt || 0) + amountUsdt
-    }));
-    showToast(`Wallet credited with ${amountLkr} LKR / ${amountUsdt} USDT!`);
+    setUserProfile(prev => {
+      const updatedLkr = Math.max(0, (prev.walletBalance || 0) + amountLkr);
+      const updatedUsdt = Math.max(0, (prev.walletUsdt || 0) + amountUsdt);
+      const nextProfile = {
+        ...prev,
+        walletBalance: updatedLkr,
+        walletUsdt: updatedUsdt
+      };
+      if (prev.uid) {
+        updateUserProfileInFirestore(prev.uid, { walletBalance: updatedLkr, walletUsdt: updatedUsdt });
+      }
+      return nextProfile;
+    });
+    if (amountLkr > 0 || amountUsdt > 0) {
+      showToast(`Wallet credited: +Rs. ${amountLkr} LKR / +$${amountUsdt} USDT!`);
+    } else {
+      showToast(`Wallet updated: Paid Rs. ${Math.abs(amountLkr)} from wallet balance.`);
+    }
   };
 
   // Users List State (User Management & Verification)
