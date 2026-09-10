@@ -16,7 +16,8 @@ export const MobileBottomNav = () => {
     isLoggedIn
   } = useApp();
   
-  const activeOrders = orders.filter(o => o.status === 'PROCESSING' || o.status === 'PENDING').length;
+  const safeOrders = orders || [];
+  const activeOrders = safeOrders.filter(o => o.status === 'PROCESSING' || o.status === 'PENDING').length;
 
   const handleHomeClick = () => {
     setSelectedGame(null);
@@ -79,9 +80,9 @@ export const MobileBottomNav = () => {
       >
         <ShoppingBag className="w-5 h-5 text-indigo-600" />
         <span>My Orders</span>
-        {orders.length > 0 && (
+        {safeOrders.length > 0 && (
           <span className="absolute -top-1 -right-1 bg-[#cc040a] text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">
-            {orders.length}
+            {safeOrders.length}
           </span>
         )}
       </button>

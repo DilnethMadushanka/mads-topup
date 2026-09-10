@@ -38,11 +38,13 @@ export const AdminDashboard = () => {
 
   if (!isAdminOpen) return null;
 
-  const totalRevenue = orders
-    .filter(o => o.status === 'COMPLETED')
-    .reduce((sum, o) => sum + o.priceLkr, 0);
+  const safeOrders = orders || [];
 
-  const pendingCount = orders.filter(o => o.status === 'PROCESSING' || o.status === 'PENDING').length;
+  const totalRevenue = safeOrders
+    .filter(o => o.status === 'COMPLETED')
+    .reduce((sum, o) => sum + (o.priceLkr || 0), 0);
+
+  const pendingCount = safeOrders.filter(o => o.status === 'PROCESSING' || o.status === 'PENDING').length;
 
   const handleSaveMoongoldSettings = () => {
     updateMoongoldConfig({
@@ -137,7 +139,7 @@ export const AdminDashboard = () => {
 
           <div className="bg-slate-900 p-3 rounded-xl border border-slate-800">
             <span className="text-[10px] text-slate-400 font-bold block uppercase">Total Orders</span>
-            <span className="text-xl font-black text-white font-heading">{orders.length}</span>
+            <span className="text-xl font-black text-white font-heading">{safeOrders.length}</span>
           </div>
 
           <div className="bg-slate-900 p-3 rounded-xl border border-slate-800">
@@ -165,7 +167,7 @@ export const AdminDashboard = () => {
             }`}
           >
             <Activity className="w-4 h-4" />
-            <span>Orders Management ({orders.length})</span>
+            <span>Orders Management ({safeOrders.length})</span>
           </button>
 
           <button

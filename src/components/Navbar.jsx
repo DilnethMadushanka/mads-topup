@@ -15,7 +15,7 @@ export const Navbar = () => {
     isLoggedIn
   } = useApp();
 
-  const pendingCount = orders.filter(o => o.status === 'PROCESSING' || o.status === 'PENDING').length;
+  const pendingCount = (orders || []).filter(o => o.status === 'PROCESSING' || o.status === 'PENDING').length;
 
   const getInitials = (name) => {
     if (!name) return 'DM';

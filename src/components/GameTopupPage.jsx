@@ -392,10 +392,10 @@ export const GameTopupPage = () => {
             </div>
 
             {/* Saved IDs & Verified IGN Badge */}
-            {userProfile.savedIds.filter(s => s.gameId === selectedGame.id).length > 0 && (
+            {(userProfile?.savedIds || []).filter(s => s.gameId === selectedGame.id).length > 0 && (
               <div className="mt-3 flex items-center gap-2 flex-wrap">
                 <span className="text-[11px] font-bold text-slate-400">Quick Saved IDs:</span>
-                {userProfile.savedIds.filter(s => s.gameId === selectedGame.id).map(s => (
+                {(userProfile?.savedIds || []).filter(s => s.gameId === selectedGame.id).map(s => (
                   <button
                     key={s.id}
                     onClick={() => { setPlayerId(s.playerId); setIgn(s.nickName); setIgnVerified(true); }}

@@ -213,15 +213,15 @@ export const TopupModal = () => {
                     <span className="w-2 h-2 rounded-full bg-[#cc040a]"></span>
                     Step 1: Enter Game Account ID
                   </label>
-                  {userProfile.savedIds.filter(s => s.gameId === selectedGame.id).length > 0 && (
+                  {(userProfile?.savedIds || []).filter(s => s.gameId === selectedGame.id).length > 0 && (
                     <span className="text-[11px] text-slate-400 font-semibold">Saved IDs Available</span>
                   )}
                 </div>
 
                 {/* Quick Select Saved IDs */}
-                {userProfile.savedIds.filter(s => s.gameId === selectedGame.id).length > 0 && (
+                {(userProfile?.savedIds || []).filter(s => s.gameId === selectedGame.id).length > 0 && (
                   <div className="flex flex-wrap gap-2 pt-1">
-                    {userProfile.savedIds.filter(s => s.gameId === selectedGame.id).map(saved => (
+                    {(userProfile?.savedIds || []).filter(s => s.gameId === selectedGame.id).map(saved => (
                       <button
                         key={saved.id}
                         onClick={() => handleSelectSavedId(saved)}

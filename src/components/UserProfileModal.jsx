@@ -352,7 +352,7 @@ export const UserProfileModal = () => {
               >
                 <div className="flex items-center gap-2.5 text-blue-600 text-xs font-extrabold">
                   <ShoppingBag className="w-4 h-4 fill-blue-100" />
-                  <span className="text-slate-900">Recent Purchases ({orders.length})</span>
+                  <span className="text-slate-900">Recent Purchases ({(orders || []).length})</span>
                 </div>
 
                 <div className="text-slate-400">
@@ -363,12 +363,12 @@ export const UserProfileModal = () => {
               {/* Recent Purchases List */}
               {isRecentPurchasesOpen && (
                 <div className="p-4 bg-slate-50/50 space-y-3">
-                  {orders.length === 0 ? (
+                  {(orders || []).length === 0 ? (
                     <div className="text-center py-8 text-slate-400 text-xs font-semibold">
                       No purchases yet.
                     </div>
                   ) : (
-                    orders.map((ord) => (
+                    (orders || []).map((ord) => (
                       <div 
                         key={ord.id}
                         className="p-3.5 rounded-xl bg-white border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
@@ -409,7 +409,7 @@ export const UserProfileModal = () => {
               >
                 <div className="flex items-center gap-2.5 text-indigo-600 text-xs font-extrabold">
                   <Bookmark className="w-4 h-4 fill-indigo-100" />
-                  <span className="text-slate-900">Saved Game IDs ({userProfile.savedIds.length})</span>
+                  <span className="text-slate-900">Saved Game IDs ({savedIds.length})</span>
                 </div>
 
                 <div className="text-slate-400">
@@ -420,12 +420,12 @@ export const UserProfileModal = () => {
               {/* Saved Game IDs List */}
               {isSavedIdsOpen && (
                 <div className="p-4 bg-slate-50/50 space-y-2">
-                  {userProfile.savedIds.length === 0 ? (
+                  {savedIds.length === 0 ? (
                     <div className="text-center py-6 text-slate-400 text-xs font-semibold">
                       No saved game IDs yet.
                     </div>
                   ) : (
-                    userProfile.savedIds.map((saved) => {
+                    savedIds.map((saved) => {
                       const game = GAMES_DATA.find(g => g.id === saved.gameId);
                       return (
                         <div 
