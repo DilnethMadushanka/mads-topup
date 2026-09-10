@@ -29,7 +29,7 @@ export const GameGrid = () => {
           onClick={closeCatalog}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-slate-800 hover:bg-slate-100 font-extrabold text-xs border border-slate-200 cursor-pointer transition-all shadow-xs w-fit"
         >
-          <ArrowLeft className="w-4 h-4 text-[#00B4D8]" />
+          <ArrowLeft className="w-4 h-4 text-[#cc040a]" />
           <span>Back to Main Home</span>
         </button>
 
@@ -41,7 +41,7 @@ export const GameGrid = () => {
             placeholder="Search games & vouchers..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 font-semibold focus:outline-none focus:border-[#00B4D8] shadow-xs"
+            className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-2xl text-xs text-slate-900 font-semibold focus:outline-none focus:border-[#cc040a] shadow-xs"
           />
         </div>
       </div>
@@ -49,7 +49,7 @@ export const GameGrid = () => {
       {/* Catalog Title & Category Filters */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
         <div>
-          <div className="flex items-center gap-2 text-[#00B4D8] text-xs font-black uppercase tracking-wider mb-2">
+          <div className="flex items-center gap-2 text-[#cc040a] text-xs font-black uppercase tracking-wider mb-2">
             <Sparkles className="w-4 h-4" />
             <span>Select Your Favorite Game</span>
           </div>
@@ -69,7 +69,7 @@ export const GameGrid = () => {
               onClick={() => setActiveCategory(cat)}
               className={`px-5 py-2.5 rounded-full text-xs font-extrabold transition-all whitespace-nowrap cursor-pointer ${
                 activeCategory === cat
-                  ? 'bg-[#00B4D8] text-white shadow-lg shadow-cyan-500/30'
+                  ? 'bg-[#cc040a] text-white shadow-lg shadow-red-500/30'
                   : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 shadow-xs'
               }`}
             >
@@ -89,7 +89,7 @@ export const GameGrid = () => {
             placeholder="Search games..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm text-slate-900 font-semibold focus:outline-none focus:border-[#00B4D8] shadow-xs"
+            className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm text-slate-900 font-semibold focus:outline-none focus:border-[#cc040a] shadow-xs"
           />
         </div>
       </div>
@@ -100,7 +100,7 @@ export const GameGrid = () => {
           <p className="text-slate-600 text-base font-semibold">No games found matching "{searchQuery}"</p>
           <button 
             onClick={() => { setSearchQuery(''); setActiveCategory('ALL'); }}
-            className="mt-4 px-5 py-2.5 text-xs font-black bg-[#00B4D8]/20 text-[#00B4D8] border border-[#00B4D8]/30 rounded-xl cursor-pointer"
+            className="mt-4 px-5 py-2.5 text-xs font-black bg-[#cc040a]/15 text-[#cc040a] border border-[#cc040a]/30 rounded-xl cursor-pointer"
           >
             Reset Filters
           </button>
@@ -149,7 +149,7 @@ export const GameGrid = () => {
 
                 {/* Bottom Title Bar */}
                 <div className="p-3 bg-white text-center border-t border-slate-100 flex items-center justify-center min-h-[46px]">
-                  <h3 className="text-xs sm:text-sm font-black text-slate-900 font-heading tracking-tight leading-tight group-hover:text-[#00B4D8] transition-colors truncate">
+                  <h3 className="text-xs sm:text-sm font-black text-slate-900 font-heading tracking-tight leading-tight group-hover:text-[#cc040a] transition-colors truncate">
                     {game.name}
                   </h3>
                 </div>

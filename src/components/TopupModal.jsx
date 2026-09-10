@@ -161,7 +161,7 @@ export const TopupModal = () => {
         {/* Modal Header */}
         <div className="bg-slate-950 text-white p-5 flex items-center justify-between border-b border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#00B4D8] to-cyan-400 flex items-center justify-center font-bold text-xl shadow-md text-white">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#cc040a] to-red-600 flex items-center justify-center font-bold text-xl shadow-md text-white">
               {selectedGame.currencyIcon}
             </div>
             <div>
@@ -185,18 +185,18 @@ export const TopupModal = () => {
 
         {/* Step Progress Bar */}
         <div className="bg-slate-100 px-6 py-3 border-b border-slate-200 flex items-center justify-between text-xs font-bold">
-          <div className={`flex items-center gap-1.5 ${step >= 1 ? 'text-[#00B4D8]' : 'text-slate-400'}`}>
-            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${step >= 1 ? 'bg-[#00B4D8] text-white' : 'bg-slate-300 text-slate-600'}`}>1</span>
+          <div className={`flex items-center gap-1.5 ${step >= 1 ? 'text-[#cc040a]' : 'text-slate-400'}`}>
+            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${step >= 1 ? 'bg-[#cc040a] text-white' : 'bg-slate-300 text-slate-600'}`}>1</span>
             <span>Account ID</span>
           </div>
           <ChevronRight className="w-4 h-4 text-slate-400" />
-          <div className={`flex items-center gap-1.5 ${step >= 2 ? 'text-[#00B4D8]' : 'text-slate-400'}`}>
-            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${step >= 2 ? 'bg-[#00B4D8] text-white' : 'bg-slate-300 text-slate-600'}`}>2</span>
+          <div className={`flex items-center gap-1.5 ${step >= 2 ? 'text-[#cc040a]' : 'text-slate-400'}`}>
+            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${step >= 2 ? 'bg-[#cc040a] text-white' : 'bg-slate-300 text-slate-600'}`}>2</span>
             <span>Package</span>
           </div>
           <ChevronRight className="w-4 h-4 text-slate-400" />
-          <div className={`flex items-center gap-1.5 ${step >= 3 ? 'text-[#00B4D8]' : 'text-slate-400'}`}>
-            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${step >= 3 ? 'bg-[#00B4D8] text-white' : 'bg-slate-300 text-slate-600'}`}>3</span>
+          <div className={`flex items-center gap-1.5 ${step >= 3 ? 'text-[#cc040a]' : 'text-slate-400'}`}>
+            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${step >= 3 ? 'bg-[#cc040a] text-white' : 'bg-slate-300 text-slate-600'}`}>3</span>
             <span>Payment</span>
           </div>
         </div>
@@ -210,7 +210,7 @@ export const TopupModal = () => {
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[#00B4D8]"></span>
+                    <span className="w-2 h-2 rounded-full bg-[#cc040a]"></span>
                     Step 1: Enter Game Account ID
                   </label>
                   {userProfile.savedIds.filter(s => s.gameId === selectedGame.id).length > 0 && (
@@ -227,7 +227,7 @@ export const TopupModal = () => {
                         onClick={() => handleSelectSavedId(saved)}
                         className={`px-3 py-1 rounded-lg text-xs font-bold border transition-all ${
                           savedSelection === saved.id 
-                            ? 'bg-[#00B4D8] text-white border-[#00B4D8]' 
+                            ? 'bg-[#cc040a] text-white border-[#cc040a]' 
                             : 'bg-slate-900 text-slate-300 border-slate-700 hover:border-slate-500'
                         }`}
                       >
@@ -247,7 +247,7 @@ export const TopupModal = () => {
                         setPlayerId(e.target.value);
                         setIgnVerified(false);
                       }}
-                      className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 font-semibold focus:outline-none focus:border-[#00B4D8] shadow-xs"
+                      className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 font-semibold focus:outline-none focus:border-[#cc040a] shadow-xs"
                     />
                   </div>
 
@@ -258,7 +258,7 @@ export const TopupModal = () => {
                         placeholder={selectedGame.serverPlaceholder}
                         value={zoneId}
                         onChange={(e) => setZoneId(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 font-semibold focus:outline-none focus:border-[#00B4D8] shadow-xs"
+                        className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 font-semibold focus:outline-none focus:border-[#cc040a] shadow-xs"
                       />
                     </div>
                   )}
@@ -267,7 +267,7 @@ export const TopupModal = () => {
                     <button
                       onClick={handleVerifyIgn}
                       disabled={isVerifyingIgn}
-                      className="w-full h-full min-h-[42px] px-3 py-2 bg-[#00B4D8] text-white rounded-xl text-xs font-bold hover:bg-[#0096C7] transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                      className="w-full h-full min-h-[42px] px-3 py-2 bg-[#cc040a] text-white rounded-xl text-xs font-bold hover:bg-[#990207] transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
                     >
                       {isVerifyingIgn ? (
                         <RefreshCw className="w-3.5 h-3.5 animate-spin text-white" />
@@ -301,10 +301,10 @@ export const TopupModal = () => {
               <div className="space-y-3">
                 <label className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[#00B4D8]"></span>
+                    <span className="w-2 h-2 rounded-full bg-[#cc040a]"></span>
                     Step 2: Select Diamond / UC Package
                   </span>
-                  <span className="text-[11px] text-[#00B4D8] font-bold">100% Guaranteed Delivery</span>
+                  <span className="text-[11px] text-[#cc040a] font-bold">100% Guaranteed Delivery</span>
                 </label>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -319,7 +319,7 @@ export const TopupModal = () => {
                         }}
                         className={`relative p-3.5 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
                           isSelected
-                            ? 'bg-[#00B4D8]/10 border-[#00B4D8] shadow-lg shadow-cyan-500/10'
+                            ? 'bg-[#cc040a]/10 border-[#cc040a] shadow-lg shadow-red-500/10'
                             : 'bg-white border-slate-200 text-slate-900 hover:border-slate-400'
                         }`}
                       >
@@ -341,18 +341,18 @@ export const TopupModal = () => {
                             </span>
                           </div>
                           {pkg.bonus && (
-                            <span className="text-[10px] text-[#00B4D8] font-bold bg-[#00B4D8]/15 px-1.5 py-0.5 rounded inline-block">
+                            <span className="text-[10px] text-[#cc040a] font-bold bg-[#cc040a]/15 px-1.5 py-0.5 rounded inline-block">
                               {pkg.bonus}
                             </span>
                           )}
                         </div>
 
                         <div className="mt-3 pt-2 border-t border-slate-200 flex items-center justify-between">
-                          <span className="text-sm font-black text-[#00B4D8] font-heading">
+                          <span className="text-sm font-black text-[#cc040a] font-heading">
                             {formatPrice(pkg.priceLkr)}
                           </span>
                           <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                            isSelected ? 'bg-[#00B4D8] border-[#00B4D8] text-white' : 'border-slate-300'
+                            isSelected ? 'bg-[#cc040a] border-[#cc040a] text-white' : 'border-slate-300'
                           }`}>
                             {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
                           </div>
@@ -367,7 +367,7 @@ export const TopupModal = () => {
               {step >= 3 && (
                 <div className="space-y-4 pt-2 border-t border-slate-200 animate-in fade-in">
                   <label className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[#00B4D8]"></span>
+                    <span className="w-2 h-2 rounded-full bg-[#cc040a]"></span>
                     Step 3: Select Payment Method
                   </label>
 
@@ -380,7 +380,7 @@ export const TopupModal = () => {
                           onClick={() => setSelectedPayment(method)}
                           className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between ${
                             isSelected
-                              ? 'bg-[#00B4D8] text-white border-[#00B4D8] shadow-lg shadow-cyan-500/20'
+                              ? 'bg-[#cc040a] text-white border-[#cc040a] shadow-lg shadow-red-500/20'
                               : 'bg-white text-slate-900 border-slate-200 hover:border-slate-400'
                           }`}
                         >
@@ -390,7 +390,7 @@ export const TopupModal = () => {
                               <div className="font-bold text-xs flex items-center gap-2">
                                 <span>{method.name}</span>
                                 <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${
-                                  isSelected ? 'bg-white text-slate-900' : 'bg-[#00B4D8]/20 text-[#00B4D8]'
+                                  isSelected ? 'bg-white text-slate-900' : 'bg-[#cc040a]/20 text-[#cc040a]'
                                 }`}>
                                   {method.badge}
                                 </span>
@@ -409,7 +409,7 @@ export const TopupModal = () => {
                   {selectedPayment.accountDetails && (
                     <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-2">
                       <div className="font-bold text-slate-900 flex items-center gap-1">
-                        <CreditCard className="w-4 h-4 text-[#00B4D8]" />
+                        <CreditCard className="w-4 h-4 text-[#cc040a]" />
                         <span>Payment Instructions ({selectedPayment.name}):</span>
                       </div>
                       
@@ -424,7 +424,7 @@ export const TopupModal = () => {
 
                       {selectedPayment.id === 'ezcash' && (
                         <div className="bg-white p-3 rounded-xl border border-slate-200 font-mono text-[11px] text-slate-800">
-                          <div>eZ Cash Number: <strong className="text-[#00B4D8] font-extrabold">{selectedPayment.accountDetails.number}</strong></div>
+                          <div>eZ Cash Number: <strong className="text-[#cc040a] font-extrabold">{selectedPayment.accountDetails.number}</strong></div>
                         </div>
                       )}
 
@@ -435,12 +435,12 @@ export const TopupModal = () => {
                       {/* Cloudflare R2 Receipt Upload Widget */}
                       <div className="pt-2 border-t border-slate-200">
                         <label className="block text-[11px] font-extrabold text-slate-800 mb-1 flex items-center justify-between">
-                          <span className="flex items-center gap-1 text-[#00B4D8]">
+                          <span className="flex items-center gap-1 text-[#cc040a]">
                             <UploadCloud className="w-3.5 h-3.5" />
                             Upload Payment Slip / Screenshot
                           </span>
-                          <span className="text-[9px] bg-cyan-100 text-cyan-800 px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1 border border-cyan-300">
-                            <Cloud className="w-3 h-3 text-cyan-600" />
+                          <span className="text-[9px] bg-red-100 text-red-800 px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1 border border-red-300">
+                            <Cloud className="w-3 h-3 text-red-600" />
                             Cloudflare R2 Storage
                           </span>
                         </label>
@@ -451,10 +451,10 @@ export const TopupModal = () => {
                             accept="image/*,.pdf"
                             onChange={handleReceiptUpload}
                             disabled={isUploadingReceipt}
-                            className="text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#00B4D8] file:text-white hover:file:bg-[#0096C7] cursor-pointer"
+                            className="text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#cc040a] file:text-white hover:file:bg-[#990207] cursor-pointer"
                           />
                           {isUploadingReceipt && (
-                            <span className="text-xs text-cyan-600 font-bold flex items-center gap-1">
+                            <span className="text-xs text-red-600 font-bold flex items-center gap-1">
                               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                               <span>Uploading to R2...</span>
                             </span>
@@ -497,7 +497,7 @@ export const TopupModal = () => {
                 </div>
                 <div className="flex justify-between border-b border-slate-200 pb-2">
                   <span className="text-slate-500">Moongold Reference:</span>
-                  <span className="font-mono font-bold text-[#00B4D8]">{completedOrder.moongoldRef}</span>
+                  <span className="font-mono font-bold text-[#cc040a]">{completedOrder.moongoldRef}</span>
                 </div>
                 <div className="flex justify-between border-b border-slate-200 pb-2">
                   <span className="text-slate-500">Game / Package:</span>
@@ -509,14 +509,14 @@ export const TopupModal = () => {
                 </div>
                 <div className="flex justify-between pt-1 font-bold text-sm">
                   <span className="text-slate-700">Total Paid:</span>
-                  <span className="text-[#00B4D8]">{formatPrice(completedOrder.priceLkr)}</span>
+                  <span className="text-[#cc040a]">{formatPrice(completedOrder.priceLkr)}</span>
                 </div>
               </div>
 
               <div className="pt-2 flex justify-center gap-3">
                 <button
                   onClick={() => setIsTopupModalOpen(false)}
-                  className="px-6 py-2.5 bg-[#00B4D8] text-white font-bold text-xs rounded-full hover:bg-[#0096C7] transition-colors cursor-pointer"
+                  className="px-6 py-2.5 bg-[#cc040a] text-white font-bold text-xs rounded-full hover:bg-[#990207] transition-colors cursor-pointer"
                 >
                   Close Window
                 </button>
@@ -531,7 +531,7 @@ export const TopupModal = () => {
           <div className="bg-[#0F172A] p-4 px-6 border-t border-slate-800 flex items-center justify-between">
             <div>
               <span className="text-[10px] text-slate-400 font-semibold block uppercase">Selected Price</span>
-              <span className="text-xl font-black text-[#00B4D8] font-heading">
+              <span className="text-xl font-black text-[#cc040a] font-heading">
                 {selectedPackage ? formatPrice(selectedPackage.priceLkr) : 'Rs. 0'}
               </span>
             </div>
@@ -549,7 +549,7 @@ export const TopupModal = () => {
               {step < 3 ? (
                 <button
                   onClick={handleProceedToPayment}
-                  className="btn-cyan-pill px-6 py-3 font-extrabold text-sm rounded-full transition-all flex items-center gap-2 cursor-pointer shadow-lg shadow-cyan-500/20"
+                  className="btn-cyan-pill px-6 py-3 font-extrabold text-sm rounded-full transition-all flex items-center gap-2 cursor-pointer shadow-lg shadow-red-500/20"
                 >
                   <span>Proceed to Payment</span>
                   <ChevronRight className="w-4 h-4" />
@@ -558,7 +558,7 @@ export const TopupModal = () => {
                 <button
                   onClick={handleCompleteOrder}
                   disabled={isSubmitting}
-                  className="btn-cyan-pill px-6 py-3 font-black text-sm rounded-full transition-all flex items-center gap-2 cursor-pointer shadow-lg shadow-cyan-500/30"
+                  className="btn-cyan-pill px-6 py-3 font-black text-sm rounded-full transition-all flex items-center gap-2 cursor-pointer shadow-lg shadow-red-500/30"
                 >
                   {isSubmitting ? (
                     <>

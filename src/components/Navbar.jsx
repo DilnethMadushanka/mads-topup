@@ -1,6 +1,6 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { Gamepad2, Gift, BookOpen, Download, User, Settings, Flame } from 'lucide-react';
+import { Gamepad2, Gift, BookOpen, Download, User, Settings, Flame, Wallet, ChevronDown } from 'lucide-react';
 
 export const Navbar = () => {
   const { 
@@ -10,10 +10,21 @@ export const Navbar = () => {
     openCatalog,
     closeCatalog,
     isGameCatalogOpen,
-    openAuth
+    openAuth,
+    userProfile,
+    isLoggedIn
   } = useApp();
 
   const pendingCount = orders.filter(o => o.status === 'PROCESSING' || o.status === 'PENDING').length;
+
+  const getInitials = (name) => {
+    if (!name) return 'DM';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
 
   const handleNavClick = (sectionId) => {
     if (isGameCatalogOpen) {
@@ -43,7 +54,7 @@ export const Navbar = () => {
           <div className="flex flex-col">
             <div className="flex items-center gap-1 font-black text-xl tracking-tighter text-slate-950 font-heading">
               <span>MADS</span>
-              <span className="text-cyan-500">TOPUP</span>
+              <span className="text-[#cc040a]">TOPUP</span>
             </div>
             <span className="text-[7px] font-black text-slate-500 tracking-widest uppercase font-mono -mt-1">
               EVERYGAME LK
@@ -55,9 +66,9 @@ export const Navbar = () => {
         <nav className="hidden lg:flex items-center gap-7 text-xs font-bold text-slate-800 uppercase tracking-wide">
           <button 
             onClick={openCatalog}
-            className={`flex items-center gap-2 hover:text-cyan-600 transition-colors cursor-pointer group py-2 ${isGameCatalogOpen ? 'text-cyan-600' : ''}`}
+            className={`flex items-center gap-2 hover:text-[#cc040a] transition-colors cursor-pointer group py-2 ${isGameCatalogOpen ? 'text-[#cc040a]' : ''}`}
           >
-            <span className="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+            <span className="w-6 h-6 rounded-lg bg-red-100 text-[#cc040a] flex items-center justify-center">
               <Gamepad2 className="w-3.5 h-3.5" />
             </span>
             <span>Game List</span>
@@ -65,7 +76,7 @@ export const Navbar = () => {
 
           <button 
             onClick={() => handleNavClick('services-section')}
-            className="flex items-center gap-2 hover:text-cyan-600 transition-colors cursor-pointer group py-2"
+            className="flex items-center gap-2 hover:text-[#cc040a] transition-colors cursor-pointer group py-2"
           >
             <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
               <Gift className="w-3.5 h-3.5" />
@@ -75,9 +86,9 @@ export const Navbar = () => {
 
           <button 
             onClick={() => handleNavClick('why-choose-us')}
-            className="flex items-center gap-2 hover:text-cyan-600 transition-colors cursor-pointer group py-2"
+            className="flex items-center gap-2 hover:text-[#cc040a] transition-colors cursor-pointer group py-2"
           >
-            <span className="w-6 h-6 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center">
+            <span className="w-6 h-6 rounded-lg bg-red-50 text-[#cc040a] flex items-center justify-center">
               <BookOpen className="w-3.5 h-3.5" />
             </span>
             <span>Blog</span>
@@ -85,7 +96,7 @@ export const Navbar = () => {
 
           <button 
             onClick={() => handleNavClick('reviews-section')}
-            className="flex items-center gap-2 hover:text-cyan-600 transition-colors cursor-pointer group py-2"
+            className="flex items-center gap-2 hover:text-[#cc040a] transition-colors cursor-pointer group py-2"
           >
             <span className="w-6 h-6 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center">
               <Download className="w-3.5 h-3.5" />
@@ -94,28 +105,61 @@ export const Navbar = () => {
           </button>
         </nav>
 
-        {/* Right Controls (Login text link & REGISTER purple pill button) */}
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={() => openAuth('login')}
-            className="text-xs font-black text-slate-700 hover:text-slate-950 uppercase tracking-wider cursor-pointer font-heading"
-          >
-            Login
-          </button>
+        {/* Right Controls (Matching Reference Screenshot) */}
+        {isLoggedIn ? (
+          <div className="flex items-center gap-2.5 sm:gap-3.5">
+            {/* 1. Red Wallet LKR Pill */}
+            <div 
+              onClick={() => setIsUserProfileOpen(true)}
+              className="bg-[#cc040a] hover:bg-[#990207] text-white text-xs sm:text-[13px] font-black px-3.5 sm:px-4 py-1.5 rounded-full flex items-center gap-2 shadow-xs cursor-pointer transition-all shrink-0"
+            >
+              <Wallet className="w-3.5 h-3.5 text-white fill-white shrink-0" />
+              <span className="tracking-wide">0.00 LKR</span>
+            </div>
 
-          <button
-            onClick={() => openAuth('register')}
-            className="btn-purple-pill px-4 sm:px-6 py-2 text-xs font-black uppercase tracking-wider cursor-pointer shadow-md flex items-center gap-1.5"
-          >
-            <User className="w-3.5 h-3.5" />
-            <span>REGISTER</span>
-            {pendingCount > 0 && (
-              <span className="w-4 h-4 rounded-full bg-cyan-400 text-slate-950 text-[9px] font-black flex items-center justify-center ml-1">
-                {pendingCount}
+            {/* 2. Green Crypto USDT Pill */}
+            <div 
+              onClick={() => setIsUserProfileOpen(true)}
+              className="bg-[#0E8A50] hover:bg-[#0C7A46] text-white text-xs sm:text-[13px] font-black px-3.5 sm:px-4 py-1.5 rounded-full flex items-center gap-2 shadow-xs cursor-pointer transition-all shrink-0"
+            >
+              <div className="w-4 h-4 rounded-full bg-white text-[#0E8A50] font-black text-[10px] flex items-center justify-center italic shrink-0 leading-none">
+                B
+              </div>
+              <span className="tracking-wide">0.00 U</span>
+            </div>
+
+            {/* 3. User Profile Dropdown Pill (Avatar + Name + Chevron) */}
+            <div 
+              onClick={() => setIsUserProfileOpen(true)}
+              className="flex items-center gap-2 cursor-pointer group shrink-0 ml-1"
+            >
+              <div className="w-8 sm:w-9 h-8 sm:h-9 rounded-full bg-[#cc040a] border-2 border-white ring-1 ring-slate-200/60 flex items-center justify-center font-black text-white text-xs shadow-xs shrink-0 tracking-wider">
+                {getInitials(userProfile.name)}
+              </div>
+              <span className="hidden sm:inline-block text-[#6366F1] font-black text-sm sm:text-[15px] group-hover:text-[#4F46E5] transition-colors">
+                {userProfile.name}
               </span>
-            )}
-          </button>
-        </div>
+              <ChevronDown className="w-4 h-4 text-[#6366F1] fill-[#6366F1] group-hover:translate-y-0.5 transition-transform" />
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => openAuth('login')}
+              className="text-xs font-black text-slate-700 hover:text-slate-950 uppercase tracking-wider cursor-pointer font-heading"
+            >
+              Login
+            </button>
+
+            <button
+              onClick={() => openAuth('register')}
+              className="btn-purple-pill px-4 sm:px-6 py-2 text-xs font-black uppercase tracking-wider cursor-pointer shadow-md flex items-center gap-1.5"
+            >
+              <User className="w-3.5 h-3.5" />
+              <span>REGISTER</span>
+            </button>
+          </div>
+        )}
 
       </div>
     </header>

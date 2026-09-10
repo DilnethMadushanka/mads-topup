@@ -12,12 +12,12 @@ export const BlogSection = () => {
         
         {/* Section Header */}
         <div className="text-center space-y-3 mb-16">
-          <span className="text-xs font-black text-[#00B4D8] tracking-widest uppercase font-mono bg-[#00B4D8]/10 px-4 py-1.5 rounded-full border border-[#00B4D8]/20 inline-flex items-center gap-1.5">
+          <span className="text-xs font-black text-[#cc040a] tracking-widest uppercase font-mono bg-[#cc040a]/10 px-4 py-1.5 rounded-full border border-[#cc040a]/20 inline-flex items-center gap-1.5">
             <BookOpen className="w-3.5 h-3.5" />
             <span>LATEST GAMING ARTICLES</span>
           </span>
           <h2 className="text-4xl sm:text-5xl font-black text-slate-900 font-heading tracking-tight uppercase">
-            News & <span className="text-[#00B4D8]">Guides</span>
+            News & <span className="text-[#cc040a]">Guides</span>
           </h2>
           <p className="text-slate-600 text-sm sm:text-base font-semibold max-w-lg mx-auto">
             Stay updated with the latest gaming top-up guides, Garena Shell tips, and esports news
@@ -52,17 +52,17 @@ export const BlogSection = () => {
                 <div className="space-y-3">
                   <div className="flex items-center gap-4 text-xs text-slate-500 font-medium">
                     <span className="flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5 text-[#00B4D8]" />
+                      <Calendar className="w-3.5 h-3.5 text-[#cc040a]" />
                       {post.date}
                     </span>
                     <span>•</span>
                     <span className="flex items-center gap-1">
-                      <User className="w-3.5 h-3.5 text-[#00B4D8]" />
+                      <User className="w-3.5 h-3.5 text-[#cc040a]" />
                       {post.author}
                     </span>
                   </div>
 
-                  <h3 className="text-xl font-extrabold text-slate-900 font-heading leading-snug group-hover:text-[#00B4D8] transition-colors">
+                  <h3 className="text-xl font-extrabold text-slate-900 font-heading leading-snug group-hover:text-[#cc040a] transition-colors">
                     {post.title}
                   </h3>
 
@@ -74,7 +74,7 @@ export const BlogSection = () => {
                 <div className="pt-4 border-t border-slate-200">
                   <button
                     onClick={() => showToast(`Reading article: ${post.title}`)}
-                    className="text-xs font-bold text-[#00B4D8] group-hover:text-cyan-600 flex items-center gap-2 cursor-pointer transition-colors"
+                    className="text-xs font-bold text-[#cc040a] group-hover:text-[#990207] flex items-center gap-2 cursor-pointer transition-colors"
                   >
                     <span>Read Article</span>
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

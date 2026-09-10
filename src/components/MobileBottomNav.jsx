@@ -32,7 +32,7 @@ export const MobileBottomNav = () => {
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200 px-3 py-2 flex items-center justify-around shadow-2xl">
       <button 
         onClick={handleHomeClick}
-        className={`flex flex-col items-center gap-1 font-bold text-[10px] uppercase tracking-wider cursor-pointer ${!isGameCatalogOpen && !selectedGame ? 'text-[#00B4D8]' : 'text-slate-500'}`}
+        className={`flex flex-col items-center gap-1 font-bold text-[10px] uppercase tracking-wider cursor-pointer ${!isGameCatalogOpen && !selectedGame ? 'text-[#cc040a]' : 'text-slate-500'}`}
       >
         <Home className="w-5 h-5" />
         <span>Home</span>
@@ -40,7 +40,7 @@ export const MobileBottomNav = () => {
 
       <button 
         onClick={handleCatalogClick}
-        className={`flex flex-col items-center gap-1 font-bold text-[10px] uppercase tracking-wider cursor-pointer ${isGameCatalogOpen && !selectedGame ? 'text-[#00B4D8]' : 'text-slate-500'}`}
+        className={`flex flex-col items-center gap-1 font-bold text-[10px] uppercase tracking-wider cursor-pointer ${isGameCatalogOpen && !selectedGame ? 'text-[#cc040a]' : 'text-slate-500'}`}
       >
         <Gamepad2 className="w-5 h-5" />
         <span>Games</span>
@@ -61,7 +61,7 @@ export const MobileBottomNav = () => {
         <ShoppingBag className="w-5 h-5 text-indigo-600" />
         <span>My Orders</span>
         {orders.length > 0 && (
-          <span className="absolute -top-1 -right-1 bg-cyan-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 bg-[#cc040a] text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">
             {orders.length}
           </span>
         )}

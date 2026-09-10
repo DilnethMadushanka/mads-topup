@@ -190,7 +190,7 @@ export const GameTopupPage = () => {
         particleCount: 100,
         spread: 80,
         origin: { y: 0.5 },
-        colors: ['#2563EB', '#00B4D8', '#10B981', '#F59E0B']
+        colors: ['#2563EB', '#cc040a', '#10B981', '#F59E0B']
       });
     } catch (e) {}
 

@@ -67,12 +67,12 @@ const MainContent = () => {
             <div>
               <h4 className="font-extrabold text-sm text-white uppercase tracking-wider mb-4 font-heading">Quick Links</h4>
               <ul className="space-y-2.5 text-xs text-slate-400 font-bold uppercase tracking-wide font-mono">
-                <li onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="hover:text-[#00B4D8] cursor-pointer transition-colors">ABOUT US</li>
-                <li onClick={() => scrollToSection('why-choose-us')} className="hover:text-[#00B4D8] cursor-pointer transition-colors">CONTACT</li>
-                <li onClick={() => setIsUserProfileOpen(true)} className="hover:text-[#00B4D8] cursor-pointer transition-colors">MY ORDERS</li>
-                <li onClick={() => setIsAdminOpen(true)} className="hover:text-[#00B4D8] cursor-pointer transition-colors">ADMIN PORTAL</li>
-                <li className="hover:text-[#00B4D8] cursor-pointer transition-colors">TERMS OF SERVICE</li>
-                <li className="hover:text-[#00B4D8] cursor-pointer transition-colors">PRIVACY POLICY</li>
+                <li onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="hover:text-[#cc040a] cursor-pointer transition-colors">ABOUT US</li>
+                <li onClick={() => scrollToSection('why-choose-us')} className="hover:text-[#cc040a] cursor-pointer transition-colors">CONTACT</li>
+                <li onClick={() => setIsUserProfileOpen(true)} className="hover:text-[#cc040a] cursor-pointer transition-colors">MY ORDERS</li>
+                <li onClick={() => setIsAdminOpen(true)} className="hover:text-[#cc040a] cursor-pointer transition-colors">ADMIN PORTAL</li>
+                <li className="hover:text-[#cc040a] cursor-pointer transition-colors">TERMS OF SERVICE</li>
+                <li className="hover:text-[#cc040a] cursor-pointer transition-colors">PRIVACY POLICY</li>
               </ul>
             </div>
 

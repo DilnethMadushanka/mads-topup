@@ -2,8 +2,8 @@
 
 @layer base {
   :root {
-    --primary-cyan: #00B4D8;
-    --primary-cyan-hover: #0096C7;
+    --primary-cyan: #cc040a;
+    --primary-cyan-hover: #a80308;
     --brand-dark: #090D16;
     --brand-purple: #3B2896;
     --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -30,25 +30,25 @@
   background: #F1F5F9;
 }
 ::-webkit-scrollbar-thumb {
-  background: #00B4D8;
+  background: #cc040a;
   border-radius: 99px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #38BDF8;
+  background: #e6050c;
 }
 
-/* Sky Blue Cyan Glow Pill Button */
+/* Red Glow Pill Button */
 .btn-cyan-pill {
-  background: linear-gradient(135deg, #00B4D8 0%, #0096C7 100%);
+  background: linear-gradient(135deg, #cc040a 0%, #990207 100%);
   color: #FFFFFF;
   font-weight: 800;
   border-radius: 9999px;
-  box-shadow: 0 8px 25px -4px rgba(0, 180, 216, 0.5);
+  box-shadow: 0 8px 25px -4px rgba(204, 4, 10, 0.5);
   transition: all 0.25s ease;
 }
 .btn-cyan-pill:hover {
-  background: linear-gradient(135deg, #38BDF8 0%, #00B4D8 100%);
-  box-shadow: 0 12px 30px -2px rgba(0, 180, 216, 0.7);
+  background: linear-gradient(135deg, #e6050c 0%, #cc040a 100%);
+  box-shadow: 0 12px 30px -2px rgba(204, 4, 10, 0.7);
   transform: translateY(-2px);
 }
 
@@ -110,12 +110,12 @@
   padding: 1rem;
 }
 
-/* MADS Card Lift & Cyan Glow Animation */
+/* MADS Card Lift & Red Glow Animation */
 .mads-card {
   background: #FFFFFF;
   border-radius: 1.75rem;
   border: 1px solid rgba(226, 232, 240, 0.9);
-  box-shadow: 0 10px 30px -10px rgba(0, 180, 216, 0.08);
+  box-shadow: 0 10px 30px -10px rgba(204, 4, 10, 0.08);
   transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   overflow: hidden;
@@ -123,8 +123,8 @@
 
 .mads-card:hover {
   transform: translateY(-8px);
-  border-color: rgba(0, 180, 216, 0.5);
-  box-shadow: 0 22px 50px -10px rgba(0, 180, 216, 0.3), 0 0 25px rgba(0, 180, 216, 0.15);
+  border-color: rgba(204, 4, 10, 0.5);
+  box-shadow: 0 22px 50px -10px rgba(204, 4, 10, 0.3), 0 0 25px rgba(204, 4, 10, 0.15);
 }
 
 .mads-card-glow-bar {
@@ -133,7 +133,7 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, #00B4D8 0%, #38BDF8 50%, #3B2896 100%);
+  background: linear-gradient(90deg, #cc040a 0%, #e6050c 50%, #3B2896 100%);
   opacity: 0;
   transition: opacity 0.35s ease;
 }
@@ -141,6 +141,7 @@
 .mads-card:hover .mads-card-glow-bar {
   opacity: 1;
 }
+
 
 
 

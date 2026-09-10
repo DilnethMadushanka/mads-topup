@@ -39,6 +39,8 @@ export const AppProvider = ({ children }) => {
   // Cloudflare R2 Storage State
   const [r2Config, setR2ConfigState] = useState(getR2Config());
 
+  const [isLoggedIn, setIsLoggedIn] = useState(true);
+
   // User Profile
   const [userProfile, setUserProfile] = useState(() => {
     const saved = localStorage.getItem('mads_user_profile');
@@ -46,8 +48,8 @@ export const AppProvider = ({ children }) => {
       try { return JSON.parse(saved); } catch (e) {}
     }
     return {
-      name: 'Gamer Sri Lanka',
-      email: 'gamer@madstopup.com',
+      name: 'DM Gadgets',
+      email: 'dmgadgets26@gmail.com',
       phone: '+94 77 987 6543',
       walletBalance: 2500, // LKR
       savedIds: [
@@ -208,7 +210,9 @@ export const AppProvider = ({ children }) => {
       setIsAuthModalOpen,
       authMode,
       setAuthMode,
-      openAuth
+      openAuth,
+      isLoggedIn,
+      setIsLoggedIn
     }}>
       {children}
     </AppContext.Provider>

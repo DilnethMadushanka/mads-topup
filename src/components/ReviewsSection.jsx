@@ -50,11 +50,11 @@ export const ReviewsSection = () => {
         
         {/* Header */}
         <div className="space-y-3 mb-16">
-          <span className="text-xs font-black text-[#00B4D8] tracking-widest uppercase font-mono bg-[#00B4D8]/10 px-4 py-1.5 rounded-full border border-[#00B4D8]/20">
+          <span className="text-xs font-black text-[#cc040a] tracking-widest uppercase font-mono bg-[#cc040a]/10 px-4 py-1.5 rounded-full border border-[#cc040a]/20">
             — COMMUNITY —
           </span>
           <h2 className="text-4xl sm:text-5xl font-black text-slate-900 font-heading tracking-tight">
-            What Our <span className="text-[#00B4D8]">Customers Say</span>
+            What Our <span className="text-[#cc040a]">Customers Say</span>
           </h2>
           <p className="text-slate-600 text-sm sm:text-base font-semibold max-w-lg mx-auto">
             Real reviews from our gaming community worldwide
@@ -74,7 +74,7 @@ export const ReviewsSection = () => {
                     <img 
                       src={review.avatar} 
                       alt={review.name} 
-                      className="w-11 h-11 rounded-full object-cover border-2 border-[#00B4D8]/40 shadow-md group-hover:scale-105 transition-transform"
+                      className="w-11 h-11 rounded-full object-cover border-2 border-[#cc040a]/40 shadow-md group-hover:scale-105 transition-transform"
                     />
                   ) : (
                     <div className="w-11 h-11 rounded-full bg-[#3B2896] text-white font-extrabold text-xs flex items-center justify-center shadow">
@@ -82,20 +82,20 @@ export const ReviewsSection = () => {
                     </div>
                   )}
                   <div>
-                    <h4 className="font-extrabold text-slate-900 text-sm group-hover:text-[#00B4D8] transition-colors">{review.name}</h4>
+                    <h4 className="font-extrabold text-slate-900 text-sm group-hover:text-[#cc040a] transition-colors">{review.name}</h4>
                     <p className="text-[11px] text-slate-500 font-bold flex items-center gap-1">
                       <span>{review.flag}</span>
                       <span>{review.location}</span>
                     </p>
                   </div>
                 </div>
-                <Quote className="w-6 h-6 text-slate-300 group-hover:text-[#00B4D8]/60 transition-colors" />
+                <Quote className="w-6 h-6 text-slate-300 group-hover:text-[#cc040a]/60 transition-colors" />
               </div>
 
               {/* Stars */}
-              <div className="flex text-[#00B4D8] gap-1 text-xs relative z-10">
+              <div className="flex text-[#cc040a] gap-1 text-xs relative z-10">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 fill-[#00B4D8]" />
+                  <Star key={i} className="w-4 h-4 fill-[#cc040a]" />
                 ))}
               </div>
 
@@ -113,7 +113,7 @@ export const ReviewsSection = () => {
         {/* View All Button */}
         <button
           onClick={() => showToast('Displaying all 500+ verified gamer reviews')}
-          className="px-8 py-3.5 rounded-full border-2 border-[#00B4D8] text-[#00B4D8] hover:bg-[#00B4D8] hover:text-white font-extrabold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 mx-auto cursor-pointer shadow-lg shadow-cyan-500/10"
+          className="px-8 py-3.5 rounded-full border-2 border-[#cc040a] text-[#cc040a] hover:bg-[#cc040a] hover:text-white font-extrabold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 mx-auto cursor-pointer shadow-lg shadow-red-500/10"
         >
           <span>VIEW ALL REVIEWS</span>
           <ArrowRight className="w-4 h-4" />

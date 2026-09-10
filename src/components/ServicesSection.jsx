@@ -13,8 +13,8 @@ export const ServicesSection = () => {
       buttonText: 'SHOP NOW',
       icon: Gamepad2,
       image: '/uploads/index_page/game_topup.webp',
-      tileGradient: 'from-[#00B4D8] to-blue-600',
-      tileGlow: 'shadow-lg shadow-cyan-500/20',
+      tileGradient: 'from-[#cc040a] to-red-800',
+      tileGlow: 'shadow-lg shadow-red-500/20',
       iconColor: 'text-white',
       action: openCatalog
     },
@@ -39,7 +39,7 @@ export const ServicesSection = () => {
       image: '/uploads/index_page/other_service.webp',
       tileGradient: 'from-slate-800 to-slate-950',
       tileGlow: 'shadow-lg shadow-slate-900/40',
-      iconColor: 'text-[#00B4D8]',
+      iconColor: 'text-[#cc040a]',
       action: openCatalog
     }
   ];
@@ -50,11 +50,11 @@ export const ServicesSection = () => {
         
         {/* Section Header */}
         <div className="space-y-3 mb-16">
-          <span className="text-xs font-black text-[#00B4D8] tracking-widest uppercase font-mono bg-[#00B4D8]/10 px-4 py-1.5 rounded-full border border-[#00B4D8]/20">
+          <span className="text-xs font-black text-[#cc040a] tracking-widest uppercase font-mono bg-[#cc040a]/10 px-4 py-1.5 rounded-full border border-[#cc040a]/20">
             — WHAT WE OFFER —
           </span>
           <h2 className="text-4xl sm:text-5xl font-black text-slate-900 font-heading tracking-tight uppercase">
-            Our Premium <span className="text-[#00B4D8]">Services</span>
+            Our Premium <span className="text-[#cc040a]">Services</span>
           </h2>
           <p className="text-slate-600 text-sm sm:text-base font-semibold max-w-lg mx-auto">
             Elevate your gaming experience with our top-tier minimalist digital services
@@ -83,7 +83,7 @@ export const ServicesSection = () => {
 
                 {/* Content */}
                 <div className="space-y-2 mb-8 relative z-10">
-                  <h3 className="text-xl font-black text-slate-900 font-heading group-hover:text-[#00B4D8] transition-colors">
+                  <h3 className="text-xl font-black text-slate-900 font-heading group-hover:text-[#cc040a] transition-colors">
                     {service.title}
                   </h3>
                   <p className="text-slate-600 text-xs leading-relaxed font-medium">
@@ -94,7 +94,7 @@ export const ServicesSection = () => {
                 {/* Action Button */}
                 <button
                   onClick={service.action}
-                  className="btn-cyan-pill w-full py-3 px-6 rounded-full font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 group-hover:gap-3 cursor-pointer shadow-md shadow-cyan-500/20 relative z-10"
+                  className="btn-cyan-pill w-full py-3 px-6 rounded-full font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 group-hover:gap-3 cursor-pointer shadow-md shadow-red-500/20 relative z-10"
                 >
                   <span className="font-mono">{service.buttonText}</span>
                   <ArrowRight className="w-4 h-4" />
