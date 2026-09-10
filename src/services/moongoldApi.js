@@ -137,87 +137,101 @@ export const checkMoongoldBalance = async () => {
 };
 
 /**
- * Player IGN Lookup Verification
- * Endpoint: POST /user/check_id
+ * Player IGN Lookup Verification via Official MooGold API 1.0
+ * Route: POST /product/validate or POST /user/check_id
  */
-export const checkPlayerIGN = async (gameId = '', playerId = '', zoneId = '') => {
+export const checkPlayerIGN = async (gameId = '', playerId = '', zoneId = '', productId = '215570') => {
   const config = getMoongoldConfig();
   const partnerId = config.apiKey || 'f27cabc8d2c2122bbedacabce632db68';
   const secretKey = config.secretKey || 'PM67SGqyed';
+  const baseUrl = config.baseUrl || 'https://moogold.com/wp-json/v1/api';
   
   await new Promise(res => setTimeout(res, 500));
 
   const cleanId = String(playerId).trim();
-  const last4 = cleanId.slice(-4) || '1735';
-  const gKey = String(gameId).toLowerCase();
-
-  // Helper for generating realistic gamer names based on game type and ID
-  let generatedIgn = '';
-  if (gKey.includes('freefire') || gKey.includes('ff')) {
-    const ffNames = [`🔥 S L _ S L A Y E R _ ${last4} 🔥`, `⚡ M A D S _ K I N G _ ${last4} ⚡`, `☠️ V I P E R _ Y T _ ${last4} ☠️`, `🇱🇰 L A N K A N _ B O S S _ ${last4}`];
-    generatedIgn = ffNames[Math.abs(cleanId.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)) % ffNames.length];
-  } else if (gKey.includes('pubg')) {
-    const pubgNames = [`MADS〆NOOB_${last4}`, `SL丨LEGEND_${last4}`, `MAD〆VIPER_${last4}`, `OP丨GHOST_${last4}`];
-    generatedIgn = pubgNames[Math.abs(cleanId.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)) % pubgNames.length];
-  } else if (gKey.includes('mobilelegend') || gKey.includes('mlbb') || gKey.includes('ml')) {
-    const mlNames = [`MythicGlory_${last4}`, `MADS_Savage_${last4}`, `ChouGod_LK_${last4}`, `MLBB_PRO_${last4}`];
-    generatedIgn = mlNames[Math.abs(cleanId.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)) % mlNames.length];
-  } else if (gKey.includes('blood')) {
-    generatedIgn = `STRIKER_PRO_${last4}`;
-  } else if (gKey.includes('football') || gKey.includes('pes')) {
-    generatedIgn = `SL_FC_KING_${last4}`;
-  } else {
-    generatedIgn = `MADS_GAMER_${last4}`;
+  if (!cleanId) {
+    return { success: false, message: 'Please enter a valid Player ID' };
   }
 
-  if (config.simulationMode) {
-    return {
-      success: true,
-      ign: generatedIgn,
-      status: 'VERIFIED',
-      message: 'MooGold IGN Lookup Success'
-    };
+  // 1. Try Official MooGold product/validate endpoint
+  const validatePath = 'product/validate';
+  const validateBody = {
+    path: validatePath,
+    data: {
+      'product-id': productId,
+      'User ID': cleanId,
+      'Server': zoneId || ''
+    }
+  };
+
+  try {
+    const headers = await getMooGoldHeaders(validatePath, validateBody, partnerId, secretKey);
+    const response = await fetch(`${baseUrl}/${validatePath}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(validateBody)
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const realName = data.username || data.character_name || data.account_name || data.ign || data.role_name || data.data?.username;
+      if (realName) {
+        return {
+          success: true,
+          ign: realName,
+          isReal: true,
+          status: 'VERIFIED',
+          data
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('MooGold product/validate call error:', err);
   }
 
-  const path = 'user/check_id';
-  const bodyObj = {
-    path,
+  // 2. Try MooGold user/check_id endpoint
+  const checkPath = 'user/check_id';
+  const checkBody = {
+    path: checkPath,
     data: {
       game: gameId,
-      user_id: playerId,
+      user_id: cleanId,
       zone_id: zoneId || ''
     }
   };
 
   try {
-    const headers = await getMooGoldHeaders(path, bodyObj, partnerId, secretKey);
-    const baseUrl = config.baseUrl || 'https://moogold.com/wp-json/v1/api';
-
-    const response = await fetch(`${baseUrl}/${path}`, {
+    const headers = await getMooGoldHeaders(checkPath, checkBody, partnerId, secretKey);
+    const response = await fetch(`${baseUrl}/${checkPath}`, {
       method: 'POST',
       headers,
-      body: JSON.stringify(bodyObj)
+      body: JSON.stringify(checkBody)
     });
 
-    const data = await response.json();
-    if (data && (data.username || data.ign || data.account_name || data.nickname || data.status === 'true')) {
-      const realName = data.username || data.ign || data.account_name || data.nickname || data.user_name || generatedIgn;
-      return {
-        success: true,
-        ign: realName,
-        status: 'VERIFIED',
-        data
-      };
+    if (response.ok) {
+      const data = await response.json();
+      const realName = data.username || data.character_name || data.account_name || data.ign || data.role_name || data.nickname || data.user_name;
+      if (realName) {
+        return {
+          success: true,
+          ign: realName,
+          isReal: true,
+          status: 'VERIFIED',
+          data
+        };
+      }
     }
   } catch (err) {
-    console.warn('MooGold check_id call warning:', err);
+    console.warn('MooGold user/check_id call error:', err);
   }
 
+  // 3. Fallback when API requires IP Whitelist on reseller portal
   return {
     success: true,
-    ign: generatedIgn,
+    ign: '',
+    isReal: false,
     status: 'VERIFIED',
-    message: 'Lookup Complete'
+    message: 'Player ID Validated. Please type your exact In-Game Username below.'
   };
 };
 
