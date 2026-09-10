@@ -14,12 +14,15 @@ export const Navbar = () => {
     userProfile,
     isLoggedIn,
     openWalletModal,
-    setIsNoticeModalOpen
+    setWalletActiveTab,
+    setIsNoticeModalOpen,
+    setIsWalletModalOpen
   } = useApp();
 
   const handleWalletClick = (tab = 'binance') => {
+    setWalletActiveTab(tab);
     if (localStorage.getItem('mads_dont_show_notice') === 'true') {
-      openWalletModal(tab);
+      setIsWalletModalOpen(true);
     } else {
       setIsNoticeModalOpen(true);
     }
@@ -120,7 +123,7 @@ export const Navbar = () => {
           <div className="flex items-center gap-1.5 sm:gap-3">
             {/* 1. Red Wallet LKR Pill */}
             <div 
-              onClick={() => setIsUserProfileOpen(true)}
+              onClick={() => handleWalletClick('ezcash')}
               className="bg-[#cc040a] hover:bg-[#990207] text-white text-[11px] sm:text-[13px] font-black px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full flex items-center gap-1.5 shadow-xs cursor-pointer transition-all shrink-0"
             >
               <Wallet className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-white fill-white shrink-0" />
@@ -129,7 +132,7 @@ export const Navbar = () => {
 
             {/* 2. Green Crypto USDT Pill (Hidden on mobile to avoid header overflow) */}
             <div 
-              onClick={() => setIsUserProfileOpen(true)}
+              onClick={() => handleWalletClick('binance')}
               className="hidden md:flex bg-[#0E8A50] hover:bg-[#0C7A46] text-white text-xs sm:text-[13px] font-black px-3.5 sm:px-4 py-1.5 rounded-full items-center gap-2 shadow-xs cursor-pointer transition-all shrink-0"
             >
               <div className="w-4 h-4 rounded-full bg-white text-[#0E8A50] font-black text-[10px] flex items-center justify-center italic shrink-0 leading-none">

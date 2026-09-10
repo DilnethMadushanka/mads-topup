@@ -17,7 +17,10 @@ export const UserProfileModal = () => {
     formatPrice,
     openTopup,
     showToast,
-    handleLogout
+    handleLogout,
+    setWalletActiveTab,
+    setIsWalletModalOpen,
+    setIsNoticeModalOpen
   } = useApp();
 
   const [activeTab, setActiveTab] = useState('orders'); // 'orders' | 'referrals' | 'reports' | 'ids'
@@ -151,7 +154,18 @@ export const UserProfileModal = () => {
               </div>
 
               {/* Stat 2: EZ Wallet */}
-              <div className="bg-white/10 backdrop-blur-md p-3.5 rounded-2xl border border-white/20 flex items-center gap-3">
+              <div 
+                onClick={() => {
+                  setIsUserProfileOpen(false);
+                  setWalletActiveTab('ezcash');
+                  if (localStorage.getItem('mads_dont_show_notice') === 'true') {
+                    setIsWalletModalOpen(true);
+                  } else {
+                    setIsNoticeModalOpen(true);
+                  }
+                }}
+                className="bg-white/10 hover:bg-white/20 backdrop-blur-md p-3.5 rounded-2xl border border-white/20 flex items-center gap-3 cursor-pointer transition-all"
+              >
                 <div className="w-10 h-10 rounded-xl bg-emerald-400/20 flex items-center justify-center text-emerald-300 shrink-0">
                   <Wallet className="w-5 h-5" />
                 </div>
@@ -162,7 +176,18 @@ export const UserProfileModal = () => {
               </div>
 
               {/* Stat 3: Binance */}
-              <div className="bg-white/10 backdrop-blur-md p-3.5 rounded-2xl border border-white/20 flex items-center gap-3">
+              <div 
+                onClick={() => {
+                  setIsUserProfileOpen(false);
+                  setWalletActiveTab('binance');
+                  if (localStorage.getItem('mads_dont_show_notice') === 'true') {
+                    setIsWalletModalOpen(true);
+                  } else {
+                    setIsNoticeModalOpen(true);
+                  }
+                }}
+                className="bg-white/10 hover:bg-white/20 backdrop-blur-md p-3.5 rounded-2xl border border-white/20 flex items-center gap-3 cursor-pointer transition-all"
+              >
                 <div className="w-10 h-10 rounded-xl bg-amber-400/20 flex items-center justify-center text-amber-300 shrink-0">
                   <DollarSign className="w-5 h-5" />
                 </div>
