@@ -136,8 +136,10 @@ export const checkMoongoldBalance = async () => {
   };
 };
 
+import { lookupFreePlayerIgn, saveCachedIgn } from './playerLookup';
+
 /**
- * Player IGN Lookup Verification via Official MooGold API 1.0
+ * Player IGN Lookup Verification via Official MooGold API 1.0 & Free Community Lookup
  * Route: POST /product/validate or POST /user/check_id
  */
 export const checkPlayerIGN = async (gameId = '', playerId = '', zoneId = '', productId = '215570') => {
@@ -146,14 +148,25 @@ export const checkPlayerIGN = async (gameId = '', playerId = '', zoneId = '', pr
   const secretKey = config.secretKey || 'PM67SGqyed';
   const baseUrl = config.baseUrl || 'https://moogold.com/wp-json/v1/api';
   
-  await new Promise(res => setTimeout(res, 500));
+  await new Promise(res => setTimeout(res, 300));
 
   const cleanId = String(playerId).trim();
   if (!cleanId) {
     return { success: false, message: 'Please enter a valid Player ID' };
   }
 
-  // 1. Try Official MooGold product/validate endpoint
+  // 1. Try Free Community Lookup & Local/Firebase Memory Cache (100% Free)
+  const freeResult = await lookupFreePlayerIgn(gameId, cleanId, zoneId);
+  if (freeResult && freeResult.ign) {
+    return {
+      success: true,
+      ign: freeResult.ign,
+      isReal: true,
+      status: 'VERIFIED'
+    };
+  }
+
+  // 2. Try Official MooGold product/validate endpoint
   const validatePath = 'product/validate';
   const validateBody = {
     path: validatePath,
@@ -176,6 +189,7 @@ export const checkPlayerIGN = async (gameId = '', playerId = '', zoneId = '', pr
       const data = await response.json();
       const realName = data.username || data.character_name || data.account_name || data.ign || data.role_name || data.data?.username;
       if (realName) {
+        saveCachedIgn(cleanId, realName);
         return {
           success: true,
           ign: realName,
@@ -189,7 +203,7 @@ export const checkPlayerIGN = async (gameId = '', playerId = '', zoneId = '', pr
     console.warn('MooGold product/validate call error:', err);
   }
 
-  // 2. Try MooGold user/check_id endpoint
+  // 3. Try MooGold user/check_id endpoint
   const checkPath = 'user/check_id';
   const checkBody = {
     path: checkPath,
@@ -212,6 +226,7 @@ export const checkPlayerIGN = async (gameId = '', playerId = '', zoneId = '', pr
       const data = await response.json();
       const realName = data.username || data.character_name || data.account_name || data.ign || data.role_name || data.nickname || data.user_name;
       if (realName) {
+        saveCachedIgn(cleanId, realName);
         return {
           success: true,
           ign: realName,
@@ -225,7 +240,7 @@ export const checkPlayerIGN = async (gameId = '', playerId = '', zoneId = '', pr
     console.warn('MooGold user/check_id call error:', err);
   }
 
-  // 3. Clean Fallback for Player UID verification (No fake generated names)
+  // 4. Clean Fallback for Player UID verification (No fake generated names)
   return {
     success: true,
     ign: `Player ${cleanId}`,
