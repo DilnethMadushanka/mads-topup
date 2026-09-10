@@ -39,15 +39,11 @@ export const AdminDashboard = () => {
     addManualPayment
   } = useApp();
 
-  // Admin Authentication State
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
-    return localStorage.getItem('mads_admin_authenticated') === 'true';
-  });
+  // Admin Authentication State (Requires login when accessing /admin)
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [adminAuthEmail, setAdminAuthEmail] = useState('madsruzza@gmail.com');
   const [adminAuthPassword, setAdminAuthPassword] = useState('');
   const [showAdminAuthPassword, setShowAdminAuthPassword] = useState(false);
-  const [adminAuthError, setAdminAuthError] = useState('');
-
   // Active Admin Sidebar Tab
   const [adminTab, setAdminTab] = useState('overview'); 
   // Options: 'overview' | 'orders' | 'deposits' | 'users' | 'credit' | 'games' | 'vouchers' | 'moongold' | 'r2' | 'announcement'
@@ -115,9 +111,9 @@ export const AdminDashboard = () => {
     e.preventDefault();
     if (adminAuthEmail.trim().toLowerCase() === 'madsruzza@gmail.com' && adminAuthPassword === 'Mads2004@#') {
       setIsAdminAuthenticated(true);
-      localStorage.setItem('mads_admin_authenticated', 'true');
       showToast('Admin Authentication Successful! Welcome Super Admin.');
       setAdminAuthError('');
+      setAdminAuthPassword('');
     } else {
       setAdminAuthError('Invalid Admin Email or Password! Access Denied.');
       showToast('Invalid Admin Credentials', 'error');
@@ -125,7 +121,6 @@ export const AdminDashboard = () => {
   };
 
   const handleAdminLogout = () => {
-    localStorage.removeItem('mads_admin_authenticated');
     setIsAdminAuthenticated(false);
     setIsAdminOpen(false);
     showToast('Logged out from Admin Portal.');
