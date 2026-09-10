@@ -120,7 +120,7 @@ export const AuthModal = () => {
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
       {pendingGoogleUser ? (
-        /* COMPLETE GOOGLE ACCOUNT SETUP CARD (Matching Screenshot) */
+        /* COMPLETE GOOGLE ACCOUNT SETUP CARD */
         <div className="w-full max-w-md bg-white text-slate-900 rounded-3xl p-8 shadow-2xl border border-slate-200/90 text-center relative animate-in zoom-in-95 duration-200 my-auto">
           {/* Close Button */}
           <button
@@ -158,7 +158,7 @@ export const AuthModal = () => {
 
               <div className="flex items-center gap-2">
                 <div className="px-3.5 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-xs font-black text-slate-700 shrink-0 flex items-center gap-1.5 shadow-xs">
-                  <span>LK +94 (S</span>
+                  <span>LK +94</span>
                   <span className="text-[10px] text-slate-400">▼</span>
                 </div>
                 <input
@@ -167,7 +167,7 @@ export const AuthModal = () => {
                   value={googleWhatsAppPhone}
                   onChange={(e) => setGoogleWhatsAppPhone(e.target.value)}
                   required
-                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-[#2A1B70] focus:ring-2 focus:ring-purple-500/20 transition-all shadow-xs"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:ring-2 focus:ring-red-500/20 transition-all shadow-xs"
                 />
               </div>
               <p className="text-[11px] text-slate-400 font-semibold text-center mt-1.5">
@@ -178,7 +178,7 @@ export const AuthModal = () => {
             {/* Complete Registration Button */}
             <button
               type="submit"
-              className="w-full py-3.5 bg-[#2A1B70] hover:bg-[#1E1156] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-purple-900/30 flex items-center justify-center cursor-pointer mt-2"
+              className="w-full py-3.5 bg-[#cc040a] hover:bg-[#990207] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-red-600/30 flex items-center justify-center cursor-pointer mt-2"
             >
               COMPLETE REGISTRATION
             </button>
@@ -195,12 +195,12 @@ export const AuthModal = () => {
           <X className="w-5 h-5" />
         </button>
 
-        {/* LEFT SECTION (Vibrant Blue Branding Side - Matching Screenshots) */}
-        <div className="w-full md:w-5/12 bg-[#1E64E8] p-5 sm:p-8 text-white flex flex-col items-center justify-between relative overflow-hidden text-center shrink-0">
+        {/* LEFT SECTION (Vibrant RED Branding Side) */}
+        <div className="w-full md:w-5/12 bg-gradient-to-br from-[#cc040a] via-[#dc2626] to-[#990207] p-5 sm:p-8 text-white flex flex-col items-center justify-between relative overflow-hidden text-center shrink-0">
           
           {/* Subtle Background Blur Shapes */}
-          <div className="absolute -top-10 -left-10 w-48 h-48 bg-blue-400/20 rounded-full blur-3xl pointer-events-none"></div>
-          <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-blue-300/20 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute -top-10 -left-10 w-48 h-48 bg-red-400/20 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-red-300/20 rounded-full blur-3xl pointer-events-none"></div>
 
           <div className="relative z-10 flex flex-col items-center my-auto">
             {/* App Logo Box */}
@@ -212,7 +212,7 @@ export const AuthModal = () => {
               Join thousands of users enjoying fast & secure top-ups
             </p>
 
-            {/* Feature List Box (Hidden on small mobile to give priority to form) */}
+            {/* Feature List Box */}
             <div className="hidden md:block w-full bg-white/10 backdrop-blur-md rounded-2xl border border-white/15 p-4 space-y-3.5 text-left shadow-inner">
               <div className="flex items-center gap-3 text-xs font-extrabold text-white">
                 <div className="w-7 h-7 rounded-xl bg-white/15 flex items-center justify-center text-white shrink-0">
@@ -241,16 +241,16 @@ export const AuthModal = () => {
             </div>
           </div>
 
-          <div className="relative z-10 text-[10px] text-white/70 font-semibold mt-4">
+          <div className="relative z-10 text-[10px] text-white/80 font-semibold mt-4">
             © 2026 MADS TOPUP • MADS ENGINE
           </div>
         </div>
 
-        {/* RIGHT SECTION (Form Side - Matching Screenshots) */}
+        {/* RIGHT SECTION (Form Side) */}
         <div className="w-full md:w-7/12 bg-white p-6 sm:p-10 flex flex-col justify-between overflow-y-auto">
           
           {authMode === 'login' ? (
-            /* LOGIN MODE FORM (Screenshot 1) */
+            /* LOGIN MODE FORM */
             <div className="space-y-6 my-auto">
               <div className="text-center">
                 <h2 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">
@@ -273,7 +273,7 @@ export const AuthModal = () => {
                     placeholder="Enter your username or email"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-[#1E64E8] focus:ring-2 focus:ring-blue-500/20 transition-all shadow-inner"
+                    className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:ring-2 focus:ring-red-500/20 transition-all shadow-inner"
                   />
                 </div>
 
@@ -289,7 +289,7 @@ export const AuthModal = () => {
                       placeholder="Enter your password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full px-4 py-3 pr-10 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-[#1E64E8] focus:ring-2 focus:ring-blue-500/20 transition-all shadow-inner"
+                      className="w-full px-4 py-3 pr-10 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:ring-2 focus:ring-red-500/20 transition-all shadow-inner"
                     />
                     <button
                       type="button"
@@ -308,7 +308,7 @@ export const AuthModal = () => {
                       type="checkbox"
                       checked={keepLoggedIn}
                       onChange={(e) => setKeepLoggedIn(e.target.checked)}
-                      className="w-4 h-4 rounded border-slate-300 text-[#1E64E8] focus:ring-[#1E64E8]"
+                      className="w-4 h-4 rounded border-slate-300 text-[#cc040a] focus:ring-[#cc040a]"
                     />
                     <span>Keep me logged in</span>
                   </label>
@@ -316,7 +316,7 @@ export const AuthModal = () => {
                   <button
                     type="button"
                     onClick={() => showToast('Password reset link sent to your email!')}
-                    className="font-extrabold text-[#1E64E8] hover:underline cursor-pointer"
+                    className="font-extrabold text-[#cc040a] hover:underline cursor-pointer"
                   >
                     Forgot Password?
                   </button>
@@ -325,7 +325,7 @@ export const AuthModal = () => {
                 {/* Submit Login Button */}
                 <button
                   type="submit"
-                  className="w-full py-3.5 bg-[#1E64E8] hover:bg-[#1D4ED8] text-white font-extrabold text-sm rounded-xl transition-all shadow-md shadow-blue-500/25 flex items-center justify-center gap-2 cursor-pointer mt-2"
+                  className="w-full py-3.5 bg-[#cc040a] hover:bg-[#990207] text-white font-extrabold text-sm rounded-xl transition-all shadow-md shadow-red-600/25 flex items-center justify-center gap-2 cursor-pointer mt-2"
                 >
                   <LogIn className="w-4 h-4" />
                   <span>Login</span>
@@ -350,7 +350,7 @@ export const AuthModal = () => {
                 className="w-full py-3 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs rounded-xl border border-slate-200 flex items-center justify-center gap-2.5 transition-colors cursor-pointer shadow-xs disabled:opacity-60"
               >
                 {isGoogleLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-[#1E64E8]" />
+                  <Loader2 className="w-4 h-4 animate-spin text-[#cc040a]" />
                 ) : (
                   <svg className="w-4 h-4" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -368,14 +368,14 @@ export const AuthModal = () => {
                 <button
                   type="button"
                   onClick={() => setAuthMode('register')}
-                  className="font-extrabold text-[#1E64E8] hover:underline cursor-pointer"
+                  className="font-extrabold text-[#cc040a] hover:underline cursor-pointer"
                 >
                   Register here
                 </button>
               </div>
             </div>
           ) : (
-            /* REGISTER MODE FORM (Screenshot 2) */
+            /* REGISTER MODE FORM */
             <div className="space-y-4 my-auto">
               <div className="text-center mb-2">
                 <h2 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">
@@ -394,7 +394,7 @@ export const AuthModal = () => {
                 className="w-full py-2.5 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs rounded-xl border border-slate-200 flex items-center justify-center gap-2.5 transition-colors cursor-pointer shadow-xs disabled:opacity-60"
               >
                 {isGoogleLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-[#1E64E8]" />
+                  <Loader2 className="w-4 h-4 animate-spin text-[#cc040a]" />
                 ) : (
                   <svg className="w-4 h-4" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -428,7 +428,7 @@ export const AuthModal = () => {
                     placeholder="Choose a username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-[#F8FAFC] border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#1E64E8] focus:ring-2 focus:ring-blue-500/20 transition-all"
+                    className="w-full px-3.5 py-2.5 bg-[#F8FAFC] border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:ring-2 focus:ring-red-500/20 transition-all"
                   />
                 </div>
 
@@ -444,13 +444,13 @@ export const AuthModal = () => {
                       placeholder="Enter your email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-[#F8FAFC] border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#1E64E8] focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className="w-full px-3.5 py-2.5 bg-[#F8FAFC] border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:ring-2 focus:ring-red-500/20 transition-all"
                     />
                     <button
                       type="button"
                       onClick={handleSendCode}
                       disabled={isSendingCode}
-                      className="bg-[#1E64E8] hover:bg-[#1D4ED8] text-white font-extrabold text-xs px-3.5 py-2.5 rounded-xl flex items-center gap-1 transition-colors cursor-pointer shrink-0 shadow-xs"
+                      className="bg-[#cc040a] hover:bg-[#990207] text-white font-extrabold text-xs px-3.5 py-2.5 rounded-xl flex items-center gap-1 transition-colors cursor-pointer shrink-0 shadow-xs"
                     >
                       <Send className="w-3 h-3" />
                       <span>{isSendingCode ? 'Sending...' : 'Send Code'}</span>
@@ -473,7 +473,7 @@ export const AuthModal = () => {
                       placeholder="Enter phone number"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-[#F8FAFC] border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#1E64E8] focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className="w-full px-3.5 py-2.5 bg-[#F8FAFC] border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:ring-2 focus:ring-red-500/20 transition-all"
                     />
                   </div>
                   <p className="text-[10px] font-medium text-slate-400 mt-0.5">
@@ -493,7 +493,7 @@ export const AuthModal = () => {
                       placeholder="Create a strong password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full px-3.5 py-2.5 pr-9 bg-[#F8FAFC] border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#1E64E8] focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className="w-full px-3.5 py-2.5 pr-9 bg-[#F8FAFC] border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:ring-2 focus:ring-red-500/20 transition-all"
                     />
                     <button
                       type="button"
@@ -517,7 +517,7 @@ export const AuthModal = () => {
                       placeholder="Confirm your password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full px-3.5 py-2.5 pr-9 bg-[#F8FAFC] border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#1E64E8] focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className="w-full px-3.5 py-2.5 pr-9 bg-[#F8FAFC] border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:ring-2 focus:ring-red-500/20 transition-all"
                     />
                     <button
                       type="button"
@@ -532,7 +532,7 @@ export const AuthModal = () => {
                 {/* Submit Create Account Button */}
                 <button
                   type="submit"
-                  className="w-full py-3 bg-[#1E64E8] hover:bg-[#1D4ED8] text-white font-extrabold text-xs rounded-xl transition-all shadow-md shadow-blue-500/25 flex items-center justify-center gap-2 cursor-pointer mt-2"
+                  className="w-full py-3 bg-[#cc040a] hover:bg-[#990207] text-white font-extrabold text-xs rounded-xl transition-all shadow-md shadow-red-600/25 flex items-center justify-center gap-2 cursor-pointer mt-2"
                 >
                   <span>Create Account</span>
                   <ArrowRight className="w-4 h-4" />
@@ -545,7 +545,7 @@ export const AuthModal = () => {
                 <button
                   type="button"
                   onClick={() => setAuthMode('login')}
-                  className="font-extrabold text-[#1E64E8] hover:underline cursor-pointer"
+                  className="font-extrabold text-[#cc040a] hover:underline cursor-pointer"
                 >
                   Sign in
                 </button>
