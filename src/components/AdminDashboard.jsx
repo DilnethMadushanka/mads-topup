@@ -106,6 +106,35 @@ export const AdminDashboard = () => {
   // Game List Price State Editor
   const [gamesCatalog, setGamesCatalog] = useState(GAMES_DATA);
 
+  // Live Moongold Balance state (MUST BE DECLARED WITH HOOKS AT TOP LEVEL)
+  const [liveMoongoldBalance, setLiveMoongoldBalance] = useState({
+    balanceUsd: moongoldConfig.merchantBalanceUsd || 480.00,
+    balanceLkr: moongoldConfig.merchantBalanceLkr || 145800.00,
+    isLoading: false,
+    lastFetched: null
+  });
+
+  const fetchLiveBalance = async () => {
+    setLiveMoongoldBalance(prev => ({ ...prev, isLoading: true }));
+    const result = await checkMoongoldBalance();
+    if (result && result.success) {
+      setLiveMoongoldBalance({
+        balanceUsd: result.balanceUsd,
+        balanceLkr: result.balanceLkr,
+        isLoading: false,
+        lastFetched: new Date().toLocaleTimeString()
+      });
+    } else {
+      setLiveMoongoldBalance(prev => ({ ...prev, isLoading: false }));
+    }
+  };
+
+  useEffect(() => {
+    if (isAdminAuthenticated && isAdminOpen) {
+      fetchLiveBalance();
+    }
+  }, [isAdminAuthenticated, isAdminOpen]);
+
   if (!isAdminOpen) return null;
 
   const handleAdminLoginSubmit = (e) => {
@@ -298,34 +327,6 @@ export const AdminDashboard = () => {
       showToast(`Moongold Sync Failed: ${result.message}`, 'error');
     }
   };
-
-  const [liveMoongoldBalance, setLiveMoongoldBalance] = useState({
-    balanceUsd: moongoldConfig.merchantBalanceUsd || 480.00,
-    balanceLkr: moongoldConfig.merchantBalanceLkr || 145800.00,
-    isLoading: false,
-    lastFetched: null
-  });
-
-  const fetchLiveBalance = async () => {
-    setLiveMoongoldBalance(prev => ({ ...prev, isLoading: true }));
-    const result = await checkMoongoldBalance();
-    if (result && result.success) {
-      setLiveMoongoldBalance({
-        balanceUsd: result.balanceUsd,
-        balanceLkr: result.balanceLkr,
-        isLoading: false,
-        lastFetched: new Date().toLocaleTimeString()
-      });
-    } else {
-      setLiveMoongoldBalance(prev => ({ ...prev, isLoading: false }));
-    }
-  };
-
-  useEffect(() => {
-    if (isAdminAuthenticated && isAdminOpen) {
-      fetchLiveBalance();
-    }
-  }, [isAdminAuthenticated, isAdminOpen]);
 
   const handleCheckBalance = async () => {
     setIsCheckingBalance(true);
