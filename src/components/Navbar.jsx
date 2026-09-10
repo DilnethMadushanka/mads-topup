@@ -48,8 +48,8 @@ export const Navbar = () => {
           onClick={closeCatalog}
           className="flex items-center gap-2 cursor-pointer group"
         >
-          <div className="w-9 h-9 rounded-full bg-slate-950 border border-slate-800 flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform duration-300">
-            <Flame className="w-5 h-5 fill-white text-white" />
+          <div className="w-10 h-10 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform duration-300 overflow-hidden p-0.5">
+            <img src="/mads-logo.jpg" alt="MADS TOPUP Logo" className="w-full h-full object-contain rounded-lg" />
           </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-1 font-black text-xl tracking-tighter text-slate-950 font-heading">

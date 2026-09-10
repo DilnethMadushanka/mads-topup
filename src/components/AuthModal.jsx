@@ -204,10 +204,8 @@ export const AuthModal = () => {
 
           <div className="relative z-10 flex flex-col items-center my-auto">
             {/* App Logo Box */}
-            <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl bg-white shadow-xl flex items-center justify-center p-3 sm:p-4 mb-3 sm:mb-6 border border-white/20">
-              <div className="w-10 h-10 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-tr from-[#1E64E8] to-cyan-400 flex items-center justify-center text-white font-black text-xl sm:text-2xl font-heading shadow-md">
-                N
-              </div>
+            <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl bg-slate-950 shadow-xl flex items-center justify-center p-2 mb-3 sm:mb-6 border border-white/20 overflow-hidden">
+              <img src="/mads-logo.jpg" alt="MADS TOPUP Logo" className="w-full h-full object-contain rounded-xl" />
             </div>
 
             <p className="text-xs sm:text-sm font-semibold text-white/95 leading-relaxed max-w-xs mb-3 sm:mb-8">
