@@ -411,19 +411,19 @@ export const GameTopupPage = () => {
               <div className="mt-3 p-3 bg-emerald-50 border border-emerald-300 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs text-emerald-800 font-semibold animate-in fade-in">
                 <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
                   <CheckCircle2 className="w-4.5 h-4.5 text-emerald-600 shrink-0" />
-                  <span className="shrink-0 font-bold">Verified IGN:</span>
+                  <span className="shrink-0 font-bold">Verified ID / IGN:</span>
                   <div className="relative flex items-center">
                     <input 
                       type="text" 
                       value={ign} 
                       onChange={(e) => setIgn(e.target.value)} 
-                      className="bg-white border border-emerald-400 rounded-lg px-3 py-1 text-xs font-black text-emerald-950 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm min-w-[180px] sm:min-w-[220px]"
-                      placeholder="Enter In-Game Name"
-                      title="Click to edit your In-Game Name"
+                      className="bg-white border border-emerald-400 rounded-lg px-3 py-1 text-xs font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm min-w-[180px] sm:min-w-[220px]"
+                      placeholder="Type your In-Game Name"
+                      title="Type your real in-game username"
                     />
                     <Edit3 className="w-3.5 h-3.5 text-emerald-500 absolute right-2.5 pointer-events-none" />
                   </div>
-                  <span className="text-[11px] text-emerald-600 font-normal hidden sm:inline">(Click name to edit)</span>
+                  <span className="text-[11px] text-emerald-700 font-medium hidden sm:inline">(Click to edit name)</span>
                 </div>
                 <button 
                   onClick={() => savePlayerId(selectedGame.id, selectedGame.name, playerId, ign)}
