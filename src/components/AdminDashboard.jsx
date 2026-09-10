@@ -44,6 +44,7 @@ export const AdminDashboard = () => {
   const [adminAuthEmail, setAdminAuthEmail] = useState('madsruzza@gmail.com');
   const [adminAuthPassword, setAdminAuthPassword] = useState('');
   const [showAdminAuthPassword, setShowAdminAuthPassword] = useState(false);
+  const [adminAuthError, setAdminAuthError] = useState('');
   // Active Admin Sidebar Tab
   const [adminTab, setAdminTab] = useState('overview'); 
   // Options: 'overview' | 'orders' | 'deposits' | 'users' | 'credit' | 'games' | 'vouchers' | 'moongold' | 'r2' | 'announcement'
