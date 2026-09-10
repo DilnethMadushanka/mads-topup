@@ -1,95 +1,176 @@
-import { db } from './firebaseAuth';
-import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
+import { db, rtdb } from './firebaseAuth';
+import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc } from 'firebase/firestore';
+import { ref as dbRef, get as rtdbGet, set as rtdbSet, update as rtdbUpdate, onValue as rtdbOnValue } from 'firebase/database';
 
 /**
- * Sync or create user profile document in Firestore database
+ * Sync or create user profile document in Firestore & Realtime Database
  */
 export const syncUserProfileToFirestore = async (user) => {
-  if (!db || !user || !user.uid) return null;
+  if (!user || !user.uid) return null;
 
-  try {
-    const userRef = doc(db, 'users', user.uid);
-    const docSnap = await getDoc(userRef);
+  let profileData = null;
 
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      return {
-        uid: user.uid,
-        name: data.name || user.name || 'Verified Gamer',
-        email: data.email || user.email || '',
-        phone: data.phone || '',
-        walletBalance: data.walletBalance !== undefined ? data.walletBalance : 0,
-        walletUsdt: data.walletUsdt !== undefined ? data.walletUsdt : 0,
-        avatar: data.avatar || user.photoURL || '',
-        savedIds: data.savedIds || [],
-        createdAt: data.createdAt || new Date().toISOString()
-      };
-    } else {
-      // Create new user profile document in Firestore
-      const newUserProfile = {
-        uid: user.uid,
-        name: user.name || 'Verified Gamer',
-        email: user.email || '',
-        phone: '',
-        walletBalance: 0,
-        walletUsdt: 0,
-        avatar: user.photoURL || '',
-        savedIds: [],
-        createdAt: new Date().toISOString()
-      };
-      await setDoc(userRef, newUserProfile);
-      return newUserProfile;
+  // 1. Try Realtime Database (RTDB)
+  if (rtdb) {
+    try {
+      const userRtdbRef = dbRef(rtdb, `users/${user.uid}`);
+      const snapshot = await rtdbGet(userRtdbRef);
+      if (snapshot.exists()) {
+        profileData = snapshot.val();
+      } else {
+        const newUserProfile = {
+          uid: user.uid,
+          name: user.name || 'Verified Gamer',
+          email: user.email || '',
+          phone: '',
+          walletBalance: 0,
+          walletUsdt: 0,
+          avatar: user.photoURL || '',
+          savedIds: [],
+          createdAt: new Date().toISOString()
+        };
+        await rtdbSet(userRtdbRef, newUserProfile);
+        profileData = newUserProfile;
+      }
+    } catch (e) {
+      console.warn('Realtime Database sync note:', e);
     }
-  } catch (error) {
-    console.error('Error syncing user profile to Firestore:', error);
-    return null;
   }
+
+  // 2. Try Firestore
+  if (db && !profileData) {
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      const docSnap = await getDoc(userRef);
+
+      if (docSnap.exists()) {
+        profileData = docSnap.data();
+      } else {
+        const newUserProfile = {
+          uid: user.uid,
+          name: user.name || 'Verified Gamer',
+          email: user.email || '',
+          phone: '',
+          walletBalance: 0,
+          walletUsdt: 0,
+          avatar: user.photoURL || '',
+          savedIds: [],
+          createdAt: new Date().toISOString()
+        };
+        await setDoc(userRef, newUserProfile);
+        profileData = newUserProfile;
+      }
+    } catch (error) {
+      console.warn('Firestore sync note:', error);
+    }
+  }
+
+  return profileData || {
+    uid: user.uid,
+    name: user.name || 'Verified Gamer',
+    email: user.email || '',
+    phone: '',
+    walletBalance: 0,
+    walletUsdt: 0,
+    avatar: user.photoURL || '',
+    savedIds: [],
+    createdAt: new Date().toISOString()
+  };
 };
 
 /**
- * Save user profile updates to Firestore database
+ * Save user profile updates to Database
  */
 export const updateUserProfileInFirestore = async (uid, updatedData) => {
-  if (!db || !uid) return;
-  try {
-    const userRef = doc(db, 'users', uid);
-    await updateDoc(userRef, updatedData);
-  } catch (error) {
-    console.error('Error updating user profile in Firestore:', error);
+  if (!uid) return;
+
+  // Realtime Database
+  if (rtdb) {
+    try {
+      const userRtdbRef = dbRef(rtdb, `users/${uid}`);
+      await rtdbUpdate(userRtdbRef, updatedData);
+    } catch (e) {
+      console.warn('RTDB update note:', e);
+    }
+  }
+
+  // Firestore
+  if (db) {
+    try {
+      const userRef = doc(db, 'users', uid);
+      await updateDoc(userRef, updatedData);
+    } catch (error) {
+      console.warn('Firestore update note:', error);
+    }
   }
 };
 
 /**
- * Listen to live user profile changes in Firestore
+ * Listen to live user profile changes in Realtime Database or Firestore
  */
 export const subscribeUserProfile = (uid, callback) => {
-  if (!db || !uid) return () => {};
-  try {
-    const userRef = doc(db, 'users', uid);
-    return onSnapshot(userRef, (snapshot) => {
-      if (snapshot.exists()) {
-        callback(snapshot.data());
-      }
-    });
-  } catch (err) {
-    console.error('Firestore snapshot listener error:', err);
-    return () => {};
+  if (!uid) return () => {};
+
+  let unsubRtdb = null;
+  let unsubFirestore = null;
+
+  if (rtdb) {
+    try {
+      const userRtdbRef = dbRef(rtdb, `users/${uid}`);
+      unsubRtdb = rtdbOnValue(userRtdbRef, (snapshot) => {
+        if (snapshot.exists()) {
+          callback(snapshot.val());
+        }
+      });
+    } catch (e) {
+      console.warn('RTDB listener note:', e);
+    }
   }
+
+  if (db) {
+    try {
+      const userRef = doc(db, 'users', uid);
+      unsubFirestore = onSnapshot(userRef, (snapshot) => {
+        if (snapshot.exists()) {
+          callback(snapshot.data());
+        }
+      });
+    } catch (err) {
+      console.warn('Firestore listener note:', err);
+    }
+  }
+
+  return () => {
+    if (typeof unsubRtdb === 'function') unsubRtdb();
+    if (typeof unsubFirestore === 'function') unsubFirestore();
+  };
 };
 
 /**
- * Save a new top-up order to Firestore
+ * Save a new top-up order to Database
  */
 export const saveOrderToFirestore = async (uid, order) => {
-  if (!db) return;
-  try {
-    const ordersCol = collection(db, 'orders');
-    await addDoc(ordersCol, {
-      ...order,
-      userId: uid || 'guest',
-      timestamp: new Date().toISOString()
-    });
-  } catch (err) {
-    console.error('Error saving order to Firestore:', err);
+  const payload = {
+    ...order,
+    userId: uid || 'guest',
+    timestamp: new Date().toISOString()
+  };
+
+  if (rtdb) {
+    try {
+      const orderRef = dbRef(rtdb, `orders/${order.id || Date.now()}`);
+      await rtdbSet(orderRef, payload);
+    } catch (e) {
+      console.warn('RTDB order save note:', e);
+    }
+  }
+
+  if (db) {
+    try {
+      const ordersCol = collection(db, 'orders');
+      await addDoc(ordersCol, payload);
+    } catch (err) {
+      console.warn('Firestore order save note:', err);
+    }
   }
 };
