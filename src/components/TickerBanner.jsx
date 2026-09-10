@@ -1,15 +1,14 @@
 import React from 'react';
+import { useApp } from '../context/AppContext';
 
 export const TickerBanner = () => {
+  const { tickerNotice } = useApp();
+
   const items = [
-    'INSTANT FREE FIRE TOP-UPS',
-    'GARENA SHELLS AVAILABLE',
-    'PUBG MOBILE UC',
-    'BLOOD STRIKE & DELTA FORCE',
-    'FAST & SECURE',
-    'AVAILABLE WORLDWIDE',
-    '24/7 SUPPORT',
-    "SRI LANKA'S #1 CHOICE"
+    tickerNotice || 'INSTANT FREE FIRE TOP-UPS',
+    'GARENA SHELLS AVAILABLE 24/7',
+    'PUBG MOBILE UC INSTANT DELIVERY',
+    'EZ CASH & BINANCE PAY SUPPORTED'
   ];
 
   return (

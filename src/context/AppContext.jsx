@@ -244,6 +244,51 @@ export const AppProvider = ({ children }) => {
     showToast('Game ID saved to profile for fast top-up!');
   };
 
+  // Vouchers state
+  const [vouchers, setVouchers] = useState(() => {
+    const saved = localStorage.getItem('mads_vouchers');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return [
+      { code: 'MADS-GIFT-500', value: 500, currency: 'LKR', maxUses: 100, usedCount: 14, active: true },
+      { code: 'WELCOME100', value: 100, currency: 'LKR', maxUses: 500, usedCount: 88, active: true },
+      { code: 'BINANCE-USDT-5', value: 5, currency: 'USDT', maxUses: 50, usedCount: 12, active: true }
+    ];
+  });
+
+  // Ticker message state
+  const [tickerNotice, setTickerNotice] = useState(() => {
+    return localStorage.getItem('mads_ticker_notice') || '🔥 SPECIAL PROMO: GET 10% EXTRA DIAMONDS ON ALL EZ CASH & BINANCE TOP-UPS! INSTANT DISPATCH ACTIVE 24/7.';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('mads_vouchers', JSON.stringify(vouchers));
+  }, [vouchers]);
+
+  useEffect(() => {
+    localStorage.setItem('mads_ticker_notice', tickerNotice);
+  }, [tickerNotice]);
+
+  const addVoucher = (newVoucher) => {
+    setVouchers(prev => [newVoucher, ...prev]);
+    showToast(`Voucher code ${newVoucher.code} created successfully!`);
+  };
+
+  const deleteVoucher = (code) => {
+    setVouchers(prev => prev.filter(v => v.code !== code));
+    showToast(`Voucher code ${code} deleted.`);
+  };
+
+  const creditUserWallet = (amountLkr, amountUsdt = 0) => {
+    setUserProfile(prev => ({
+      ...prev,
+      walletBalance: (prev.walletBalance || 0) + amountLkr,
+      walletUsdt: (prev.walletUsdt || 0) + amountUsdt
+    }));
+    showToast(`Wallet credited with ${amountLkr} LKR / ${amountUsdt} USDT!`);
+  };
+
   return (
     <AppContext.Provider value={{
       currency,
@@ -291,7 +336,13 @@ export const AppProvider = ({ children }) => {
       setIsWalletModalOpen,
       walletActiveTab,
       setWalletActiveTab,
-      openWalletModal
+      openWalletModal,
+      vouchers,
+      addVoucher,
+      deleteVoucher,
+      tickerNotice,
+      setTickerNotice,
+      creditUserWallet
     }}>
       {children}
     </AppContext.Provider>
