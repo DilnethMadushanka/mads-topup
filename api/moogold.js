@@ -1,6 +1,6 @@
-const crypto = require('crypto');
+import crypto from 'crypto';
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   try {
     // CORS headers for frontend
     res.setHeader('Access-Control-Allow-Credentials', true);
@@ -73,4 +73,4 @@ module.exports = async (req, res) => {
     console.error('Serverless function error:', err);
     res.status(500).json({ error: err.message, stack: err.stack });
   }
-};
+}
