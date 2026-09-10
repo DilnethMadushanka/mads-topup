@@ -26,7 +26,7 @@ export const saveCachedIgn = (playerId, ignName) => {
 };
 
 /**
- * Perform Free Live IGN Lookup
+ * Perform Free Live IGN Lookup & RapidAPI Support
  */
 export const lookupFreePlayerIgn = async (gameId, playerId, zoneId = '') => {
   const cleanId = String(playerId).trim();
@@ -38,7 +38,30 @@ export const lookupFreePlayerIgn = async (gameId, playerId, zoneId = '') => {
     return { success: true, ign: cached, isReal: true, source: 'CACHE' };
   }
 
-  // 2. Query open community lookup endpoints
+  // 2. Try RapidAPI if key is configured in .env
+  const rapidApiKey = import.meta.env.VITE_RAPIDAPI_KEY;
+  if (rapidApiKey) {
+    try {
+      const res = await fetch(`https://game-player-lookup.p.rapidapi.com/v1/lookup?game=${gameId}&uid=${cleanId}&zone=${zoneId}`, {
+        headers: {
+          'X-RapidAPI-Key': rapidApiKey,
+          'X-RapidAPI-Host': 'game-player-lookup.p.rapidapi.com'
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const realName = data.username || data.nickname || data.name;
+        if (realName) {
+          saveCachedIgn(cleanId, realName);
+          return { success: true, ign: realName, isReal: true, source: 'RAPID_API' };
+        }
+      }
+    } catch (e) {
+      console.warn('RapidAPI lookup warning:', e);
+    }
+  }
+
+  // 3. Query open community lookup endpoints
   try {
     const isFreeFire = gameId?.toLowerCase().includes('freefire') || gameId?.toLowerCase().includes('ff');
     if (isFreeFire) {
