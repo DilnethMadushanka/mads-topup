@@ -6,7 +6,8 @@ import {
   X, ShieldCheck, DollarSign, Activity, Settings, RefreshCw, 
   CheckCircle2, Clock, XCircle, Zap, Key, Server, Database, Save, Eye, EyeOff, Cloud, UploadCloud,
   Users, CreditCard, Ticket, Megaphone, Search, Filter, Plus, Trash2, ArrowUpRight, ArrowDownRight,
-  TrendingUp, Check, AlertTriangle, ShieldAlert, FileText, Gift, Award, CornerDownRight, ChevronRight, Lock
+  TrendingUp, Check, AlertTriangle, ShieldAlert, FileText, Gift, Award, CornerDownRight, ChevronRight, Lock,
+  BadgeCheck, UserCheck, UserX, FileCheck, ExternalLink, Image
 } from 'lucide-react';
 
 export const AdminDashboard = () => {
@@ -27,7 +28,15 @@ export const AdminDashboard = () => {
     deleteVoucher,
     tickerNotice,
     setTickerNotice,
-    creditUserWallet
+    creditUserWallet,
+    usersList,
+    verifyUserAccount,
+    toggleBlockUser,
+    updateUserBalance,
+    manualPayments,
+    approveManualPayment,
+    rejectManualPayment,
+    addManualPayment
   } = useApp();
 
   // Admin Authentication State
@@ -41,13 +50,31 @@ export const AdminDashboard = () => {
 
   // Active Admin Sidebar Tab
   const [adminTab, setAdminTab] = useState('overview'); 
-  // Options: 'overview' | 'orders' | 'deposits' | 'credit' | 'games' | 'vouchers' | 'moongold' | 'r2' | 'announcement'
+  // Options: 'overview' | 'orders' | 'deposits' | 'users' | 'credit' | 'games' | 'vouchers' | 'moongold' | 'r2' | 'announcement'
 
   // Order Filters & Search
   const [orderSearch, setOrderSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [paymentFilter, setPaymentFilter] = useState('ALL');
   const [selectedInspectOrder, setSelectedInspectOrder] = useState(null);
+
+  // User Management Filters & Search
+  const [userSearch, setUserSearch] = useState('');
+  const [userStatusFilter, setUserStatusFilter] = useState('ALL');
+  const [selectedInspectUser, setSelectedInspectUser] = useState(null);
+
+  // Payment Verification Filters
+  const [paymentSearch, setPaymentSearch] = useState('');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('ALL');
+  const [selectedPaymentInspect, setSelectedPaymentInspect] = useState(null);
+
+  // New Manual Payment Record Form
+  const [isAddPaymentOpen, setIsAddPaymentOpen] = useState(false);
+  const [newPayUserEmail, setNewPayUserEmail] = useState('');
+  const [newPayMethod, setNewPayMethod] = useState('EZ Cash');
+  const [newPayRef, setNewPayRef] = useState('');
+  const [newPayAmount, setNewPayAmount] = useState('');
+  const [newPayCurrency, setNewPayCurrency] = useState('LKR');
 
   // Moongold Config Form
   const [apiKeyInput, setApiKeyInput] = useState(moongoldConfig.apiKey);
@@ -81,13 +108,6 @@ export const AdminDashboard = () => {
 
   // Game List Price State Editor
   const [gamesCatalog, setGamesCatalog] = useState(GAMES_DATA);
-
-  // Sample Deposit Verification Queue
-  const [depositsQueue, setDepositsQueue] = useState([
-    { id: 'DEP-101', type: 'EZ_CASH', rnNumber: '20260910982314', user: userProfile?.name || 'Dilneth', amount: 1500, currency: 'LKR', status: 'PENDING', date: 'Just Now' },
-    { id: 'DEP-102', type: 'BINANCE', orderId: '298102451901', payId: '510134936', user: 'GamerLK', amount: 10, currency: 'USDT', status: 'PENDING', date: '5 mins ago' },
-    { id: 'DEP-103', type: 'EZ_CASH', rnNumber: '20260910114590', user: 'SLAyer_99', amount: 5000, currency: 'LKR', status: 'VERIFIED', date: '1 hour ago' }
-  ]);
 
   if (!isAdminOpen) return null;
 
@@ -194,12 +214,14 @@ export const AdminDashboard = () => {
   }
 
   const safeOrders = orders || [];
+  const safeUsers = usersList || [];
+  const safePayments = manualPayments || [];
 
   // Metrics Calculations
   const completedOrders = safeOrders.filter(o => o.status === 'COMPLETED');
   const totalRevenueLkr = completedOrders.reduce((sum, o) => sum + (o.priceLkr || 0), 0);
   const pendingCount = safeOrders.filter(o => o.status === 'PROCESSING' || o.status === 'PENDING').length;
-  const pendingDepositsCount = depositsQueue.filter(d => d.status === 'PENDING').length;
+  const pendingPaymentsCount = safePayments.filter(d => d.status === 'PENDING').length;
 
   // Filtered Orders Calculation
   const filteredOrders = safeOrders.filter(ord => {
@@ -213,6 +235,33 @@ export const AdminDashboard = () => {
     const matchesPayment = paymentFilter === 'ALL' || ord.paymentMethod.toLowerCase().includes(paymentFilter.toLowerCase());
 
     return matchesSearch && matchesStatus && matchesPayment;
+  });
+
+  // Filtered Users Calculation
+  const filteredUsers = safeUsers.filter(usr => {
+    const matchesSearch = 
+      usr.name.toLowerCase().includes(userSearch.toLowerCase()) ||
+      usr.email.toLowerCase().includes(userSearch.toLowerCase()) ||
+      (usr.phone && usr.phone.includes(userSearch));
+
+    const matchesStatus = userStatusFilter === 'ALL' || 
+      (userStatusFilter === 'VERIFIED' && usr.isVerified) ||
+      (userStatusFilter === 'UNVERIFIED' && !usr.isVerified) ||
+      (userStatusFilter === 'BLOCKED' && usr.status === 'BLOCKED');
+
+    return matchesSearch && matchesStatus;
+  });
+
+  // Filtered Payments Queue Calculation
+  const filteredPayments = safePayments.filter(pay => {
+    const matchesSearch = 
+      pay.id.toLowerCase().includes(paymentSearch.toLowerCase()) ||
+      pay.userEmail.toLowerCase().includes(paymentSearch.toLowerCase()) ||
+      pay.referenceNumber.toLowerCase().includes(paymentSearch.toLowerCase());
+
+    const matchesStatus = paymentStatusFilter === 'ALL' || pay.status === paymentStatusFilter;
+
+    return matchesSearch && matchesStatus;
   });
 
   // Action Handlers
@@ -271,21 +320,6 @@ export const AdminDashboard = () => {
     showToast(`Cloudflare R2 Bucket Connected! Endpoint: ${r2UrlInput}`);
   };
 
-  const handleApproveDeposit = (dep) => {
-    setDepositsQueue(prev => prev.map(d => d.id === dep.id ? { ...d, status: 'VERIFIED' } : d));
-    if (dep.currency === 'USDT') {
-      creditUserWallet(0, dep.amount);
-    } else {
-      creditUserWallet(dep.amount, 0);
-    }
-    showToast(`Deposit ${dep.id} approved! Added ${dep.amount} ${dep.currency} to user wallet.`);
-  };
-
-  const handleRejectDeposit = (depId) => {
-    setDepositsQueue(prev => prev.map(d => d.id === depId ? { ...d, status: 'REJECTED' } : d));
-    showToast(`Deposit ${depId} rejected.`, 'error');
-  };
-
   const handleManualCreditSubmit = (e) => {
     e.preventDefault();
     const lkr = parseFloat(creditLkrAmount) || 0;
@@ -296,7 +330,7 @@ export const AdminDashboard = () => {
       return;
     }
 
-    creditUserWallet(lkr, usdt);
+    updateUserBalance(creditUserEmail, lkr, usdt);
     setCreditLkrAmount('');
     setCreditUsdtAmount('');
   };
@@ -327,6 +361,31 @@ export const AdminDashboard = () => {
     showToast('Ticker notice banner updated live across website!');
   };
 
+  const handleAddManualPaymentRecord = (e) => {
+    e.preventDefault();
+    if (!newPayUserEmail || !newPayRef || !newPayAmount) {
+      showToast('Please fill all required payment fields!', 'error');
+      return;
+    }
+
+    addManualPayment({
+      id: `PAY-${Date.now().toString().slice(-4)}`,
+      userEmail: newPayUserEmail,
+      userName: newPayUserEmail.split('@')[0],
+      method: newPayMethod,
+      referenceNumber: newPayRef,
+      amount: parseFloat(newPayAmount),
+      currency: newPayCurrency,
+      slipUrl: '',
+      status: 'PENDING',
+      createdAt: 'Just Now'
+    });
+
+    setNewPayRef('');
+    setNewPayAmount('');
+    setIsAddPaymentOpen(false);
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-200">
       <div className="bg-[#0b0f17] text-white w-full max-w-7xl h-[94vh] rounded-3xl shadow-2xl border border-slate-800 overflow-hidden flex flex-col relative">
@@ -341,10 +400,10 @@ export const AdminDashboard = () => {
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-black font-heading tracking-tight text-white">MADS TOPUP ADMIN PORTAL</h2>
                 <span className="px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/40 text-red-400 text-[10px] font-mono font-bold">
-                  PRO SUPER ADMIN v3.0
+                  PRO SUPER ADMIN v3.5
                 </span>
               </div>
-              <p className="text-xs text-slate-400 font-medium">Live Order Dispatch, Deposits, User Wallets & Moongold Gateway</p>
+              <p className="text-xs text-slate-400 font-medium">Order Dispatch, User Account Verification & Manual Payment Approvals</p>
             </div>
           </div>
 
@@ -418,14 +477,27 @@ export const AdminDashboard = () => {
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <CreditCard className="w-4 h-4 text-emerald-400" />
-                <span>Deposits Verifier</span>
+                <FileCheck className="w-4 h-4 text-emerald-400" />
+                <span>Manual Payment Verifier</span>
               </div>
-              {pendingDepositsCount > 0 && (
+              {pendingPaymentsCount > 0 && (
                 <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-mono font-black text-[10px]">
-                  {pendingDepositsCount}
+                  {pendingPaymentsCount}
                 </span>
               )}
+            </button>
+
+            <button
+              onClick={() => setAdminTab('users')}
+              className={`w-full px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition-all cursor-pointer ${
+                adminTab === 'users' ? 'bg-[#cc040a] text-white shadow-lg shadow-red-600/30' : 'text-slate-400 hover:bg-slate-900 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Users className="w-4 h-4 text-blue-400" />
+                <span>User Account Verification</span>
+              </div>
+              <span className="text-[10px] font-mono text-slate-500">{safeUsers.length}</span>
             </button>
 
             <button
@@ -513,7 +585,7 @@ export const AdminDashboard = () => {
 
           {/* MOBILE TAB BAR MENU (Shows on small screens) */}
           <div className="md:hidden flex overflow-x-auto bg-[#0d121c] border-b border-slate-800 p-2 gap-2 text-xs font-bold shrink-0">
-            {['overview', 'orders', 'deposits', 'credit', 'games', 'vouchers', 'moongold', 'r2', 'announcement'].map((tab) => (
+            {['overview', 'orders', 'deposits', 'users', 'credit', 'games', 'vouchers', 'moongold', 'r2', 'announcement'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setAdminTab(tab)}
@@ -555,15 +627,15 @@ export const AdminDashboard = () => {
                   </div>
 
                   <div className="bg-[#111622] p-5 rounded-2xl border border-slate-800/90 shadow-md">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">TOTAL DISPATCHES</span>
-                    <h4 className="text-2xl font-black text-white font-heading mt-1">{safeOrders.length} Orders</h4>
-                    <span className="text-[10px] text-slate-400 font-bold mt-1 inline-block">{completedOrders.length} completed</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">TOTAL USER ACCOUNTS</span>
+                    <h4 className="text-2xl font-black text-white font-heading mt-1">{safeUsers.length} Users</h4>
+                    <span className="text-[10px] text-blue-400 font-bold mt-1 inline-block">{safeUsers.filter(u => u.isVerified).length} Verified accounts</span>
                   </div>
 
                   <div className="bg-[#111622] p-5 rounded-2xl border border-slate-800/90 shadow-md">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">PENDING DISPATCH QUEUE</span>
-                    <h4 className="text-2xl font-black text-amber-400 font-heading mt-1">{pendingCount} Pending</h4>
-                    <span className="text-[10px] text-amber-500 font-bold mt-1 inline-block">Requires verification or Moongold dispatch</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">MANUAL VERIFICATIONS QUEUE</span>
+                    <h4 className="text-2xl font-black text-amber-400 font-heading mt-1">{pendingPaymentsCount} Pending</h4>
+                    <span className="text-[10px] text-amber-500 font-bold mt-1 inline-block">EZ Cash RN / Binance Order IDs</span>
                   </div>
 
                   <div className="bg-[#111622] p-5 rounded-2xl border border-slate-800/90 shadow-md">
@@ -607,7 +679,6 @@ export const AdminDashboard = () => {
               <div className="space-y-4 animate-in fade-in">
                 {/* Search and Filters Bar */}
                 <div className="bg-[#111622] p-4 rounded-2xl border border-slate-800 space-y-3 sm:space-y-0 sm:flex sm:items-center sm:justify-between gap-4 text-xs">
-                  {/* Search Input */}
                   <div className="relative flex-1">
                     <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
                     <input
@@ -619,7 +690,6 @@ export const AdminDashboard = () => {
                     />
                   </div>
 
-                  {/* Filter Pills */}
                   <div className="flex items-center gap-2">
                     <select
                       value={statusFilter}
@@ -691,7 +761,7 @@ export const AdminDashboard = () => {
                             <td className="p-3.5 text-right space-x-1.5">
                               <button
                                 onClick={() => setSelectedInspectOrder(ord)}
-                                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-[11px] font-bold"
+                                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-[11px] font-bold cursor-pointer"
                               >
                                 Inspect
                               </button>
@@ -720,78 +790,252 @@ export const AdminDashboard = () => {
               </div>
             )}
 
-            {/* 3. DEPOSITS VERIFIER QUEUE */}
+            {/* 3. MANUAL PAYMENT VERIFICATION QUEUE */}
             {adminTab === 'deposits' && (
               <div className="space-y-4 animate-in fade-in">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-xl font-black font-heading text-white">Deposit Verification Queue</h3>
-                    <p className="text-xs text-slate-400">Review and verify EZ Cash 14-Digit RN numbers & Binance Order IDs</p>
+                    <h3 className="text-xl font-black font-heading text-white">Manual Payment Verification Queue</h3>
+                    <p className="text-xs text-slate-400">Review, verify, and approve EZ Cash 14-digit RNs, Binance Order IDs & Bank Receipts</p>
                   </div>
+
+                  <button
+                    onClick={() => setIsAddPaymentOpen(true)}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-lg shadow-emerald-600/20 cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Record Offline Payment</span>
+                  </button>
                 </div>
 
+                {/* Filters & Search */}
+                <div className="bg-[#111622] p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row gap-4 justify-between items-center text-xs">
+                  <div className="relative flex-1 w-full">
+                    <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search Transaction RN, Order ID, User Email..."
+                      value={paymentSearch}
+                      onChange={(e) => setPaymentSearch(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <select
+                    value={paymentStatusFilter}
+                    onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                    className="px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white font-bold cursor-pointer w-full sm:w-auto"
+                  >
+                    <option value="ALL">All Payment Statuses</option>
+                    <option value="PENDING">Pending Verification</option>
+                    <option value="VERIFIED">Verified & Credited</option>
+                    <option value="REJECTED">Rejected</option>
+                  </select>
+                </div>
+
+                {/* Payment List Table */}
                 <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-[#111622]">
                   <table className="w-full text-left text-xs">
                     <thead className="bg-[#0d121c] text-slate-400 uppercase font-mono text-[10px]">
                       <tr>
-                        <th className="p-3.5">ID</th>
+                        <th className="p-3.5">Payment Ref</th>
                         <th className="p-3.5">Payment Method</th>
                         <th className="p-3.5">Submitted RN / Order ID</th>
-                        <th className="p-3.5">User</th>
+                        <th className="p-3.5">User Account</th>
                         <th className="p-3.5">Amount</th>
                         <th className="p-3.5">Status</th>
                         <th className="p-3.5 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/60 font-medium">
-                      {depositsQueue.map((dep) => (
-                        <tr key={dep.id} className="hover:bg-slate-900/60 transition-colors">
-                          <td className="p-3.5 font-mono text-slate-400">{dep.id}</td>
-                          <td className="p-3.5 font-bold text-white">
-                            {dep.type === 'EZ_CASH' ? '💸 EZ Cash' : '🔶 Binance Pay'}
-                          </td>
-                          <td className="p-3.5 font-mono font-bold text-amber-400">
-                            {dep.rnNumber || dep.orderId}
-                          </td>
-                          <td className="p-3.5 text-slate-300 font-bold">{dep.user}</td>
-                          <td className="p-3.5 font-black text-emerald-400 font-heading">
-                            {dep.amount} {dep.currency}
-                          </td>
-                          <td className="p-3.5">
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
-                              dep.status === 'VERIFIED' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 
-                              dep.status === 'REJECTED' ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-amber-950 text-amber-400 border border-amber-800'
-                            }`}>
-                              {dep.status}
-                            </span>
-                          </td>
-                          <td className="p-3.5 text-right space-x-1.5">
-                            {dep.status === 'PENDING' && (
-                              <>
-                                <button
-                                  onClick={() => handleApproveDeposit(dep)}
-                                  className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[10px] rounded-lg cursor-pointer"
-                                >
-                                  Approve & Credit Wallet
-                                </button>
-                                <button
-                                  onClick={() => handleRejectDeposit(dep.id)}
-                                  className="px-3 py-1 bg-red-600/30 hover:bg-red-600 text-white font-extrabold text-[10px] rounded-lg cursor-pointer border border-red-500/40"
-                                >
-                                  Reject
-                                </button>
-                              </>
-                            )}
+                      {filteredPayments.length === 0 ? (
+                        <tr>
+                          <td colSpan="7" className="p-8 text-center text-slate-500 font-semibold">
+                            No payment verification requests found.
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        filteredPayments.map((pay) => (
+                          <tr key={pay.id} className="hover:bg-slate-900/60 transition-colors">
+                            <td className="p-3.5 font-mono text-slate-400">{pay.id}</td>
+                            <td className="p-3.5 font-bold text-white">
+                              {pay.method === 'EZ Cash' ? '💸 EZ Cash' : pay.method === 'Binance Pay' ? '🔶 Binance Pay' : '🏦 Bank Slip'}
+                            </td>
+                            <td className="p-3.5 font-mono font-bold text-amber-400">
+                              {pay.referenceNumber}
+                            </td>
+                            <td className="p-3.5 text-slate-300">
+                              <div className="font-bold text-white">{pay.userName}</div>
+                              <div className="text-[10px] text-slate-400 font-mono">{pay.userEmail}</div>
+                            </td>
+                            <td className="p-3.5 font-black text-emerald-400 font-heading">
+                              {pay.amount} {pay.currency}
+                            </td>
+                            <td className="p-3.5">
+                              <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase ${
+                                pay.status === 'VERIFIED' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 
+                                pay.status === 'REJECTED' ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-amber-950 text-amber-400 border border-amber-800'
+                              }`}>
+                                {pay.status}
+                              </span>
+                            </td>
+                            <td className="p-3.5 text-right space-x-1.5">
+                              {pay.status === 'PENDING' && (
+                                <>
+                                  <button
+                                    onClick={() => approveManualPayment(pay.id)}
+                                    className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[10px] rounded-lg cursor-pointer shadow-xs"
+                                  >
+                                    Approve & Credit
+                                  </button>
+                                  <button
+                                    onClick={() => rejectManualPayment(pay.id)}
+                                    className="px-3 py-1 bg-red-600/30 hover:bg-red-600 text-white font-extrabold text-[10px] rounded-lg cursor-pointer border border-red-500/40"
+                                  >
+                                    Reject
+                                  </button>
+                                </>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
               </div>
             )}
 
-            {/* 4. MANUAL USER WALLET CREDIT */}
+            {/* 4. USER MANAGEMENT & VERIFICATION MODULE */}
+            {adminTab === 'users' && (
+              <div className="space-y-4 animate-in fade-in">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-black font-heading text-white flex items-center gap-2">
+                      <Users className="w-5 h-5 text-blue-400" />
+                      <span>User Management & Account Verification</span>
+                    </h3>
+                    <p className="text-xs text-slate-400">View user profiles, grant Verified badges, block accounts & edit wallet balances</p>
+                  </div>
+                </div>
+
+                {/* Filters & Search */}
+                <div className="bg-[#111622] p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row gap-4 justify-between items-center text-xs">
+                  <div className="relative flex-1 w-full">
+                    <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search User Name, Email, or Phone..."
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  <select
+                    value={userStatusFilter}
+                    onChange={(e) => setUserStatusFilter(e.target.value)}
+                    className="px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white font-bold cursor-pointer w-full sm:w-auto"
+                  >
+                    <option value="ALL">All Account Types</option>
+                    <option value="VERIFIED">Verified Accounts Only</option>
+                    <option value="UNVERIFIED">Unverified Accounts</option>
+                    <option value="BLOCKED">Blocked Accounts</option>
+                  </select>
+                </div>
+
+                {/* Users Table */}
+                <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-[#111622]">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-[#0d121c] text-slate-400 uppercase font-mono text-[10px]">
+                      <tr>
+                        <th className="p-3.5">User UID</th>
+                        <th className="p-3.5">Name & Email</th>
+                        <th className="p-3.5">Verification</th>
+                        <th className="p-3.5">Account Status</th>
+                        <th className="p-3.5">EZ Wallet LKR</th>
+                        <th className="p-3.5">Binance USDT</th>
+                        <th className="p-3.5 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60 font-medium">
+                      {filteredUsers.length === 0 ? (
+                        <tr>
+                          <td colSpan="7" className="p-8 text-center text-slate-500 font-semibold">
+                            No users found matching search criteria.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredUsers.map((usr) => (
+                          <tr key={usr.uid} className="hover:bg-slate-900/60 transition-colors">
+                            <td className="p-3.5 font-mono text-slate-400">{usr.uid}</td>
+                            <td className="p-3.5">
+                              <div className="font-bold text-white flex items-center gap-1.5">
+                                <span>{usr.name}</span>
+                                {usr.isVerified && (
+                                  <BadgeCheck className="w-4 h-4 text-emerald-400 fill-emerald-400/20" title="Verified User" />
+                                )}
+                              </div>
+                              <div className="text-[10px] text-slate-400 font-mono">{usr.email}</div>
+                            </td>
+                            <td className="p-3.5">
+                              {usr.isVerified ? (
+                                <span className="px-2.5 py-1 bg-emerald-950 text-emerald-400 border border-emerald-800 rounded-full text-[9px] font-black uppercase inline-flex items-center gap-1">
+                                  <Check className="w-3 h-3" /> VERIFIED
+                                </span>
+                              ) : (
+                                <span className="px-2.5 py-1 bg-amber-950 text-amber-400 border border-amber-800 rounded-full text-[9px] font-black uppercase">
+                                  UNVERIFIED
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3.5">
+                              <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase ${
+                                usr.status === 'BLOCKED' ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-slate-900 text-slate-300 border border-slate-700'
+                              }`}>
+                                {usr.status}
+                              </span>
+                            </td>
+                            <td className="p-3.5 font-mono font-bold text-white">
+                              Rs. {(usr.walletBalance || 0).toLocaleString()}
+                            </td>
+                            <td className="p-3.5 font-mono font-bold text-emerald-400">
+                              ${(usr.walletUsdt || 0).toFixed(2)}
+                            </td>
+                            <td className="p-3.5 text-right space-x-1.5">
+                              {!usr.isVerified && (
+                                <button
+                                  onClick={() => verifyUserAccount(usr.uid)}
+                                  className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[10px] rounded-lg cursor-pointer"
+                                >
+                                  Verify User
+                                </button>
+                              )}
+                              <button
+                                onClick={() => toggleBlockUser(usr.uid)}
+                                className={`px-2.5 py-1 font-extrabold text-[10px] rounded-lg cursor-pointer ${
+                                  usr.status === 'BLOCKED' ? 'bg-slate-800 text-slate-300' : 'bg-red-600/30 hover:bg-red-600 text-red-300 border border-red-500/40'
+                                }`}
+                              >
+                                {usr.status === 'BLOCKED' ? 'Unblock' : 'Block'}
+                              </button>
+                              <button
+                                onClick={() => setSelectedInspectUser(usr)}
+                                className="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600 text-blue-300 border border-blue-500/40 font-extrabold text-[10px] rounded-lg cursor-pointer"
+                              >
+                                Top Up
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* 5. MANUAL USER WALLET CREDIT */}
             {adminTab === 'credit' && (
               <div className="max-w-2xl bg-[#111622] p-6 rounded-3xl border border-slate-800 space-y-5 animate-in fade-in">
                 <div>
@@ -857,7 +1101,7 @@ export const AdminDashboard = () => {
               </div>
             )}
 
-            {/* 5. GAME CATALOG MANAGER */}
+            {/* 6. GAME CATALOG MANAGER */}
             {adminTab === 'games' && (
               <div className="space-y-4 animate-in fade-in">
                 <div className="flex items-center justify-between">
@@ -892,7 +1136,7 @@ export const AdminDashboard = () => {
               </div>
             )}
 
-            {/* 6. PROMO VOUCHERS GENERATOR */}
+            {/* 7. PROMO VOUCHERS GENERATOR */}
             {adminTab === 'vouchers' && (
               <div className="space-y-6 animate-in fade-in">
                 <div className="bg-[#111622] p-6 rounded-3xl border border-slate-800 space-y-4 max-w-2xl">
@@ -961,7 +1205,7 @@ export const AdminDashboard = () => {
                           <td className="p-3.5 text-right">
                             <button
                               onClick={() => deleteVoucher(v.code)}
-                              className="text-red-400 hover:text-red-300 font-bold"
+                              className="text-red-400 hover:text-red-300 font-bold cursor-pointer"
                             >
                               Delete
                             </button>
@@ -974,7 +1218,7 @@ export const AdminDashboard = () => {
               </div>
             )}
 
-            {/* 7. TICKER NOTICE ANNOUNCEMENT */}
+            {/* 8. TICKER NOTICE ANNOUNCEMENT */}
             {adminTab === 'announcement' && (
               <div className="max-w-2xl bg-[#111622] p-6 rounded-3xl border border-slate-800 space-y-4 animate-in fade-in">
                 <h3 className="text-xl font-black font-heading text-white flex items-center gap-2">
@@ -1004,7 +1248,7 @@ export const AdminDashboard = () => {
               </div>
             )}
 
-            {/* 8. MOONGOLD API GATEWAY */}
+            {/* 9. MOONGOLD API GATEWAY */}
             {adminTab === 'moongold' && (
               <div className="space-y-6 max-w-3xl animate-in fade-in">
                 <div className="bg-[#111622] p-6 rounded-3xl border border-slate-800 space-y-4">
@@ -1050,7 +1294,7 @@ export const AdminDashboard = () => {
                         <button 
                           type="button"
                           onClick={() => setShowSecret(!showSecret)}
-                          className="absolute right-3 top-3 text-slate-400 hover:text-white"
+                          className="absolute right-3 top-3 text-slate-400 hover:text-white cursor-pointer"
                         >
                           {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
@@ -1091,7 +1335,7 @@ export const AdminDashboard = () => {
               </div>
             )}
 
-            {/* 9. CLOUDFLARE R2 BUCKET */}
+            {/* 10. CLOUDFLARE R2 BUCKET */}
             {adminTab === 'r2' && (
               <div className="space-y-6 max-w-3xl animate-in fade-in">
                 <div className="bg-[#111622] p-6 rounded-3xl border border-slate-800 space-y-4">
@@ -1142,7 +1386,7 @@ export const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* INSPECT ORDER MODAL DETAIL OVERLAY */}
+      {/* MODAL 1: INSPECT ORDER OVERLAY */}
       {selectedInspectOrder && (
         <div className="fixed inset-0 z-60 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#111622] text-white w-full max-w-lg rounded-3xl border border-slate-800 p-6 space-y-4 relative shadow-2xl">
@@ -1173,18 +1417,177 @@ export const AdminDashboard = () => {
                     updateOrderStatus(selectedInspectOrder.id, 'COMPLETED');
                     setSelectedInspectOrder(null);
                   }}
-                  className="flex-1 py-2.5 bg-emerald-600 text-white font-bold text-xs rounded-xl"
+                  className="flex-1 py-2.5 bg-emerald-600 text-white font-bold text-xs rounded-xl cursor-pointer"
                 >
                   Approve Order
                 </button>
               )}
               <button
                 onClick={() => setSelectedInspectOrder(null)}
-                className="flex-1 py-2.5 bg-slate-800 text-slate-300 font-bold text-xs rounded-xl"
+                className="flex-1 py-2.5 bg-slate-800 text-slate-300 font-bold text-xs rounded-xl cursor-pointer"
               >
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: USER TOPUP & INSPECT OVERLAY */}
+      {selectedInspectUser && (
+        <div className="fixed inset-0 z-60 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#111622] text-white w-full max-w-lg rounded-3xl border border-slate-800 p-6 space-y-4 relative shadow-2xl">
+            <button 
+              onClick={() => setSelectedInspectUser(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 font-black text-xl">
+                {selectedInspectUser.name[0]}
+              </div>
+              <div>
+                <h3 className="text-lg font-black font-heading text-white flex items-center gap-1.5">
+                  <span>{selectedInspectUser.name}</span>
+                  {selectedInspectUser.isVerified && <BadgeCheck className="w-4 h-4 text-emerald-400" />}
+                </h3>
+                <p className="text-xs text-slate-400 font-mono">{selectedInspectUser.email}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-xs bg-slate-950 p-4 rounded-2xl border border-slate-800">
+              <div>
+                <span className="text-[10px] text-slate-400 font-bold uppercase block">EZ Cash Balance</span>
+                <span className="text-base font-black text-white font-heading">Rs. {(selectedInspectUser.walletBalance || 0).toLocaleString()}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 font-bold uppercase block">Binance USDT</span>
+                <span className="text-base font-black text-emerald-400 font-heading">${(selectedInspectUser.walletUsdt || 0).toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold text-slate-300">Quick Credit User Balance</h4>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    updateUserBalance(selectedInspectUser.email, 1000, 0);
+                    setSelectedInspectUser(null);
+                  }}
+                  className="flex-1 py-2 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                >
+                  + Rs. 1,000 LKR
+                </button>
+                <button
+                  onClick={() => {
+                    updateUserBalance(selectedInspectUser.email, 0, 10);
+                    setSelectedInspectUser(null);
+                  }}
+                  className="flex-1 py-2 bg-amber-600/20 hover:bg-amber-600 text-amber-300 hover:text-white border border-amber-500/40 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                >
+                  + $10 USDT
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setSelectedInspectUser(null)}
+              className="w-full py-2.5 bg-slate-800 text-slate-300 font-bold text-xs rounded-xl cursor-pointer"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: RECORD OFFLINE PAYMENT OVERLAY */}
+      {isAddPaymentOpen && (
+        <div className="fixed inset-0 z-60 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#111622] text-white w-full max-w-lg rounded-3xl border border-slate-800 p-6 space-y-4 relative shadow-2xl">
+            <button 
+              onClick={() => setIsAddPaymentOpen(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h3 className="text-lg font-black font-heading text-white">Record Offline Payment Receipt</h3>
+
+            <form onSubmit={handleAddManualPaymentRecord} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-300 font-extrabold mb-1">User Email Address</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="e.g. user@gmail.com"
+                  value={newPayUserEmail}
+                  onChange={(e) => setNewPayUserEmail(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-300 font-extrabold mb-1">Payment Method</label>
+                  <select
+                    value={newPayMethod}
+                    onChange={(e) => setNewPayMethod(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white font-bold cursor-pointer"
+                  >
+                    <option value="EZ Cash">EZ Cash</option>
+                    <option value="Binance Pay">Binance Pay</option>
+                    <option value="Bank Slip">Bank Slip</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-extrabold mb-1">Transaction RN / Order ID</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 20260910123456"
+                    value={newPayRef}
+                    onChange={(e) => setNewPayRef(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white font-mono font-bold focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-300 font-extrabold mb-1">Amount</label>
+                  <input
+                    type="number"
+                    required
+                    placeholder="1500"
+                    value={newPayAmount}
+                    onChange={(e) => setNewPayAmount(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white font-mono font-bold focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-extrabold mb-1">Currency</label>
+                  <select
+                    value={newPayCurrency}
+                    onChange={(e) => setNewPayCurrency(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white font-bold cursor-pointer"
+                  >
+                    <option value="LKR">LKR (Rs.)</option>
+                    <option value="USDT">USDT ($)</option>
+                  </select>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl cursor-pointer shadow-lg shadow-emerald-600/20"
+              >
+                Record Payment Request
+              </button>
+            </form>
           </div>
         </div>
       )}

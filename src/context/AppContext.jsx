@@ -304,6 +304,158 @@ export const AppProvider = ({ children }) => {
     showToast(`Wallet credited with ${amountLkr} LKR / ${amountUsdt} USDT!`);
   };
 
+  // Users List State (User Management & Verification)
+  const [usersList, setUsersList] = useState(() => {
+    const saved = localStorage.getItem('mads_users_list');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return [
+      {
+        uid: 'USR-98210',
+        name: 'Dilneth Madushanka',
+        email: 'madsruzza@gmail.com',
+        phone: '+94 77 123 4567',
+        walletBalance: 2500,
+        walletUsdt: 15.00,
+        isVerified: true,
+        status: 'ACTIVE',
+        joinedAt: '2026-09-01',
+        totalOrders: 12,
+        lifetimeSpendLkr: 18500
+      },
+      {
+        uid: 'USR-98205',
+        name: 'Kasun SLAyer',
+        email: 'kasun.gamer@gmail.com',
+        phone: '+94 71 889 0123',
+        walletBalance: 500,
+        walletUsdt: 0.00,
+        isVerified: false,
+        status: 'ACTIVE',
+        joinedAt: '2026-09-05',
+        totalOrders: 4,
+        lifetimeSpendLkr: 4800
+      },
+      {
+        uid: 'USR-98201',
+        name: 'Nuwan Perera',
+        email: 'nuwan.ff@yahoo.com',
+        phone: '+94 78 445 9901',
+        walletBalance: 0,
+        walletUsdt: 0.00,
+        isVerified: false,
+        status: 'BLOCKED',
+        joinedAt: '2026-09-08',
+        totalOrders: 1,
+        lifetimeSpendLkr: 1580
+      }
+    ];
+  });
+
+  // Manual Payments Verification Queue State
+  const [manualPayments, setManualPayments] = useState(() => {
+    const saved = localStorage.getItem('mads_manual_payments');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return [
+      {
+        id: 'PAY-1001',
+        userEmail: 'kasun.gamer@gmail.com',
+        userName: 'Kasun SLAyer',
+        method: 'EZ Cash',
+        referenceNumber: '20260910982314',
+        amount: 1500,
+        currency: 'LKR',
+        slipUrl: 'https://mads-topup.r2.cloudflarestorage.com/slips/ezcash_1001.jpg',
+        status: 'PENDING',
+        createdAt: '2026-09-10 14:15'
+      },
+      {
+        id: 'PAY-1002',
+        userEmail: 'madsruzza@gmail.com',
+        userName: 'Dilneth Madushanka',
+        method: 'Binance Pay',
+        referenceNumber: '298102451901',
+        amount: 25,
+        currency: 'USDT',
+        slipUrl: 'https://mads-topup.r2.cloudflarestorage.com/slips/binance_1002.jpg',
+        status: 'PENDING',
+        createdAt: '2026-09-10 14:30'
+      },
+      {
+        id: 'PAY-1003',
+        userEmail: 'nuwan.ff@yahoo.com',
+        userName: 'Nuwan Perera',
+        method: 'Bank Slip',
+        referenceNumber: 'BOC-TXN-881902',
+        amount: 5000,
+        currency: 'LKR',
+        slipUrl: 'https://mads-topup.r2.cloudflarestorage.com/slips/boc_1003.jpg',
+        status: 'VERIFIED',
+        createdAt: '2026-09-10 12:00'
+      }
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('mads_users_list', JSON.stringify(usersList));
+  }, [usersList]);
+
+  useEffect(() => {
+    localStorage.setItem('mads_manual_payments', JSON.stringify(manualPayments));
+  }, [manualPayments]);
+
+  const verifyUserAccount = (uid) => {
+    setUsersList(prev => prev.map(u => u.uid === uid ? { ...u, isVerified: true } : u));
+    showToast('User account verified & badge granted!');
+  };
+
+  const toggleBlockUser = (uid) => {
+    setUsersList(prev => prev.map(u => u.uid === uid ? { ...u, status: u.status === 'BLOCKED' ? 'ACTIVE' : 'BLOCKED' } : u));
+    showToast('User account status updated.');
+  };
+
+  const updateUserBalance = (userEmail, lkrAmount, usdtAmount = 0) => {
+    setUsersList(prev => prev.map(u => {
+      if (u.email.toLowerCase() === userEmail.toLowerCase()) {
+        return {
+          ...u,
+          walletBalance: Math.max(0, u.walletBalance + lkrAmount),
+          walletUsdt: Math.max(0, u.walletUsdt + usdtAmount)
+        };
+      }
+      return u;
+    }));
+    creditUserWallet(lkrAmount, usdtAmount);
+  };
+
+  const approveManualPayment = (paymentId) => {
+    const pay = manualPayments.find(p => p.id === paymentId);
+    if (!pay) return;
+
+    setManualPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status: 'VERIFIED' } : p));
+    
+    if (pay.currency === 'USDT') {
+      updateUserBalance(pay.userEmail, 0, pay.amount);
+    } else {
+      updateUserBalance(pay.userEmail, pay.amount, 0);
+    }
+
+    showToast(`Payment ${paymentId} approved! Credited ${pay.amount} ${pay.currency} to ${pay.userName}`);
+  };
+
+  const rejectManualPayment = (paymentId) => {
+    setManualPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status: 'REJECTED' } : p));
+    showToast(`Payment ${paymentId} rejected.`, 'error');
+  };
+
+  const addManualPayment = (newPay) => {
+    setManualPayments(prev => [newPay, ...prev]);
+    showToast(`Manual payment record created!`);
+  };
+
   return (
     <AppContext.Provider value={{
       currency,
@@ -357,7 +509,15 @@ export const AppProvider = ({ children }) => {
       deleteVoucher,
       tickerNotice,
       setTickerNotice,
-      creditUserWallet
+      creditUserWallet,
+      usersList,
+      verifyUserAccount,
+      toggleBlockUser,
+      updateUserBalance,
+      manualPayments,
+      approveManualPayment,
+      rejectManualPayment,
+      addManualPayment
     }}>
       {children}
     </AppContext.Provider>
