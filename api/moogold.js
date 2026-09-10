@@ -31,17 +31,6 @@ export default async function handler(req, res) {
     }
 
     const { path, bodyObj } = body || {};
-    if (path === 'get_ip') {
-      try {
-        const ipRes = await fetch('https://api.ipify.org?format=json');
-        const ipData = await ipRes.json();
-        res.status(200).json({ outgoingIp: ipData.ip });
-        return;
-      } catch (e) {
-        res.status(500).json({ error: e.message });
-        return;
-      }
-    }
 
     if (!path || !bodyObj) {
       res.status(400).json({ error: 'Missing path or bodyObj', received: req.body });
