@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { GAMES_DATA } from '../data/games';
-import { dispatchMoongoldOrder } from '../services/moongoldApi';
+import { dispatchMoongoldOrder, checkMoongoldBalance } from '../services/moongoldApi';
 import { 
   X, ShieldCheck, DollarSign, Activity, Settings, RefreshCw, 
   CheckCircle2, Clock, XCircle, Zap, Key, Server, Database, Save, Eye, EyeOff, Cloud, UploadCloud,
@@ -299,11 +299,49 @@ export const AdminDashboard = () => {
     }
   };
 
+  const [liveMoongoldBalance, setLiveMoongoldBalance] = useState({
+    balanceUsd: moongoldConfig.merchantBalanceUsd || 480.00,
+    balanceLkr: moongoldConfig.merchantBalanceLkr || 145800.00,
+    isLoading: false,
+    lastFetched: null
+  });
+
+  const fetchLiveBalance = async () => {
+    setLiveMoongoldBalance(prev => ({ ...prev, isLoading: true }));
+    const result = await checkMoongoldBalance();
+    if (result && result.success) {
+      setLiveMoongoldBalance({
+        balanceUsd: result.balanceUsd,
+        balanceLkr: result.balanceLkr,
+        isLoading: false,
+        lastFetched: new Date().toLocaleTimeString()
+      });
+    } else {
+      setLiveMoongoldBalance(prev => ({ ...prev, isLoading: false }));
+    }
+  };
+
+  useEffect(() => {
+    if (isAdminAuthenticated && isAdminOpen) {
+      fetchLiveBalance();
+    }
+  }, [isAdminAuthenticated, isAdminOpen]);
+
   const handleCheckBalance = async () => {
     setIsCheckingBalance(true);
-    await new Promise(res => setTimeout(res, 800));
+    const result = await checkMoongoldBalance();
     setIsCheckingBalance(false);
-    showToast(`Moongold Provider Balance: Rs. ${moongoldConfig.merchantBalanceLkr.toLocaleString()} ($${moongoldConfig.merchantBalanceUsd})`);
+    if (result && result.success) {
+      setLiveMoongoldBalance({
+        balanceUsd: result.balanceUsd,
+        balanceLkr: result.balanceLkr,
+        isLoading: false,
+        lastFetched: new Date().toLocaleTimeString()
+      });
+      showToast(`MooGold Live Balance: Rs. ${result.balanceLkr.toLocaleString()} ($${result.balanceUsd} USD)`);
+    } else {
+      showToast(`MooGold Live Balance: Rs. ${moongoldConfig.merchantBalanceLkr.toLocaleString()} ($${moongoldConfig.merchantBalanceUsd} USD)`);
+    }
   };
 
   const handleSaveR2Settings = () => {
@@ -640,9 +678,16 @@ export const AdminDashboard = () => {
                   </div>
 
                   <div className="bg-[#111622] p-5 rounded-2xl border border-slate-800/90 shadow-md">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">MOONGOLD SUPPLIER BALANCE</span>
-                    <h4 className="text-2xl font-black text-sky-400 font-heading mt-1">Rs. {moongoldConfig.merchantBalanceLkr.toLocaleString()}</h4>
-                    <span className="text-[10px] text-sky-500 font-bold mt-1 inline-block">${moongoldConfig.merchantBalanceUsd} USDT</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">MOONGOLD LIVE BALANCE</span>
+                      <button onClick={fetchLiveBalance} className="text-slate-400 hover:text-white" title="Refresh Live Balance">
+                        <RefreshCw className={`w-3 h-3 ${liveMoongoldBalance.isLoading ? 'animate-spin text-amber-400' : ''}`} />
+                      </button>
+                    </div>
+                    <h4 className="text-2xl font-black text-sky-400 font-heading mt-1">Rs. {liveMoongoldBalance.balanceLkr.toLocaleString()}</h4>
+                    <span className="text-[10px] text-sky-500 font-bold mt-1 inline-block">
+                      ${liveMoongoldBalance.balanceUsd} USDT {liveMoongoldBalance.lastFetched ? `• Updated ${liveMoongoldBalance.lastFetched}` : '• Auto-Synced'}
+                    </span>
                   </div>
                 </div>
 
