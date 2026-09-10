@@ -72,7 +72,6 @@ const MainContent = () => {
                 <li onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="hover:text-[#cc040a] cursor-pointer transition-colors">ABOUT US</li>
                 <li onClick={() => scrollToSection('why-choose-us')} className="hover:text-[#cc040a] cursor-pointer transition-colors">CONTACT</li>
                 <li onClick={() => setIsUserProfileOpen(true)} className="hover:text-[#cc040a] cursor-pointer transition-colors">MY ORDERS</li>
-                <li onClick={() => setIsAdminOpen(true)} className="hover:text-[#cc040a] cursor-pointer transition-colors">ADMIN PORTAL</li>
                 <li className="hover:text-[#cc040a] cursor-pointer transition-colors">TERMS OF SERVICE</li>
                 <li className="hover:text-[#cc040a] cursor-pointer transition-colors">PRIVACY POLICY</li>
               </ul>

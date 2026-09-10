@@ -86,14 +86,6 @@ export const MobileBottomNav = () => {
           </span>
         )}
       </button>
-
-      <button 
-        onClick={() => setIsAdminOpen(true)}
-        className="flex flex-col items-center gap-1 text-slate-500 hover:text-slate-900 font-bold text-[10px] uppercase tracking-wider cursor-pointer"
-      >
-        <ShieldCheck className="w-5 h-5 text-amber-500" />
-        <span>Admin</span>
-      </button>
     </nav>
   );
 };
