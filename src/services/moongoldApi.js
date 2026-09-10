@@ -309,21 +309,20 @@ export const dispatchMoongoldOrder = async (orderData) => {
         success: true,
         moongoldRef: data.order_id || data.account_details?.order_id || partnerOrderId,
         status: 'COMPLETED',
-        message: data.message || 'Order created successfully!',
+        message: data.message || 'Order created successfully on MooGold!',
         data
       };
     }
   } catch (err) {
-    console.warn('MooGold order create_order API call warning:', err);
+    console.warn('MooGold order create_order API call note:', err);
   }
 
-  // Fallback ref generator
-  const fallbackRef = 'MG-' + Math.floor(10000000 + Math.random() * 90000000);
+  // Pending Admin Payment Verification status for manual payment slips / unverified API calls
   return {
     success: true,
-    moongoldRef: fallbackRef,
-    status: 'COMPLETED',
-    message: 'MooGold Order Dispatched with Ref ' + fallbackRef,
+    moongoldRef: 'PENDING_APPROVAL',
+    status: 'PENDING_VERIFICATION',
+    message: 'Order Placed! Payment slip submitted for admin verification.',
     timestamp: new Date().toISOString()
   };
 };

@@ -216,17 +216,31 @@ export const GameTopupPage = () => {
         </div>
       </div>
 
-      {/* SUCCESS SCREEN VIEW */}
+      {/* SUCCESS / PENDING SCREEN VIEW */}
       {completedOrder ? (
         <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-8 max-w-2xl mx-auto text-center space-y-6 my-10 animate-in zoom-in-95">
-          <div className="w-20 h-20 rounded-full bg-emerald-100 text-emerald-600 border border-emerald-300 flex items-center justify-center mx-auto shadow-md">
-            <CheckCircle2 className="w-12 h-12" />
+          <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto shadow-md border ${
+            completedOrder.status === 'COMPLETED' 
+              ? 'bg-emerald-100 text-emerald-600 border-emerald-300' 
+              : 'bg-amber-100 text-amber-600 border-amber-300'
+          }`}>
+            {completedOrder.status === 'COMPLETED' ? (
+              <CheckCircle2 className="w-12 h-12" />
+            ) : (
+              <RefreshCw className="w-10 h-10 animate-spin" />
+            )}
           </div>
 
           <div>
-            <h2 className="text-3xl font-black text-slate-900 font-heading">TOP-UP SUCCESSFUL!</h2>
-            <p className="text-sm text-slate-600 font-medium mt-1">
-              Your order has been verified & instantly credited via Moongold Engine.
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">
+              {completedOrder.status === 'COMPLETED' 
+                ? 'TOP-UP SUCCESSFUL!' 
+                : 'ORDER SUBMITTED (PENDING VERIFICATION)'}
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600 font-medium mt-1.5">
+              {completedOrder.status === 'COMPLETED' 
+                ? 'Your order has been verified & credited via MooGold Engine.' 
+                : 'Your payment slip has been submitted! Our admin team will verify your receipt & credit items shortly.'}
             </p>
           </div>
 
