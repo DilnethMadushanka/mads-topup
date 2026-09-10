@@ -176,6 +176,7 @@ export const GameTopupPage = () => {
 
     const orderPayload = {
       game: selectedGame,
+      gameId: selectedGame.id,
       playerId,
       zoneId,
       package: selectedItems[0],

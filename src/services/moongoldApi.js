@@ -302,7 +302,10 @@ export const dispatchMoongoldOrder = async (orderData) => {
     quantity: '1'
   };
 
-  if (orderData.gameId === 'pubg' || orderData.idLabel?.includes('Character')) {
+  const gameId = (orderData.gameId || orderData.game?.id || '').toLowerCase();
+  const idLabel = (orderData.idLabel || orderData.game?.idLabel || '').toLowerCase();
+
+  if (gameId.includes('pubg') || idLabel.includes('character')) {
     dataPayload['Character ID'] = orderData.playerId || '';
   } else {
     dataPayload['User ID'] = orderData.playerId || '';

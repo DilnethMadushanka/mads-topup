@@ -129,6 +129,7 @@ export const TopupModal = () => {
     // Dispatch via Moongold API simulator
     const orderPayload = {
       game: selectedGame,
+      gameId: selectedGame.id,
       playerId,
       zoneId,
       package: selectedPackage,
