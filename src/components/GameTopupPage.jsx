@@ -158,7 +158,7 @@ export const GameTopupPage = () => {
       zoneId,
       package: selectedItems[0],
       payment: selectedPayment,
-      ign: ign || 'Verified Gamer'
+      ign: ign || (`Player ${playerId}`)
     };
 
     const moongoldResult = await dispatchMoongoldOrder(orderPayload);
@@ -172,7 +172,7 @@ export const GameTopupPage = () => {
       amount: selectedItems.reduce((s, i) => s + (i.amount * cartQuantities[i.id]), 0),
       playerId,
       zoneId,
-      ign: ign || 'Verified Gamer',
+      ign: ign || (`Player ${playerId}`),
       paymentMethod: selectedPayment.name,
       priceLkr: totalLkr,
       status: moongoldResult.status || 'COMPLETED',
