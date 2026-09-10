@@ -2,18 +2,15 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAzgbA7GdTY5Dv2CtgY8cVOswkpfcQpNcE",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "mads-topup-76445.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "mads-topup-76445",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "mads-topup-76445.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "404411554890",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:404411554890:web:8a88922ecb041fab7a1ab3"
 };
 
-const isFirebaseConfigured = Boolean(
-  firebaseConfig.apiKey && 
-  firebaseConfig.apiKey !== 'YOUR_FIREBASE_API_KEY'
-);
+const isFirebaseConfigured = Boolean(firebaseConfig.apiKey);
 
 let auth = null;
 let googleProvider = null;
