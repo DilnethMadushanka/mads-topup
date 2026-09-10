@@ -39,22 +39,21 @@ export const lookupFreePlayerIgn = async (gameId, playerId, zoneId = '') => {
   }
 
   // 2. Try RapidAPI if key is configured in .env
-  const rapidApiKey = import.meta.env.VITE_RAPIDAPI_KEY;
+  const rapidApiKey = import.meta.env.VITE_RAPIDAPI_KEY || '59700d286cmsh2ce0c96f798ab10p15ad77jsnb92bdbb87d29';
   if (rapidApiKey) {
     try {
-      // Endpoint 1: Check ID Game (Free Fire)
       const isFreeFire = gameId?.toLowerCase().includes('freefire') || gameId?.toLowerCase().includes('ff');
       if (isFreeFire) {
-        const res = await fetch(`https://check-id-game.p.rapidapi.com/api/rapid_api/ff_idgame/${cleanId}`, {
+        const res = await fetch(`https://id-game-checker.p.rapidapi.com/ff-global/${cleanId}`, {
           headers: {
-            'x-rapidapi-host': 'check-id-game.p.rapidapi.com',
+            'x-rapidapi-host': 'id-game-checker.p.rapidapi.com',
             'x-rapidapi-key': rapidApiKey,
             'Content-Type': 'application/json'
           }
         });
         if (res.ok) {
           const data = await res.json();
-          const realName = data.username || data.nickname || data.name || data.data?.username || data.result?.username;
+          const realName = data.data?.username || data.username || data.nickname || data.name;
           if (realName) {
             saveCachedIgn(cleanId, realName);
             return { success: true, ign: realName, isReal: true, source: 'RAPID_API' };
