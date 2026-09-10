@@ -12,8 +12,18 @@ export const Navbar = () => {
     isGameCatalogOpen,
     openAuth,
     userProfile,
-    isLoggedIn
+    isLoggedIn,
+    openWalletModal,
+    setIsNoticeModalOpen
   } = useApp();
+
+  const handleWalletClick = (tab = 'binance') => {
+    if (localStorage.getItem('mads_dont_show_notice') === 'true') {
+      openWalletModal(tab);
+    } else {
+      setIsNoticeModalOpen(true);
+    }
+  };
 
   const pendingCount = (orders || []).filter(o => o.status === 'PROCESSING' || o.status === 'PENDING').length;
 

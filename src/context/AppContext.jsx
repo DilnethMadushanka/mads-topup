@@ -20,6 +20,15 @@ export const AppProvider = ({ children }) => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
 
+  const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false);
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+  const [walletActiveTab, setWalletActiveTab] = useState('binance'); // 'ezcash' | 'binance' | 'redeem'
+
+  const openWalletModal = (tab = 'binance') => {
+    setWalletActiveTab(tab);
+    setIsWalletModalOpen(true);
+  };
+
   const openAuth = (mode = 'login') => {
     setAuthMode(mode);
     setIsAuthModalOpen(true);
@@ -275,7 +284,14 @@ export const AppProvider = ({ children }) => {
       openAuth,
       isLoggedIn,
       setIsLoggedIn,
-      handleLogout
+      handleLogout,
+      isNoticeModalOpen,
+      setIsNoticeModalOpen,
+      isWalletModalOpen,
+      setIsWalletModalOpen,
+      walletActiveTab,
+      setWalletActiveTab,
+      openWalletModal
     }}>
       {children}
     </AppContext.Provider>

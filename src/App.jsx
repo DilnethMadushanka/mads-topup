@@ -13,6 +13,8 @@ import { GameTopupPage } from './components/GameTopupPage';
 import { AuthModal } from './components/AuthModal';
 import { UserProfileModal } from './components/UserProfileModal';
 import { AdminDashboard } from './components/AdminDashboard';
+import { ImportantNoticeModal } from './components/ImportantNoticeModal';
+import { WalletModal } from './components/WalletModal';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { ToastNotification } from './components/ToastNotification';
 import { Flame } from 'lucide-react';
@@ -101,6 +103,8 @@ const MainContent = () => {
       <AuthModal />
       <UserProfileModal />
       <AdminDashboard />
+      <ImportantNoticeModal />
+      <WalletModal />
       <MobileBottomNav />
       <ToastNotification />
     </div>
