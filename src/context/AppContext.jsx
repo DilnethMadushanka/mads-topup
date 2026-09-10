@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { GAMES_DATA } from '../data/games';
 import { getMoongoldConfig, saveMoongoldConfig } from '../services/moongoldApi';
 import { getR2Config, saveR2Config } from '../services/storageService';
+import { auth, onAuthStateChanged, logoutGoogle } from '../services/firebaseAuth';
+import { syncUserProfileToFirestore, updateUserProfileInFirestore, subscribeUserProfile, saveOrderToFirestore } from '../services/firestoreService';
 
 const AppContext = createContext();
 
@@ -39,25 +41,85 @@ export const AppProvider = ({ children }) => {
   // Cloudflare R2 Storage State
   const [r2Config, setR2ConfigState] = useState(getR2Config());
 
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // User Profile
-  const [userProfile, setUserProfile] = useState(() => {
+  const [userProfile, setUserProfileState] = useState(() => {
     const saved = localStorage.getItem('mads_user_profile');
     if (saved) {
       try { return JSON.parse(saved); } catch (e) {}
     }
     return {
-      name: 'DM Gadgets',
-      email: 'dmgadgets26@gmail.com',
-      phone: '+94 77 987 6543',
-      walletBalance: 2500, // LKR
-      savedIds: [
-        { id: 1, gameId: 'freefire', gameName: 'Free Fire', playerId: '248901234', nickName: 'SL Slayer' },
-        { id: 2, gameId: 'pubg', gameName: 'PUBG Mobile', playerId: '5123984712', nickName: 'MADS Noob' }
-      ]
+      uid: '',
+      name: '',
+      email: '',
+      phone: '',
+      walletBalance: 0,
+      walletUsdt: 0,
+      avatar: '',
+      savedIds: []
     };
   });
+
+  // Custom setter for userProfile that syncs with Firestore
+  const setUserProfile = (updater) => {
+    setUserProfileState(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      if (next && next.uid) {
+        updateUserProfileInFirestore(next.uid, next);
+      }
+      return next;
+    });
+  };
+
+  // Sync Firebase Auth & Firestore live profile/wallet data
+  useEffect(() => {
+    if (!auth) return;
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        setIsLoggedIn(true);
+        const profile = await syncUserProfileToFirestore({
+          uid: firebaseUser.uid,
+          name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Verified Gamer',
+          email: firebaseUser.email || '',
+          photoURL: firebaseUser.photoURL || ''
+        });
+        if (profile) {
+          setUserProfileState(profile);
+        }
+
+        // Subscribe to live Firestore updates
+        const unsubFirestore = subscribeUserProfile(firebaseUser.uid, (liveData) => {
+          if (liveData) {
+            setUserProfileState(prev => ({ ...prev, ...liveData }));
+          }
+        });
+        return () => unsubFirestore();
+      } else {
+        setIsLoggedIn(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await logoutGoogle();
+    setIsLoggedIn(false);
+    setUserProfileState({
+      uid: '',
+      name: '',
+      email: '',
+      phone: '',
+      walletBalance: 0,
+      walletUsdt: 0,
+      avatar: '',
+      savedIds: []
+    });
+    localStorage.removeItem('mads_user_profile');
+    setIsUserProfileOpen(false);
+    showToast('Logged out successfully!');
+  };
 
   // Orders
   const [orders, setOrders] = useState(() => {
@@ -212,7 +274,8 @@ export const AppProvider = ({ children }) => {
       setAuthMode,
       openAuth,
       isLoggedIn,
-      setIsLoggedIn
+      setIsLoggedIn,
+      handleLogout
     }}>
       {children}
     </AppContext.Provider>

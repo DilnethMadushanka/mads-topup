@@ -114,7 +114,7 @@ export const Navbar = () => {
               className="bg-[#cc040a] hover:bg-[#990207] text-white text-xs sm:text-[13px] font-black px-3.5 sm:px-4 py-1.5 rounded-full flex items-center gap-2 shadow-xs cursor-pointer transition-all shrink-0"
             >
               <Wallet className="w-3.5 h-3.5 text-white fill-white shrink-0" />
-              <span className="tracking-wide">0.00 LKR</span>
+              <span className="tracking-wide">{(userProfile.walletBalance || 0).toFixed(2)} LKR</span>
             </div>
 
             {/* 2. Green Crypto USDT Pill */}
@@ -125,7 +125,7 @@ export const Navbar = () => {
               <div className="w-4 h-4 rounded-full bg-white text-[#0E8A50] font-black text-[10px] flex items-center justify-center italic shrink-0 leading-none">
                 B
               </div>
-              <span className="tracking-wide">0.00 U</span>
+              <span className="tracking-wide">{(userProfile.walletUsdt || 0).toFixed(2)} U</span>
             </div>
 
             {/* 3. User Profile Dropdown Pill (Avatar + Name + Chevron) */}

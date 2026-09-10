@@ -4,7 +4,7 @@ import { GAMES_DATA } from '../data/games';
 import { 
   X, User, ShoppingBag, Bookmark, Wallet, RefreshCw, 
   CheckCircle2, Clock, Zap, Trash2, ArrowRight, ShieldCheck,
-  Camera, Users, FileText, ChevronUp, ChevronDown, Edit, Award, DollarSign
+  Camera, Users, FileText, ChevronUp, ChevronDown, Edit, Award, DollarSign, LogOut
 } from 'lucide-react';
 
 export const UserProfileModal = () => {
@@ -16,7 +16,8 @@ export const UserProfileModal = () => {
     orders, 
     formatPrice,
     openTopup,
-    showToast
+    showToast,
+    handleLogout
   } = useApp();
 
   const [activeTab, setActiveTab] = useState('orders'); // 'orders' | 'referrals' | 'reports' | 'ids'
@@ -68,13 +69,23 @@ export const UserProfileModal = () => {
     <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
       <div className="bg-[#F8FAFF] w-full max-w-3xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh] relative">
         
-        {/* Close Button */}
-        <button
-          onClick={() => setIsUserProfileOpen(false)}
-          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-colors cursor-pointer backdrop-blur-md"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        {/* Header Action Buttons */}
+        <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+          <button
+            onClick={handleLogout}
+            title="Logout"
+            className="px-3 py-1.5 rounded-full bg-red-600/85 hover:bg-red-600 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer backdrop-blur-md shadow-md"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Logout</span>
+          </button>
+          <button
+            onClick={() => setIsUserProfileOpen(false)}
+            className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-colors cursor-pointer backdrop-blur-md"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
         {/* Scrollable Container */}
         <div className="overflow-y-auto flex-1 p-4 sm:p-6 space-y-6">

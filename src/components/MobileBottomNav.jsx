@@ -12,7 +12,8 @@ export const MobileBottomNav = () => {
     isGameCatalogOpen,
     setSelectedGame,
     selectedGame,
-    openAuth
+    openAuth,
+    isLoggedIn
   } = useApp();
   
   const activeOrders = orders.filter(o => o.status === 'PROCESSING' || o.status === 'PENDING').length;
@@ -26,6 +27,14 @@ export const MobileBottomNav = () => {
   const handleCatalogClick = () => {
     setSelectedGame(null);
     openCatalog();
+  };
+
+  const handleProfileClick = () => {
+    if (isLoggedIn) {
+      setIsUserProfileOpen(true);
+    } else {
+      openAuth('login');
+    }
   };
 
   return (
@@ -46,16 +55,26 @@ export const MobileBottomNav = () => {
         <span>Games</span>
       </button>
 
-      <button 
-        onClick={() => openAuth('login')}
-        className="flex flex-col items-center gap-1 text-slate-500 hover:text-slate-900 font-bold text-[10px] uppercase tracking-wider cursor-pointer"
-      >
-        <User className="w-5 h-5" />
-        <span>Login</span>
-      </button>
+      {isLoggedIn ? (
+        <button 
+          onClick={handleProfileClick}
+          className="flex flex-col items-center gap-1 text-[#cc040a] font-bold text-[10px] uppercase tracking-wider relative cursor-pointer"
+        >
+          <User className="w-5 h-5 text-[#cc040a]" />
+          <span>Profile</span>
+        </button>
+      ) : (
+        <button 
+          onClick={() => openAuth('login')}
+          className="flex flex-col items-center gap-1 text-slate-500 hover:text-slate-900 font-bold text-[10px] uppercase tracking-wider cursor-pointer"
+        >
+          <User className="w-5 h-5" />
+          <span>Login</span>
+        </button>
+      )}
 
       <button 
-        onClick={() => setIsUserProfileOpen(true)}
+        onClick={handleProfileClick}
         className="flex flex-col items-center gap-1 text-slate-500 hover:text-slate-900 font-bold text-[10px] uppercase tracking-wider relative cursor-pointer"
       >
         <ShoppingBag className="w-5 h-5 text-indigo-600" />
