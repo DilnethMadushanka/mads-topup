@@ -128,14 +128,20 @@ export const AdminDashboard = () => {
 
   if (!isAdminAuthenticated) {
     return (
-      <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
-        <div className="bg-[#0b0f17] text-white w-full max-w-md rounded-3xl shadow-2xl border border-red-500/30 overflow-hidden relative p-6 sm:p-8">
+      <div className="fixed inset-0 z-50 bg-[#0b0f17] text-white w-screen h-screen min-h-screen overflow-y-auto flex flex-col items-center justify-center p-4 animate-in fade-in duration-200">
+        {/* Background Subtle Gradient Glows */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div className="bg-[#111622] text-white w-full max-w-md rounded-3xl shadow-2xl border border-slate-800 overflow-hidden relative p-6 sm:p-8 z-10">
           
           <button 
             onClick={() => setIsAdminOpen(false)}
-            className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-full hover:bg-slate-900 transition-colors cursor-pointer"
+            className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-900 transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-bold font-mono"
+            title="Return to Main Website"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
+            <span className="hidden sm:inline">Exit</span>
           </button>
 
           <div className="text-center space-y-3 mb-6">
@@ -382,8 +388,7 @@ export const AdminDashboard = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-200">
-      <div className="bg-[#0b0f17] text-white w-full max-w-7xl h-[94vh] rounded-3xl shadow-2xl border border-slate-800 overflow-hidden flex flex-col relative">
+    <div className="fixed inset-0 z-50 bg-[#0b0f17] text-white w-screen h-screen min-h-screen overflow-hidden flex flex-col animate-in fade-in duration-200">
         
         {/* TOP ADMIN NAVBAR */}
         <div className="px-6 py-4 bg-[#111622] border-b border-slate-800 flex items-center justify-between shrink-0">
@@ -1377,11 +1382,9 @@ export const AdminDashboard = () => {
             )}
 
           </main>
-
         </div>
-      </div>
 
-      {/* MODAL 1: INSPECT ORDER OVERLAY */}
+        {/* MODAL 1: INSPECT ORDER OVERLAY */}
       {selectedInspectOrder && (
         <div className="fixed inset-0 z-60 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#111622] text-white w-full max-w-lg rounded-3xl border border-slate-800 p-6 space-y-4 relative shadow-2xl">
