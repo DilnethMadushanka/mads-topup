@@ -323,7 +323,7 @@ export const dispatchMoongoldOrder = async (orderData) => {
     partnerOrderId
   };
 
-  // 2. Try Vercel Serverless Function Proxy (/api/moogold) to bypass browser CORS & Cloudflare WAF
+  // 2. Try Express Proxy (/api/moogold) to send order to MooGold API
   try {
     const proxyRes = await fetch('/api/moogold', {
       method: 'POST',
@@ -332,18 +332,27 @@ export const dispatchMoongoldOrder = async (orderData) => {
     });
     if (proxyRes.ok) {
       const data = await proxyRes.json();
-      if (data && (data.status === 'true' || data.status === true || data.status === 1 || data.order_id)) {
+      if (data && (data.status === 'processing' || data.status === 'true' || data.status === true || data.status === 1 || data.order_id)) {
         return {
           success: true,
-          moongoldRef: data.order_id || data.account_details?.order_id || partnerOrderId,
+          moongoldRef: data.order_id || partnerOrderId,
           status: 'COMPLETED',
           message: data.message || 'Order created successfully on MooGold!',
+          data
+        };
+      } else if (data && data.err_message) {
+        console.error('MooGold Order Error:', data.err_message);
+        return {
+          success: false,
+          moongoldRef: partnerOrderId,
+          status: 'FAILED',
+          message: data.err_message,
           data
         };
       }
     }
   } catch (err) {
-    console.warn('MooGold Vercel proxy note:', err);
+    console.warn('MooGold proxy note:', err);
   }
 
   // 3. Direct browser fetch fallback

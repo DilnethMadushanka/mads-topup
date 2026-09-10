@@ -17,14 +17,14 @@ export const GAMES_DATA = [
     popular: true,
     moongoldCode: 'FREEFIRE_SG',
     packages: [
-      { id: 'ff-weekly', name: 'Weekly Membership', amount: 450, bonus: 'Daily Rewards', priceLkr: 720, moongoldCost: 620, priceUsd: 2.36, moongoldProductId: '618940', image: '/product_images/prod_Weekly_1769672449_logo_2.png', isPopular: true, isSpecial: true },
-      { id: 'ff-monthly', name: 'Monthly Membership', amount: 2600, bonus: 'Super Discount', priceLkr: 3450, moongoldCost: 3100, priceUsd: 11.31, moongoldProductId: '618941', image: '/product_images/prod_Monthly_Membership_1768967679_mmm_1.png', isPopular: false, isSpecial: true },
-      { id: 'ff-100', name: '100 + 10 Diamonds', amount: 110, bonus: '+10 Bonus', priceLkr: 370, moongoldCost: 310, priceUsd: 1.21, moongoldProductId: '14704216', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.png', isPopular: false },
-      { id: 'ff-310', name: '310 + 31 Diamonds', amount: 341, bonus: '+31 Bonus', priceLkr: 1050, moongoldCost: 920, priceUsd: 3.44, moongoldProductId: '618927', image: '/product_images/prod_220_Diamonds_1768964821_diamondpng.png', isPopular: false },
-      { id: 'ff-520', name: '520 + 52 Diamonds', amount: 572, bonus: '+52 Bonus', priceLkr: 1720, moongoldCost: 1520, priceUsd: 5.63, moongoldProductId: '14704217', image: '/product_images/prod_520_1769709482_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: true },
-      { id: 'ff-1060', name: '1060 + 106 Diamonds', amount: 1166, bonus: '+106 Bonus', priceLkr: 3400, moongoldCost: 3050, priceUsd: 11.14, moongoldProductId: '14704219', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: false },
-      { id: 'ff-2180', name: '2180 + 218 Diamonds', amount: 2398, bonus: '+218 Bonus', priceLkr: 6750, moongoldCost: 6100, priceUsd: 22.13, moongoldProductId: '14704220', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: false },
-      { id: 'ff-5600', name: '5600 + 560 Diamonds', amount: 6160, bonus: '+560 Bonus', priceLkr: 16800, moongoldCost: 15200, priceUsd: 55.08, moongoldProductId: '14704221', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: false }
+      { id: 'ff-weekly', name: 'Weekly Membership', amount: 450, bonus: 'Daily Rewards', priceLkr: 720, moongoldCost: 620, priceUsd: 2.36, moongoldProductId: '10034489', image: '/product_images/prod_Weekly_1769672449_logo_2.png', isPopular: true, isSpecial: true },
+      { id: 'ff-monthly', name: 'Monthly Membership', amount: 2600, bonus: 'Super Discount', priceLkr: 3450, moongoldCost: 3100, priceUsd: 11.31, moongoldProductId: '10034484', image: '/product_images/prod_Monthly_Membership_1768967679_mmm_1.png', isPopular: false, isSpecial: true },
+      { id: 'ff-100', name: '100 + 10 Diamonds', amount: 110, bonus: '+10 Bonus', priceLkr: 370, moongoldCost: 310, priceUsd: 1.21, moongoldProductId: '899643', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.png', isPopular: false },
+      { id: 'ff-310', name: '310 + 31 Diamonds', amount: 341, bonus: '+31 Bonus', priceLkr: 1050, moongoldCost: 920, priceUsd: 3.44, moongoldProductId: '899644', image: '/product_images/prod_220_Diamonds_1768964821_diamondpng.png', isPopular: false },
+      { id: 'ff-520', name: '520 + 52 Diamonds', amount: 572, bonus: '+52 Bonus', priceLkr: 1720, moongoldCost: 1520, priceUsd: 5.63, moongoldProductId: '899645', image: '/product_images/prod_520_1769709482_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: true },
+      { id: 'ff-1060', name: '1060 + 106 Diamonds', amount: 1166, bonus: '+106 Bonus', priceLkr: 3400, moongoldCost: 3050, priceUsd: 11.14, moongoldProductId: '899646', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: false },
+      { id: 'ff-2180', name: '2180 + 218 Diamonds', amount: 2398, bonus: '+218 Bonus', priceLkr: 6750, moongoldCost: 6100, priceUsd: 22.13, moongoldProductId: '899647', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: false },
+      { id: 'ff-5600', name: '5600 + 560 Diamonds', amount: 6160, bonus: '+560 Bonus', priceLkr: 16800, moongoldCost: 15200, priceUsd: 55.08, moongoldProductId: '899647', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: false }
     ]
   },
   {
