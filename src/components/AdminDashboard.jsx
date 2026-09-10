@@ -30,6 +30,15 @@ export const AdminDashboard = () => {
     creditUserWallet
   } = useApp();
 
+  // Admin Authentication State
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
+    return localStorage.getItem('mads_admin_authenticated') === 'true';
+  });
+  const [adminAuthEmail, setAdminAuthEmail] = useState('madsruzza@gmail.com');
+  const [adminAuthPassword, setAdminAuthPassword] = useState('');
+  const [showAdminAuthPassword, setShowAdminAuthPassword] = useState(false);
+  const [adminAuthError, setAdminAuthError] = useState('');
+
   // Active Admin Sidebar Tab
   const [adminTab, setAdminTab] = useState('overview'); 
   // Options: 'overview' | 'orders' | 'deposits' | 'credit' | 'games' | 'vouchers' | 'moongold' | 'r2' | 'announcement'
@@ -81,6 +90,108 @@ export const AdminDashboard = () => {
   ]);
 
   if (!isAdminOpen) return null;
+
+  const handleAdminLoginSubmit = (e) => {
+    e.preventDefault();
+    if (adminAuthEmail.trim().toLowerCase() === 'madsruzza@gmail.com' && adminAuthPassword === 'Mads2004@#') {
+      setIsAdminAuthenticated(true);
+      localStorage.setItem('mads_admin_authenticated', 'true');
+      showToast('Admin Authentication Successful! Welcome Super Admin.');
+      setAdminAuthError('');
+    } else {
+      setAdminAuthError('Invalid Admin Email or Password! Access Denied.');
+      showToast('Invalid Admin Credentials', 'error');
+    }
+  };
+
+  const handleAdminLogout = () => {
+    localStorage.removeItem('mads_admin_authenticated');
+    setIsAdminAuthenticated(false);
+    setIsAdminOpen(false);
+    showToast('Logged out from Admin Portal.');
+  };
+
+  if (!isAdminAuthenticated) {
+    return (
+      <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="bg-[#0b0f17] text-white w-full max-w-md rounded-3xl shadow-2xl border border-red-500/30 overflow-hidden relative p-6 sm:p-8">
+          
+          <button 
+            onClick={() => setIsAdminOpen(false)}
+            className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-full hover:bg-slate-900 transition-colors cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+
+          <div className="text-center space-y-3 mb-6">
+            <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-[#cc040a] to-[#ff2a30] flex items-center justify-center text-white mx-auto shadow-xl shadow-red-600/40 border border-white/20">
+              <ShieldCheck className="w-8 h-8" />
+            </div>
+            <h2 className="text-2xl font-black font-heading tracking-tight text-white">MADS TOPUP ADMIN</h2>
+            <p className="text-xs text-slate-400 font-medium">Restricted Access • Enter Super Admin Credentials</p>
+          </div>
+
+          {adminAuthError && (
+            <div className="mb-4 p-3 rounded-xl bg-red-950/80 border border-red-800 text-red-300 text-xs font-bold flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-red-400" />
+              <span>{adminAuthError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleAdminLoginSubmit} className="space-y-4 text-xs">
+            <div>
+              <label className="block text-slate-300 font-extrabold mb-1.5 uppercase tracking-wider text-[10px] font-mono">
+                Admin Email Address
+              </label>
+              <input
+                type="email"
+                required
+                value={adminAuthEmail}
+                onChange={(e) => setAdminAuthEmail(e.target.value)}
+                placeholder="madsruzza@gmail.com"
+                className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white font-mono text-sm focus:outline-none focus:border-red-500 shadow-xs"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-300 font-extrabold mb-1.5 uppercase tracking-wider text-[10px] font-mono">
+                Admin Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showAdminAuthPassword ? 'text' : 'password'}
+                  required
+                  value={adminAuthPassword}
+                  onChange={(e) => setAdminAuthPassword(e.target.value)}
+                  placeholder="••••••••••••"
+                  className="w-full pl-4 pr-10 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white font-mono text-sm focus:outline-none focus:border-red-500 shadow-xs"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowAdminAuthPassword(!showAdminAuthPassword)}
+                  className="absolute right-3 top-3.5 text-slate-400 hover:text-white cursor-pointer"
+                >
+                  {showAdminAuthPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-3.5 bg-gradient-to-r from-[#cc040a] to-[#ff2a30] hover:from-[#b00308] hover:to-[#e02026] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-red-600/30 cursor-pointer mt-2 flex items-center justify-center gap-2"
+            >
+              <Lock className="w-4 h-4" />
+              <span>AUTHENTICATE & LOG IN</span>
+            </button>
+          </form>
+
+          <div className="mt-6 pt-4 border-t border-slate-900 text-center text-[10px] text-slate-500 font-mono">
+            SECURE SUPER ADMIN GATEWAY • MADS TOPUP ENTERPRISE
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const safeOrders = orders || [];
 
@@ -238,11 +349,20 @@ export const AdminDashboard = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Quick Status Pill */}
-            <div className="hidden md:flex items-center gap-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl text-xs font-mono">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span className="text-slate-300">MOONGOLD: LIVE</span>
+            {/* Logged in Admin Email Pill */}
+            <div className="hidden sm:flex items-center gap-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl text-xs font-mono">
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span className="text-slate-300 font-bold">{adminAuthEmail}</span>
             </div>
+
+            {/* Logout Admin Button */}
+            <button
+              onClick={handleAdminLogout}
+              className="px-3 py-1.5 bg-red-600/20 hover:bg-red-600 text-white rounded-xl text-xs font-bold border border-red-500/40 transition-colors cursor-pointer flex items-center gap-1.5"
+              title="Logout Admin"
+            >
+              <span>Logout</span>
+            </button>
 
             <button 
               onClick={() => setIsAdminOpen(false)}

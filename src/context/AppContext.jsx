@@ -81,6 +81,21 @@ export const AppProvider = ({ children }) => {
     });
   };
 
+  // Listen for /admin in browser URL
+  useEffect(() => {
+    const checkAdminRoute = () => {
+      const path = window.location.pathname.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      const search = window.location.search.toLowerCase();
+      if (path === '/admin' || path.startsWith('/admin/') || hash === '#admin' || search.includes('admin')) {
+        setIsAdminOpen(true);
+      }
+    };
+    checkAdminRoute();
+    window.addEventListener('popstate', checkAdminRoute);
+    return () => window.removeEventListener('popstate', checkAdminRoute);
+  }, []);
+
   // Sync Firebase Auth & Firestore live profile/wallet data
   useEffect(() => {
     if (!auth) return;
