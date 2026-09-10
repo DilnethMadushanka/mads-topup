@@ -18,7 +18,8 @@ export const TopupModal = () => {
     showToast,
     formatPrice,
     savePlayerId,
-    userProfile
+    userProfile,
+    creditUserWallet
   } = useApp();
 
   const [step, setStep] = useState(1); // 1: ID, 2: Package, 3: Payment, 4: Success
@@ -112,6 +113,17 @@ export const TopupModal = () => {
   };
 
   const handleCompleteOrder = async () => {
+    // Check wallet balance if paying via MADS Wallet
+    if (selectedPayment.id === 'wallet') {
+      const availLkr = userProfile?.walletBalance || 0;
+      const price = selectedPackage.priceLkr;
+      if (availLkr < price) {
+        showToast(`Insufficient Wallet Balance! Available: Rs. ${availLkr}. Please top up wallet first.`, 'error');
+        return;
+      }
+      creditUserWallet(-price, 0);
+    }
+
     setIsSubmitting(true);
     
     // Dispatch via Moongold API simulator

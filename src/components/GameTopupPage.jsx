@@ -20,7 +20,8 @@ export const GameTopupPage = () => {
     savePlayerId,
     userProfile,
     currency,
-    setCurrency
+    setCurrency,
+    creditUserWallet
   } = useApp();
 
   const [playerId, setPlayerId] = useState('');
@@ -143,6 +144,27 @@ export const GameTopupPage = () => {
     if (selectedItems.length === 0) {
       showToast('Please select at least 1 package to top-up!', 'error');
       return;
+    }
+
+    // Check wallet balance if paying with MADS Wallet
+    if (selectedPayment.id === 'wallet') {
+      const availLkr = userProfile?.walletBalance || 0;
+      const availUsdt = userProfile?.walletUsdt || 0;
+
+      if (currency === 'USD') {
+        const requiredUsdt = totalLkr / 305;
+        if (availUsdt < requiredUsdt && availLkr < totalLkr) {
+          showToast(`Insufficient Wallet Balance! Available: $${availUsdt.toFixed(2)} USDT / Rs. ${availLkr}. Please top up your wallet.`, 'error');
+          return;
+        }
+        creditUserWallet(0, -requiredUsdt);
+      } else {
+        if (availLkr < totalLkr && (availUsdt * 305) < totalLkr) {
+          showToast(`Insufficient Wallet Balance! Available: Rs. ${availLkr}. Please top up your wallet or select Bank / eZ Cash.`, 'error');
+          return;
+        }
+        creditUserWallet(-totalLkr, 0);
+      }
     }
 
     setIsSubmitting(true);

@@ -172,6 +172,15 @@ export const BLOG_POSTS = [
 
 export const PAYMENT_METHODS = [
   {
+    id: 'wallet',
+    name: 'MADS Wallet Balance',
+    subtitle: 'Instant Auto-Topup using your site wallet',
+    icon: '💰',
+    badge: 'INSTANT',
+    popular: true,
+    accountDetails: null
+  },
+  {
     id: 'bank',
     name: 'Bank Transfer (Sri Lanka)',
     subtitle: 'Commercial Bank / Sampath / BOC / HNB',
