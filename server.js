@@ -53,12 +53,24 @@ app.post('/api/send-otp', async (req, res) => {
       try {
         const { Resend } = await import('resend');
         const resend = new Resend(resendApiKey);
-        const data = await resend.emails.send({
-          from: process.env.RESEND_FROM || 'MADS TOPUP <onboarding@resend.dev>',
-          to: [email],
-          subject: `Your Verification Code: ${otp}`,
-          html: emailHtml
-        });
+        const fromAddress = process.env.RESEND_FROM || 'MADS TOPUP <noreply@madstopup.com>';
+        let data;
+        try {
+          data = await resend.emails.send({
+            from: fromAddress,
+            to: [email],
+            subject: `Your Verification Code: ${otp}`,
+            html: emailHtml
+          });
+        } catch (domainErr) {
+          // If domain not verified yet, fallback to onboarding@resend.dev
+          data = await resend.emails.send({
+            from: 'MADS TOPUP <onboarding@resend.dev>',
+            to: [email],
+            subject: `Your Verification Code: ${otp}`,
+            html: emailHtml
+          });
+        }
         console.log(`[Resend OTP Sent] Sent to ${email}, id: ${data?.id}`);
         return res.json({ success: true, provider: 'Resend', messageId: data?.id });
       } catch (rErr) {
