@@ -98,7 +98,7 @@ export const updateUserProfileInFirestore = async (uid, updatedData) => {
   if (db) {
     try {
       const userRef = doc(db, 'users', uid);
-      await updateDoc(userRef, updatedData);
+      await setDoc(userRef, updatedData, { merge: true });
     } catch (error) {
       console.warn('Firestore update note:', error);
     }

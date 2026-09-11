@@ -123,12 +123,12 @@ export const AuthModal = () => {
 
   const handleCompleteGoogleSetup = async (e) => {
     e.preventDefault();
-    if (!googleWhatsAppPhone) {
+    if (!googleWhatsAppPhone || !googleWhatsAppPhone.trim()) {
       showToast('Please enter your WhatsApp number!', 'error');
       return;
     }
     if (pendingGoogleUser) {
-      const fullPhone = `+94 ${googleWhatsAppPhone}`;
+      const fullPhone = `+94 ${googleWhatsAppPhone.trim()}`;
       setIsLoggedIn(true);
       setUserProfile(prev => ({
         ...prev,
@@ -139,10 +139,20 @@ export const AuthModal = () => {
         phone: fullPhone,
         provider: 'Google'
       }));
-      if (pendingGoogleUser.uid) {
-        await updateUserProfileInFirestore(pendingGoogleUser.uid, { phone: fullPhone });
+
+      try {
+        if (pendingGoogleUser.uid) {
+          await updateUserProfileInFirestore(pendingGoogleUser.uid, { 
+            phone: fullPhone,
+            name: pendingGoogleUser.name || 'Verified Gamer',
+            email: pendingGoogleUser.email || ''
+          });
+        }
+      } catch (err) {
+        console.warn('Profile DB save note:', err);
       }
-      showToast(`Registration completed! Welcome, ${pendingGoogleUser.name}.`);
+
+      showToast(`Registration completed! Welcome, ${pendingGoogleUser.name || 'Gamer'}.`);
       setPendingGoogleUser(null);
       setIsAuthModalOpen(false);
     }
