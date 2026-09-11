@@ -3,21 +3,25 @@
 // Bucket Name: mads-topup
 
 const DEFAULT_R2_BUCKET_URL = import.meta.env.VITE_R2_BUCKET_URL || 'https://bfda3f43ac31b00be80bcb82772eb8fa.r2.cloudflarestorage.com/mads-topup';
-const DEFAULT_ACCESS_KEY_ID = import.meta.env.VITE_R2_ACCESS_KEY_ID || '380f431fa8c9fb98e1f3a5da3be0bd70';
-const DEFAULT_SECRET_ACCESS_KEY = import.meta.env.VITE_R2_SECRET_ACCESS_KEY || '8e102d88803486d93d28294e8e5cca27e3d55a2a27d5a53767cfdca42b07eb67';
+const DEFAULT_ACCESS_KEY_ID = '380f431fa8c9fb98e1f3a5da3be0bd70';
+const DEFAULT_SECRET_ACCESS_KEY = '••••••••••••';
 
 export const getR2Config = () => {
   const stored = localStorage.getItem('mads_r2_config');
   if (stored) {
     try {
-      return JSON.parse(stored);
+      const parsed = JSON.parse(stored);
+      return {
+        ...parsed,
+        secretAccessKey: '••••••••••••'
+      };
     } catch (e) {}
   }
   return {
     bucketUrl: DEFAULT_R2_BUCKET_URL,
     bucketName: 'mads-topup',
     accessKeyId: DEFAULT_ACCESS_KEY_ID,
-    secretAccessKey: DEFAULT_SECRET_ACCESS_KEY,
+    secretAccessKey: '••••••••••••',
     endpoint: 'https://bfda3f43ac31b00be80bcb82772eb8fa.r2.cloudflarestorage.com',
     region: 'auto',
     status: 'ACTIVE'

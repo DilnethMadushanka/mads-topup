@@ -8,8 +8,11 @@ export const getMoongoldConfig = () => {
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        if (parsed.apiKey && parsed.secretKey) {
-          return parsed;
+        if (parsed.apiKey) {
+          return {
+            ...parsed,
+            secretKey: '••••••••••••'
+          };
         }
       } catch (e) {
         // fallback
@@ -17,12 +20,9 @@ export const getMoongoldConfig = () => {
     }
   }
 
-  const apiKey = import.meta?.env?.VITE_MOONGOLD_PARTNER_ID || 'f27cabc8d2c2122bbedacabce632db68';
-  const secretKey = import.meta?.env?.VITE_MOONGOLD_SECRET_KEY || 'PM67SGqyed';
-
   return {
-    apiKey: apiKey,
-    secretKey: secretKey,
+    apiKey: 'MOONGOLD_PARTNER_ACTIVE',
+    secretKey: '••••••••••••',
     baseUrl: 'https://moogold.com/wp-json/v1/api',
     autoFulfill: true,
     simulationMode: false,
