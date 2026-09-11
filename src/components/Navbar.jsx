@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Gamepad2, Gift, BookOpen, Download, User, Wallet, ChevronDown, Headset, Menu, X, LogIn, UserPlus } from 'lucide-react';
+import { Gamepad2, Gift, BookOpen, Download, User, Wallet, ChevronDown, Headset, Menu, X, LogIn, UserPlus, Home, ShoppingBag, Smartphone } from 'lucide-react';
 
 export const Navbar = () => {
   const { 
@@ -9,6 +9,7 @@ export const Navbar = () => {
     openCatalog,
     closeCatalog,
     isGameCatalogOpen,
+    setSelectedGame,
     openAuth,
     userProfile,
     isLoggedIn,
@@ -61,7 +62,7 @@ export const Navbar = () => {
         
         {/* Brand Logo */}
         <div 
-          onClick={() => { closeCatalog(); setIsMobileMenuOpen(false); }}
+          onClick={() => { setSelectedGame(null); closeCatalog(); setIsMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
           className="flex items-center gap-2 cursor-pointer group"
         >
           <div className="w-10 h-10 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform duration-300 overflow-hidden p-0.5">
@@ -81,7 +82,7 @@ export const Navbar = () => {
         {/* Desktop Navigation Links */}
         <nav className="hidden lg:flex items-center gap-7 text-xs font-bold text-slate-800 uppercase tracking-wide">
           <button 
-            onClick={() => { openCatalog(); setIsMobileMenuOpen(false); }}
+            onClick={() => { setSelectedGame(null); openCatalog(); setIsMobileMenuOpen(false); }}
             className={`flex items-center gap-2 hover:text-[#cc040a] transition-colors cursor-pointer group py-2 ${isGameCatalogOpen ? 'text-[#cc040a]' : ''}`}
           >
             <span className="w-6 h-6 rounded-lg bg-red-100 text-[#cc040a] flex items-center justify-center">
@@ -193,7 +194,7 @@ export const Navbar = () => {
           )}
         </div>
 
-        {/* Mobile View: Hamburger Menu Button Top-Right (Matching Reference Screenshot) */}
+        {/* Mobile View: Hamburger Menu Button Top-Right */}
         <div className="lg:hidden flex items-center gap-2">
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -206,42 +207,96 @@ export const Navbar = () => {
 
       </div>
 
-      {/* Mobile Drawer Overlay Menu (Matches Reference Screenshot EXACTLY) */}
+      {/* Mobile Drawer Overlay Menu (Contains ALL Features from Bottom Bar + Menu) */}
       {isMobileMenuOpen && (
         <div className="lg:hidden bg-[#0F172A]/95 backdrop-blur-2xl border-b border-slate-800 shadow-2xl px-6 py-6 space-y-6 animate-in slide-in-from-top-4 duration-200 text-white">
           
           {/* Vertical Menu Navigation Items */}
-          <div className="space-y-4">
+          <div className="space-y-3.5">
+            {/* Home */}
             <button 
-              onClick={() => { openCatalog(); setIsMobileMenuOpen(false); }}
-              className="w-full flex items-center gap-3 text-sm font-extrabold text-slate-200 hover:text-cyan-400 py-1 transition-colors text-left"
+              onClick={() => { setSelectedGame(null); closeCatalog(); setIsMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              className="w-full flex items-center justify-between text-sm font-extrabold text-slate-200 hover:text-[#cc040a] py-1 transition-colors text-left"
             >
-              <Gamepad2 className="w-5 h-5 text-cyan-400" />
-              <span>Game List</span>
+              <span className="flex items-center gap-3">
+                <Home className="w-5 h-5 text-[#cc040a]" />
+                <span>Home</span>
+              </span>
             </button>
 
+            {/* Game List */}
+            <button 
+              onClick={() => { setSelectedGame(null); openCatalog(); setIsMobileMenuOpen(false); }}
+              className="w-full flex items-center justify-between text-sm font-extrabold text-slate-200 hover:text-cyan-400 py-1 transition-colors text-left"
+            >
+              <span className="flex items-center gap-3">
+                <Gamepad2 className="w-5 h-5 text-cyan-400" />
+                <span>Game List</span>
+              </span>
+            </button>
+
+            {/* Cards */}
             <button 
               onClick={() => handleNavClick('services-section')}
-              className="w-full flex items-center gap-3 text-sm font-extrabold text-slate-200 hover:text-emerald-400 py-1 transition-colors text-left"
+              className="w-full flex items-center justify-between text-sm font-extrabold text-slate-200 hover:text-emerald-400 py-1 transition-colors text-left"
             >
-              <Gift className="w-5 h-5 text-emerald-400" />
-              <span>Cards</span>
+              <span className="flex items-center gap-3">
+                <Gift className="w-5 h-5 text-emerald-400" />
+                <span>Cards</span>
+              </span>
             </button>
 
+            {/* Blog */}
             <button 
               onClick={() => handleNavClick('why-choose-us')}
-              className="w-full flex items-center gap-3 text-sm font-extrabold text-slate-200 hover:text-cyan-400 py-1 transition-colors text-left"
+              className="w-full flex items-center justify-between text-sm font-extrabold text-slate-200 hover:text-amber-400 py-1 transition-colors text-left"
             >
-              <BookOpen className="w-5 h-5 text-cyan-400" />
-              <span>Blog</span>
+              <span className="flex items-center gap-3">
+                <BookOpen className="w-5 h-5 text-amber-400" />
+                <span>Blog</span>
+              </span>
             </button>
 
+            {/* Get App */}
             <button 
               onClick={() => { setIsDownloadAppModalOpen(true); setIsMobileMenuOpen(false); }}
-              className="w-full flex items-center gap-3 text-sm font-extrabold text-slate-200 hover:text-[#cc040a] py-1 transition-colors text-left"
+              className="w-full flex items-center justify-between text-sm font-extrabold text-slate-200 hover:text-[#cc040a] py-1 transition-colors text-left"
             >
-              <Download className="w-5 h-5 text-slate-400" />
-              <span>Download App</span>
+              <span className="flex items-center gap-3">
+                <Smartphone className="w-5 h-5 text-[#cc040a] animate-pulse" />
+                <span>Get App</span>
+              </span>
+              <span className="text-[10px] font-black text-white bg-[#cc040a] px-2 py-0.5 rounded-full uppercase shadow-xs">App</span>
+            </button>
+
+            {/* 24/7 Support */}
+            <button 
+              onClick={() => { setIsSupportOpen(true); setIsMobileMenuOpen(false); }}
+              className="w-full flex items-center justify-between text-sm font-extrabold text-slate-200 hover:text-red-400 py-1 transition-colors text-left"
+            >
+              <span className="flex items-center gap-3">
+                <Headset className="w-5 h-5 text-red-500" />
+                <span>24/7 Support</span>
+              </span>
+            </button>
+
+            {/* My Orders */}
+            <button 
+              onClick={() => { 
+                if (isUserLoggedIn) { setIsUserProfileOpen(true); } else { openAuth('login'); }
+                setIsMobileMenuOpen(false); 
+              }}
+              className="w-full flex items-center justify-between text-sm font-extrabold text-slate-200 hover:text-indigo-400 py-1 transition-colors text-left"
+            >
+              <span className="flex items-center gap-3">
+                <ShoppingBag className="w-5 h-5 text-indigo-400" />
+                <span>My Orders</span>
+              </span>
+              {(orders || []).length > 0 && (
+                <span className="bg-[#cc040a] text-white text-xs font-black px-2 py-0.5 rounded-full">
+                  {orders.length}
+                </span>
+              )}
             </button>
           </div>
 
