@@ -62,7 +62,11 @@ export const AuthModal = () => {
       }
       const emailjsLib = emailjsModule?.default || emailjsModule || window.emailjs;
 
-      if (emailjsLib && typeof emailjsLib.send === 'function') {
+      if (emailjsLib) {
+        if (typeof emailjsLib.init === 'function') {
+          try { emailjsLib.init({ publicKey }); } catch (e) {}
+        }
+
         const res = await emailjsLib.send(
           serviceId,
           templateId,
@@ -74,7 +78,7 @@ export const AuthModal = () => {
             user_name: username || 'Gamer',
             time: '15 mins'
           },
-          publicKey
+          { publicKey }
         );
         console.log('EmailJS Success Response:', res);
         showToast(`Verification code sent to ${email}! Check your inbox.`);
@@ -87,7 +91,8 @@ export const AuthModal = () => {
       console.error('EmailJS delivery error:', error);
       setIsCodeSent(true);
       setResendTimer(60);
-      showToast(`Email error: ${error?.text || error?.message || 'Check EmailJS connection'}`);
+      const errMsg = error?.text || error?.message || (typeof error === 'string' ? error : 'Check Service ID / Template ID in EmailJS');
+      showToast(`EmailJS Error (${error?.status || 404}): ${errMsg}`);
     } finally {
       setIsSendingCode(false);
     }
