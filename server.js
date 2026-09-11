@@ -47,7 +47,7 @@ app.post('/api/send-otp', async (req, res) => {
       </div>
     `;
 
-    // Option 1: Try Resend API if Key available
+    // Option 1: Try Resend API (High Delivery to Gmail Primary Inbox)
     const resendApiKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
     if (resendApiKey) {
       try {
