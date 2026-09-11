@@ -153,26 +153,47 @@ export const GameTopupPage = () => {
       return;
     }
 
-    // Check wallet balance if paying with MADS Wallet
+    // 1. Strict Wallet Balance Check if paying with MADS Wallet
     if (selectedPayment.id === 'wallet') {
       const availLkr = userProfile?.walletBalance || 0;
       const availUsdt = userProfile?.walletUsdt || 0;
 
       if (currency === 'USD') {
         const requiredUsdt = totalLkr / 305;
-        if (availUsdt < requiredUsdt && availLkr < totalLkr) {
-          showToast(`Insufficient Wallet Balance! Available: $${availUsdt.toFixed(2)} USDT / Rs. ${availLkr.toFixed(2)}. Please top up your wallet first!`, 'error');
+        if (availUsdt >= requiredUsdt) {
+          creditUserWallet(0, -requiredUsdt);
+        } else if (availLkr >= totalLkr) {
+          creditUserWallet(-totalLkr, 0);
+        } else {
+          showToast(`Insufficient Wallet Balance! Required: $${requiredUsdt.toFixed(2)} USDT (or Rs. ${totalLkr.toFixed(2)} LKR). Available: $${availUsdt.toFixed(2)} USDT / Rs. ${availLkr.toFixed(2)} LKR. Please top up your wallet first!`, 'error');
           setIsWalletModalOpen(true);
           return;
         }
-        creditUserWallet(0, -requiredUsdt);
       } else {
-        if (availLkr < totalLkr && (availUsdt * 305) < totalLkr) {
-          showToast(`Insufficient Wallet Balance! Available: Rs. ${availLkr.toFixed(2)}. Please top up your wallet first!`, 'error');
+        if (availLkr >= totalLkr) {
+          creditUserWallet(-totalLkr, 0);
+        } else if ((availUsdt * 305) >= totalLkr) {
+          const requiredUsdt = totalLkr / 305;
+          creditUserWallet(0, -requiredUsdt);
+        } else {
+          showToast(`Insufficient Wallet Balance! Required: Rs. ${totalLkr.toFixed(2)} LKR. Available: Rs. ${availLkr.toFixed(2)} LKR / $${availUsdt.toFixed(2)} USDT. Please top up your wallet first!`, 'error');
           setIsWalletModalOpen(true);
           return;
         }
-        creditUserWallet(-totalLkr, 0);
+      }
+    }
+
+    // 2. Strict Receipt Check for Manual/External Payment Methods (Bank, eZ Cash, Binance, Card)
+    if (selectedPayment.id !== 'wallet') {
+      if (!receiptR2Url && !receiptFile) {
+        showToast(`Please upload your payment receipt / transfer screenshot for ${selectedPayment.name} before completing your top-up order!`, 'error');
+        const uploadBox = document.getElementById('receipt-upload-section');
+        if (uploadBox) {
+          uploadBox.scrollIntoView({ behavior: 'smooth' });
+        } else {
+          window.scrollTo({ top: 600, behavior: 'smooth' });
+        }
+        return;
       }
     }
 
@@ -183,21 +204,28 @@ export const GameTopupPage = () => {
       .map(item => `${cartQuantities[item.id]}x ${item.name}`)
       .join(', ');
 
-    const orderPayload = {
-      game: selectedGame,
-      gameId: selectedGame.id,
-      playerId,
-      zoneId,
-      package: selectedItems[0],
-      payment: selectedPayment,
-      ign: ign || (`Player ${playerId}`)
-    };
+    let moongoldResult = { success: true, status: 'PENDING_VERIFICATION', moongoldRef: null };
 
-    const moongoldResult = await dispatchMoongoldOrder(orderPayload);
+    // 3. Dispatch via Moongold API ONLY IF paid via MADS Wallet
+    if (selectedPayment.id === 'wallet') {
+      const orderPayload = {
+        game: selectedGame,
+        gameId: selectedGame.id,
+        playerId,
+        zoneId,
+        package: selectedItems[0],
+        payment: selectedPayment,
+        ign: ign || (`Player ${playerId}`)
+      };
+
+      moongoldResult = await dispatchMoongoldOrder(orderPayload);
+    }
+
     setIsSubmitting(false);
 
-    const isInstantPayment = selectedPayment.id === 'wallet' || selectedPayment.id === 'card';
-    const finalStatus = isInstantPayment ? 'COMPLETED' : (moongoldResult.status || 'PENDING_VERIFICATION');
+    const finalStatus = selectedPayment.id === 'wallet' 
+      ? (moongoldResult.status || 'COMPLETED') 
+      : 'PENDING_VERIFICATION';
 
     const newOrder = {
       id: 'ORD-' + Math.floor(10000 + Math.random() * 90000),
@@ -213,7 +241,7 @@ export const GameTopupPage = () => {
       paymentMethod: selectedPayment.name,
       priceLkr: totalLkr,
       status: finalStatus,
-      moongoldRef: moongoldResult.moongoldRef || ('MG-' + Math.floor(10000000 + Math.random() * 90000000)),
+      moongoldRef: moongoldResult.moongoldRef || (selectedPayment.id === 'wallet' ? ('MG-' + Math.floor(10000000 + Math.random() * 90000000)) : 'PENDING_ADMIN_VERIFICATION'),
       receiptUrl: receiptR2Url || null,
       createdAt: new Date().toISOString()
     };
@@ -661,10 +689,15 @@ export const GameTopupPage = () => {
 
             {/* Payment Details Instructions & R2 Upload */}
             {selectedPayment.accountDetails && (
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs space-y-3 mb-6">
-                <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
-                  <CreditCard className="w-4 h-4 text-blue-600" />
-                  <span>Payment Instructions ({selectedPayment.name}):</span>
+              <div id="receipt-upload-section" className="bg-slate-50 p-4 rounded-2xl border-2 border-blue-200 text-xs space-y-3 mb-6 transition-all shadow-sm">
+                <div className="font-extrabold text-slate-900 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <CreditCard className="w-4 h-4 text-blue-600" />
+                    <span>Payment Instructions ({selectedPayment.name}):</span>
+                  </div>
+                  <span className="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                    Receipt Required
+                  </span>
                 </div>
 
                 {selectedPayment.id === 'bank' && (
@@ -689,8 +722,9 @@ export const GameTopupPage = () => {
                 {/* Cloudflare R2 Upload Slip */}
                 <div className="pt-3 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <span className="font-extrabold text-slate-800 text-xs block">
-                      Upload Slip Screenshot (Optional)
+                    <span className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5">
+                      <span>Upload Slip / Receipt Screenshot</span>
+                      <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-mono font-extrabold">*REQUIRED</span>
                     </span>
                     <span className="text-[10px] text-slate-400">Directly stored to Cloudflare R2 Storage</span>
                   </div>
@@ -711,6 +745,16 @@ export const GameTopupPage = () => {
                     )}
                   </div>
                 </div>
+
+                {receiptR2Url && (
+                  <div className="mt-2 text-[11px] bg-emerald-50 text-emerald-800 border border-emerald-300 p-2.5 rounded-xl flex items-center justify-between font-mono">
+                    <span className="truncate max-w-[320px]">R2 Slip: {receiptR2Url}</span>
+                    <span className="font-extrabold text-emerald-600 flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Uploaded</span>
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 

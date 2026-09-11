@@ -116,34 +116,57 @@ export const TopupModal = () => {
   };
 
   const handleCompleteOrder = async () => {
-    // Check wallet balance if paying via MADS Wallet
+    // 1. Strict Wallet Balance Check if paying via MADS Wallet
     if (selectedPayment.id === 'wallet') {
       const availLkr = userProfile?.walletBalance || 0;
+      const availUsdt = userProfile?.walletUsdt || 0;
       const price = selectedPackage.priceLkr;
-      if (availLkr < price) {
-        showToast(`Insufficient Wallet Balance! Available: Rs. ${availLkr.toFixed(2)}. Please top up your wallet first!`, 'error');
+
+      if (availLkr >= price) {
+        creditUserWallet(-price, 0);
+      } else if ((availUsdt * 305) >= price) {
+        const reqUsdt = price / 305;
+        creditUserWallet(0, -reqUsdt);
+      } else {
+        showToast(`Insufficient Wallet Balance! Required: Rs. ${price.toFixed(2)}. Available: Rs. ${availLkr.toFixed(2)} LKR / $${availUsdt.toFixed(2)} USDT. Please top up your wallet first!`, 'error');
         setIsTopupModalOpen(false);
         setIsWalletModalOpen(true);
         return;
       }
-      creditUserWallet(-price, 0);
+    }
+
+    // 2. Strict Receipt Check for Manual Payment Methods (Bank, eZ Cash, Binance, Card)
+    if (selectedPayment.id !== 'wallet') {
+      if (!receiptR2Url && !receiptFile) {
+        showToast(`Please upload your payment receipt / transfer screenshot for ${selectedPayment.name} before completing your top-up!`, 'error');
+        return;
+      }
     }
 
     setIsSubmitting(true);
     
-    // Dispatch via Moongold API simulator
-    const orderPayload = {
-      game: selectedGame,
-      gameId: selectedGame.id,
-      playerId,
-      zoneId,
-      package: selectedPackage,
-      payment: selectedPayment,
-      ign: ign || 'Verified Gamer'
-    };
+    let moongoldResult = { success: true, status: 'PENDING_VERIFICATION', moongoldRef: null };
 
-    const moongoldResult = await dispatchMoongoldOrder(orderPayload);
+    // 3. Dispatch via Moongold API ONLY IF paid via MADS Wallet
+    if (selectedPayment.id === 'wallet') {
+      const orderPayload = {
+        game: selectedGame,
+        gameId: selectedGame.id,
+        playerId,
+        zoneId,
+        package: selectedPackage,
+        payment: selectedPayment,
+        ign: ign || 'Verified Gamer'
+      };
+
+      moongoldResult = await dispatchMoongoldOrder(orderPayload);
+    }
+
     setIsSubmitting(false);
+
+    const finalStatus = selectedPayment.id === 'wallet'
+      ? (moongoldResult.status || 'COMPLETED')
+      : 'PENDING_VERIFICATION';
 
     const newOrder = {
       id: 'ORD-' + Math.floor(10000 + Math.random() * 90000),
@@ -158,8 +181,9 @@ export const TopupModal = () => {
       ign: ign || 'Verified Gamer',
       paymentMethod: selectedPayment.name,
       priceLkr: selectedPackage.priceLkr,
-      status: moongoldResult.status || 'COMPLETED',
-      moongoldRef: moongoldResult.moongoldRef || ('MG-' + Math.floor(10000000 + Math.random() * 90000000)),
+      status: finalStatus,
+      moongoldRef: moongoldResult.moongoldRef || (selectedPayment.id === 'wallet' ? ('MG-' + Math.floor(10000000 + Math.random() * 90000000)) : 'PENDING_ADMIN_VERIFICATION'),
+      receiptUrl: receiptR2Url || null,
       createdAt: new Date().toISOString()
     };
 
