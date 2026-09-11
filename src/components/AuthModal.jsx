@@ -59,7 +59,14 @@ export const AuthModal = () => {
         await emailjs.send(
           serviceId,
           templateId,
-          { to_email: email, otp_code: code, user_name: username || 'Gamer' },
+          {
+            to_email: email,
+            email: email,
+            otp_code: code,
+            passcode: code,
+            user_name: username || 'Gamer',
+            time: '15 mins'
+          },
           publicKey
         );
         showToast(`Verification code sent directly to ${email}!`);
