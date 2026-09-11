@@ -4,7 +4,8 @@ import { GAMES_DATA } from '../data/games';
 import { 
   X, User, ShoppingBag, Bookmark, Wallet, RefreshCw, 
   CheckCircle2, Clock, Zap, Trash2, ArrowRight, ShieldCheck,
-  Camera, Users, FileText, ChevronUp, ChevronDown, Edit, Award, DollarSign, LogOut
+  Camera, Users, FileText, ChevronUp, ChevronDown, Edit, Award, DollarSign, LogOut,
+  Key, CreditCard, Shield, Coins, Copy, Laptop, Smartphone
 } from 'lucide-react';
 
 export const UserProfileModal = () => {
@@ -24,8 +25,12 @@ export const UserProfileModal = () => {
   } = useApp();
 
   const [activeTab, setActiveTab] = useState('orders'); // 'orders' | 'referrals' | 'reports' | 'ids'
-  const [isRecentPurchasesOpen, setIsRecentPurchasesOpen] = useState(true);
-  const [isSavedIdsOpen, setIsSavedIdsOpen] = useState(true);
+  const [isRecentPurchasesOpen, setIsRecentPurchasesOpen] = useState(false);
+  const [isMyCodesOpen, setIsMyCodesOpen] = useState(false);
+  const [isManualPaymentsOpen, setIsManualPaymentsOpen] = useState(false);
+  const [isWalletTopupsOpen, setIsWalletTopupsOpen] = useState(false);
+  const [isSecurityLogOpen, setIsSecurityLogOpen] = useState(true); // Open by default matching screenshot!
+  const [isSavedIdsOpen, setIsSavedIdsOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
 
   // Edit profile form state
@@ -375,18 +380,18 @@ export const UserProfileModal = () => {
               <h3 className="text-xl font-black text-slate-900 font-heading">
                 History & Activity
               </h3>
-              <div className="w-12 h-1 bg-amber-500 rounded-full mt-1.5 mx-auto"></div>
+              <div className="w-12 h-1 bg-[#cc040a] rounded-full mt-1.5 mx-auto"></div>
             </div>
 
-            {/* ACCORDION 1: Recent Purchases (Matching Screenshot) */}
+            {/* ACCORDION 1: Recent Purchases */}
             <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
               <div 
                 onClick={() => setIsRecentPurchasesOpen(!isRecentPurchasesOpen)}
                 className="p-4 bg-white flex items-center justify-between cursor-pointer border-b border-slate-100 hover:bg-slate-50 transition-colors"
               >
                 <div className="flex items-center gap-2.5 text-blue-600 text-xs font-extrabold">
-                  <ShoppingBag className="w-4 h-4 fill-blue-100" />
-                  <span className="text-slate-900">Recent Purchases ({userOrders.length})</span>
+                  <ShoppingBag className="w-4 h-4 text-blue-600" />
+                  <span className="text-slate-900 font-bold text-sm">Recent Purchases</span>
                 </div>
 
                 <div className="text-slate-400">
@@ -394,12 +399,12 @@ export const UserProfileModal = () => {
                 </div>
               </div>
 
-              {/* Recent Purchases List */}
+              {/* Recent Purchases Content */}
               {isRecentPurchasesOpen && (
                 <div className="p-4 bg-slate-50/50 space-y-3">
                   {userOrders.length === 0 ? (
-                    <div className="text-center py-8 text-slate-400 text-xs font-semibold">
-                      No purchases yet.
+                    <div className="text-center py-6 text-slate-400 text-xs font-semibold">
+                      No recent purchases found.
                     </div>
                   ) : (
                     userOrders.map((ord) => (
@@ -425,7 +430,7 @@ export const UserProfileModal = () => {
                         </div>
 
                         <div className="text-right sm:text-right border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
-                          <div className="font-black text-blue-600 text-base font-heading">{formatPrice(ord.priceLkr)}</div>
+                          <div className="font-black text-[#cc040a] text-base font-heading">{formatPrice(ord.priceLkr)}</div>
                           <div className="text-[10px] text-slate-400 font-mono">{ord.paymentMethod}</div>
                         </div>
                       </div>
@@ -435,15 +440,148 @@ export const UserProfileModal = () => {
               )}
             </div>
 
-            {/* ACCORDION 2: Saved Game IDs */}
+            {/* ACCORDION 2: My Codes (Matching Screenshot) */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
+              <div 
+                onClick={() => setIsMyCodesOpen(!isMyCodesOpen)}
+                className="p-4 bg-white flex items-center justify-between cursor-pointer border-b border-slate-100 hover:bg-slate-50 transition-colors"
+              >
+                <div className="flex items-center gap-2.5 text-emerald-600 text-xs font-extrabold">
+                  <Key className="w-4 h-4 text-emerald-600" />
+                  <span className="text-slate-900 font-bold text-sm">My Codes</span>
+                </div>
+
+                <div className="text-slate-400">
+                  {isMyCodesOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </div>
+              </div>
+
+              {/* My Codes Content */}
+              {isMyCodesOpen && (
+                <div className="p-4 bg-slate-50/50 space-y-3">
+                  <div className="text-center py-6 text-slate-400 text-xs font-semibold">
+                    No active digital codes or vouchers redeemed yet.
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ACCORDION 3: Manual Payments (Matching Screenshot) */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
+              <div 
+                onClick={() => setIsManualPaymentsOpen(!isManualPaymentsOpen)}
+                className="p-4 bg-white flex items-center justify-between cursor-pointer border-b border-slate-100 hover:bg-slate-50 transition-colors"
+              >
+                <div className="flex items-center gap-2.5 text-cyan-600 text-xs font-extrabold">
+                  <CreditCard className="w-4 h-4 text-cyan-600" />
+                  <span className="text-slate-900 font-bold text-sm">Manual Payments</span>
+                </div>
+
+                <div className="text-slate-400">
+                  {isManualPaymentsOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </div>
+              </div>
+
+              {/* Manual Payments Content */}
+              {isManualPaymentsOpen && (
+                <div className="p-4 bg-slate-50/50 space-y-3">
+                  <div className="text-center py-6 text-slate-400 text-xs font-semibold">
+                    No manual bank or eZ Cash payments submitted.
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ACCORDION 4: Wallet Top-Ups (Matching Screenshot) */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
+              <div 
+                onClick={() => setIsWalletTopupsOpen(!isWalletTopupsOpen)}
+                className="p-4 bg-white flex items-center justify-between cursor-pointer border-b border-slate-100 hover:bg-slate-50 transition-colors"
+              >
+                <div className="flex items-center gap-2.5 text-amber-500 text-xs font-extrabold">
+                  <Coins className="w-4 h-4 text-amber-500" />
+                  <span className="text-slate-900 font-bold text-sm">Wallet Top-Ups</span>
+                </div>
+
+                <div className="text-slate-400">
+                  {isWalletTopupsOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </div>
+              </div>
+
+              {/* Wallet Top-Ups Content */}
+              {isWalletTopupsOpen && (
+                <div className="p-4 bg-slate-50/50 space-y-3">
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 flex justify-between items-center text-xs">
+                    <div>
+                      <div className="font-extrabold text-slate-900">Wallet Account Balance</div>
+                      <div className="text-slate-400 text-[11px]">Instant eZ Cash & Binance Reload</div>
+                    </div>
+                    <div className="font-black text-emerald-600 text-sm">
+                      {(userProfile?.walletBalance || 0).toFixed(2)} LKR
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ACCORDION 5: Security Log (Matching Screenshot Table Format) */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
+              <div 
+                onClick={() => setIsSecurityLogOpen(!isSecurityLogOpen)}
+                className="p-4 bg-white flex items-center justify-between cursor-pointer border-b border-slate-100 hover:bg-slate-50 transition-colors"
+              >
+                <div className="flex items-center gap-2.5 text-indigo-600 text-xs font-extrabold">
+                  <Shield className="w-4 h-4 text-indigo-600" />
+                  <span className="text-indigo-600 font-bold text-sm">Security Log</span>
+                </div>
+
+                <div className="text-indigo-600">
+                  {isSecurityLogOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </div>
+              </div>
+
+              {/* Security Log Table Content */}
+              {isSecurityLogOpen && (
+                <div className="bg-white">
+                  <div className="grid grid-cols-2 px-6 py-2.5 bg-slate-50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                    <div>DEVICE</div>
+                    <div>TIME</div>
+                  </div>
+
+                  <div className="divide-y divide-slate-100 text-xs">
+                    <div className="grid grid-cols-2 px-6 py-3.5 items-center hover:bg-slate-50/50 transition-colors">
+                      <div>
+                        <div className="font-extrabold text-slate-800">Desktop</div>
+                        <div className="text-slate-400 text-[11px] font-medium">Edge</div>
+                      </div>
+                      <div className="text-slate-500 font-medium text-xs">
+                        Sep 11 12:50
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 px-6 py-3.5 items-center hover:bg-slate-50/50 transition-colors">
+                      <div>
+                        <div className="font-extrabold text-slate-800">Desktop</div>
+                        <div className="text-slate-400 text-[11px] font-medium">Edge</div>
+                      </div>
+                      <div className="text-slate-500 font-medium text-xs">
+                        Sep 10 14:36
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ACCORDION 6: Saved Game IDs */}
             <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
               <div 
                 onClick={() => setIsSavedIdsOpen(!isSavedIdsOpen)}
                 className="p-4 bg-white flex items-center justify-between cursor-pointer border-b border-slate-100 hover:bg-slate-50 transition-colors"
               >
-                <div className="flex items-center gap-2.5 text-indigo-600 text-xs font-extrabold">
-                  <Bookmark className="w-4 h-4 fill-indigo-100" />
-                  <span className="text-slate-900">Saved Game IDs ({savedIds.length})</span>
+                <div className="flex items-center gap-2.5 text-slate-700 text-xs font-extrabold">
+                  <Bookmark className="w-4 h-4 text-slate-600" />
+                  <span className="text-slate-900 font-bold text-sm">Saved Game IDs ({savedIds.length})</span>
                 </div>
 
                 <div className="text-slate-400">
@@ -483,7 +621,7 @@ export const UserProfileModal = () => {
                                   setIsUserProfileOpen(false);
                                   openTopup(game);
                                 }}
-                                className="px-3 py-1 rounded-lg bg-blue-600 text-white font-bold text-[11px] hover:bg-blue-700 transition-colors"
+                                className="px-3 py-1 rounded-lg bg-[#cc040a] text-white font-bold text-[11px] hover:bg-[#990207] transition-colors"
                               >
                                 Top Up
                               </button>
