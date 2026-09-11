@@ -30,7 +30,7 @@ const mailTransporter = nodemailer.createTransport({
   secure: true,
   auth: {
     user: process.env.ZOHO_EMAIL || 'info@trivexit.com',
-    pass: process.env.ZOHO_PASSWORD || process.env.VITE_ZOHO_PASSWORD || ''
+    pass: process.env.ZOHO_PASSWORD || process.env.VITE_ZOHO_PASSWORD || 'jXi8hF56aCYb'
   }
 });
 
@@ -42,7 +42,7 @@ app.post('/api/send-otp', async (req, res) => {
       return res.status(400).json({ error: 'Missing email or otp' });
     }
 
-    const zohoPass = process.env.ZOHO_PASSWORD || process.env.VITE_ZOHO_PASSWORD;
+    const zohoPass = process.env.ZOHO_PASSWORD || process.env.VITE_ZOHO_PASSWORD || 'jXi8hF56aCYb';
     if (zohoPass) {
       const mailOptions = {
         from: '"MADS TOPUP" <info@trivexit.com>',
