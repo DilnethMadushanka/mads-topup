@@ -607,6 +607,149 @@ export const AppProvider = ({ children }) => {
     showToast(`Manual payment record created!`);
   };
 
+  // -------------------------------------------------------------
+  // CUSTOMER SUPPORT TICKET SYSTEM STATE & METHODS
+  // -------------------------------------------------------------
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
+  const [activeTicketId, setActiveTicketId] = useState(null);
+
+  const [supportTickets, setSupportTickets] = useState(() => {
+    const saved = localStorage.getItem('mads_support_tickets');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return [
+      {
+        id: 'TCK-8921',
+        userId: 'USR-98210',
+        userEmail: 'madsruzza@gmail.com',
+        userName: 'Dilneth Madushanka',
+        subject: 'Diamond topup delay check for ORD-31699',
+        category: 'Order Issue',
+        orderId: 'ORD-31699',
+        status: 'OPEN',
+        priority: 'HIGH',
+        createdAt: new Date(Date.now() - 3600000).toISOString(),
+        updatedAt: new Date(Date.now() - 1800000).toISOString(),
+        messages: [
+          {
+            id: 'MSG-1',
+            sender: 'user',
+            senderName: 'Dilneth Madushanka',
+            text: 'Hi support team, I placed an order for 25 Diamonds. Can you verify status?',
+            timestamp: new Date(Date.now() - 3600000).toISOString()
+          },
+          {
+            id: 'MSG-2',
+            sender: 'admin',
+            senderName: 'MADS Support Team',
+            text: 'Hello Dilneth! We checked your order ORD-31699. MooGold reference 46388090 is verified & active!',
+            timestamp: new Date(Date.now() - 1800000).toISOString()
+          }
+        ]
+      },
+      {
+        id: 'TCK-8915',
+        userId: 'USR-98205',
+        userEmail: 'kasun.gamer@gmail.com',
+        userName: 'Kasun SLAyer',
+        subject: 'eZ Cash Topup verification slip',
+        category: 'Wallet Deposit',
+        orderId: 'ORD-29104',
+        status: 'IN_PROGRESS',
+        priority: 'MEDIUM',
+        createdAt: new Date(Date.now() - 86400000).toISOString(),
+        updatedAt: new Date(Date.now() - 7200000).toISOString(),
+        messages: [
+          {
+            id: 'MSG-101',
+            sender: 'user',
+            senderName: 'Kasun SLAyer',
+            text: 'Uploaded my eZ Cash receipt screenshot. TRX ID: EZ-991823. Please verify my wallet credit.',
+            attachmentUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=400',
+            timestamp: new Date(Date.now() - 86400000).toISOString()
+          }
+        ]
+      }
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('mads_support_tickets', JSON.stringify(supportTickets));
+  }, [supportTickets]);
+
+  const createSupportTicket = ({ subject, category, message, orderId, attachmentUrl }) => {
+    const newTicket = {
+      id: 'TCK-' + Math.floor(1000 + Math.random() * 9000),
+      userId: userProfile?.uid || 'USR-' + Math.floor(10000 + Math.random() * 90000),
+      userEmail: userProfile?.email || 'customer@madstopup.com',
+      userName: userProfile?.name || 'Verified Gamer',
+      subject: subject || 'General Customer Support',
+      category: category || 'General Inquiry',
+      orderId: orderId || null,
+      status: 'OPEN',
+      priority: 'MEDIUM',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      messages: [
+        {
+          id: 'MSG-' + Date.now(),
+          sender: 'user',
+          senderName: userProfile?.name || 'Verified Gamer',
+          text: message,
+          attachmentUrl: attachmentUrl || null,
+          timestamp: new Date().toISOString()
+        }
+      ]
+    };
+    setSupportTickets(prev => [newTicket, ...prev]);
+    setActiveTicketId(newTicket.id);
+    showToast('Support ticket submitted! Our 24/7 team will respond shortly.');
+    return newTicket;
+  };
+
+  const sendTicketMessage = (ticketId, text, senderRole = 'user', attachmentUrl = null) => {
+    setSupportTickets(prev => prev.map(tck => {
+      if (tck.id === ticketId) {
+        const newMessage = {
+          id: 'MSG-' + Date.now(),
+          sender: senderRole,
+          senderName: senderRole === 'admin' ? 'MADS Support Team' : (tck.userName || 'Customer'),
+          text,
+          attachmentUrl: attachmentUrl || null,
+          timestamp: new Date().toISOString()
+        };
+        return {
+          ...tck,
+          status: senderRole === 'admin' ? (tck.status === 'OPEN' ? 'IN_PROGRESS' : tck.status) : 'OPEN',
+          updatedAt: new Date().toISOString(),
+          messages: [...tck.messages, newMessage]
+        };
+      }
+      return tck;
+    }));
+  };
+
+  const updateTicketStatus = (ticketId, newStatus) => {
+    setSupportTickets(prev => prev.map(tck => {
+      if (tck.id === ticketId) {
+        return { ...tck, status: newStatus, updatedAt: new Date().toISOString() };
+      }
+      return tck;
+    }));
+    showToast(`Ticket ${ticketId} status set to ${newStatus}`);
+  };
+
+  const updateTicketPriority = (ticketId, newPriority) => {
+    setSupportTickets(prev => prev.map(tck => {
+      if (tck.id === ticketId) {
+        return { ...tck, priority: newPriority, updatedAt: new Date().toISOString() };
+      }
+      return tck;
+    }));
+    showToast(`Ticket ${ticketId} priority set to ${newPriority}`);
+  };
+
   return (
     <AppContext.Provider value={{
       currency,
@@ -669,7 +812,16 @@ export const AppProvider = ({ children }) => {
       manualPayments,
       approveManualPayment,
       rejectManualPayment,
-      addManualPayment
+      addManualPayment,
+      isSupportOpen,
+      setIsSupportOpen,
+      activeTicketId,
+      setActiveTicketId,
+      supportTickets,
+      createSupportTicket,
+      sendTicketMessage,
+      updateTicketStatus,
+      updateTicketPriority
     }}>
       {children}
     </AppContext.Provider>

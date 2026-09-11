@@ -7,7 +7,7 @@ import {
   CheckCircle2, Clock, XCircle, Zap, Key, Server, Database, Save, Eye, EyeOff, Cloud, UploadCloud,
   Users, CreditCard, Ticket, Megaphone, Search, Filter, Plus, Trash2, ArrowUpRight, ArrowDownRight,
   TrendingUp, Check, AlertTriangle, ShieldAlert, FileText, Gift, Award, CornerDownRight, ChevronRight, Lock,
-  BadgeCheck, UserCheck, UserX, FileCheck, ExternalLink, Image
+  BadgeCheck, UserCheck, UserX, FileCheck, ExternalLink, Image, Menu, Headset
 } from 'lucide-react';
 
 export const AdminDashboard = () => {
@@ -37,7 +37,11 @@ export const AdminDashboard = () => {
     manualPayments,
     approveManualPayment,
     rejectManualPayment,
-    addManualPayment
+    addManualPayment,
+    supportTickets,
+    sendTicketMessage,
+    updateTicketStatus,
+    updateTicketPriority
   } = useApp();
 
   // Admin Authentication State (Requires login when accessing /admin)
@@ -48,7 +52,16 @@ export const AdminDashboard = () => {
   const [adminAuthError, setAdminAuthError] = useState('');
   // Active Admin Sidebar Tab
   const [adminTab, setAdminTab] = useState('overview'); 
-  // Options: 'overview' | 'orders' | 'deposits' | 'users' | 'credit' | 'games' | 'vouchers' | 'moongold' | 'r2' | 'announcement'
+  // Options: 'overview' | 'orders' | 'deposits' | 'users' | 'credit' | 'games' | 'vouchers' | 'moongold' | 'r2' | 'announcement' | 'support'
+
+  // Mobile Drawer State
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  // Support Tickets Filters & Inspection State
+  const [supportSearch, setSupportSearch] = useState('');
+  const [supportStatusFilter, setSupportStatusFilter] = useState('ALL');
+  const [selectedTicketInspect, setSelectedTicketInspect] = useState(null);
+  const [adminReplyText, setAdminReplyText] = useState('');
 
   // Order Filters & Search
   const [orderSearch, setOrderSearch] = useState('');
@@ -304,6 +317,39 @@ export const AdminDashboard = () => {
     return matchesSearch && matchesStatus;
   });
 
+  // Filtered Support Tickets Calculation
+  const safeTickets = supportTickets || [];
+  const openTicketsCount = safeTickets.filter(t => t.status === 'OPEN').length;
+
+  const filteredSupportTickets = safeTickets.filter(tck => {
+    const matchesSearch = 
+      tck.id.toLowerCase().includes(supportSearch.toLowerCase()) ||
+      tck.userEmail.toLowerCase().includes(supportSearch.toLowerCase()) ||
+      tck.userName.toLowerCase().includes(supportSearch.toLowerCase()) ||
+      tck.subject.toLowerCase().includes(supportSearch.toLowerCase()) ||
+      (tck.orderId && tck.orderId.toLowerCase().includes(supportSearch.toLowerCase()));
+
+    const matchesStatus = supportStatusFilter === 'ALL' || tck.status === supportStatusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
+  const activeInspectTicket = selectedTicketInspect || filteredSupportTickets[0] || null;
+
+  const handleSendAdminReply = (e) => {
+    e.preventDefault();
+    if (!adminReplyText.trim() || !activeInspectTicket) return;
+
+    sendTicketMessage(activeInspectTicket.id, adminReplyText.trim(), 'admin');
+    setAdminReplyText('');
+    showToast(`Official support reply sent to ${activeInspectTicket.userName}!`);
+  };
+
+  const handleTabSelect = (tab) => {
+    setAdminTab(tab);
+    setIsMobileSidebarOpen(false);
+  };
+
   // Action Handlers
   const handleSaveMoongoldSettings = () => {
     updateMoongoldConfig({
@@ -440,19 +486,27 @@ export const AdminDashboard = () => {
     <div className="fixed inset-0 z-50 bg-[#0b0f17] text-white w-screen h-screen min-h-screen overflow-hidden flex flex-col animate-in fade-in duration-200">
         
         {/* TOP ADMIN NAVBAR */}
-        <div className="px-6 py-4 bg-[#111622] border-b border-slate-800 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#cc040a] to-[#ff2a30] flex items-center justify-center text-white font-extrabold shadow-lg shadow-red-600/30">
-              <ShieldCheck className="w-6 h-6" />
+        <div className="px-4 sm:px-6 py-3.5 bg-[#111622] border-b border-slate-800 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <button
+              onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+              className="md:hidden p-2 rounded-xl bg-slate-900 text-slate-300 hover:text-white border border-slate-800 cursor-pointer"
+              title="Toggle Menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
+            <div className="w-9 sm:w-10 h-9 sm:h-10 rounded-2xl bg-gradient-to-tr from-[#cc040a] to-[#ff2a30] flex items-center justify-center text-white font-extrabold shadow-lg shadow-red-600/30 shrink-0">
+              <ShieldCheck className="w-5 sm:w-6 h-5 sm:h-6" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-black font-heading tracking-tight text-white">MADS TOPUP ADMIN PORTAL</h2>
-                <span className="px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/40 text-red-400 text-[10px] font-mono font-bold">
-                  PRO SUPER ADMIN v3.5
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <h2 className="text-base sm:text-xl font-black font-heading tracking-tight text-white">MADS ADMIN</h2>
+                <span className="px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/40 text-red-400 text-[9px] sm:text-[10px] font-mono font-bold">
+                  v3.5 PRO
                 </span>
               </div>
-              <p className="text-xs text-slate-400 font-medium">Order Dispatch, User Account Verification & Manual Payment Approvals</p>
+              <p className="hidden sm:block text-xs text-slate-400 font-medium">Order Dispatch, User Accounts & Live Support Desk</p>
             </div>
           </div>
 
@@ -482,16 +536,26 @@ export const AdminDashboard = () => {
         </div>
 
         {/* MAIN BODY (SIDEBAR + CONTENT PANEL) */}
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex overflow-hidden relative">
           
+          {/* MOBILE BACKDROP OVERLAY */}
+          {isMobileSidebarOpen && (
+            <div 
+              onClick={() => setIsMobileSidebarOpen(false)}
+              className="md:hidden fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-xs"
+            />
+          )}
+
           {/* SIDEBAR NAVIGATION */}
-          <aside className="w-64 bg-[#0d121c] border-r border-slate-800/80 p-4 space-y-1 overflow-y-auto shrink-0 hidden md:block">
+          <aside className={`w-64 bg-[#0d121c] border-r border-slate-800/80 p-4 space-y-1 overflow-y-auto shrink-0 transition-transform duration-300 z-50 md:z-auto ${
+            isMobileSidebarOpen ? 'fixed inset-y-0 left-0 top-14 shadow-2xl block' : 'hidden md:block'
+          }`}>
             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-3 block mb-2 font-mono">
               MAIN NAVIGATION
             </span>
 
             <button
-              onClick={() => setAdminTab('overview')}
+              onClick={() => handleTabSelect('overview')}
               className={`w-full px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition-all cursor-pointer ${
                 adminTab === 'overview' ? 'bg-[#cc040a] text-white shadow-lg shadow-red-600/30' : 'text-slate-400 hover:bg-slate-900 hover:text-white'
               }`}
@@ -503,7 +567,7 @@ export const AdminDashboard = () => {
             </button>
 
             <button
-              onClick={() => setAdminTab('orders')}
+              onClick={() => handleTabSelect('orders')}
               className={`w-full px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition-all cursor-pointer ${
                 adminTab === 'orders' ? 'bg-[#cc040a] text-white shadow-lg shadow-red-600/30' : 'text-slate-400 hover:bg-slate-900 hover:text-white'
               }`}
@@ -520,7 +584,7 @@ export const AdminDashboard = () => {
             </button>
 
             <button
-              onClick={() => setAdminTab('deposits')}
+              onClick={() => handleTabSelect('deposits')}
               className={`w-full px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition-all cursor-pointer ${
                 adminTab === 'deposits' ? 'bg-[#cc040a] text-white shadow-lg shadow-red-600/30' : 'text-slate-400 hover:bg-slate-900 hover:text-white'
               }`}
@@ -537,7 +601,7 @@ export const AdminDashboard = () => {
             </button>
 
             <button
-              onClick={() => setAdminTab('users')}
+              onClick={() => handleTabSelect('users')}
               className={`w-full px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition-all cursor-pointer ${
                 adminTab === 'users' ? 'bg-[#cc040a] text-white shadow-lg shadow-red-600/30' : 'text-slate-400 hover:bg-slate-900 hover:text-white'
               }`}
@@ -550,7 +614,7 @@ export const AdminDashboard = () => {
             </button>
 
             <button
-              onClick={() => setAdminTab('credit')}
+              onClick={() => handleTabSelect('credit')}
               className={`w-full px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition-all cursor-pointer ${
                 adminTab === 'credit' ? 'bg-[#cc040a] text-white shadow-lg shadow-red-600/30' : 'text-slate-400 hover:bg-slate-900 hover:text-white'
               }`}
@@ -561,12 +625,29 @@ export const AdminDashboard = () => {
               </div>
             </button>
 
+            <button
+              onClick={() => handleTabSelect('support')}
+              className={`w-full px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition-all cursor-pointer ${
+                adminTab === 'support' ? 'bg-[#cc040a] text-white shadow-lg shadow-red-600/30' : 'text-slate-400 hover:bg-slate-900 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Headset className="w-4 h-4 text-rose-400" />
+                <span>Support Tickets & Chat</span>
+              </div>
+              {openTicketsCount > 0 && (
+                <span className="px-2 py-0.5 rounded-full bg-rose-600 text-white font-mono font-black text-[10px]">
+                  {openTicketsCount}
+                </span>
+              )}
+            </button>
+
             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-3 block pt-4 mb-2 font-mono">
               STORE MANAGEMENT
             </span>
 
             <button
-              onClick={() => setAdminTab('games')}
+              onClick={() => handleTabSelect('games')}
               className={`w-full px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition-all cursor-pointer ${
                 adminTab === 'games' ? 'bg-[#cc040a] text-white shadow-lg shadow-red-600/30' : 'text-slate-400 hover:bg-slate-900 hover:text-white'
               }`}
@@ -579,7 +660,7 @@ export const AdminDashboard = () => {
             </button>
 
             <button
-              onClick={() => setAdminTab('vouchers')}
+              onClick={() => handleTabSelect('vouchers')}
               className={`w-full px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition-all cursor-pointer ${
                 adminTab === 'vouchers' ? 'bg-[#cc040a] text-white shadow-lg shadow-red-600/30' : 'text-slate-400 hover:bg-slate-900 hover:text-white'
               }`}
@@ -592,7 +673,7 @@ export const AdminDashboard = () => {
             </button>
 
             <button
-              onClick={() => setAdminTab('announcement')}
+              onClick={() => handleTabSelect('announcement')}
               className={`w-full px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition-all cursor-pointer ${
                 adminTab === 'announcement' ? 'bg-[#cc040a] text-white shadow-lg shadow-red-600/30' : 'text-slate-400 hover:bg-slate-900 hover:text-white'
               }`}
@@ -634,7 +715,7 @@ export const AdminDashboard = () => {
 
           {/* MOBILE TAB BAR MENU (Shows on small screens) */}
           <div className="md:hidden flex overflow-x-auto bg-[#0d121c] border-b border-slate-800 p-2 gap-2 text-xs font-bold shrink-0">
-            {['overview', 'orders', 'deposits', 'users', 'credit', 'games', 'vouchers', 'moongold', 'r2', 'announcement'].map((tab) => (
+            {['overview', 'support', 'orders', 'deposits', 'users', 'credit', 'games', 'vouchers', 'moongold', 'r2', 'announcement'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setAdminTab(tab)}
@@ -642,7 +723,7 @@ export const AdminDashboard = () => {
                   adminTab === tab ? 'bg-[#cc040a] text-white' : 'bg-slate-900 text-slate-400'
                 }`}
               >
-                {tab}
+                {tab === 'support' ? '💬 support' : tab}
               </button>
             ))}
           </div>
@@ -1433,6 +1514,232 @@ export const AdminDashboard = () => {
                     <Save className="w-4 h-4" />
                     <span>Save R2 Settings</span>
                   </button>
+                </div>
+              </div>
+            )}
+
+            {/* 11. CUSTOMER SUPPORT TICKETS & LIVE CHAT */}
+            {adminTab === 'support' && (
+              <div className="space-y-6 animate-in fade-in">
+                {/* Top Header Metrics Bar */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-[#111622] p-4 rounded-2xl border border-slate-800 space-y-1 shadow-xs">
+                    <span className="text-[10px] text-slate-400 font-extrabold uppercase font-mono">Total Tickets</span>
+                    <div className="text-2xl font-black text-white font-heading">{safeTickets.length}</div>
+                  </div>
+                  <div className="bg-[#111622] p-4 rounded-2xl border border-slate-800 space-y-1 shadow-xs">
+                    <span className="text-[10px] text-amber-400 font-extrabold uppercase font-mono">Open Tickets</span>
+                    <div className="text-2xl font-black text-amber-400 font-heading">
+                      {safeTickets.filter(t => t.status === 'OPEN').length}
+                    </div>
+                  </div>
+                  <div className="bg-[#111622] p-4 rounded-2xl border border-slate-800 space-y-1 shadow-xs">
+                    <span className="text-[10px] text-blue-400 font-extrabold uppercase font-mono">In Progress</span>
+                    <div className="text-2xl font-black text-blue-400 font-heading">
+                      {safeTickets.filter(t => t.status === 'IN_PROGRESS').length}
+                    </div>
+                  </div>
+                  <div className="bg-[#111622] p-4 rounded-2xl border border-slate-800 space-y-1 shadow-xs">
+                    <span className="text-[10px] text-emerald-400 font-extrabold uppercase font-mono">Resolved</span>
+                    <div className="text-2xl font-black text-emerald-400 font-heading">
+                      {safeTickets.filter(t => t.status === 'RESOLVED').length}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Search & Filter Controls */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#111622] p-4 rounded-2xl border border-slate-800">
+                  <div className="relative w-full sm:w-80">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                    <input
+                      type="text"
+                      placeholder="Search ticket ID, user email, subject..."
+                      value={supportSearch}
+                      onChange={(e) => setSupportSearch(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-red-500"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                    <Filter className="w-4 h-4 text-slate-400" />
+                    <select
+                      value={supportStatusFilter}
+                      onChange={(e) => setSupportStatusFilter(e.target.value)}
+                      className="bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-xl px-3.5 py-2 font-mono font-bold focus:outline-none cursor-pointer"
+                    >
+                      <option value="ALL">ALL STATUSES</option>
+                      <option value="OPEN">OPEN</option>
+                      <option value="IN_PROGRESS">IN PROGRESS</option>
+                      <option value="RESOLVED">RESOLVED</option>
+                      <option value="CLOSED">CLOSED</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Tickets Split View Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                  {/* Left Ticket List Panel (5 cols) */}
+                  <div className="lg:col-span-5 space-y-3">
+                    {filteredSupportTickets.length === 0 ? (
+                      <div className="bg-[#111622] p-8 rounded-2xl border border-slate-800 text-center text-slate-400 text-xs">
+                        No support tickets found matching your query.
+                      </div>
+                    ) : (
+                      filteredSupportTickets.map(tck => {
+                        const isSelected = activeInspectTicket?.id === tck.id;
+                        return (
+                          <div
+                            key={tck.id}
+                            onClick={() => setSelectedTicketInspect(tck)}
+                            className={`p-4 rounded-2xl border transition-all cursor-pointer space-y-2.5 ${
+                              isSelected 
+                                ? 'bg-[#182030] border-red-500/80 shadow-md ring-1 ring-red-500/50' 
+                                : 'bg-[#111622] border-slate-800 hover:border-slate-700'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono text-xs font-bold text-red-400">{tck.id}</span>
+                                <span className="text-[10px] bg-slate-900 border border-slate-800 text-slate-300 px-2 py-0.5 rounded font-extrabold">
+                                  {tck.category}
+                                </span>
+                              </div>
+                              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                                tck.status === 'OPEN' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                                tck.status === 'IN_PROGRESS' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
+                                tck.status === 'RESOLVED' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                                'bg-slate-800 text-slate-400'
+                              }`}>
+                                {tck.status}
+                              </span>
+                            </div>
+
+                            <div>
+                              <h4 className="font-bold text-xs text-white line-clamp-1">{tck.subject}</h4>
+                              <div className="text-[11px] text-slate-400 font-mono mt-0.5 truncate">
+                                {tck.userName} ({tck.userEmail})
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between text-[10px] text-slate-500 border-t border-slate-800/80 pt-2 font-mono">
+                              <span>Priority: <strong className={tck.priority === 'HIGH' || tck.priority === 'URGENT' ? 'text-red-400' : 'text-slate-300'}>{tck.priority}</strong></span>
+                              <span>{new Date(tck.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* Right Ticket Live Chat Inspector Panel (7 cols) */}
+                  <div className="lg:col-span-7 bg-[#111622] rounded-2xl border border-slate-800 p-4 sm:p-6 space-y-4">
+                    {activeInspectTicket ? (
+                      <div className="space-y-4">
+                        {/* Header Inspector */}
+                        <div className="pb-4 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-base font-black text-white font-heading">{activeInspectTicket.subject}</h3>
+                              <span className="font-mono text-xs text-red-400 font-bold">{activeInspectTicket.id}</span>
+                            </div>
+                            <div className="text-xs text-slate-400 font-mono mt-1">
+                              Customer: <strong className="text-white">{activeInspectTicket.userName}</strong> ({activeInspectTicket.userEmail})
+                            </div>
+                          </div>
+
+                          {/* Status & Priority Controls */}
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={activeInspectTicket.status}
+                              onChange={(e) => updateTicketStatus(activeInspectTicket.id, e.target.value)}
+                              className="bg-slate-950 border border-slate-800 text-xs text-amber-400 font-mono font-bold px-2.5 py-1.5 rounded-xl cursor-pointer focus:outline-none"
+                            >
+                              <option value="OPEN">OPEN</option>
+                              <option value="IN_PROGRESS">IN PROGRESS</option>
+                              <option value="RESOLVED">RESOLVED</option>
+                              <option value="CLOSED">CLOSED</option>
+                            </select>
+
+                            <select
+                              value={activeInspectTicket.priority}
+                              onChange={(e) => updateTicketPriority(activeInspectTicket.id, e.target.value)}
+                              className="bg-slate-950 border border-slate-800 text-xs text-red-400 font-mono font-bold px-2.5 py-1.5 rounded-xl cursor-pointer focus:outline-none"
+                            >
+                              <option value="LOW">LOW</option>
+                              <option value="MEDIUM">MEDIUM</option>
+                              <option value="HIGH">HIGH</option>
+                              <option value="URGENT">URGENT</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Order Reference Box (If linked to order) */}
+                        {activeInspectTicket.orderId && (
+                          <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between text-xs font-mono">
+                            <span className="text-slate-400">Linked Order Ref: <strong className="text-red-400">{activeInspectTicket.orderId}</strong></span>
+                            <button
+                              onClick={() => {
+                                setAdminTab('orders');
+                                setOrderSearch(activeInspectTicket.orderId);
+                              }}
+                              className="text-[10px] bg-red-600/20 text-red-400 border border-red-500/40 px-2 py-0.5 rounded font-bold hover:bg-red-600 hover:text-white transition-colors cursor-pointer"
+                            >
+                              View Order Details ↗
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Chat Messages History Stream */}
+                        <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                          {activeInspectTicket.messages.map(msg => {
+                            const isAdmin = msg.sender === 'admin';
+                            return (
+                              <div key={msg.id} className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}>
+                                <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mb-1 font-mono">
+                                  <span>{msg.senderName}</span>
+                                  <span>• {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                </div>
+
+                                <div className={`max-w-[85%] p-3.5 rounded-2xl text-xs space-y-2 leading-relaxed shadow-xs ${
+                                  isAdmin ? 'bg-[#cc040a] text-white rounded-tr-xs font-medium' : 'bg-slate-950 text-slate-200 border border-slate-800 rounded-tl-xs'
+                                }`}>
+                                  <p className="whitespace-pre-wrap">{msg.text}</p>
+                                  {msg.attachmentUrl && (
+                                    <a href={msg.attachmentUrl} target="_blank" rel="noreferrer" className="block mt-2 rounded-xl overflow-hidden border border-slate-700 hover:opacity-90 transition-opacity">
+                                      <img src={msg.attachmentUrl} alt="Attachment" className="w-full max-h-48 object-cover" />
+                                      <span className="block p-1 text-[9px] bg-black/50 text-white text-center font-mono">Open Full Screenshot ↗</span>
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Admin Reply Input Form */}
+                        <form onSubmit={handleSendAdminReply} className="pt-3 border-t border-slate-800 flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="Type official support reply to customer..."
+                            value={adminReplyText}
+                            onChange={(e) => setAdminReplyText(e.target.value)}
+                            className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-red-500"
+                          />
+                          <button
+                            type="submit"
+                            disabled={!adminReplyText.trim()}
+                            className="px-5 py-2.5 bg-[#cc040a] hover:bg-red-700 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer flex items-center gap-1.5 transition-all"
+                          >
+                            <span>Send Reply</span>
+                          </button>
+                        </form>
+                      </div>
+                    ) : (
+                      <div className="text-center py-20 text-slate-500 text-xs">
+                        Select a support ticket from the list to inspect & respond.
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}

@@ -16,6 +16,7 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { ImportantNoticeModal } from './components/ImportantNoticeModal';
 import { WalletModal } from './components/WalletModal';
 import { MobileBottomNav } from './components/MobileBottomNav';
+import { SupportModal } from './components/SupportModal';
 import { ToastNotification } from './components/ToastNotification';
 import { Flame } from 'lucide-react';
 
@@ -104,6 +105,7 @@ const MainContent = () => {
       <AdminDashboard />
       <ImportantNoticeModal />
       <WalletModal />
+      <SupportModal />
       <MobileBottomNav />
       <ToastNotification />
     </div>

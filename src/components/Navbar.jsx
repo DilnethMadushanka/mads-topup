@@ -1,6 +1,6 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { Gamepad2, Gift, BookOpen, Download, User, Settings, Flame, Wallet, ChevronDown } from 'lucide-react';
+import { Gamepad2, Gift, BookOpen, Download, User, Settings, Flame, Wallet, ChevronDown, Headset } from 'lucide-react';
 
 export const Navbar = () => {
   const { 
@@ -16,7 +16,8 @@ export const Navbar = () => {
     openWalletModal,
     setWalletActiveTab,
     setIsNoticeModalOpen,
-    setIsWalletModalOpen
+    setIsWalletModalOpen,
+    setIsSupportOpen
   } = useApp();
 
   const handleWalletClick = (tab = 'binance') => {
@@ -115,6 +116,16 @@ export const Navbar = () => {
               <Download className="w-3.5 h-3.5" />
             </span>
             <span>Download App</span>
+          </button>
+
+          <button 
+            onClick={() => setIsSupportOpen(true)}
+            className="flex items-center gap-2 hover:text-[#cc040a] transition-colors cursor-pointer group py-2"
+          >
+            <span className="w-6 h-6 rounded-lg bg-red-100 text-[#cc040a] flex items-center justify-center">
+              <Headset className="w-3.5 h-3.5" />
+            </span>
+            <span>24/7 Support</span>
           </button>
         </nav>
 
