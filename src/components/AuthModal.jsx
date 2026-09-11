@@ -49,50 +49,45 @@ export const AuthModal = () => {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     setGeneratedCode(code);
 
-    const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_demo';
-    const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_demo';
-    const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'public_key_demo';
+    const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_42ovub5';
+    const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_e9m409d';
+    const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'UL_Cr3VmylKk8r2Dp';
 
     try {
-      if (serviceId !== 'service_demo' && templateId !== 'template_demo' && publicKey !== 'public_key_demo') {
-        let emailjsModule;
-        try {
-          emailjsModule = await import('@emailjs/browser');
-        } catch (e) {
-          console.warn('EmailJS module load note:', e);
-        }
-        const emailjsLib = emailjsModule?.default || emailjsModule || window.emailjs;
+      let emailjsModule;
+      try {
+        emailjsModule = await import('@emailjs/browser');
+      } catch (e) {
+        console.warn('EmailJS module load note:', e);
+      }
+      const emailjsLib = emailjsModule?.default || emailjsModule || window.emailjs;
 
-        if (emailjsLib && typeof emailjsLib.send === 'function') {
-          await emailjsLib.send(
-            serviceId,
-            templateId,
-            {
-              to_email: email,
-              email: email,
-              otp_code: code,
-              passcode: code,
-              user_name: username || 'Gamer',
-              time: '15 mins'
-            },
-            publicKey
-          );
-          showToast(`Verification code sent to ${email}! Check your inbox.`);
-        } else {
-          showToast(`Verification code sent to ${email}! Check your inbox.`);
-        }
+      if (emailjsLib && typeof emailjsLib.send === 'function') {
+        const res = await emailjsLib.send(
+          serviceId,
+          templateId,
+          {
+            to_email: email,
+            email: email,
+            otp_code: code,
+            passcode: code,
+            user_name: username || 'Gamer',
+            time: '15 mins'
+          },
+          publicKey
+        );
+        console.log('EmailJS Success Response:', res);
+        showToast(`Verification code sent to ${email}! Check your inbox.`);
       } else {
-        // Instant simulation fallback when EmailJS keys are not yet configured in .env
         showToast(`Verification code sent to ${email}! Check your inbox.`);
       }
       setIsCodeSent(true);
       setResendTimer(60);
     } catch (error) {
-      console.warn('EmailJS delivery note:', error);
-      // Fallback so user experience is not broken
+      console.error('EmailJS delivery error:', error);
       setIsCodeSent(true);
       setResendTimer(60);
-      showToast(`Verification code sent to ${email}! Check your inbox.`);
+      showToast(`Email error: ${error?.text || error?.message || 'Check EmailJS connection'}`);
     } finally {
       setIsSendingCode(false);
     }
