@@ -135,6 +135,10 @@ export const AdminDashboard = () => {
   useEffect(() => {
     if (isAdminAuthenticated && isAdminOpen) {
       fetchLiveBalance();
+      const interval = setInterval(() => {
+        fetchLiveBalance();
+      }, 10000); // Live realtime sync every 10 seconds
+      return () => clearInterval(interval);
     }
   }, [isAdminAuthenticated, isAdminOpen]);
 

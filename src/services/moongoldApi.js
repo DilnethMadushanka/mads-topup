@@ -92,19 +92,10 @@ export const checkMoongoldBalance = async () => {
   const partnerId = config.apiKey || 'f27cabc8d2c2122bbedacabce632db68';
   const secretKey = config.secretKey || 'PM67SGqyed';
 
-  if (config.simulationMode) {
-    return {
-      success: true,
-      balanceUsd: config.merchantBalanceUsd || 480.00,
-      balanceLkr: config.merchantBalanceLkr || 145800.00,
-      currency: 'USD',
-      mode: 'SIMULATION'
-    };
-  }
-
   const path = 'user/balance';
   const bodyObj = { path };
 
+  // 1. Primary: Server-Side Express Proxy (/api/moogold) for secure live balance
   try {
     const proxyRes = await fetch('/api/moogold', {
       method: 'POST',
@@ -113,19 +104,23 @@ export const checkMoongoldBalance = async () => {
     });
     if (proxyRes.ok) {
       const data = await proxyRes.json();
-      const usdBal = parseFloat(data.balance || data.usd || data.amount || 9.00);
-      return {
-        success: true,
-        balanceUsd: usdBal,
-        balanceLkr: usdBal * 305,
-        currency: 'USD',
-        data
-      };
+      if (data && (data.balance !== undefined || data.usd !== undefined || data.data?.balance !== undefined)) {
+        const usdBal = parseFloat(data.balance || data.usd || data.amount || data.data?.balance || 0);
+        return {
+          success: true,
+          balanceUsd: usdBal,
+          balanceLkr: usdBal * 305,
+          currency: 'USD',
+          data,
+          isRealtime: true
+        };
+      }
     }
   } catch (err) {
     console.warn('MooGold balance proxy note:', err);
   }
 
+  // 2. Secondary: Direct browser HMAC fetch
   try {
     const headers = await getMooGoldHeaders(path, bodyObj, partnerId, secretKey);
     const baseUrl = config.baseUrl || 'https://moogold.com/wp-json/v1/api';
@@ -138,24 +133,29 @@ export const checkMoongoldBalance = async () => {
 
     if (response.ok) {
       const data = await response.json();
-      const usdBal = parseFloat(data.balance || data.usd || data.amount || 9.00);
-      return {
-        success: true,
-        balanceUsd: usdBal,
-        balanceLkr: usdBal * 305,
-        currency: 'USD',
-        data
-      };
+      if (data && (data.balance !== undefined || data.usd !== undefined || data.data?.balance !== undefined)) {
+        const usdBal = parseFloat(data.balance || data.usd || data.amount || data.data?.balance || 0);
+        return {
+          success: true,
+          balanceUsd: usdBal,
+          balanceLkr: usdBal * 305,
+          currency: 'USD',
+          data,
+          isRealtime: true
+        };
+      }
     }
   } catch (err) {
     console.warn('MooGold live balance fetch warning:', err);
   }
 
+  // Fallback to configured merchant balance
   return {
     success: true,
     balanceUsd: config.merchantBalanceUsd || 480.00,
     balanceLkr: config.merchantBalanceLkr || 145800.00,
-    currency: 'USD'
+    currency: 'USD',
+    isRealtime: false
   };
 };
 
