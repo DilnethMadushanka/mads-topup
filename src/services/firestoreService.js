@@ -174,3 +174,43 @@ export const saveOrderToFirestore = async (uid, order) => {
     }
   }
 };
+
+/**
+ * Subscribe to all registered users in Firestore or Realtime Database
+ */
+export const subscribeAllUsersFromFirestore = (callback) => {
+  let unsubRtdb = null;
+  let unsubFirestore = null;
+
+  if (rtdb) {
+    try {
+      const usersRtdbRef = dbRef(rtdb, 'users');
+      unsubRtdb = rtdbOnValue(usersRtdbRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const list = Object.keys(data).map(key => ({ uid: key, ...data[key] }));
+          if (list.length > 0) callback(list);
+        }
+      });
+    } catch (e) {
+      console.warn('RTDB users listener note:', e);
+    }
+  }
+
+  if (db) {
+    try {
+      const usersCol = collection(db, 'users');
+      unsubFirestore = onSnapshot(usersCol, (snapshot) => {
+        const list = snapshot.docs.map(docSnap => ({ uid: docSnap.id, ...docSnap.data() }));
+        if (list.length > 0) callback(list);
+      });
+    } catch (err) {
+      console.warn('Firestore users listener note:', err);
+    }
+  }
+
+  return () => {
+    if (typeof unsubRtdb === 'function') unsubRtdb();
+    if (typeof unsubFirestore === 'function') unsubFirestore();
+  };
+};

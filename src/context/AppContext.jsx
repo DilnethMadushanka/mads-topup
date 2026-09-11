@@ -3,7 +3,7 @@ import { GAMES_DATA } from '../data/games';
 import { getMoongoldConfig, saveMoongoldConfig } from '../services/moongoldApi';
 import { getR2Config, saveR2Config } from '../services/storageService';
 import { auth, onAuthStateChanged, logoutGoogle } from '../services/firebaseAuth';
-import { syncUserProfileToFirestore, updateUserProfileInFirestore, subscribeUserProfile, saveOrderToFirestore } from '../services/firestoreService';
+import { syncUserProfileToFirestore, updateUserProfileInFirestore, subscribeUserProfile, saveOrderToFirestore, subscribeAllUsersFromFirestore } from '../services/firestoreService';
 
 const AppContext = createContext();
 
@@ -222,7 +222,80 @@ export const AppProvider = ({ children }) => {
 
   useEffect(() => {
     localStorage.setItem('mads_user_profile', JSON.stringify(userProfile));
+
+    // Automatically register and sync logged-in / active user into usersList
+    if (userProfile && (userProfile.email || userProfile.uid || userProfile.name)) {
+      setUsersList(prev => {
+        const emailMatch = userProfile.email && prev.some(u => u.email && u.email.toLowerCase() === userProfile.email.toLowerCase());
+        const uidMatch = userProfile.uid && prev.some(u => u.uid === userProfile.uid);
+        if (emailMatch || uidMatch) {
+          return prev.map(u => {
+            const matches = (userProfile.email && u.email && u.email.toLowerCase() === userProfile.email.toLowerCase()) || (userProfile.uid && u.uid === userProfile.uid);
+            if (matches) {
+              return {
+                ...u,
+                name: userProfile.name || u.name,
+                email: userProfile.email || u.email,
+                phone: userProfile.phone || u.phone,
+                walletBalance: userProfile.walletBalance ?? u.walletBalance,
+                walletUsdt: userProfile.walletUsdt ?? u.walletUsdt,
+                avatar: userProfile.avatar || u.avatar
+              };
+            }
+            return u;
+          });
+        }
+        // New user registered! Append to usersList
+        const newUserEntry = {
+          uid: userProfile.uid || `USR-${Math.floor(10000 + Math.random() * 90000)}`,
+          name: userProfile.name || 'Registered Gamer',
+          email: userProfile.email || '',
+          phone: userProfile.phone || '',
+          walletBalance: userProfile.walletBalance || 0,
+          walletUsdt: userProfile.walletUsdt || 0,
+          isVerified: true,
+          status: 'ACTIVE',
+          joinedAt: new Date().toISOString().split('T')[0],
+          totalOrders: 0,
+          lifetimeSpendLkr: 0
+        };
+        return [newUserEntry, ...prev];
+      });
+    }
   }, [userProfile]);
+
+  // Subscribe to all users in Firestore / RTDB for real-time admin user list sync
+  useEffect(() => {
+    const unsubAll = subscribeAllUsersFromFirestore((remoteUsersList) => {
+      if (remoteUsersList && remoteUsersList.length > 0) {
+        setUsersList(prev => {
+          const merged = [...prev];
+          remoteUsersList.forEach(ru => {
+            const index = merged.findIndex(u => (ru.uid && u.uid === ru.uid) || (ru.email && u.email && u.email.toLowerCase() === ru.email.toLowerCase()));
+            if (index >= 0) {
+              merged[index] = { ...merged[index], ...ru };
+            } else {
+              merged.push({
+                uid: ru.uid || `USR-${Math.floor(10000 + Math.random() * 90000)}`,
+                name: ru.name || 'Gamer',
+                email: ru.email || '',
+                phone: ru.phone || '',
+                walletBalance: ru.walletBalance || 0,
+                walletUsdt: ru.walletUsdt || 0,
+                isVerified: ru.isVerified || false,
+                status: ru.status || 'ACTIVE',
+                joinedAt: ru.createdAt ? ru.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
+                totalOrders: 0,
+                lifetimeSpendLkr: 0
+              });
+            }
+          });
+          return merged;
+        });
+      }
+    });
+    return () => unsubAll();
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('mads_orders', JSON.stringify(orders));
