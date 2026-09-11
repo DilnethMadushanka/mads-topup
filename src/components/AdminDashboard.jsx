@@ -535,6 +535,45 @@ export const AdminDashboard = () => {
           </div>
         </div>
 
+        {/* MOBILE HORIZONTAL TAB STRIP */}
+        <div className="md:hidden bg-[#0d121c] border-b border-slate-800 px-3 py-2.5 flex items-center gap-2 overflow-x-auto shrink-0 font-mono text-xs">
+          {[
+            { id: 'overview', label: 'Overview', icon: TrendingUp },
+            { id: 'support', label: 'Support', icon: Headset, badge: openTicketsCount },
+            { id: 'orders', label: 'Orders', icon: Activity, badge: pendingCount },
+            { id: 'deposits', label: 'Deposits', icon: FileCheck, badge: pendingPaymentsCount },
+            { id: 'users', label: 'Users', icon: Users },
+            { id: 'credit', label: 'Credit', icon: DollarSign },
+            { id: 'games', label: 'Games', icon: Award },
+            { id: 'vouchers', label: 'Vouchers', icon: Ticket },
+            { id: 'moongold', label: 'MooGold', icon: Zap },
+            { id: 'r2', label: 'R2 Storage', icon: Cloud },
+            { id: 'announcement', label: 'Notice', icon: Megaphone }
+          ].map((item) => {
+            const Icon = item.icon;
+            const isActive = adminTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleTabSelect(item.id)}
+                className={`px-3 py-1.5 rounded-xl font-extrabold text-[11px] flex items-center gap-1.5 shrink-0 transition-all cursor-pointer ${
+                  isActive 
+                    ? 'bg-[#cc040a] text-white shadow-md shadow-red-600/30' 
+                    : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{item.label}</span>
+                {item.badge > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full bg-white text-slate-950 text-[9px] font-black font-mono">
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
         {/* MAIN BODY (SIDEBAR + CONTENT PANEL) */}
         <div className="flex-1 flex overflow-hidden relative">
           
@@ -546,7 +585,7 @@ export const AdminDashboard = () => {
             />
           )}
 
-          {/* SIDEBAR NAVIGATION */}
+          {/* SIDEBAR NAVIGATION (DESKTOP + MOBILE DRAWER) */}
           <aside className={`w-64 bg-[#0d121c] border-r border-slate-800/80 p-4 space-y-1 overflow-y-auto shrink-0 transition-transform duration-300 z-50 md:z-auto ${
             isMobileSidebarOpen ? 'fixed inset-y-0 left-0 top-14 shadow-2xl block' : 'hidden md:block'
           }`}>
@@ -712,21 +751,6 @@ export const AdminDashboard = () => {
               </div>
             </button>
           </aside>
-
-          {/* MOBILE TAB BAR MENU (Shows on small screens) */}
-          <div className="md:hidden flex overflow-x-auto bg-[#0d121c] border-b border-slate-800 p-2 gap-2 text-xs font-bold shrink-0">
-            {['overview', 'support', 'orders', 'deposits', 'users', 'credit', 'games', 'vouchers', 'moongold', 'r2', 'announcement'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setAdminTab(tab)}
-                className={`px-3 py-1.5 rounded-lg shrink-0 uppercase text-[10px] tracking-wider font-mono ${
-                  adminTab === tab ? 'bg-[#cc040a] text-white' : 'bg-slate-900 text-slate-400'
-                }`}
-              >
-                {tab === 'support' ? '💬 support' : tab}
-              </button>
-            ))}
-          </div>
 
           {/* MAIN CONTENT WORKSPACE */}
           <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 bg-[#0b0f17]">
