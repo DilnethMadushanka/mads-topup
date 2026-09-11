@@ -412,8 +412,10 @@ export const AppProvider = ({ children }) => {
     });
     if (amountLkr > 0 || amountUsdt > 0) {
       showToast(`Wallet credited: +Rs. ${amountLkr} LKR / +$${amountUsdt} USDT!`);
-    } else {
-      showToast(`Wallet updated: Paid Rs. ${Math.abs(amountLkr)} from wallet balance.`);
+    } else if (amountLkr < 0) {
+      showToast(`Wallet updated: Paid Rs. ${Math.abs(amountLkr).toFixed(2)} from LKR wallet.`);
+    } else if (amountUsdt < 0) {
+      showToast(`Wallet updated: Paid $${Math.abs(amountUsdt).toFixed(2)} USDT from USDT wallet.`);
     }
   };
 
