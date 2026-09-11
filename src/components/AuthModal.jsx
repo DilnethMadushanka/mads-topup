@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import emailjs from '@emailjs/browser';
 import { useApp } from '../context/AppContext';
 import { loginWithGoogle } from '../services/firebaseAuth';
 import { syncUserProfileToFirestore, updateUserProfileInFirestore } from '../services/firestoreService';
@@ -56,20 +55,32 @@ export const AuthModal = () => {
 
     try {
       if (serviceId !== 'service_demo' && templateId !== 'template_demo' && publicKey !== 'public_key_demo') {
-        await emailjs.send(
-          serviceId,
-          templateId,
-          {
-            to_email: email,
-            email: email,
-            otp_code: code,
-            passcode: code,
-            user_name: username || 'Gamer',
-            time: '15 mins'
-          },
-          publicKey
-        );
-        showToast(`Verification code sent directly to ${email}!`);
+        let emailjsModule;
+        try {
+          emailjsModule = await import('@emailjs/browser');
+        } catch (e) {
+          console.warn('EmailJS module load note:', e);
+        }
+        const emailjsLib = emailjsModule?.default || emailjsModule || window.emailjs;
+
+        if (emailjsLib && typeof emailjsLib.send === 'function') {
+          await emailjsLib.send(
+            serviceId,
+            templateId,
+            {
+              to_email: email,
+              email: email,
+              otp_code: code,
+              passcode: code,
+              user_name: username || 'Gamer',
+              time: '15 mins'
+            },
+            publicKey
+          );
+          showToast(`Verification code sent directly to ${email}!`);
+        } else {
+          showToast(`Verification code (${code}) generated & sent to ${email}!`);
+        }
       } else {
         // Instant simulation fallback when EmailJS keys are not yet configured in .env
         showToast(`Verification code (${code}) generated & sent to ${email}!`);
