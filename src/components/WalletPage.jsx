@@ -136,27 +136,71 @@ export const WalletPage = () => {
     }
   };
 
-  const handleEzCashSubmit = (e) => {
+  const [isEzCashVerifying, setIsEzCashVerifying] = useState(false);
+
+  const handleEzCashSubmit = async (e) => {
     e.preventDefault();
     if (!ezCashRnNumber || ezCashRnNumber.length < 10) {
       showToast('Please enter a valid 14-digit RN Transaction Number!', 'error');
       return;
     }
     const amt = parseFloat(ezCashAmount) || 1000;
-    addManualPayment({
-      id: 'PAY-' + Math.floor(1000 + Math.random() * 9000),
-      userEmail: userProfile?.email || 'guest@madstopup.com',
-      userName: userProfile?.name || 'Gamer',
-      method: 'EZ Cash',
-      referenceNumber: ezCashRnNumber,
-      amount: amt,
-      currency: 'LKR',
-      slipUrl: '',
-      status: 'PENDING',
-      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
-    });
-    showToast('EZ Cash deposit request submitted! Admin will verify and credit your wallet.');
-    setEzCashRnNumber('');
+
+    setIsEzCashVerifying(true);
+
+    try {
+      const res = await fetch('/api/ezcash/verify-rn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rnNumber: ezCashRnNumber,
+          amount: amt,
+          userEmail: userProfile?.email || 'guest@madstopup.com'
+        })
+      });
+
+      const resData = await res.json();
+
+      if (resData.verified && resData.autoApproved) {
+        creditUserWallet(amt, 0);
+
+        addManualPayment({
+          id: 'PAY-' + Math.floor(1000 + Math.random() * 9000),
+          userEmail: userProfile?.email || 'guest@madstopup.com',
+          userName: userProfile?.name || 'Gamer',
+          method: 'EZ Cash (Automated)',
+          referenceNumber: ezCashRnNumber,
+          amount: amt,
+          currency: 'LKR',
+          slipUrl: '',
+          status: 'VERIFIED',
+          createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
+        });
+
+        showToast(`⚡ EZ CASH RN VERIFIED! +Rs. ${amt.toLocaleString()} LKR credited to your wallet instantly!`);
+        setEzCashRnNumber('');
+      } else {
+        showToast(resData.error || 'Verification failed. Submitted for admin review.', 'error');
+      }
+    } catch (err) {
+      console.warn('EZ Cash verify note:', err.message);
+      addManualPayment({
+        id: 'PAY-' + Math.floor(1000 + Math.random() * 9000),
+        userEmail: userProfile?.email || 'guest@madstopup.com',
+        userName: userProfile?.name || 'Gamer',
+        method: 'EZ Cash',
+        referenceNumber: ezCashRnNumber,
+        amount: amt,
+        currency: 'LKR',
+        slipUrl: '',
+        status: 'PENDING',
+        createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
+      });
+      showToast('EZ Cash deposit submitted for admin verification.');
+      setEzCashRnNumber('');
+    } finally {
+      setIsEzCashVerifying(false);
+    }
   };
 
   const handleRedeemSubmit = (e) => {
@@ -551,9 +595,20 @@ export const WalletPage = () => {
 
                 <button
                   type="submit"
-                  className="w-full py-4 bg-[#cc040a] hover:bg-[#990207] text-white font-black text-sm uppercase tracking-wider rounded-2xl transition-all cursor-pointer shadow-lg shadow-red-500/20 flex items-center justify-center gap-2"
+                  disabled={isEzCashVerifying}
+                  className="w-full py-4 bg-[#cc040a] hover:bg-[#990207] text-white font-black text-sm uppercase tracking-wider rounded-2xl transition-all cursor-pointer shadow-lg shadow-red-500/20 flex items-center justify-center gap-2 disabled:opacity-75"
                 >
-                  <span>SUBMIT EZ CASH DEPOSIT FOR VERIFICATION</span>
+                  {isEzCashVerifying ? (
+                    <>
+                      <RefreshCw className="w-5 h-5 animate-spin" />
+                      <span>VERIFYING RN NUMBER REAL-TIME...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-5 h-5 text-amber-300 fill-amber-300" />
+                      <span>VERIFY RN & INSTANT AUTO-CREDIT WALLET</span>
+                    </>
+                  )}
                 </button>
               </form>
 
