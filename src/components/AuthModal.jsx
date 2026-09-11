@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { loginWithGoogle } from '../services/firebaseAuth';
+import { syncUserProfileToFirestore, updateUserProfileInFirestore } from '../services/firestoreService';
 import { X, Eye, EyeOff, Shield, Zap, Clock, User, Mail, Phone, Lock, Check, Send, LogIn, ArrowRight, Loader2 } from 'lucide-react';
 
 export const AuthModal = () => {
@@ -88,7 +89,30 @@ export const AuthModal = () => {
     try {
       const res = await loginWithGoogle();
       if (res.success && res.user) {
-        setPendingGoogleUser(res.user);
+        // Sync or fetch existing profile from Firestore/RTDB
+        const existingProfile = await syncUserProfileToFirestore(res.user);
+
+        const hasPhone = Boolean(existingProfile && existingProfile.phone && existingProfile.phone.trim() !== '');
+        const isReturningUser = existingProfile && !res.isNewUser;
+
+        // If logging in, or user already has a phone, or is returning user: skip setup modal
+        if (hasPhone || isReturningUser || authMode === 'login') {
+          setIsLoggedIn(true);
+          setUserProfile(prev => ({
+            ...prev,
+            ...(existingProfile || {}),
+            uid: res.user.uid || prev.uid,
+            name: res.user.name || existingProfile?.name || prev.name,
+            email: res.user.email || existingProfile?.email || prev.email,
+            avatar: res.user.photoURL || existingProfile?.avatar || prev.avatar,
+            provider: 'Google'
+          }));
+          showToast(`Welcome back, ${res.user.name || existingProfile?.name || 'Gamer'}!`);
+          setIsAuthModalOpen(false);
+        } else {
+          // First time registration: Ask for WhatsApp number
+          setPendingGoogleUser(res.user);
+        }
       }
     } catch (err) {
       showToast(err.message || 'Google Authentication failed', 'error');
@@ -97,13 +121,14 @@ export const AuthModal = () => {
     }
   };
 
-  const handleCompleteGoogleSetup = (e) => {
+  const handleCompleteGoogleSetup = async (e) => {
     e.preventDefault();
     if (!googleWhatsAppPhone) {
       showToast('Please enter your WhatsApp number!', 'error');
       return;
     }
     if (pendingGoogleUser) {
+      const fullPhone = `+94 ${googleWhatsAppPhone}`;
       setIsLoggedIn(true);
       setUserProfile(prev => ({
         ...prev,
@@ -111,9 +136,12 @@ export const AuthModal = () => {
         name: pendingGoogleUser.name || 'Verified Gamer',
         email: pendingGoogleUser.email || '',
         avatar: pendingGoogleUser.photoURL || prev.avatar,
-        phone: `+94 ${googleWhatsAppPhone}`,
+        phone: fullPhone,
         provider: 'Google'
       }));
+      if (pendingGoogleUser.uid) {
+        await updateUserProfileInFirestore(pendingGoogleUser.uid, { phone: fullPhone });
+      }
       showToast(`Registration completed! Welcome, ${pendingGoogleUser.name}.`);
       setPendingGoogleUser(null);
       setIsAuthModalOpen(false);

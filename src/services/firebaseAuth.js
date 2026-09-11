@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, getAdditionalUserInfo } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getDatabase } from 'firebase/database';
 
@@ -44,8 +44,10 @@ export const loginWithGoogle = async () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
+      const additionalInfo = getAdditionalUserInfo(result);
       return {
         success: true,
+        isNewUser: additionalInfo?.isNewUser || false,
         user: {
           name: user.displayName || 'Google Gamer',
           email: user.email,

@@ -1,0 +1,23 @@
+name: Auto Deploy to DigitalOcean
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH and Deploy to DigitalOcean
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 152.42.202.221
+          username: root
+          key: ${{ secrets.DO_SSH_KEY }}
+          script: |
+            cd /var/www/madstopup || cd ~/mads-topup || cd ~/madstopup
+            git pull origin main
+            npm install
+            npm run build
+            pm2 restart all
