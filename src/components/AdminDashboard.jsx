@@ -33,6 +33,7 @@ export const AdminDashboard = () => {
     verifyUserAccount,
     toggleBlockUser,
     updateUserBalance,
+    setUserExactBalance,
     manualPayments,
     approveManualPayment,
     rejectManualPayment,
@@ -59,6 +60,8 @@ export const AdminDashboard = () => {
   const [userSearch, setUserSearch] = useState('');
   const [userStatusFilter, setUserStatusFilter] = useState('ALL');
   const [selectedInspectUser, setSelectedInspectUser] = useState(null);
+  const [editLkrVal, setEditLkrVal] = useState('');
+  const [editUsdtVal, setEditUsdtVal] = useState('');
 
   // Payment Verification Filters
   const [paymentSearch, setPaymentSearch] = useState('');
@@ -1515,27 +1518,99 @@ export const AdminDashboard = () => {
               </div>
             </div>
 
-            <div className="space-y-3">
-              <h4 className="text-xs font-bold text-slate-300">Quick Credit User Balance</h4>
-              <div className="flex gap-2">
+            <div className="space-y-3 pt-2 border-t border-slate-800">
+              <h4 className="text-xs font-bold text-slate-300">Manual Wallet Balance Editor</h4>
+              
+              {/* Quick Add Presets */}
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => {
                     updateUserBalance(selectedInspectUser.email, 1000, 0);
+                    showToast(`Added +1,000 LKR to ${selectedInspectUser.name}`);
                     setSelectedInspectUser(null);
                   }}
-                  className="flex-1 py-2 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                  className="py-2 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 rounded-xl text-xs font-bold transition-all cursor-pointer"
                 >
                   + Rs. 1,000 LKR
                 </button>
                 <button
                   onClick={() => {
                     updateUserBalance(selectedInspectUser.email, 0, 10);
+                    showToast(`Added +$10 USDT to ${selectedInspectUser.name}`);
                     setSelectedInspectUser(null);
                   }}
-                  className="flex-1 py-2 bg-amber-600/20 hover:bg-amber-600 text-amber-300 hover:text-white border border-amber-500/40 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                  className="py-2 bg-amber-600/20 hover:bg-amber-600 text-amber-300 hover:text-white border border-amber-500/40 rounded-xl text-xs font-bold transition-all cursor-pointer"
                 >
                   + $10 USDT
                 </button>
+              </div>
+
+              {/* Custom Balance Input Form */}
+              <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-slate-400 font-bold block mb-1">Custom LKR Amount</label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 5000"
+                      value={editLkrVal}
+                      onChange={(e) => setEditLkrVal(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white font-mono font-bold focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-400 font-bold block mb-1">Custom USDT Amount</label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 50"
+                      value={editUsdtVal}
+                      onChange={(e) => setEditUsdtVal(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white font-mono font-bold focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (editLkrVal !== '' || editUsdtVal !== '') {
+                        const lkr = editLkrVal !== '' ? parseFloat(editLkrVal) : (selectedInspectUser.walletBalance || 0);
+                        const usdt = editUsdtVal !== '' ? parseFloat(editUsdtVal) : (selectedInspectUser.walletUsdt || 0);
+                        setUserExactBalance(selectedInspectUser.email, lkr, usdt);
+                        showToast(`Set ${selectedInspectUser.name}'s balance to Rs. ${lkr} LKR / $${usdt} USDT`);
+                        setEditLkrVal('');
+                        setEditUsdtVal('');
+                        setSelectedInspectUser(null);
+                      } else {
+                        showToast('Please enter an amount to set exact balance', 'error');
+                      }
+                    }}
+                    className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-extrabold cursor-pointer transition-colors"
+                  >
+                    Set Exact Balance
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (editLkrVal !== '' || editUsdtVal !== '') {
+                        const lkr = parseFloat(editLkrVal) || 0;
+                        const usdt = parseFloat(editUsdtVal) || 0;
+                        updateUserBalance(selectedInspectUser.email, lkr, usdt);
+                        showToast(`Added +${lkr} LKR / +${usdt} USDT to ${selectedInspectUser.name}`);
+                        setEditLkrVal('');
+                        setEditUsdtVal('');
+                        setSelectedInspectUser(null);
+                      } else {
+                        showToast('Please enter an amount to add', 'error');
+                      }
+                    }}
+                    className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-extrabold cursor-pointer transition-colors"
+                  >
+                    + Add Funds
+                  </button>
+                </div>
               </div>
             </div>
 

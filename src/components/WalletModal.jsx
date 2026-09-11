@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { X, Wallet, Copy, Check, Clipboard, DollarSign, Gift, ArrowRight } from 'lucide-react';
+import { X, Wallet, Copy, Check, Clipboard, DollarSign, Gift, ArrowRight, XCircle, Ban, Key, Clock } from 'lucide-react';
 
 export const WalletModal = () => {
   const { 
@@ -314,6 +314,41 @@ export const WalletModal = () => {
                 </button>
               </div>
 
+              {/* WARNING BOX 1: DO NOT SEND EZ CASH USING (Matching Screenshot 100%) */}
+              <div className="bg-red-50/90 border border-red-200/90 rounded-2xl p-4 space-y-2.5">
+                <div className="flex items-center gap-2 text-xs font-black text-red-700 font-heading">
+                  <XCircle className="w-4.5 h-4.5 text-red-600 fill-red-100 shrink-0" />
+                  <span>DO NOT send EZ Cash using:</span>
+                </div>
+
+                <div className="flex flex-wrap gap-2 text-[11px] font-extrabold text-red-700">
+                  <span className="px-3 py-1 bg-white border border-red-200 rounded-full flex items-center gap-1.5 shadow-2xs">
+                    <Ban className="w-3.5 h-3.5 text-red-500" />
+                    <span>Bank Apps</span>
+                  </span>
+                  <span className="px-3 py-1 bg-white border border-red-200 rounded-full flex items-center gap-1.5 shadow-2xs">
+                    <Ban className="w-3.5 h-3.5 text-red-500" />
+                    <span>Cargills / Food City</span>
+                  </span>
+                  <span className="px-3 py-1 bg-white border border-red-200 rounded-full flex items-center gap-1.5 shadow-2xs">
+                    <Ban className="w-3.5 h-3.5 text-red-500" />
+                    <span>Keells</span>
+                  </span>
+                  <span className="px-3 py-1 bg-white border border-red-200 rounded-full flex items-center gap-1.5 shadow-2xs">
+                    <Ban className="w-3.5 h-3.5 text-red-500" />
+                    <span>Pay & Go Machines</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* WARNING BOX 2: RN NUMBER IS MANDATORY (Matching Screenshot 100%) */}
+              <div className="bg-amber-50/90 border border-amber-200/90 rounded-2xl p-4 flex items-start gap-2.5 text-xs text-amber-900 font-semibold shadow-2xs">
+                <span className="text-base shrink-0">🔑</span>
+                <div>
+                  <strong className="font-extrabold text-amber-950">RN Number is MANDATORY</strong> to redeem your payment. Without it, we cannot verify or credit your wallet.
+                </div>
+              </div>
+
               {/* Form Input Fields */}
               <form onSubmit={handleEzCashSubmit} className="space-y-4 text-xs">
                 <div>
@@ -353,6 +388,22 @@ export const WalletModal = () => {
                   <span>SUBMIT DEPOSIT FOR ADMIN APPROVAL</span>
                 </button>
               </form>
+
+              {/* RECENT ACTIVITY SECTION (Matching Screenshot 100%) */}
+              <div className="pt-4 border-t border-slate-200/80 space-y-3">
+                <h4 className="text-sm font-black text-slate-900 font-heading">
+                  Recent Activity
+                </h4>
+
+                <div className="bg-white rounded-2xl border border-slate-200/90 p-8 text-center space-y-2 shadow-2xs">
+                  <div className="w-12 h-12 bg-slate-100 text-slate-300 rounded-2xl flex items-center justify-center mx-auto text-xl">
+                    💼
+                  </div>
+                  <p className="text-xs font-semibold text-slate-400">
+                    No transaction history yet.
+                  </p>
+                </div>
+              </div>
 
             </div>
           )}

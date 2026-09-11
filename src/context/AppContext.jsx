@@ -479,6 +479,33 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const setUserExactBalance = (userEmail, exactLkr, exactUsdt) => {
+    if (!userEmail) return;
+    setUsersList(prev => prev.map(u => {
+      if (u.email && u.email.toLowerCase() === userEmail.toLowerCase()) {
+        const newLkr = Math.max(0, parseFloat(exactLkr) || 0);
+        const newUsdt = Math.max(0, parseFloat(exactUsdt) || 0);
+        if (u.uid) {
+          updateUserProfileInFirestore(u.uid, { walletBalance: newLkr, walletUsdt: newUsdt });
+        }
+        return {
+          ...u,
+          walletBalance: newLkr,
+          walletUsdt: newUsdt
+        };
+      }
+      return u;
+    }));
+
+    if (userProfile && userProfile.email && userProfile.email.toLowerCase() === userEmail.toLowerCase()) {
+      setUserProfile(prev => ({
+        ...prev,
+        walletBalance: Math.max(0, parseFloat(exactLkr) || 0),
+        walletUsdt: Math.max(0, parseFloat(exactUsdt) || 0)
+      }));
+    }
+  };
+
   const approveManualPayment = (paymentId) => {
     const pay = manualPayments.find(p => p.id === paymentId);
     if (!pay) return;
@@ -562,6 +589,7 @@ export const AppProvider = ({ children }) => {
       verifyUserAccount,
       toggleBlockUser,
       updateUserBalance,
+      setUserExactBalance,
       manualPayments,
       approveManualPayment,
       rejectManualPayment,
