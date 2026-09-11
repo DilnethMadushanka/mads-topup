@@ -43,6 +43,10 @@ app.post('/api/moogold', async (req, res) => {
     const authSignature = hmac.digest('hex');
     const basicAuth = 'Basic ' + Buffer.from(`${partnerId}:${secretKey}`).toString('base64');
 
+    console.log(`\n========================================`);
+    console.log(`[MooGold Proxy Request] Path: ${apiPath}`);
+    console.log(`[Payload]:`, payloadStr);
+
     const apiRes = await fetch(`${baseUrl}/${apiPath}`, {
       method: 'POST',
       headers: {
@@ -57,6 +61,8 @@ app.post('/api/moogold', async (req, res) => {
     });
 
     const text = await apiRes.text();
+    console.log(`[MooGold Proxy Response] HTTP ${apiRes.status}:`, text);
+    console.log(`========================================\n`);
     res.status(apiRes.status);
     try {
       const json = JSON.parse(text);
