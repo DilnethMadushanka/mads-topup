@@ -23,14 +23,6 @@ export const ServicesSection = () => {
       action: openCatalog
     },
     {
-      id: 'post-designs',
-      title: 'Post Designs',
-      description: 'Custom posts & logos crafted for your gaming brand identity',
-      buttonText: 'CREATE NOW',
-      image: '/uploads/index_page/post_design.webp',
-      action: () => showToast('Post Design service coming soon! Contact support on WhatsApp.')
-    },
-    {
       id: 'other',
       title: 'Other Services',
       description: 'Explore our growing catalog of free & premium digital services',
@@ -51,8 +43,8 @@ export const ServicesSection = () => {
           </span>
         </div>
 
-        {/* 4 Cards Grid (Matching User Reference Image 100%) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+        {/* 3 Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto">
           {services.map((service) => (
             <div
               key={service.id}
