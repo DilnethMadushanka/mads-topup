@@ -51,7 +51,7 @@ export const PromoSection = () => {
                   <p className="text-xs text-slate-400 mt-1 font-medium">Have questions or need order assistance? Chat with our team now.</p>
                 </div>
                 <a
-                  href="https://wa.me/94771234567"
+                  href="https://wa.me/94740436276"
                   target="_blank"
                   rel="noreferrer"
                   className="btn-cyan-pill w-full py-3.5 rounded-full font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 font-mono shadow-lg shadow-red-500/20"

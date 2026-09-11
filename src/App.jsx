@@ -81,7 +81,7 @@ const MainContent = () => {
             <div>
               <h4 className="font-extrabold text-sm text-white uppercase tracking-wider mb-4 font-heading">Contact Us</h4>
               <div className="space-y-2 text-xs text-gray-400 font-medium">
-                <p>Support Hotline: +94 77 123 4567</p>
+                <p>Support Hotline / WhatsApp: <a href="https://wa.me/94740436276" target="_blank" rel="noreferrer" className="text-red-400 font-bold hover:underline">+94 74 043 6276</a></p>
                 <p>Email: support@madstopup.com</p>
                 <p>Address: Colombo Fort, Sri Lanka</p>
                 <p>Operating Hours: 24 Hours / 7 Days Automated</p>
