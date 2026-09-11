@@ -1,6 +1,6 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { Gamepad2, CreditCard, Headphones, Sparkles, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 export const ServicesSection = () => {
   const { showToast, openCatalog } = useApp();
@@ -9,102 +9,91 @@ export const ServicesSection = () => {
     {
       id: 'topup',
       title: 'Game TopUp',
-      description: 'Instant in-game currency delivered to your account at unbeatable LKR rates',
+      description: 'Instant in-game currency delivered to your account at unbeatable prices',
       buttonText: 'SHOP NOW',
-      icon: Gamepad2,
       image: '/uploads/index_page/game_topup.webp',
-      tileGradient: 'from-[#cc040a] to-red-800',
-      tileGlow: 'shadow-lg shadow-red-500/20',
-      iconColor: 'text-white',
       action: openCatalog
     },
     {
       id: 'cards',
-      title: 'Cards & Vouchers',
-      description: 'Garena Shells, Hot Recharge Codes & premium digital gift vouchers',
+      title: 'Cards',
+      description: 'Garena Shells, Bot Recharge Codes & premium gift cards for gamers',
       buttonText: 'SHOP NOW',
-      icon: CreditCard,
       image: '/uploads/index_page/gift_cards.webp',
-      tileGradient: 'from-[#3B2896] to-indigo-700',
-      tileGlow: 'shadow-lg shadow-purple-500/20',
-      iconColor: 'text-white',
       action: openCatalog
+    },
+    {
+      id: 'post-designs',
+      title: 'Post Designs',
+      description: 'Custom posts & logos crafted for your gaming brand identity',
+      buttonText: 'CREATE NOW',
+      image: '/uploads/index_page/post_design.webp',
+      action: () => showToast('Post Design service coming soon! Contact support on WhatsApp.')
     },
     {
       id: 'other',
       title: 'Other Services',
-      description: 'Explore our growing catalog of automated free & premium gaming tools',
+      description: 'Explore our growing catalog of free & premium digital services',
       buttonText: 'VIEW MORE',
-      icon: Sparkles,
       image: '/uploads/index_page/other_service.webp',
-      tileGradient: 'from-slate-800 to-slate-950',
-      tileGlow: 'shadow-lg shadow-slate-900/40',
-      iconColor: 'text-[#cc040a]',
       action: openCatalog
     }
   ];
 
   return (
-    <section id="services-section" className="py-24 bg-[#F8FAFF] border-b border-slate-200/80">
+    <section id="services-section" className="py-20 bg-[#F8FAFF] border-b border-slate-200/70">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         
-        {/* Section Header */}
-        <div className="space-y-3 mb-16">
-          <span className="text-xs font-black text-[#cc040a] tracking-widest uppercase font-mono bg-[#cc040a]/10 px-4 py-1.5 rounded-full border border-[#cc040a]/20">
-            — WHAT WE OFFER —
+        {/* Subtitle Header */}
+        <div className="mb-12">
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">
+            services
           </span>
-          <h2 className="text-4xl sm:text-5xl font-black text-slate-900 font-heading tracking-tight uppercase">
-            Our Premium <span className="text-[#cc040a]">Services</span>
-          </h2>
-          <p className="text-slate-600 text-sm sm:text-base font-semibold max-w-lg mx-auto">
-            Elevate your gaming experience with our top-tier minimalist digital services
-          </p>
         </div>
 
-        {/* 3 Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {services.map((service) => {
-            const Icon = service.icon;
-            return (
-              <div
-                key={service.id}
-                className="mads-card p-8 flex flex-col justify-between items-center text-center group cursor-pointer"
-              >
-                {/* 3D App Icon Tile */}
-                <div className="mb-7 relative z-10">
-                  <div className={`w-24 h-24 rounded-2xl bg-gradient-to-br ${service.tileGradient} ${service.tileGlow} flex items-center justify-center relative overflow-hidden transform group-hover:scale-110 group-hover:rotate-2 transition-all duration-300 p-3`}>
-                    {service.image ? (
-                      <img src={service.image} alt={service.title} className="w-full h-full object-contain filter drop-shadow-md relative z-10" />
-                    ) : (
-                      <Icon className={`w-12 h-12 ${service.iconColor} stroke-[1.8] relative z-10`} />
-                    )}
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="space-y-2 mb-8 relative z-10">
-                  <h3 className="text-xl font-black text-slate-900 font-heading group-hover:text-[#cc040a] transition-colors">
-                    {service.title}
-                  </h3>
-                  <p className="text-slate-600 text-xs leading-relaxed font-medium">
-                    {service.description}
-                  </p>
-                </div>
-
-                {/* Action Button */}
-                <button
-                  onClick={service.action}
-                  className="btn-cyan-pill w-full py-3 px-6 rounded-full font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 group-hover:gap-3 cursor-pointer shadow-md shadow-red-500/20 relative z-10"
-                >
-                  <span className="font-mono">{service.buttonText}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-
-                {/* Animated Bottom Cyan Glow Line */}
-                <div className="mads-card-glow-bar"></div>
+        {/* 4 Cards Grid (Matching User Reference Image 100%) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+          {services.map((service) => (
+            <div
+              key={service.id}
+              onClick={service.action}
+              className="bg-white rounded-3xl p-6 sm:p-8 flex flex-col justify-between items-center text-center border border-slate-100/80 shadow-xl shadow-slate-200/40 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group cursor-pointer min-h-[380px] relative overflow-hidden"
+            >
+              {/* 3D App Icon Container */}
+              <div className="relative w-28 h-28 sm:w-32 sm:h-32 mb-6 flex items-center justify-center">
+                <div className="absolute inset-0 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-cyan-500/20 transition-all pointer-events-none"></div>
+                <img 
+                  src={service.image} 
+                  alt={service.title} 
+                  className="w-full h-full object-contain filter drop-shadow-xl group-hover:scale-105 transition-transform duration-300 relative z-10" 
+                />
               </div>
-            );
-          })}
+
+              {/* Title & Description */}
+              <div className="space-y-2 mb-6 relative z-10 flex-1 flex flex-col justify-center">
+                <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 font-heading tracking-tight">
+                  {service.title}
+                </h3>
+                <p className="text-slate-500 text-xs sm:text-[13px] leading-relaxed font-medium max-w-[220px] mx-auto">
+                  {service.description}
+                </p>
+              </div>
+
+              {/* Vibrant Blue-Cyan Pill Action Button */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  service.action();
+                }}
+                className="bg-gradient-to-r from-[#1D60E8] via-[#0091FF] to-[#00C4EE] hover:from-[#154ec5] hover:to-[#00b4da] text-white px-7 py-2.5 sm:py-3 rounded-full font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-lg shadow-cyan-500/25 group-hover:shadow-cyan-500/40 group-hover:scale-105 transition-all cursor-pointer relative z-10"
+              >
+                <span>{service.buttonText}</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+
+            </div>
+          ))}
         </div>
 
       </div>
