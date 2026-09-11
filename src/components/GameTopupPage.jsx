@@ -196,6 +196,9 @@ export const GameTopupPage = () => {
     const moongoldResult = await dispatchMoongoldOrder(orderPayload);
     setIsSubmitting(false);
 
+    const isInstantPayment = selectedPayment.id === 'wallet' || selectedPayment.id === 'card';
+    const finalStatus = isInstantPayment ? 'COMPLETED' : (moongoldResult.status || 'PENDING_VERIFICATION');
+
     const newOrder = {
       id: 'ORD-' + Math.floor(10000 + Math.random() * 90000),
       userId: userProfile?.uid || '',
@@ -209,7 +212,7 @@ export const GameTopupPage = () => {
       ign: ign || (`Player ${playerId}`),
       paymentMethod: selectedPayment.name,
       priceLkr: totalLkr,
-      status: moongoldResult.status || 'COMPLETED',
+      status: finalStatus,
       moongoldRef: moongoldResult.moongoldRef || ('MG-' + Math.floor(10000000 + Math.random() * 90000000)),
       receiptUrl: receiptR2Url || null,
       createdAt: new Date().toISOString()
