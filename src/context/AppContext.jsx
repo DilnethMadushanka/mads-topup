@@ -134,6 +134,13 @@ export const AppProvider = ({ children }) => {
   const openWalletModal = (tab = 'binance') => {
     setWalletActiveTab(tab);
     setIsWalletModalOpen(true);
+    setIsUserProfileOpen(false);
+    setIsContactPageOpen(false);
+    setIsReviewsPageOpen(false);
+    setIsReferralPageOpen(false);
+    setIsGameCatalogOpen(false);
+    setSelectedGame(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const openAuth = (mode = 'login') => {

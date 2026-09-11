@@ -12,9 +12,9 @@ import { BlogSection } from './components/BlogSection';
 import { GameTopupPage } from './components/GameTopupPage';
 import { AuthModal } from './components/AuthModal';
 import { UserProfilePage } from './components/UserProfilePage';
+import { WalletPage } from './components/WalletPage';
 import { AdminDashboard } from './components/AdminDashboard';
 import { ImportantNoticeModal } from './components/ImportantNoticeModal';
-import { WalletModal } from './components/WalletModal';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { SupportModal } from './components/SupportModal';
 import { DownloadAppModal } from './components/DownloadAppModal';
@@ -25,7 +25,7 @@ import { ToastNotification } from './components/ToastNotification';
 import { Flame } from 'lucide-react';
 
 const MainContent = () => {
-  const { setIsAdminOpen, isUserProfileOpen, openUserProfilePage, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, isReferralPageOpen, openContactPage, selectedGame } = useApp();
+  const { setIsAdminOpen, isUserProfileOpen, isWalletModalOpen, openUserProfilePage, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, isReferralPageOpen, openContactPage, selectedGame } = useApp();
 
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
@@ -40,6 +40,8 @@ const MainContent = () => {
           <GameTopupPage />
         ) : isUserProfileOpen ? (
           <UserProfilePage />
+        ) : isWalletModalOpen ? (
+          <WalletPage />
         ) : isReferralPageOpen ? (
           <ReferralProgramPage />
         ) : isContactPageOpen ? (
@@ -92,7 +94,7 @@ const MainContent = () => {
 
             {/* Col 3: Contact Us */}
             <div>
-              <h4 className="font-extrabold text-sm text-white uppercase tracking-wider mb-4 font-heading">Contact Us</h4>
+              <h4 className="font-extrabold text-sm text-[#ffffff] uppercase tracking-wider mb-4 font-heading">Contact Us</h4>
               <div className="space-y-2 text-xs text-gray-400 font-medium">
                 <p>Support Hotline / WhatsApp: <a href="https://wa.me/94740436276" target="_blank" rel="noreferrer" className="text-red-400 font-bold hover:underline">+94 74 043 6276</a></p>
                 <p>Email: support@madstopup.com</p>
@@ -115,7 +117,6 @@ const MainContent = () => {
       <AuthModal />
       <AdminDashboard />
       <ImportantNoticeModal />
-      <WalletModal />
       <SupportModal />
       <DownloadAppModal />
       <MobileBottomNav />
