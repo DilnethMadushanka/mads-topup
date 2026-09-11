@@ -1,11 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Gamepad2, Gift, BookOpen, Download, User, Settings, Flame, Wallet, ChevronDown, Headset } from 'lucide-react';
+import { Gamepad2, Gift, BookOpen, Download, User, Wallet, ChevronDown, Headset, Menu, X, LogIn, UserPlus } from 'lucide-react';
 
 export const Navbar = () => {
   const { 
     setIsUserProfileOpen, 
-    setIsAdminOpen,
     orders,
     openCatalog,
     closeCatalog,
@@ -13,13 +12,14 @@ export const Navbar = () => {
     openAuth,
     userProfile,
     isLoggedIn,
-    openWalletModal,
     setWalletActiveTab,
     setIsNoticeModalOpen,
     setIsWalletModalOpen,
     setIsSupportOpen,
     setIsDownloadAppModalOpen
   } = useApp();
+
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleWalletClick = (tab = 'binance') => {
     setWalletActiveTab(tab);
@@ -29,8 +29,6 @@ export const Navbar = () => {
       setIsNoticeModalOpen(true);
     }
   };
-
-  const pendingCount = (orders || []).filter(o => o.status === 'PROCESSING' || o.status === 'PENDING').length;
 
   const getInitials = (name) => {
     if (!name) return 'DM';
@@ -42,6 +40,7 @@ export const Navbar = () => {
   };
 
   const handleNavClick = (sectionId) => {
+    setIsMobileMenuOpen(false);
     if (isGameCatalogOpen) {
       closeCatalog();
       setTimeout(() => {
@@ -54,13 +53,15 @@ export const Navbar = () => {
     }
   };
 
+  const isUserLoggedIn = isLoggedIn || Boolean(userProfile?.name || userProfile?.email);
+
   return (
     <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-xl border-b border-slate-200/80 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         
         {/* Brand Logo */}
         <div 
-          onClick={closeCatalog}
+          onClick={() => { closeCatalog(); setIsMobileMenuOpen(false); }}
           className="flex items-center gap-2 cursor-pointer group"
         >
           <div className="w-10 h-10 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform duration-300 overflow-hidden p-0.5">
@@ -77,10 +78,10 @@ export const Navbar = () => {
           </div>
         </div>
 
-        {/* Center Navigation Links */}
+        {/* Desktop Navigation Links */}
         <nav className="hidden lg:flex items-center gap-7 text-xs font-bold text-slate-800 uppercase tracking-wide">
           <button 
-            onClick={openCatalog}
+            onClick={() => { openCatalog(); setIsMobileMenuOpen(false); }}
             className={`flex items-center gap-2 hover:text-[#cc040a] transition-colors cursor-pointer group py-2 ${isGameCatalogOpen ? 'text-[#cc040a]' : ''}`}
           >
             <span className="w-6 h-6 rounded-lg bg-red-100 text-[#cc040a] flex items-center justify-center">
@@ -110,7 +111,7 @@ export const Navbar = () => {
           </button>
 
           <button 
-            onClick={() => setIsDownloadAppModalOpen(true)}
+            onClick={() => { setIsDownloadAppModalOpen(true); setIsMobileMenuOpen(false); }}
             className="flex items-center gap-2 hover:text-[#cc040a] transition-colors cursor-pointer group py-2"
           >
             <span className="w-6 h-6 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center">
@@ -120,7 +121,7 @@ export const Navbar = () => {
           </button>
 
           <button 
-            onClick={() => setIsSupportOpen(true)}
+            onClick={() => { setIsSupportOpen(true); setIsMobileMenuOpen(false); }}
             className="flex items-center gap-2 hover:text-[#cc040a] transition-colors cursor-pointer group py-2"
           >
             <span className="w-6 h-6 rounded-lg bg-red-100 text-[#cc040a] flex items-center justify-center">
@@ -130,66 +131,189 @@ export const Navbar = () => {
           </button>
         </nav>
 
-        {/* Right Controls (Matching Reference Screenshot) */}
-        {(isLoggedIn || Boolean(userProfile?.name || userProfile?.email)) ? (
-          <div className="flex items-center gap-1.5 sm:gap-3">
-            {/* 1. Red Wallet LKR Pill */}
-            <div 
-              onClick={() => handleWalletClick('ezcash')}
-              className="bg-[#cc040a] hover:bg-[#990207] text-white text-[11px] sm:text-[13px] font-black px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full flex items-center gap-1.5 shadow-xs cursor-pointer transition-all shrink-0"
-            >
-              <Wallet className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-white fill-white shrink-0" />
-              <span className="tracking-wide">{(userProfile.walletBalance || 0).toFixed(2)} LKR</span>
-            </div>
-
-            {/* 2. Green Crypto USDT Pill (Hidden on mobile to avoid header overflow) */}
-            <div 
-              onClick={() => handleWalletClick('binance')}
-              className="hidden md:flex bg-[#0E8A50] hover:bg-[#0C7A46] text-white text-xs sm:text-[13px] font-black px-3.5 sm:px-4 py-1.5 rounded-full items-center gap-2 shadow-xs cursor-pointer transition-all shrink-0"
-            >
-              <div className="w-4 h-4 rounded-full bg-white text-[#0E8A50] font-black text-[10px] flex items-center justify-center italic shrink-0 leading-none">
-                B
+        {/* Desktop Right Controls */}
+        <div className="hidden lg:flex items-center gap-3">
+          {isUserLoggedIn ? (
+            <div className="flex items-center gap-3">
+              {/* Red Wallet LKR Pill */}
+              <div 
+                onClick={() => handleWalletClick('ezcash')}
+                className="bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-black px-4 py-1.5 rounded-full flex items-center gap-1.5 shadow-xs cursor-pointer transition-all shrink-0"
+              >
+                <Wallet className="w-3.5 h-3.5 text-white fill-white shrink-0" />
+                <span className="tracking-wide">{(userProfile.walletBalance || 0).toFixed(2)} LKR</span>
               </div>
-              <span className="tracking-wide">{(userProfile.walletUsdt || 0).toFixed(2)} U</span>
-            </div>
 
-            {/* 3. User Profile Dropdown Pill (Avatar + Name + Chevron) */}
-            <div 
-              onClick={() => setIsUserProfileOpen(true)}
-              className="flex items-center gap-1 sm:gap-2 cursor-pointer group shrink-0 ml-0.5"
-            >
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#cc040a] border-2 border-white ring-1 ring-slate-200/60 flex items-center justify-center font-black text-white text-[11px] sm:text-xs shadow-xs shrink-0 tracking-wider">
-                {getInitials(userProfile.name)}
+              {/* Green Crypto USDT Pill */}
+              <div 
+                onClick={() => handleWalletClick('binance')}
+                className="bg-[#0E8A50] hover:bg-[#0C7A46] text-white text-xs font-black px-4 py-1.5 rounded-full flex items-center gap-2 shadow-xs cursor-pointer transition-all shrink-0"
+              >
+                <div className="w-4 h-4 rounded-full bg-white text-[#0E8A50] font-black text-[10px] flex items-center justify-center italic shrink-0 leading-none">
+                  B
+                </div>
+                <span className="tracking-wide">{(userProfile.walletUsdt || 0).toFixed(2)} U</span>
               </div>
-              <span className="hidden md:inline-block text-[#6366F1] font-black text-sm sm:text-[15px] group-hover:text-[#4F46E5] transition-colors">
-                {userProfile.name}
-              </span>
-              <ChevronDown className="hidden sm:inline-block w-4 h-4 text-[#6366F1] fill-[#6366F1] group-hover:translate-y-0.5 transition-transform" />
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={() => openAuth('login')}
-              className="text-xs font-black text-slate-700 hover:text-slate-950 uppercase tracking-wider cursor-pointer font-heading"
-            >
-              Login
-            </button>
 
-            <button
-              onClick={() => openAuth('register')}
-              className="btn-purple-pill px-4 sm:px-6 py-2 text-xs font-black uppercase tracking-wider cursor-pointer shadow-md flex items-center gap-1.5"
-            >
-              <User className="w-3.5 h-3.5" />
-              <span>REGISTER</span>
-            </button>
-          </div>
-        )}
+              {/* User Profile Dropdown Pill */}
+              <div 
+                onClick={() => setIsUserProfileOpen(true)}
+                className="flex items-center gap-2 cursor-pointer group shrink-0 ml-0.5"
+              >
+                <div className="w-9 h-9 rounded-full bg-[#cc040a] border-2 border-white ring-1 ring-slate-200/60 flex items-center justify-center font-black text-white text-xs shadow-xs shrink-0 tracking-wider overflow-hidden">
+                  {userProfile.avatar ? (
+                    <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    getInitials(userProfile.name)
+                  )}
+                </div>
+                <span className="text-slate-800 font-extrabold text-sm group-hover:text-[#cc040a] transition-colors">
+                  {userProfile.name || 'Gamer'}
+                </span>
+                <ChevronDown className="w-4 h-4 text-slate-500 group-hover:translate-y-0.5 transition-transform" />
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => openAuth('login')}
+                className="text-xs font-black text-slate-700 hover:text-slate-950 uppercase tracking-wider cursor-pointer font-heading"
+              >
+                Login
+              </button>
+
+              <button
+                onClick={() => openAuth('register')}
+                className="btn-purple-pill px-5 py-2 text-xs font-black uppercase tracking-wider cursor-pointer shadow-md flex items-center gap-1.5"
+              >
+                <User className="w-3.5 h-3.5" />
+                <span>REGISTER</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Mobile View: Hamburger Menu Button Top-Right (Matching Reference Screenshot) */}
+        <div className="lg:hidden flex items-center gap-2">
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle Navigation Menu"
+            className="p-2 rounded-2xl border-2 border-slate-700/80 bg-slate-900/90 text-white hover:bg-slate-800 transition-all cursor-pointer shadow-md flex items-center justify-center"
+          >
+            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
 
       </div>
+
+      {/* Mobile Drawer Overlay Menu (Matches Reference Screenshot EXACTLY) */}
+      {isMobileMenuOpen && (
+        <div className="lg:hidden bg-[#0F172A]/95 backdrop-blur-2xl border-b border-slate-800 shadow-2xl px-6 py-6 space-y-6 animate-in slide-in-from-top-4 duration-200 text-white">
+          
+          {/* Vertical Menu Navigation Items */}
+          <div className="space-y-4">
+            <button 
+              onClick={() => { openCatalog(); setIsMobileMenuOpen(false); }}
+              className="w-full flex items-center gap-3 text-sm font-extrabold text-slate-200 hover:text-cyan-400 py-1 transition-colors text-left"
+            >
+              <Gamepad2 className="w-5 h-5 text-cyan-400" />
+              <span>Game List</span>
+            </button>
+
+            <button 
+              onClick={() => handleNavClick('services-section')}
+              className="w-full flex items-center gap-3 text-sm font-extrabold text-slate-200 hover:text-emerald-400 py-1 transition-colors text-left"
+            >
+              <Gift className="w-5 h-5 text-emerald-400" />
+              <span>Cards</span>
+            </button>
+
+            <button 
+              onClick={() => handleNavClick('why-choose-us')}
+              className="w-full flex items-center gap-3 text-sm font-extrabold text-slate-200 hover:text-cyan-400 py-1 transition-colors text-left"
+            >
+              <BookOpen className="w-5 h-5 text-cyan-400" />
+              <span>Blog</span>
+            </button>
+
+            <button 
+              onClick={() => { setIsDownloadAppModalOpen(true); setIsMobileMenuOpen(false); }}
+              className="w-full flex items-center gap-3 text-sm font-extrabold text-slate-200 hover:text-[#cc040a] py-1 transition-colors text-left"
+            >
+              <Download className="w-5 h-5 text-slate-400" />
+              <span>Download App</span>
+            </button>
+          </div>
+
+          <hr className="border-slate-800" />
+
+          {/* Centered User Balance & Profile Controls (Matching Reference Screenshot) */}
+          <div className="flex flex-col items-center gap-3.5 pt-1">
+            {isUserLoggedIn ? (
+              <>
+                {/* Blue LKR Wallet Pill */}
+                <button
+                  onClick={() => { handleWalletClick('ezcash'); setIsMobileMenuOpen(false); }}
+                  className="w-full max-w-xs bg-[#0284C7] hover:bg-[#0369A1] text-white font-black text-xs py-2.5 px-5 rounded-full flex items-center justify-center gap-2 shadow-lg transition-all"
+                >
+                  <Wallet className="w-4 h-4 text-white fill-white" />
+                  <span>{(userProfile.walletBalance || 0).toFixed(2)} LKR</span>
+                </button>
+
+                {/* Green USDT Wallet Pill */}
+                <button
+                  onClick={() => { handleWalletClick('binance'); setIsMobileMenuOpen(false); }}
+                  className="w-full max-w-xs bg-[#0E8A50] hover:bg-[#0C7A46] text-white font-black text-xs py-2.5 px-5 rounded-full flex items-center justify-center gap-2 shadow-lg transition-all"
+                >
+                  <div className="w-4 h-4 rounded-full bg-white text-[#0E8A50] font-black text-[10px] flex items-center justify-center italic leading-none">
+                    B
+                  </div>
+                  <span>{(userProfile.walletUsdt || 0).toFixed(2)} U</span>
+                </button>
+
+                {/* Profile Pill (Avatar + Username + Chevron) */}
+                <button
+                  onClick={() => { setIsUserProfileOpen(true); setIsMobileMenuOpen(false); }}
+                  className="w-full max-w-xs bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-slate-100 font-extrabold text-xs py-2 px-4 rounded-full flex items-center justify-center gap-2 shadow-md transition-all mt-1"
+                >
+                  <div className="w-7 h-7 rounded-full bg-[#cc040a] text-white font-black text-[11px] flex items-center justify-center overflow-hidden border border-white/20">
+                    {userProfile.avatar ? (
+                      <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      getInitials(userProfile.name)
+                    )}
+                  </div>
+                  <span className="truncate max-w-[140px] text-slate-200 font-bold">{userProfile.name || 'Gaming Mads'}</span>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+              </>
+            ) : (
+              <div className="w-full max-w-xs flex items-center gap-3">
+                <button
+                  onClick={() => { openAuth('login'); setIsMobileMenuOpen(false); }}
+                  className="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-extrabold text-xs py-2.5 rounded-full flex items-center justify-center gap-1.5 transition-all"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span>LOGIN</span>
+                </button>
+
+                <button
+                  onClick={() => { openAuth('register'); setIsMobileMenuOpen(false); }}
+                  className="flex-1 btn-purple-pill font-extrabold text-xs py-2.5 rounded-full flex items-center justify-center gap-1.5 transition-all shadow-lg"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span>REGISTER</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+        </div>
+      )}
     </header>
   );
 };
+
 
 
 

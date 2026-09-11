@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { Zap, Layers, Mouse } from 'lucide-react';
+import { Zap, Layers, MessageCircle } from 'lucide-react';
 
 export const HeroSection = () => {
-  const { openCatalog } = useApp();
+  const { openCatalog, setIsSupportOpen } = useApp();
   const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
 
   const heroImages = [
@@ -21,11 +21,6 @@ export const HeroSection = () => {
 
   const scrollToServices = () => {
     const el = document.getElementById('services-section');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const scrollToCatalog = () => {
-    const el = document.getElementById('game-catalog');
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -52,10 +47,10 @@ export const HeroSection = () => {
       <div className="absolute top-28 left-12 opacity-80 animate-float-diamond pointer-events-none select-none text-5xl drop-shadow-[0_10px_20px_rgba(204,4,10,0.6)]">
         💎
       </div>
-      <div className="absolute top-24 right-16 opacity-80 animate-float-diamond pointer-events-none select-none text-6xl drop-shadow-[0_10px_20px_rgba(204,4,10,0.6)] style={{ animationDelay: '1.5s' }}">
+      <div className="absolute top-24 right-16 opacity-80 animate-float-diamond pointer-events-none select-none text-6xl drop-shadow-[0_10px_20px_rgba(204,4,10,0.6)]" style={{ animationDelay: '1.5s' }}>
         💎
       </div>
-      <div className="absolute bottom-28 left-16 opacity-70 animate-float-diamond pointer-events-none select-none text-4xl drop-shadow-[0_10px_20px_rgba(204,4,10,0.6)] style={{ animationDelay: '2.5s' }}">
+      <div className="absolute bottom-28 left-16 opacity-70 animate-float-diamond pointer-events-none select-none text-4xl drop-shadow-[0_10px_20px_rgba(204,4,10,0.6)]" style={{ animationDelay: '2.5s' }}>
         💎
       </div>
 
@@ -75,7 +70,7 @@ export const HeroSection = () => {
           <h1 className="text-7xl sm:text-8xl lg:text-9xl font-black font-heading tracking-tighter text-white uppercase leading-none drop-shadow-lg animate-pop-in delay-300">
             MADS
           </h1>
-          <h1 className="text-7xl sm:text-8xl lg:text-9xl font-black font-heading tracking-tighter text-[#cc040a] uppercase leading-none drop-shadow-[0_10px_35px_rgba(204,4,10,0.5)] animate-pop-in delay-400">
+          <h1 className="text-7xl sm:text-8xl lg:text-9xl font-black font-heading tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-[#cc040a] uppercase leading-none drop-shadow-[0_10px_35px_rgba(6,182,212,0.4)] animate-pop-in delay-400">
             TOPUP
           </h1>
         </div>
@@ -85,11 +80,11 @@ export const HeroSection = () => {
           Premium game top-ups at <strong className="text-white font-extrabold">unbeatable prices</strong> — instant delivery, trusted by thousands of Sri Lankan gamers.
         </p>
 
-        {/* Action Buttons */}
+        {/* Action Buttons (Matching Reference Screenshot EXACTLY) */}
         <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4 animate-pop-in delay-800">
           <button
             onClick={scrollToServices}
-            className="btn-cyan-pill w-full sm:w-auto px-8 py-3.5 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 cursor-pointer"
+            className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 cursor-pointer shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:-translate-y-0.5 transition-all"
           >
             <Layers className="w-4 h-4 text-white" />
             <span>EXPLORE SERVICES</span>
@@ -97,7 +92,7 @@ export const HeroSection = () => {
 
           <button
             onClick={openCatalog}
-            className="btn-dark-pill w-full sm:w-auto px-8 py-3.5 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 cursor-pointer"
+            className="btn-dark-pill w-full sm:w-auto px-8 py-3.5 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 cursor-pointer border border-white/20 hover:border-white/40 shadow-md"
           >
             <Zap className="w-4 h-4 text-white fill-white" />
             <span>TOP UP NOW</span>
@@ -106,19 +101,31 @@ export const HeroSection = () => {
 
       </div>
 
-      {/* Mouse Scroll Indicator */}
+      {/* Mouse Scroll Indicator (Matching Reference Screenshot) */}
       <div 
         onClick={scrollToServices}
-        className="relative z-10 pt-8 flex flex-col items-center gap-1 text-slate-400 hover:text-[#cc040a] text-[10px] font-black uppercase tracking-widest cursor-pointer transition-colors animate-bounce"
+        className="relative z-10 pt-8 flex flex-col items-center gap-1.5 text-slate-400 hover:text-cyan-400 text-[10px] font-black uppercase tracking-widest cursor-pointer transition-colors animate-bounce"
       >
-        <div className="w-5 h-9 rounded-full border-2 border-slate-400 flex items-start justify-center p-1">
-          <div className="w-1 h-2 bg-[#cc040a] rounded-full animate-pulse"></div>
+        <div className="w-6 h-10 rounded-full border-2 border-slate-400 flex items-start justify-center p-1">
+          <div className="w-1.5 h-2.5 bg-cyan-400 rounded-full animate-pulse"></div>
         </div>
-        <span className="text-[9px]">SCROLL</span>
+        <span className="text-[9px] tracking-widest font-mono text-slate-300">SCROLL</span>
       </div>
+
+      {/* Floating Cyan/Blue Support Chat Button (Matching Reference Screenshot) */}
+      <button 
+        onClick={() => setIsSupportOpen(true)}
+        aria-label="Open 24/7 Live Support Chat"
+        className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-40 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all cursor-pointer ring-4 ring-cyan-500/20 group"
+      >
+        <MessageCircle className="w-6 h-6 sm:w-7 sm:h-7 text-white fill-white group-hover:rotate-6 transition-transform" />
+        <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-slate-900 animate-ping"></span>
+        <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-slate-900"></span>
+      </button>
     </section>
   );
 };
+
 
 
 
