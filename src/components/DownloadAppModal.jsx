@@ -1,14 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { X, Download, Smartphone, ShieldCheck, Zap, QrCode, CheckCircle2, ArrowRight, Share2, Sparkles } from 'lucide-react';
+import { X, Smartphone, ShieldCheck, Zap, PlusSquare, CheckCircle2, ArrowRight, Share2, Sparkles, Apple, Compass } from 'lucide-react';
 
 export const DownloadAppModal = () => {
   const { isDownloadAppModalOpen, setIsDownloadAppModalOpen, showToast } = useApp();
   const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [isDownloadingApk, setIsDownloadingApk] = useState(false);
-  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [activeTab, setActiveTab] = useState('ios'); // 'ios' | 'android'
 
   useEffect(() => {
+    // Detect OS automatically
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    if (isIOS) {
+      setActiveTab('ios');
+    } else {
+      setActiveTab('android');
+    }
+
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -25,40 +32,16 @@ export const DownloadAppModal = () => {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
-        showToast('Thank you for installing MADS TOPUP App! 🎉');
+        showToast('Thank you for adding MADS TOPUP to your Home Screen! 🎉');
       }
       setDeferredPrompt(null);
     } else {
-      showToast('To install: Tap Browser Menu (⋮ or Share) -> "Add to Home Screen" 📱');
+      showToast('Follow the step-by-step guide below to add to your Home Screen 📱');
     }
   };
 
-  const handleDownloadApk = () => {
-    setIsDownloadingApk(true);
-    setDownloadProgress(10);
-
-    const interval = setInterval(() => {
-      setDownloadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsDownloadingApk(false);
-          
-          // Trigger file download
-          const link = document.createElement('a');
-          link.href = '#';
-          link.setAttribute('download', 'mads-topup-v2.4.apk');
-          document.body.appendChild(link);
-          
-          showToast('MADS TOPUP Official Android APK download started! 🚀');
-          return 100;
-        }
-        return prev + 20;
-      });
-    }, 250);
-  };
-
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
       <div className="bg-[#0f172a] text-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-800 overflow-hidden relative animate-in zoom-in-95 duration-200 my-auto">
         
         {/* Top Header Banner */}
@@ -70,100 +53,136 @@ export const DownloadAppModal = () => {
             <X className="w-5 h-5" />
           </button>
 
-          <div className="w-16 h-16 rounded-2xl bg-slate-950 shadow-xl flex items-center justify-center mx-auto mb-3 border border-white/20 p-2 overflow-hidden">
+          <div className="w-16 h-16 rounded-2xl bg-slate-950 shadow-xl flex items-center justify-center mx-auto mb-3 border border-white/20 p-2 overflow-hidden ring-4 ring-white/10">
             <img src="/mads-logo.jpg" alt="MADS TOPUP App" className="w-full h-full object-contain rounded-xl" />
           </div>
 
           <h2 className="text-2xl font-black font-heading text-white tracking-tight flex items-center justify-center gap-2">
-            <span>Download MADS TOPUP App</span>
+            <span>Add MADS TOPUP to Home Screen</span>
             <Sparkles className="w-5 h-5 text-amber-300 animate-pulse" />
           </h2>
           <p className="text-xs text-red-100 font-semibold mt-1">
-            Get the fastest diamond top-ups right on your phone screen
+            Install the web app for instant 1-tap topups without app store downloads
           </p>
         </div>
 
         {/* Modal Content */}
-        <div className="p-6 space-y-5">
+        <div className="p-5 sm:p-6 space-y-5">
           
-          {/* Main Download Options */}
-          <div className="space-y-3">
-            {/* Option 1: Direct APK Download */}
-            <button
-              onClick={handleDownloadApk}
-              disabled={isDownloadingApk}
-              className="w-full p-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-2xl font-black text-sm flex items-center justify-between transition-all shadow-lg shadow-emerald-600/20 cursor-pointer group disabled:opacity-75"
-            >
-              <div className="flex items-center gap-3 text-left">
-                <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-                  <Download className="w-5 h-5 group-hover:bounce" />
-                </div>
-                <div>
-                  <div className="font-extrabold text-sm">Download Android APK</div>
-                  <div className="text-[11px] text-emerald-100 font-medium">v2.4.0 • Fast & Secure Direct APK (28 MB)</div>
-                </div>
+          {/* Main 1-Tap Install Button */}
+          <button
+            onClick={handleInstallPwa}
+            className="w-full p-4 bg-gradient-to-r from-[#cc040a] via-red-600 to-red-700 hover:from-red-600 hover:to-red-800 text-white rounded-2xl font-black text-sm flex items-center justify-between transition-all shadow-xl shadow-red-600/25 cursor-pointer group"
+          >
+            <div className="flex items-center gap-3 text-left">
+              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                <Smartphone className="w-5 h-5" />
               </div>
-              <ArrowRight className="w-5 h-5 text-emerald-200 group-hover:translate-x-1 transition-transform" />
+              <div>
+                <div className="font-extrabold text-sm">Add App to Home Screen</div>
+                <div className="text-[11px] text-red-100 font-medium">1-Tap Install • Fast & Light (0 MB Storage)</div>
+              </div>
+            </div>
+            <ArrowRight className="w-5 h-5 text-red-200 group-hover:translate-x-1 transition-transform" />
+          </button>
+
+          {/* OS Tab Selector (iPhone vs Android) */}
+          <div className="bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 flex gap-1 text-xs font-bold">
+            <button
+              onClick={() => setActiveTab('ios')}
+              className={`flex-1 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                activeTab === 'ios' ? 'bg-[#cc040a] text-white shadow-md' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Apple className="w-4 h-4" />
+              <span>iPhone / iOS Safari</span>
             </button>
-
-            {/* APK Progress Bar */}
-            {isDownloadingApk && (
-              <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1.5 animate-in fade-in">
-                <div className="flex justify-between text-xs font-bold text-emerald-400">
-                  <span>Downloading APK Package...</span>
-                  <span>{downloadProgress}%</span>
-                </div>
-                <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-emerald-500 transition-all duration-200 rounded-full"
-                    style={{ width: `${downloadProgress}%` }}
-                  ></div>
-                </div>
-              </div>
-            )}
-
-            {/* Option 2: PWA Install Web App */}
             <button
-              onClick={handleInstallPwa}
-              className="w-full p-4 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-black text-sm flex items-center justify-between border border-slate-800 transition-all cursor-pointer group"
+              onClick={() => setActiveTab('android')}
+              className={`flex-1 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                activeTab === 'android' ? 'bg-[#cc040a] text-white shadow-md' : 'text-slate-400 hover:text-white'
+              }`}
             >
-              <div className="flex items-center gap-3 text-left">
-                <div className="w-10 h-10 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center shrink-0">
-                  <Smartphone className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="font-extrabold text-sm">Install Web App (PWA)</div>
-                  <div className="text-[11px] text-slate-400 font-medium">Instant Add to Home Screen (No Download Needed)</div>
-                </div>
-              </div>
-              <Share2 className="w-4 h-4 text-slate-400 group-hover:text-white" />
+              <Compass className="w-4 h-4" />
+              <span>Android / Chrome</span>
             </button>
           </div>
 
-          {/* Features Grid */}
-          <div className="grid grid-cols-2 gap-2.5 pt-1">
-            <div className="bg-slate-900/70 p-3 rounded-xl border border-slate-800/80 flex items-center gap-2.5">
+          {/* Step-by-Step Instructions Card */}
+          {activeTab === 'ios' ? (
+            /* iPhone Safari Steps */
+            <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 space-y-3.5 animate-in fade-in">
+              <div className="text-xs font-extrabold text-amber-400 flex items-center gap-1.5">
+                <Apple className="w-4 h-4" />
+                <span>How to Add on iPhone / iPad (Safari Browser):</span>
+              </div>
+
+              <div className="space-y-2.5 text-xs text-slate-300 font-medium">
+                <div className="flex items-start gap-3 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
+                  <div className="w-6 h-6 rounded-lg bg-red-600/20 text-red-400 font-black text-xs flex items-center justify-center shrink-0">1</div>
+                  <div>
+                    Tap the <strong>Share Button</strong> <Share2 className="w-3.5 h-3.5 text-sky-400 inline mx-1" /> at the bottom of Safari browser bar.
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
+                  <div className="w-6 h-6 rounded-lg bg-red-600/20 text-red-400 font-black text-xs flex items-center justify-center shrink-0">2</div>
+                  <div>
+                    Scroll down the options menu and tap <strong>"Add to Home Screen"</strong> <PlusSquare className="w-3.5 h-3.5 text-emerald-400 inline mx-1" />.
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
+                  <div className="w-6 h-6 rounded-lg bg-red-600/20 text-red-400 font-black text-xs flex items-center justify-center shrink-0">3</div>
+                  <div>
+                    Tap <strong>"Add"</strong> in the top-right corner. The MADS TOPUP App icon will appear on your iPhone screen! 🎉
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Android Chrome Steps */
+            <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 space-y-3.5 animate-in fade-in">
+              <div className="text-xs font-extrabold text-emerald-400 flex items-center gap-1.5">
+                <Compass className="w-4 h-4" />
+                <span>How to Add on Android (Chrome / Samsung Internet):</span>
+              </div>
+
+              <div className="space-y-2.5 text-xs text-slate-300 font-medium">
+                <div className="flex items-start gap-3 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
+                  <div className="w-6 h-6 rounded-lg bg-emerald-600/20 text-emerald-400 font-black text-xs flex items-center justify-center shrink-0">1</div>
+                  <div>
+                    Tap the <strong>Browser Menu (⋮)</strong> three dots in top-right of Chrome.
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
+                  <div className="w-6 h-6 rounded-lg bg-emerald-600/20 text-emerald-400 font-black text-xs flex items-center justify-center shrink-0">2</div>
+                  <div>
+                    Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
+                  <div className="w-6 h-6 rounded-lg bg-emerald-600/20 text-emerald-400 font-black text-xs flex items-center justify-center shrink-0">3</div>
+                  <div>
+                    Confirm <strong>"Install"</strong>. MADS TOPUP will instantly appear as an app icon on your phone! 🚀
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Key Advantages Grid */}
+          <div className="grid grid-cols-2 gap-2 pt-1 text-xs">
+            <div className="bg-slate-900/50 p-2.5 rounded-xl border border-slate-800 flex items-center gap-2">
               <Zap className="w-4 h-4 text-amber-400 shrink-0" />
-              <span className="text-xs font-extrabold text-slate-200">1-Tap Topups</span>
+              <span className="font-bold text-slate-300">Instant Access</span>
             </div>
-            <div className="bg-slate-900/70 p-3 rounded-xl border border-slate-800/80 flex items-center gap-2.5">
+            <div className="bg-slate-900/50 p-2.5 rounded-xl border border-slate-800 flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span className="text-xs font-extrabold text-slate-200">100% Verified</span>
+              <span className="font-bold text-slate-300">100% Safe & Fast</span>
             </div>
-            <div className="bg-slate-900/70 p-3 rounded-xl border border-slate-800/80 flex items-center gap-2.5">
-              <CheckCircle2 className="w-4 h-4 text-sky-400 shrink-0" />
-              <span className="text-xs font-extrabold text-slate-200">Live Order Track</span>
-            </div>
-            <div className="bg-slate-900/70 p-3 rounded-xl border border-slate-800/80 flex items-center gap-2.5">
-              <QrCode className="w-4 h-4 text-red-400 shrink-0" />
-              <span className="text-xs font-extrabold text-slate-200">Mobile Optimized</span>
-            </div>
-          </div>
-
-          {/* iOS Instructions Note */}
-          <div className="bg-slate-900/40 p-3 rounded-xl border border-slate-800 text-[11px] text-slate-400 flex items-start gap-2">
-            <span className="text-red-500 font-black shrink-0">iOS / iPhone:</span>
-            <span>Open in Safari → Tap Share Button <Share2 className="w-3 h-3 inline" /> → Tap <strong>"Add to Home Screen"</strong></span>
           </div>
 
         </div>

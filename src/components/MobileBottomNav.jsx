@@ -1,6 +1,6 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { Home, Gamepad2, User, ShieldCheck, ShoppingBag, Headset } from 'lucide-react';
+import { Home, Gamepad2, User, ShieldCheck, ShoppingBag, Headset, Smartphone, Download } from 'lucide-react';
 
 export const MobileBottomNav = () => {
   const { 
@@ -15,7 +15,8 @@ export const MobileBottomNav = () => {
     openAuth,
     isLoggedIn,
     userProfile,
-    setIsSupportOpen
+    setIsSupportOpen,
+    setIsDownloadAppModalOpen
   } = useApp();
   
   const safeOrders = orders || [];
@@ -57,6 +58,14 @@ export const MobileBottomNav = () => {
       >
         <Gamepad2 className="w-5 h-5" />
         <span>Games</span>
+      </button>
+
+      <button 
+        onClick={() => setIsDownloadAppModalOpen(true)}
+        className="flex flex-col items-center gap-1 text-[#cc040a] font-black text-[10px] uppercase tracking-wider cursor-pointer animate-pulse"
+      >
+        <Smartphone className="w-5 h-5 text-[#cc040a]" />
+        <span>Get App</span>
       </button>
 
       <button 
