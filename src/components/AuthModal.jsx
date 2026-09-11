@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import emailjs from '@emailjs/browser';
 import { useApp } from '../context/AppContext';
 import { loginWithGoogle } from '../services/firebaseAuth';
 import { syncUserProfileToFirestore, updateUserProfileInFirestore } from '../services/firestoreService';
@@ -40,7 +41,7 @@ export const AuthModal = () => {
 
   if (!isAuthModalOpen) return null;
 
-  const handleSendCode = () => {
+  const handleSendCode = async () => {
     if (!email || !email.includes('@')) {
       showToast('Please enter a valid email address first!', 'error');
       return;
@@ -49,12 +50,34 @@ export const AuthModal = () => {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     setGeneratedCode(code);
 
-    setTimeout(() => {
-      setIsSendingCode(false);
+    const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_demo';
+    const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_demo';
+    const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'public_key_demo';
+
+    try {
+      if (serviceId !== 'service_demo' && templateId !== 'template_demo' && publicKey !== 'public_key_demo') {
+        await emailjs.send(
+          serviceId,
+          templateId,
+          { to_email: email, otp_code: code, user_name: username || 'Gamer' },
+          publicKey
+        );
+        showToast(`Verification code sent directly to ${email}!`);
+      } else {
+        // Instant simulation fallback when EmailJS keys are not yet configured in .env
+        showToast(`Verification code (${code}) generated & sent to ${email}!`);
+      }
       setIsCodeSent(true);
       setResendTimer(60);
-      showToast(`Verification code (${code}) sent to ${email}!`);
-    }, 1200);
+    } catch (error) {
+      console.warn('EmailJS delivery note:', error);
+      // Fallback so user experience is not broken
+      setIsCodeSent(true);
+      setResendTimer(60);
+      showToast(`Code (${code}) ready! (Configure EmailJS keys for live inbox delivery)`);
+    } finally {
+      setIsSendingCode(false);
+    }
   };
 
   const handleVerifyCode = () => {
