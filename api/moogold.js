@@ -30,11 +30,31 @@ export default async function handler(req, res) {
       }
     }
 
-    const { path, bodyObj } = body || {};
+    const { path: apiPath, bodyObj } = body || {};
 
-    if (!path || !bodyObj) {
+    if (!apiPath || !bodyObj) {
       res.status(400).json({ error: 'Missing path or bodyObj', received: req.body });
       return;
+    }
+
+    // 1. Primary: Forward request through Whitelisted Static VPS IP (198.211.111.194)
+    try {
+      const vpsRes = await fetch('http://198.211.111.194:3000/api/moogold', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: apiPath, bodyObj })
+      });
+      if (vpsRes.ok) {
+        const text = await vpsRes.text();
+        res.status(vpsRes.status);
+        try {
+          return res.json(JSON.parse(text));
+        } catch (e) {
+          return res.send(text);
+        }
+      }
+    } catch (vpsErr) {
+      console.warn('VPS proxy note:', vpsErr.message);
     }
 
     const partnerId = process.env.VITE_MOONGOLD_PARTNER_ID || 'f27cabc8d2c2122bbedacabce632db68';
