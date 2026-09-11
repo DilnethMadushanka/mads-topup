@@ -82,7 +82,7 @@ export const StatsSection = () => {
       iconBg: 'bg-emerald-500/20 text-emerald-400'
     },
     {
-      target: 25 + Math.floor(realOrdersCount * 0.8),
+      target: 30 + realOrdersCount,
       suffix: '+',
       formatComma: false,
       label: 'Daily Avg TopUp',
