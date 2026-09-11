@@ -309,6 +309,9 @@ export const dispatchMoongoldOrder = async (orderData) => {
     };
   }
 
+  const gameId = (orderData.gameId || orderData.game?.id || '').toLowerCase();
+  const idLabel = (orderData.idLabel || orderData.game?.idLabel || '').toLowerCase();
+
   const productId = orderData.package?.moongoldProductId || '215570';
   const dataPayload = {
     category: '1',
