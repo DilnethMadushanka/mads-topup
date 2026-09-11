@@ -2,10 +2,34 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import crypto from 'crypto';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Automatically load .env file if present
+try {
+  if (fs.existsSync(path.join(__dirname, '.env'))) {
+    if (typeof process.loadEnvFile === 'function') {
+      process.loadEnvFile(path.join(__dirname, '.env'));
+    } else {
+      const envLines = fs.readFileSync(path.join(__dirname, '.env'), 'utf8').split('\n');
+      for (const line of envLines) {
+        const trimmed = line.trim();
+        if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+          const [key, ...valParts] = trimmed.split('=');
+          const val = valParts.join('=').trim();
+          if (key && !process.env[key.trim()]) {
+            process.env[key.trim()] = val.replace(/^["']|["']$/g, '');
+          }
+        }
+      }
+    }
+  }
+} catch (e) {
+  console.warn('[Env Loader Note]:', e.message);
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
