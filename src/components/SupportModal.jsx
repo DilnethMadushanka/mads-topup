@@ -111,19 +111,16 @@ export const SupportModal = () => {
 
   return (
     <>
-      {/* Floating Launcher Button */}
+      {/* Global 24/7 Support Floating Button */}
       <button
         onClick={() => setIsSupportOpen(true)}
-        className="fixed bottom-20 md:bottom-6 right-5 z-40 bg-gradient-to-r from-red-600 to-[#cc040a] hover:from-red-700 hover:to-red-800 text-white p-3.5 sm:px-4 sm:py-3 rounded-full shadow-2xl flex items-center gap-2.5 transition-all duration-300 hover:scale-105 group border border-white/20"
+        aria-label="Open 24/7 Live Customer Support"
+        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-[#cc040a] hover:bg-[#b00308] text-white flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all duration-300 cursor-pointer ring-4 ring-red-600/20 group border-0 outline-none"
         title="24/7 Live Customer Support"
       >
-        <div className="relative">
-          <Headset className="w-6 h-6 text-white animate-bounce" />
-          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-white animate-pulse" />
-        </div>
-        <span className="hidden sm:inline-block font-black text-xs uppercase tracking-wider font-heading">
-          24/7 Live Help
-        </span>
+        <Headset className="w-7 h-7 text-white group-hover:rotate-6 transition-transform" />
+        <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white"></span>
+        <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-emerald-400 rounded-full border-2 border-white animate-ping"></span>
       </button>
 
       {/* Main Support Drawer / Modal Overlay */}

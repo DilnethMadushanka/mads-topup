@@ -112,16 +112,6 @@ export const HeroSection = () => {
         <span className="text-[9px] tracking-widest font-mono text-slate-300">SCROLL</span>
       </div>
 
-      {/* Floating Red Support Chat Button */}
-      <button 
-        onClick={() => setIsSupportOpen(true)}
-        aria-label="Open 24/7 Live Support Chat"
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-gradient-to-tr from-[#cc040a] to-[#990207] hover:from-[#e6050c] hover:to-[#cc040a] text-white flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all cursor-pointer ring-4 ring-red-600/20 group"
-      >
-        <MessageCircle className="w-7 h-7 text-white fill-white group-hover:rotate-6 transition-transform" />
-        <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-slate-900 animate-ping"></span>
-        <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-slate-900"></span>
-      </button>
     </section>
   );
 };
