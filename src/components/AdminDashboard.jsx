@@ -41,7 +41,7 @@ export const AdminDashboard = () => {
 
   // Admin Authentication State (Requires login when accessing /admin)
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
-  const [adminAuthEmail, setAdminAuthEmail] = useState('madsruzza@gmail.com');
+  const [adminAuthEmail, setAdminAuthEmail] = useState('');
   const [adminAuthPassword, setAdminAuthPassword] = useState('');
   const [showAdminAuthPassword, setShowAdminAuthPassword] = useState(false);
   const [adminAuthError, setAdminAuthError] = useState('');
@@ -197,9 +197,10 @@ export const AdminDashboard = () => {
               <input
                 type="email"
                 required
+                autoComplete="off"
                 value={adminAuthEmail}
                 onChange={(e) => setAdminAuthEmail(e.target.value)}
-                placeholder="madsruzza@gmail.com"
+                placeholder="Enter Admin Email"
                 className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white font-mono text-sm focus:outline-none focus:border-red-500 shadow-xs"
               />
             </div>
@@ -212,9 +213,10 @@ export const AdminDashboard = () => {
                 <input
                   type={showAdminAuthPassword ? 'text' : 'password'}
                   required
+                  autoComplete="new-password"
                   value={adminAuthPassword}
                   onChange={(e) => setAdminAuthPassword(e.target.value)}
-                  placeholder="••••••••••••"
+                  placeholder="Enter Admin Password"
                   className="w-full pl-4 pr-10 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white font-mono text-sm focus:outline-none focus:border-red-500 shadow-xs"
                 />
                 <button
