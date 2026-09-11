@@ -136,14 +136,14 @@ export const WalletModal = () => {
         {/* Scrollable Container */}
         <div className="overflow-y-auto flex-1 p-4 sm:p-6 space-y-6">
 
-          {/* VIBRANT PURPLE/INDIGO TOTAL BALANCE CARD (Matching Screenshot 2) */}
-          <div className="bg-gradient-to-r from-[#5046E5] via-[#6366F1] to-[#4F46E5] rounded-3xl p-6 sm:p-8 text-white text-center shadow-xl relative overflow-hidden">
+          {/* RICH RED THEME TOTAL BALANCE CARD (Matching Web Red Theme) */}
+          <div className="bg-gradient-to-r from-[#cc040a] via-[#dc2626] to-[#990207] rounded-3xl p-6 sm:p-8 text-white text-center shadow-2xl relative overflow-hidden border border-red-600/30">
             {/* Background Glow Shapes */}
             <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-300/20 rounded-full blur-2xl pointer-events-none"></div>
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-red-950/40 rounded-full blur-2xl pointer-events-none"></div>
 
             <div className="relative z-10">
-              <span className="text-[10px] font-black text-indigo-200 uppercase tracking-widest font-mono block">
+              <span className="text-[10px] font-black text-red-100 uppercase tracking-widest font-mono block">
                 TOTAL BALANCE
               </span>
               <h2 className="text-4xl sm:text-5xl font-black font-heading mt-1 text-white tracking-tight">
