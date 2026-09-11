@@ -16,6 +16,7 @@ export const GAMES_DATA = [
     idPlaceholder: 'e.g. 248901234',
     popular: true,
     moongoldCode: 'FREEFIRE_SG',
+    moongoldCategoryId: '50',
     packages: [
       { id: 'ff-25', name: '25 Diamonds', amount: 25, bonus: '', priceLkr: 110, moongoldCost: 90, priceUsd: 0.35, moongoldProductId: '11011929', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.png', isPopular: false },
       { id: 'ff-100', name: '100 + 10 Diamonds', amount: 110, bonus: '+10 Bonus', priceLkr: 370, moongoldCost: 310, priceUsd: 1.21, moongoldProductId: '215570', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.png', isPopular: false },

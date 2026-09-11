@@ -309,15 +309,16 @@ export const dispatchMoongoldOrder = async (orderData) => {
     };
   }
 
-  const productId = orderData.package?.moongoldProductId || '4085924';
-  const dataPayload = {
-    category: '1',
-    'product-id': productId,
-    quantity: '1'
-  };
-
   const gameId = (orderData.gameId || orderData.game?.id || '').toLowerCase();
   const idLabel = (orderData.idLabel || orderData.game?.idLabel || '').toLowerCase();
+  const categoryId = orderData.game?.moongoldCategoryId || (gameId.includes('freefire') ? '50' : '1');
+
+  const productId = orderData.package?.moongoldProductId || '215570';
+  const dataPayload = {
+    category: categoryId,
+    'product-id': productId,
+    quantity: String(orderData.quantity || 1)
+  };
 
   if (gameId.includes('pubg') || idLabel.includes('character')) {
     dataPayload['Character ID'] = orderData.playerId || '';
