@@ -120,6 +120,7 @@ export const AppProvider = ({ children }) => {
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isGameCatalogOpen, setIsGameCatalogOpen] = useState(false);
   const [isReviewsPageOpen, setIsReviewsPageOpen] = useState(false);
+  const [isContactPageOpen, setIsContactPageOpen] = useState(false);
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
@@ -151,6 +152,7 @@ export const AppProvider = ({ children }) => {
 
   const openReviewsPage = () => {
     setIsReviewsPageOpen(true);
+    setIsContactPageOpen(false);
     setIsGameCatalogOpen(false);
     setSelectedGame(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -158,6 +160,19 @@ export const AppProvider = ({ children }) => {
 
   const closeReviewsPage = () => {
     setIsReviewsPageOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const openContactPage = () => {
+    setIsContactPageOpen(true);
+    setIsReviewsPageOpen(false);
+    setIsGameCatalogOpen(false);
+    setSelectedGame(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const closeContactPage = () => {
+    setIsContactPageOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -907,6 +922,10 @@ export const AppProvider = ({ children }) => {
       setIsReviewsPageOpen,
       openReviewsPage,
       closeReviewsPage,
+      isContactPageOpen,
+      setIsContactPageOpen,
+      openContactPage,
+      closeContactPage,
       userReviews,
       addReview,
       userProfile,

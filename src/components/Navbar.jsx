@@ -17,7 +17,8 @@ export const Navbar = () => {
     setIsNoticeModalOpen,
     setIsWalletModalOpen,
     setIsSupportOpen,
-    setIsDownloadAppModalOpen
+    setIsDownloadAppModalOpen,
+    openContactPage
   } = useApp();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -122,7 +123,7 @@ export const Navbar = () => {
           </button>
 
           <button 
-            onClick={() => { setIsSupportOpen(true); setIsMobileMenuOpen(false); }}
+            onClick={() => { openContactPage(); setIsMobileMenuOpen(false); }}
             className="flex items-center gap-2 hover:text-[#cc040a] transition-colors cursor-pointer group py-2"
           >
             <span className="w-6 h-6 rounded-lg bg-red-100 text-[#cc040a] flex items-center justify-center">
@@ -271,7 +272,7 @@ export const Navbar = () => {
 
             {/* 24/7 Support */}
             <button 
-              onClick={() => { setIsSupportOpen(true); setIsMobileMenuOpen(false); }}
+              onClick={() => { openContactPage(); setIsMobileMenuOpen(false); }}
               className="w-full flex items-center justify-between text-sm font-extrabold text-slate-200 hover:text-red-400 py-1 transition-colors text-left"
             >
               <span className="flex items-center gap-3">

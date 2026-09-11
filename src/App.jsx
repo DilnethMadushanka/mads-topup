@@ -19,11 +19,12 @@ import { MobileBottomNav } from './components/MobileBottomNav';
 import { SupportModal } from './components/SupportModal';
 import { DownloadAppModal } from './components/DownloadAppModal';
 import { ReviewsPage } from './components/ReviewsPage';
+import { ContactPage } from './components/ContactPage';
 import { ToastNotification } from './components/ToastNotification';
 import { Flame } from 'lucide-react';
 
 const MainContent = () => {
-  const { setIsAdminOpen, setIsUserProfileOpen, isGameCatalogOpen, isReviewsPageOpen, selectedGame } = useApp();
+  const { setIsAdminOpen, setIsUserProfileOpen, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, openContactPage, selectedGame } = useApp();
 
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
@@ -36,6 +37,8 @@ const MainContent = () => {
         <Navbar />
         {selectedGame ? (
           <GameTopupPage />
+        ) : isContactPageOpen ? (
+          <ContactPage />
         ) : isReviewsPageOpen ? (
           <ReviewsPage />
         ) : isGameCatalogOpen ? (
@@ -74,11 +77,11 @@ const MainContent = () => {
             <div>
               <h4 className="font-extrabold text-sm text-white uppercase tracking-wider mb-4 font-heading">Quick Links</h4>
               <ul className="space-y-2.5 text-xs text-slate-400 font-bold uppercase tracking-wide font-mono">
-                <li onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="hover:text-[#cc040a] cursor-pointer transition-colors">ABOUT US</li>
-                <li onClick={() => scrollToSection('why-choose-us')} className="hover:text-[#cc040a] cursor-pointer transition-colors">CONTACT</li>
+                <li onClick={openContactPage} className="hover:text-[#cc040a] cursor-pointer transition-colors">ABOUT US</li>
+                <li onClick={openContactPage} className="hover:text-[#cc040a] cursor-pointer transition-colors">CONTACT</li>
                 <li onClick={() => setIsUserProfileOpen(true)} className="hover:text-[#cc040a] cursor-pointer transition-colors">MY ORDERS</li>
-                <li className="hover:text-[#cc040a] cursor-pointer transition-colors">TERMS OF SERVICE</li>
-                <li className="hover:text-[#cc040a] cursor-pointer transition-colors">PRIVACY POLICY</li>
+                <li onClick={openContactPage} className="hover:text-[#cc040a] cursor-pointer transition-colors">TERMS OF SERVICE</li>
+                <li onClick={openContactPage} className="hover:text-[#cc040a] cursor-pointer transition-colors">PRIVACY POLICY</li>
               </ul>
             </div>
 
