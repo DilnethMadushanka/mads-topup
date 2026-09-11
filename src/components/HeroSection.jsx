@@ -65,28 +65,28 @@ export const HeroSection = () => {
       <div className="relative z-10 max-w-4xl text-center space-y-7 my-auto pt-4">
         
         {/* Top Pill Badge */}
-        <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-slate-900/90 border border-[#cc040a]/40 backdrop-blur-xl text-slate-200 text-xs font-black uppercase tracking-widest shadow-xl">
+        <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-slate-900/90 border border-[#cc040a]/40 backdrop-blur-xl text-slate-200 text-xs font-black uppercase tracking-widest shadow-xl animate-pop-in delay-100">
           <span className="w-2 h-2 rounded-full bg-[#cc040a] animate-pulse shadow-[0_0_8px_#cc040a]"></span>
           <span className="font-mono text-slate-100">SRI LANKA'S #1 GAME TOP-UP PLATFORM</span>
         </div>
 
         {/* Hero Title: White MADS + Red TOPUP */}
         <div className="space-y-0">
-          <h1 className="text-7xl sm:text-8xl lg:text-9xl font-black font-heading tracking-tighter text-white uppercase leading-none drop-shadow-lg">
+          <h1 className="text-7xl sm:text-8xl lg:text-9xl font-black font-heading tracking-tighter text-white uppercase leading-none drop-shadow-lg animate-pop-in delay-300">
             MADS
           </h1>
-          <h1 className="text-7xl sm:text-8xl lg:text-9xl font-black font-heading tracking-tighter text-[#cc040a] uppercase leading-none drop-shadow-[0_10px_35px_rgba(204,4,10,0.5)]">
+          <h1 className="text-7xl sm:text-8xl lg:text-9xl font-black font-heading tracking-tighter text-[#cc040a] uppercase leading-none drop-shadow-[0_10px_35px_rgba(204,4,10,0.5)] animate-pop-in delay-400">
             TOPUP
           </h1>
         </div>
 
         {/* Subtitle */}
-        <p className="text-slate-300 text-base sm:text-xl max-w-2xl mx-auto font-semibold leading-relaxed drop-shadow">
+        <p className="text-slate-300 text-base sm:text-xl max-w-2xl mx-auto font-semibold leading-relaxed drop-shadow animate-pop-in delay-600">
           Premium game top-ups at <strong className="text-white font-extrabold">unbeatable prices</strong> — instant delivery, trusted by thousands of Sri Lankan gamers.
         </p>
 
         {/* Action Buttons */}
-        <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
+        <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4 animate-pop-in delay-800">
           <button
             onClick={scrollToServices}
             className="btn-cyan-pill w-full sm:w-auto px-8 py-3.5 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 cursor-pointer"
