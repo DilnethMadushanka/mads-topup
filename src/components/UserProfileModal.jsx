@@ -21,7 +21,8 @@ export const UserProfileModal = () => {
     handleLogout,
     setWalletActiveTab,
     setIsWalletModalOpen,
-    setIsNoticeModalOpen
+    setIsNoticeModalOpen,
+    openReferralPage
   } = useApp();
 
   const [activeTab, setActiveTab] = useState('orders'); // 'orders' | 'referrals' | 'reports' | 'ids'
@@ -288,10 +289,11 @@ Thank you for using MADS TOPUP Sri Lanka!
 
             {/* Referrals Tab */}
             <div 
-              onClick={() => { setActiveTab('referrals'); setIsEditMode(false); }}
-              className={`bg-white rounded-2xl p-4 border border-slate-200/90 shadow-md hover:shadow-lg transition-all cursor-pointer text-center flex flex-col items-center justify-center gap-2 group ${
-                activeTab === 'referrals' ? 'ring-2 ring-emerald-500 border-emerald-500' : ''
-              }`}
+              onClick={() => { 
+                setIsUserProfileOpen(false); 
+                openReferralPage(); 
+              }}
+              className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-md hover:shadow-lg transition-all cursor-pointer text-center flex flex-col items-center justify-center gap-2 group"
             >
               <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Users className="w-5 h-5" />

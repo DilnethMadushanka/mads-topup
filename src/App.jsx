@@ -20,11 +20,12 @@ import { SupportModal } from './components/SupportModal';
 import { DownloadAppModal } from './components/DownloadAppModal';
 import { ReviewsPage } from './components/ReviewsPage';
 import { ContactPage } from './components/ContactPage';
+import { ReferralProgramPage } from './components/ReferralProgramPage';
 import { ToastNotification } from './components/ToastNotification';
 import { Flame } from 'lucide-react';
 
 const MainContent = () => {
-  const { setIsAdminOpen, setIsUserProfileOpen, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, openContactPage, selectedGame } = useApp();
+  const { setIsAdminOpen, setIsUserProfileOpen, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, isReferralPageOpen, openContactPage, selectedGame } = useApp();
 
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
@@ -37,6 +38,8 @@ const MainContent = () => {
         <Navbar />
         {selectedGame ? (
           <GameTopupPage />
+        ) : isReferralPageOpen ? (
+          <ReferralProgramPage />
         ) : isContactPageOpen ? (
           <ContactPage />
         ) : isReviewsPageOpen ? (
