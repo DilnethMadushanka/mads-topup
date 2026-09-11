@@ -5,7 +5,7 @@ import {
   X, User, ShoppingBag, Bookmark, Wallet, RefreshCw, 
   CheckCircle2, Clock, Zap, Trash2, ArrowRight, ShieldCheck,
   Camera, Users, FileText, ChevronUp, ChevronDown, Edit, Award, DollarSign, LogOut,
-  Key, CreditCard, Shield, Coins, Copy, Laptop, Smartphone
+  Key, CreditCard, Shield, Coins, Copy, Laptop, Smartphone, Download
 } from 'lucide-react';
 
 export const UserProfileModal = () => {
@@ -89,6 +89,63 @@ export const UserProfileModal = () => {
       savedIds: (prev.savedIds || []).filter(s => s.id !== id)
     }));
     showToast('Saved Player ID deleted.');
+  };
+
+  const handleDownloadPDF = () => {
+    const reportText = `
+MADS TOPUP - OFFICIAL STATEMENT
+=================================
+Customer Name: ${userProfile.name || 'Gamer'}
+Email: ${userProfile.email || 'N/A'}
+Date Generated: ${new Date().toLocaleString()}
+
+RECENT TRANSACTIONS:
+---------------------------------
+${(userOrders || []).map(o => `${o.createdAt ? o.createdAt.split('T')[0] : '2026-09-12'} | Order ID: ${o.id} | Game: ${o.gameName} | Package: ${o.packageName} | Amount: LKR ${o.priceLkr} | Status: ${o.status}`).join('\n')}
+
+Total Lifetime Spend: LKR ${(totalSpentLkr || 0).toFixed(2)}
+=================================
+Thank you for using MADS TOPUP Sri Lanka!
+    `.trim();
+
+    const blob = new Blob([reportText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `MADS_Topup_Statement_${(userProfile.name || 'User').replace(/\s+/g, '_')}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast('Statement downloaded as PDF / Report file!');
+  };
+
+  const handleDownloadCSV = () => {
+    const csvRows = [
+      ['Order ID', 'Game Name', 'Package', 'Player ID', 'Price (LKR)', 'Payment Method', 'Status', 'Date'],
+      ...(userOrders || []).map(o => [
+        o.id,
+        `"${o.gameName}"`,
+        `"${o.packageName}"`,
+        `"${o.playerId}"`,
+        o.priceLkr || 0,
+        `"${o.paymentMethod}"`,
+        o.status,
+        o.createdAt ? o.createdAt.split('T')[0] : '2026-09-12'
+      ])
+    ];
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + csvRows.map(e => e.join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `MADS_Topup_Audit_Log_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    showToast('Audit Log CSV downloaded successfully!');
   };
 
   return (
@@ -347,27 +404,36 @@ export const UserProfileModal = () => {
           {activeTab === 'reports' && !isEditMode && (
             <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4 animate-in fade-in">
               <h3 className="text-base font-black text-slate-900 font-heading flex items-center gap-2">
-                <FileText className="w-5 h-5 text-amber-600" />
+                <FileText className="w-5 h-5 text-[#cc040a]" />
                 <span>Top-Up Statements & Account Reports</span>
               </h3>
 
-              <div className="space-y-2 text-xs">
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center">
-                  <span className="font-semibold text-slate-800">Monthly Topup Statement (Sep 2026)</span>
+              <div className="space-y-3 text-xs">
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <span className="font-extrabold text-slate-900 text-sm block">Monthly Topup Statement</span>
+                    <span className="text-slate-500 text-xs font-medium">Official PDF summary of all completed top-ups</span>
+                  </div>
                   <button 
-                    onClick={() => showToast('Statement report downloaded as PDF!')}
-                    className="text-amber-600 font-bold hover:underline"
+                    onClick={handleDownloadPDF}
+                    className="px-4 py-2.5 bg-[#cc040a] hover:bg-[#b00308] text-white font-extrabold text-xs rounded-xl shadow-xs hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer border-0 outline-none focus:outline-none focus:ring-0 active:scale-95 shrink-0"
                   >
-                    Download PDF
+                    <Download className="w-4 h-4" />
+                    <span>Download PDF</span>
                   </button>
                 </div>
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center">
-                  <span className="font-semibold text-slate-800">Moongold Dispatch Audit Log</span>
+
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <span className="font-extrabold text-slate-900 text-sm block">Moongold Dispatch Audit Log</span>
+                    <span className="text-slate-500 text-xs font-medium">Raw CSV spreadsheet export of order timestamps & refs</span>
+                  </div>
                   <button 
-                    onClick={() => showToast('Audit log downloaded!')}
-                    className="text-amber-600 font-bold hover:underline"
+                    onClick={handleDownloadCSV}
+                    className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs rounded-xl shadow-xs hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer border-0 outline-none focus:outline-none focus:ring-0 active:scale-95 shrink-0"
                   >
-                    Download CSV
+                    <Download className="w-4 h-4" />
+                    <span>Download CSV</span>
                   </button>
                 </div>
               </div>
