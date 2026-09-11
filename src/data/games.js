@@ -183,15 +183,15 @@ export const PAYMENT_METHODS = [
   {
     id: 'bank',
     name: 'Bank Transfer (Sri Lanka)',
-    subtitle: 'Commercial Bank / Sampath / BOC / HNB',
+    subtitle: 'Hatton National Bank (HNB) Direct Transfer',
     icon: '🏦',
     badge: '0% FEE',
     popular: true,
     accountDetails: {
-      bankName: 'Commercial Bank of Ceylon',
-      accountName: 'MADS TOPUP PVT LTD',
-      accountNumber: '8004920194',
-      branch: 'Colombo Fort',
+      bankName: 'Hatton National Bank (HNB)',
+      accountName: 'DILNETH MADUSHANKA',
+      accountNumber: '011020433679',
+      branch: 'BADULLA',
       instructions: 'Please upload transfer receipt screenshot or reference code after transfer.'
     }
   },
@@ -203,7 +203,7 @@ export const PAYMENT_METHODS = [
     badge: 'INSTANT',
     popular: true,
     accountDetails: {
-      number: '077 123 4567',
+      number: '0740436276',
       name: 'MADS TOPUP Official',
       instructions: 'Transfer funds to the eZ Cash number and enter your Transaction ID.'
     }

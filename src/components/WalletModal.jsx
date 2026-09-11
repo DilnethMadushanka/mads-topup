@@ -26,7 +26,7 @@ export const WalletModal = () => {
   if (!isWalletModalOpen) return null;
 
   const binanceMerchantId = "547785111";
-  const ezCashMerchantNumber = "0771234567";
+  const ezCashMerchantNumber = "0740436276";
 
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
