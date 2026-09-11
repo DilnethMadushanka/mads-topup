@@ -31,6 +31,7 @@ export const TopupModal = () => {
   const [ign, setIgn] = useState('');
   const [isVerifyingIgn, setIsVerifyingIgn] = useState(false);
   const [ignVerified, setIgnVerified] = useState(false);
+  const [verifyModalData, setVerifyModalData] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedOrder, setCompletedOrder] = useState(null);
   const [receiptFile, setReceiptFile] = useState(null);
@@ -60,6 +61,7 @@ export const TopupModal = () => {
       setZoneId('');
       setIgn('');
       setIgnVerified(false);
+      setVerifyModalData(null);
       setStep(1);
     }
   }, [selectedGame]);
@@ -78,11 +80,11 @@ export const TopupModal = () => {
     if (result.success) {
       setIgn(result.ign || '');
       setIgnVerified(true);
-      if (result.isReal && result.ign) {
-        showToast(`Real IGN Verified: ${result.ign}`);
-      } else {
-        showToast('Player ID Verified! Please enter your exact In-Game Username.');
-      }
+      setVerifyModalData({
+        ign: result.ign || 'Verified Gamer',
+        playerId: playerId
+      });
+      showToast(`Verified IGN: ${result.ign}`);
     } else {
       showToast('Could not verify Player ID. Please double check.', 'error');
     }
@@ -609,6 +611,48 @@ export const TopupModal = () => {
             </div>
           </div>
         )}
+
+      {/* ACCOUNT VERIFIED POPUP MODAL */}
+      {verifyModalData && (
+        <div 
+          className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setVerifyModalData(null)}
+        >
+          <div 
+            className="bg-white rounded-3xl p-8 sm:p-10 max-w-sm w-full text-center space-y-4 shadow-2xl relative border border-slate-100 animate-in zoom-in-95 duration-200 text-slate-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top Checkmark Circle */}
+            <div className="w-20 h-20 rounded-full border-2 border-emerald-400/80 bg-emerald-50/70 flex items-center justify-center mx-auto text-emerald-500 shadow-xs">
+              <Check className="w-10 h-10 stroke-[3]" />
+            </div>
+
+            {/* Title */}
+            <h3 className="text-2xl font-black text-slate-800 font-heading tracking-tight">
+              Account Verified!
+            </h3>
+
+            {/* IGN & Player ID */}
+            <div className="space-y-1 py-1">
+              <div className="text-lg font-black text-slate-900 font-heading tracking-wide">
+                {verifyModalData.ign}
+              </div>
+              <div className="text-xs font-bold text-slate-500 font-mono">
+                ID: {verifyModalData.playerId}
+              </div>
+            </div>
+
+            {/* OK Button */}
+            <button
+              type="button"
+              onClick={() => setVerifyModalData(null)}
+              className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md cursor-pointer mt-2"
+            >
+              CONTINUE
+            </button>
+          </div>
+        </div>
+      )}
 
       </div>
     </div>
