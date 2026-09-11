@@ -17,7 +17,8 @@ export const Navbar = () => {
     setWalletActiveTab,
     setIsNoticeModalOpen,
     setIsWalletModalOpen,
-    setIsSupportOpen
+    setIsSupportOpen,
+    setIsDownloadAppModalOpen
   } = useApp();
 
   const handleWalletClick = (tab = 'binance') => {
@@ -109,7 +110,7 @@ export const Navbar = () => {
           </button>
 
           <button 
-            onClick={() => handleNavClick('reviews-section')}
+            onClick={() => setIsDownloadAppModalOpen(true)}
             className="flex items-center gap-2 hover:text-[#cc040a] transition-colors cursor-pointer group py-2"
           >
             <span className="w-6 h-6 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center">

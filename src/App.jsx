@@ -17,6 +17,7 @@ import { ImportantNoticeModal } from './components/ImportantNoticeModal';
 import { WalletModal } from './components/WalletModal';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { SupportModal } from './components/SupportModal';
+import { DownloadAppModal } from './components/DownloadAppModal';
 import { ToastNotification } from './components/ToastNotification';
 import { Flame } from 'lucide-react';
 
@@ -106,6 +107,7 @@ const MainContent = () => {
       <ImportantNoticeModal />
       <WalletModal />
       <SupportModal />
+      <DownloadAppModal />
       <MobileBottomNav />
       <ToastNotification />
     </div>

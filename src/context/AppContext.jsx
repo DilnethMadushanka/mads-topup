@@ -24,6 +24,7 @@ export const AppProvider = ({ children }) => {
   const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [walletActiveTab, setWalletActiveTab] = useState('binance'); // 'ezcash' | 'binance' | 'redeem'
+  const [isDownloadAppModalOpen, setIsDownloadAppModalOpen] = useState(false);
 
   const openWalletModal = (tab = 'binance') => {
     setWalletActiveTab(tab);
@@ -798,6 +799,8 @@ export const AppProvider = ({ children }) => {
       walletActiveTab,
       setWalletActiveTab,
       openWalletModal,
+      isDownloadAppModalOpen,
+      setIsDownloadAppModalOpen,
       vouchers,
       addVoucher,
       deleteVoucher,
