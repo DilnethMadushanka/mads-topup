@@ -176,7 +176,7 @@ export const ReferralProgramPage = () => {
                 Earn <span className="text-amber-300">1.5% Cashback</span> On Every Friend's Top-Up!
               </h1>
               <p className="text-red-100 text-sm sm:text-base font-semibold max-w-xl">
-                Share your referral link with gaming friends. They get Rs. 100 bonus voucher on their first order, and you earn instant LKR wallet cash!
+                Share your referral link with gaming friends. They get Rs. 100 OFF voucher on orders Rs. 1,500+, and you earn instant LKR wallet cash!
               </p>
             </div>
 
@@ -297,8 +297,8 @@ export const ReferralProgramPage = () => {
 
               <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-3">
                 <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 font-black text-sm flex items-center justify-center">2</div>
-                <h4 className="font-extrabold text-slate-900 text-sm">2. Friends Get Rs. 100 Bonus</h4>
-                <p className="text-xs text-slate-500 leading-relaxed font-semibold">Your referred friends get a WELCOME100 voucher code for their first top-up.</p>
+                <h4 className="font-extrabold text-slate-900 text-sm">2. Friends Get Rs. 100 OFF</h4>
+                <p className="text-xs text-slate-500 leading-relaxed font-semibold">Your referred friends get a WELCOME100 voucher code for Rs. 100 OFF on orders of Rs. 1,500+.</p>
               </div>
 
               <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-3">
