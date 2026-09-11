@@ -48,12 +48,16 @@ app.post('/api/send-otp', async (req, res) => {
         auth: {
           user: process.env.ZOHO_EMAIL || 'info@trivexit.com',
           pass: zohoPass
-        }
+        },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000
       });
       const mailOptions = {
         from: '"MADS TOPUP" <info@trivexit.com>',
         to: email,
         subject: `Your Verification Code: ${otp}`,
+        text: `Your MADS TOPUP verification code is: ${otp}. Valid for 15 minutes.`,
         html: `
           <div style="font-family: Arial, sans-serif; background-color: #0f172a; color: #ffffff; padding: 24px; border-radius: 16px; max-width: 500px; margin: 0 auto;">
             <div style="text-align: center; margin-bottom: 20px;">
@@ -71,9 +75,9 @@ app.post('/api/send-otp', async (req, res) => {
           </div>
         `
       };
-      await mailTransporter.sendMail(mailOptions);
-      console.log(`[Zoho Mail OTP Sent] Successfully sent OTP to ${email}`);
-      return res.json({ success: true, message: 'OTP sent via Zoho Mail' });
+      const info = await mailTransporter.sendMail(mailOptions);
+      console.log(`[Zoho Mail OTP Sent] Successfully sent OTP to ${email}`, info?.messageId);
+      return res.json({ success: true, message: 'OTP sent via Zoho Mail', messageId: info?.messageId });
     } else {
       console.warn(`[Zoho Mail Note] ZOHO_PASSWORD not set yet in environment. Simulated OTP ${otp} for ${email}`);
       return res.json({ success: true, simulated: true });
