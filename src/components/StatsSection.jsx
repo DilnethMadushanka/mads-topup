@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useApp } from '../context/AppContext';
 import { Smile, CheckCircle2, Zap, Clock } from 'lucide-react';
 
 const CountUpNumber = ({ target, suffix = '', formatComma = false, duration = 1800 }) => {
@@ -60,9 +61,12 @@ const CountUpNumber = ({ target, suffix = '', formatComma = false, duration = 18
 };
 
 export const StatsSection = () => {
+  const { orders } = useApp();
+  const realOrdersCount = (orders || []).length;
+
   const stats = [
     {
-      target: 5000,
+      target: 250 + realOrdersCount,
       suffix: '+',
       formatComma: true,
       label: 'Happy Customers',
@@ -78,7 +82,7 @@ export const StatsSection = () => {
       iconBg: 'bg-emerald-500/20 text-emerald-400'
     },
     {
-      target: 200,
+      target: 25 + Math.floor(realOrdersCount * 0.8),
       suffix: '+',
       formatComma: false,
       label: 'Daily Avg TopUp',
