@@ -22,7 +22,7 @@ app.use((req, res, next) => {
 app.use(cors());
 app.use(express.json({ limit: '2mb' }));
 
-// Direct OTP Email sending API endpoint
+// Direct OTP Email sending API endpoint with multi-provider fallbacks (Resend API -> Gmail SMTP -> Zoho Mail SMTP)
 app.post('/api/send-otp', async (req, res) => {
   try {
     const { email, otp, name } = req.body || {};
@@ -30,16 +30,74 @@ app.post('/api/send-otp', async (req, res) => {
       return res.status(400).json({ error: 'Missing email or otp' });
     }
 
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; background-color: #0f172a; color: #ffffff; padding: 24px; border-radius: 16px; max-width: 500px; margin: 0 auto;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <h2 style="color: #ef4444; font-size: 24px; font-weight: 900; margin: 0;">MADS TOPUP</h2>
+          <p style="color: #94a3b8; font-size: 12px; margin-top: 4px;">Email Verification Code</p>
+        </div>
+        <p style="font-size: 14px; color: #e2e8f0;">Hello ${name || 'Gamer'},</p>
+        <p style="font-size: 14px; color: #cbd5e1;">Please use the following 6-digit verification code to complete your account setup:</p>
+        <div style="background-color: #1e293b; border: 2px dashed #ef4444; border-radius: 12px; padding: 16px; text-align: center; margin: 20px 0;">
+          <span style="font-size: 32px; font-weight: 900; letter-spacing: 8px; color: #f87171; font-family: monospace;">${otp}</span>
+        </div>
+        <p style="font-size: 12px; color: #64748b; text-align: center;">This code is valid for 15 minutes. Do not share this code with anyone.</p>
+        <hr style="border: 0; border-top: 1px solid #334155; margin: 20px 0;" />
+        <p style="font-size: 10px; color: #475569; text-align: center;">© 2026 MADS TOPUP • All rights reserved</p>
+      </div>
+    `;
+
+    // Option 1: Try Resend API if Key available
+    const resendApiKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
+    if (resendApiKey) {
+      try {
+        const { Resend } = await import('resend');
+        const resend = new Resend(resendApiKey);
+        const data = await resend.emails.send({
+          from: process.env.RESEND_FROM || 'MADS TOPUP <onboarding@resend.dev>',
+          to: [email],
+          subject: `Your Verification Code: ${otp}`,
+          html: emailHtml
+        });
+        console.log(`[Resend OTP Sent] Sent to ${email}, id: ${data?.id}`);
+        return res.json({ success: true, provider: 'Resend', messageId: data?.id });
+      } catch (rErr) {
+        console.warn('[Resend API Note]:', rErr.message);
+      }
+    }
+
     let nodemailer;
     try {
       const nmModule = await import('nodemailer');
       nodemailer = nmModule.default || nmModule;
     } catch (e) {
-      console.warn('Nodemailer dynamic import note:', e.message);
+      console.warn('Nodemailer import note:', e.message);
     }
 
-    const zohoPass = process.env.ZOHO_PASSWORD || process.env.VITE_ZOHO_PASSWORD || 'jXi8hF56aCYb';
+    // Option 2: Try Gmail SMTP if Gmail credentials available
+    const gmailUser = process.env.GMAIL_USER || process.env.VITE_GMAIL_USER;
+    const gmailPass = process.env.GMAIL_APP_PASSWORD || process.env.VITE_GMAIL_APP_PASSWORD;
+    if (nodemailer && gmailUser && gmailPass) {
+      try {
+        const gmailTransporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: { user: gmailUser, pass: gmailPass }
+        });
+        const info = await gmailTransporter.sendMail({
+          from: `"MADS TOPUP" <${gmailUser}>`,
+          to: email,
+          subject: `Your Verification Code: ${otp}`,
+          html: emailHtml
+        });
+        console.log(`[Gmail SMTP OTP Sent] Sent to ${email}, messageId: ${info?.messageId}`);
+        return res.json({ success: true, provider: 'Gmail', messageId: info?.messageId });
+      } catch (gErr) {
+        console.warn('[Gmail SMTP Note]:', gErr.message);
+      }
+    }
 
+    // Option 3: Fallback to Zoho Mail SMTP
+    const zohoPass = process.env.ZOHO_PASSWORD || process.env.VITE_ZOHO_PASSWORD || 'jXi8hF56aCYb';
     if (nodemailer && zohoPass) {
       const mailTransporter = nodemailer.createTransport({
         host: process.env.ZOHO_SMTP_HOST || 'smtppro.zoho.com',
@@ -53,37 +111,20 @@ app.post('/api/send-otp', async (req, res) => {
         greetingTimeout: 10000,
         socketTimeout: 15000
       });
-      const mailOptions = {
+      const info = await mailTransporter.sendMail({
         from: '"MADS TOPUP" <info@trivexit.com>',
         to: email,
         subject: `Your Verification Code: ${otp}`,
         text: `Your MADS TOPUP verification code is: ${otp}. Valid for 15 minutes.`,
-        html: `
-          <div style="font-family: Arial, sans-serif; background-color: #0f172a; color: #ffffff; padding: 24px; border-radius: 16px; max-width: 500px; margin: 0 auto;">
-            <div style="text-align: center; margin-bottom: 20px;">
-              <h2 style="color: #ef4444; font-size: 24px; font-weight: 900; margin: 0;">MADS TOPUP</h2>
-              <p style="color: #94a3b8; font-size: 12px; margin-top: 4px;">Email Verification Code</p>
-            </div>
-            <p style="font-size: 14px; color: #e2e8f0;">Hello ${name || 'Gamer'},</p>
-            <p style="font-size: 14px; color: #cbd5e1;">Please use the following 6-digit verification code to complete your account setup:</p>
-            <div style="background-color: #1e293b; border: 2px dashed #ef4444; border-radius: 12px; padding: 16px; text-align: center; margin: 20px 0;">
-              <span style="font-size: 32px; font-weight: 900; letter-spacing: 8px; color: #f87171; font-family: monospace;">${otp}</span>
-            </div>
-            <p style="font-size: 12px; color: #64748b; text-align: center;">This code is valid for 15 minutes. Do not share this code with anyone.</p>
-            <hr style="border: 0; border-top: 1px solid #334155; margin: 20px 0;" />
-            <p style="font-size: 10px; color: #475569; text-align: center;">© 2026 MADS TOPUP • All rights reserved</p>
-          </div>
-        `
-      };
-      const info = await mailTransporter.sendMail(mailOptions);
+        html: emailHtml
+      });
       console.log(`[Zoho Mail OTP Sent] Successfully sent OTP to ${email}`, info?.messageId);
-      return res.json({ success: true, message: 'OTP sent via Zoho Mail', messageId: info?.messageId });
-    } else {
-      console.warn(`[Zoho Mail Note] ZOHO_PASSWORD not set yet in environment. Simulated OTP ${otp} for ${email}`);
-      return res.json({ success: true, simulated: true });
+      return res.json({ success: true, provider: 'Zoho', messageId: info?.messageId });
     }
+
+    return res.json({ success: true, simulated: true });
   } catch (err) {
-    console.error('Zoho Mail OTP Error:', err);
+    console.error('Mail OTP Error:', err);
     return res.status(500).json({ error: err.message });
   }
 });
