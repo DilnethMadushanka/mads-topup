@@ -176,6 +176,41 @@
 .delay-700 { animation-delay: 700ms; }
 .delay-800 { animation-delay: 800ms; }
 
+/* Smooth Infinite Marquee for Reviews & Ticker */
+@keyframes infiniteMarquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-infinite-marquee {
+  display: flex;
+  width: max-content;
+  animation: infiniteMarquee 40s linear infinite;
+}
+
+.animate-infinite-marquee:hover {
+  animation-play-state: paused;
+}
+
+@keyframes infiniteTicker {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-infinite-ticker {
+  display: flex;
+  width: max-content;
+  animation: infiniteTicker 25s linear infinite;
+}
+
 
 
 
