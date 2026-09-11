@@ -6,6 +6,108 @@ import { getR2Config, saveR2Config } from '../services/storageService';
 import { auth, onAuthStateChanged, logoutGoogle } from '../services/firebaseAuth';
 import { syncUserProfileToFirestore, updateUserProfileInFirestore, subscribeUserProfile, saveOrderToFirestore, subscribeAllUsersFromFirestore } from '../services/firestoreService';
 
+const INITIAL_REVIEWS = [
+  {
+    id: 'rev-1',
+    name: 'YDTECHTOPUP',
+    location: 'Colombo, Sri Lanka',
+    flag: '🇱🇰',
+    rating: 5,
+    avatar: '/uploads/profile_pics/11442_c1754a6f.png',
+    initials: 'YT',
+    text: 'Maru bam me vidihata kollo kellange hitha sathutu karanavata. Vishvasaneeyathva saha aduma milata top up karanavanam MADS TOPUP thamai',
+    date: 'Aug 09, 2026'
+  },
+  {
+    id: 'rev-2',
+    name: 'YDTECH2008',
+    location: 'Colombo, Sri Lanka',
+    flag: '🇱🇰',
+    rating: 5,
+    avatar: '/uploads/profile_pics/1344_4bf2414e.png',
+    initials: 'YD',
+    text: 'I recently used the MADS top-up service and I am very satisfied. The process was fast, secure, and easy to understand. My top-up was delivered instantly without any issues.',
+    date: 'Sep 28, 2025'
+  },
+  {
+    id: 'rev-3',
+    name: 'Akthar',
+    location: 'Kandy, Sri Lanka',
+    flag: '🇱🇰',
+    rating: 5,
+    avatar: '/uploads/profile_pics/10175_871f5dc4.png',
+    initials: 'A',
+    text: 'MADS top-up is so cool very convenient, also very reliable price just few seconds to get my top up done & no issues at all. Especially hats off for their fast service!',
+    date: 'Oct 20, 2025'
+  },
+  {
+    id: 'rev-4',
+    name: 'Lekzii',
+    location: 'Colombo, Sri Lanka',
+    flag: '🇱🇰',
+    rating: 5,
+    avatar: '/uploads/profile_pics/15_6d8c0304.png',
+    initials: 'L',
+    text: 'This app is so cool 😍 very convenient, also very reliable. Just took few seconds to get my top up done & no issues at all. LOVE THE EXPERIENCE & 100% RECOMMENDED!!',
+    date: 'Nov 15, 2025'
+  },
+  {
+    id: 'rev-5',
+    name: 'GamersLanka',
+    location: 'Kurunegala, Sri Lanka',
+    flag: '🇱🇰',
+    rating: 5,
+    avatar: '',
+    initials: 'GL',
+    text: 'Best top up store in Sri Lanka for Free Fire and PUBG! Automated delivery within 2 seconds. Truly amazing experience!',
+    date: 'Dec 02, 2025'
+  },
+  {
+    id: 'rev-6',
+    name: 'SL_Slayer_99',
+    location: 'Galle, Sri Lanka',
+    flag: '🇱🇰',
+    rating: 5,
+    avatar: '',
+    initials: 'SL',
+    text: 'Super fast instant delivery on Garena Shells! eZ Cash payment option worked perfectly without any delay.',
+    date: 'Jan 10, 2026'
+  },
+  {
+    id: 'rev-7',
+    name: 'DarkKnight_FF',
+    location: 'Gampaha, Sri Lanka',
+    flag: '🇱🇰',
+    rating: 4,
+    avatar: '',
+    initials: 'DK',
+    text: 'Very trustworthy platform. Topup received in less than 5 seconds. Highly recommended for all Sri Lankan gamers.',
+    date: 'Feb 04, 2026'
+  },
+  {
+    id: 'rev-8',
+    name: 'Pathum_PUBG',
+    location: 'Matara, Sri Lanka',
+    flag: '🇱🇰',
+    rating: 5,
+    avatar: '',
+    initials: 'PP',
+    text: 'UC arrived instantly into my account after Binance USDT payment. Customer support is active 24/7!',
+    date: 'Feb 18, 2026'
+  },
+  {
+    id: 'rev-9',
+    name: 'Tharindu_R',
+    location: 'Negombo, Sri Lanka',
+    flag: '🇱🇰',
+    rating: 5,
+    avatar: '',
+    initials: 'TR',
+    text: 'Lowest prices for Weekly Pass and Level Up Pass in FF. 100% safe and verified system.',
+    date: 'Mar 01, 2026'
+  }
+];
+
 const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
@@ -17,6 +119,7 @@ export const AppProvider = ({ children }) => {
   const [isUserProfileOpen, setIsUserProfileOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isGameCatalogOpen, setIsGameCatalogOpen] = useState(false);
+  const [isReviewsPageOpen, setIsReviewsPageOpen] = useState(false);
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
@@ -44,6 +147,35 @@ export const AppProvider = ({ children }) => {
   const closeCatalog = () => {
     setIsGameCatalogOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const openReviewsPage = () => {
+    setIsReviewsPageOpen(true);
+    setIsGameCatalogOpen(false);
+    setSelectedGame(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const closeReviewsPage = () => {
+    setIsReviewsPageOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const [userReviews, setUserReviews] = useState(() => {
+    const saved = localStorage.getItem('mads_user_reviews');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return INITIAL_REVIEWS;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('mads_user_reviews', JSON.stringify(userReviews));
+  }, [userReviews]);
+
+  const addReview = (newRev) => {
+    setUserReviews(prev => [newRev, ...prev]);
+    if (showToast) showToast('Thank you! Your review has been published successfully.');
   };
   
   // Moongold state
@@ -771,6 +903,12 @@ export const AppProvider = ({ children }) => {
       setIsGameCatalogOpen,
       openCatalog,
       closeCatalog,
+      isReviewsPageOpen,
+      setIsReviewsPageOpen,
+      openReviewsPage,
+      closeReviewsPage,
+      userReviews,
+      addReview,
       userProfile,
       setUserProfile,
       orders,

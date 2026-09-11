@@ -18,11 +18,12 @@ import { WalletModal } from './components/WalletModal';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { SupportModal } from './components/SupportModal';
 import { DownloadAppModal } from './components/DownloadAppModal';
+import { ReviewsPage } from './components/ReviewsPage';
 import { ToastNotification } from './components/ToastNotification';
 import { Flame } from 'lucide-react';
 
 const MainContent = () => {
-  const { setIsAdminOpen, setIsUserProfileOpen, isGameCatalogOpen, selectedGame } = useApp();
+  const { setIsAdminOpen, setIsUserProfileOpen, isGameCatalogOpen, isReviewsPageOpen, selectedGame } = useApp();
 
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
@@ -35,6 +36,8 @@ const MainContent = () => {
         <Navbar />
         {selectedGame ? (
           <GameTopupPage />
+        ) : isReviewsPageOpen ? (
+          <ReviewsPage />
         ) : isGameCatalogOpen ? (
           <GameGrid />
         ) : (

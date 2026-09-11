@@ -3,7 +3,7 @@ import { Star, ArrowRight, Quote } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export const ReviewsSection = () => {
-  const { showToast } = useApp();
+  const { openReviewsPage } = useApp();
 
   const reviews = [
     {
@@ -112,7 +112,7 @@ export const ReviewsSection = () => {
 
         {/* View All Button */}
         <button
-          onClick={() => showToast('Displaying all 500+ verified gamer reviews')}
+          onClick={openReviewsPage}
           className="px-8 py-3.5 rounded-full border-2 border-[#cc040a] text-[#cc040a] hover:bg-[#cc040a] hover:text-white font-extrabold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 mx-auto cursor-pointer shadow-lg shadow-red-500/10"
         >
           <span>VIEW ALL REVIEWS</span>
