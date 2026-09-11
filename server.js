@@ -4,6 +4,7 @@ import path from 'path';
 import crypto from 'crypto';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { Resend } from 'resend';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -76,7 +77,6 @@ app.post('/api/send-otp', async (req, res) => {
     const resendApiKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY || defaultResendKey;
     if (resendApiKey) {
       try {
-        const { Resend } = await import('resend');
         const resend = new Resend(resendApiKey);
         const fromAddress = process.env.RESEND_FROM || 'MADS TOPUP <noreply@madstopup.com>';
         let data;
@@ -88,7 +88,7 @@ app.post('/api/send-otp', async (req, res) => {
             html: emailHtml
           });
         } catch (domainErr) {
-          // If domain not verified yet, fallback to onboarding@resend.dev
+          // Fallback to onboarding@resend.dev
           data = await resend.emails.send({
             from: 'MADS TOPUP <onboarding@resend.dev>',
             to: [email],
