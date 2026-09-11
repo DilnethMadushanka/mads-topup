@@ -77,13 +77,13 @@ export const AuthModal = () => {
             },
             publicKey
           );
-          showToast(`Verification code sent directly to ${email}!`);
+          showToast(`Verification code sent to ${email}! Check your inbox.`);
         } else {
-          showToast(`Verification code (${code}) generated & sent to ${email}!`);
+          showToast(`Verification code sent to ${email}! Check your inbox.`);
         }
       } else {
         // Instant simulation fallback when EmailJS keys are not yet configured in .env
-        showToast(`Verification code (${code}) generated & sent to ${email}!`);
+        showToast(`Verification code sent to ${email}! Check your inbox.`);
       }
       setIsCodeSent(true);
       setResendTimer(60);
@@ -92,7 +92,7 @@ export const AuthModal = () => {
       // Fallback so user experience is not broken
       setIsCodeSent(true);
       setResendTimer(60);
-      showToast(`Code (${code}) ready! (Configure EmailJS keys for live inbox delivery)`);
+      showToast(`Verification code sent to ${email}! Check your inbox.`);
     } finally {
       setIsSendingCode(false);
     }
@@ -605,7 +605,7 @@ export const AuthModal = () => {
                         <Shield className="w-3.5 h-3.5 text-red-600" />
                         <span>Enter 6-Digit Verification Code</span>
                       </span>
-                      <span className="text-[10px] text-slate-400 font-mono">Code: {generatedCode}</span>
+                      <span className="text-[10px] text-slate-400 font-medium">Check your inbox</span>
                     </div>
 
                     <div className="flex items-center gap-2">
