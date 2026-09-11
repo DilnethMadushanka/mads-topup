@@ -53,7 +53,7 @@ export const ServicesSection = () => {
             >
               {/* 3D App Icon Container */}
               <div className="relative w-28 h-28 sm:w-32 sm:h-32 mb-6 flex items-center justify-center">
-                <div className="absolute inset-0 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-cyan-500/20 transition-all pointer-events-none"></div>
+                <div className="absolute inset-0 bg-red-500/10 rounded-full blur-2xl group-hover:bg-red-500/25 transition-all pointer-events-none"></div>
                 <img 
                   src={service.image} 
                   alt={service.title} 
@@ -71,14 +71,14 @@ export const ServicesSection = () => {
                 </p>
               </div>
 
-              {/* Vibrant Blue-Cyan Pill Action Button */}
+              {/* Vibrant Red Theme Pill Action Button */}
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   service.action();
                 }}
-                className="bg-gradient-to-r from-[#1D60E8] via-[#0091FF] to-[#00C4EE] hover:from-[#154ec5] hover:to-[#00b4da] text-white px-7 py-2.5 sm:py-3 rounded-full font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-lg shadow-cyan-500/25 group-hover:shadow-cyan-500/40 group-hover:scale-105 transition-all cursor-pointer relative z-10"
+                className="bg-gradient-to-r from-[#cc040a] via-[#dc2626] to-[#990207] hover:from-[#b30308] hover:to-[#800105] text-white px-7 py-2.5 sm:py-3 rounded-full font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-lg shadow-red-600/30 group-hover:shadow-red-600/50 group-hover:scale-105 transition-all cursor-pointer relative z-10"
               >
                 <span>{service.buttonText}</span>
                 <ArrowRight className="w-4 h-4" />

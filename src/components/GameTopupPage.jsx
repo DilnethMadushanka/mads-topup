@@ -749,12 +749,12 @@ export const GameTopupPage = () => {
             <div className="sm:hidden fixed bottom-14 left-0 right-0 z-30 bg-slate-900/95 text-white backdrop-blur-md px-4 py-3 border-t border-slate-800 shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom">
               <div>
                 <span className="text-[10px] text-slate-400 font-bold uppercase block">Total ({totalItemsCount} item)</span>
-                <span className="text-lg font-black text-cyan-400 font-heading">{formatPrice(totalLkr)}</span>
+                <span className="text-lg font-black text-red-500 font-heading">{formatPrice(totalLkr)}</span>
               </div>
               <button
                 onClick={handleCompleteOrder}
                 disabled={isSubmitting}
-                className="px-6 py-2.5 bg-blue-600 text-white font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-md cursor-pointer"
+                className="px-6 py-2.5 bg-[#cc040a] hover:bg-[#990207] text-white font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-md shadow-red-600/30 cursor-pointer"
               >
                 <Zap className="w-3.5 h-3.5 fill-white" />
                 <span>Top Up Now</span>
