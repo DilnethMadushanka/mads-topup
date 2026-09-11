@@ -64,7 +64,7 @@ export const AuthModal = () => {
 
       if (emailjsLib) {
         if (typeof emailjsLib.init === 'function') {
-          try { emailjsLib.init({ publicKey }); } catch (e) {}
+          try { emailjsLib.init(publicKey); } catch (e) {}
         }
 
         const res = await emailjsLib.send(
@@ -78,7 +78,7 @@ export const AuthModal = () => {
             user_name: username || 'Gamer',
             time: '15 mins'
           },
-          { publicKey }
+          publicKey
         );
         console.log('EmailJS Success Response:', res);
         showToast(`Verification code sent to ${email}! Check your inbox.`);
