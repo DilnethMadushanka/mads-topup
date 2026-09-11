@@ -44,7 +44,16 @@ export const UserProfileModal = () => {
   if (!isUserProfileOpen) return null;
 
   const savedIds = userProfile?.savedIds || [];
-  const completedOrders = (orders || []).filter(o => o.status === 'COMPLETED');
+
+  // Filter orders strictly belonging to the logged-in user
+  const userOrders = (orders || []).filter(o => {
+    if (!userProfile || (!userProfile.uid && !userProfile.email)) return false;
+    const matchUid = userProfile.uid && o.userId && o.userId === userProfile.uid;
+    const matchEmail = userProfile.email && o.userEmail && o.userEmail.toLowerCase() === userProfile.email.toLowerCase();
+    return matchUid || matchEmail;
+  });
+
+  const completedOrders = userOrders.filter(o => o.status === 'COMPLETED');
   const totalSpentLkr = completedOrders.reduce((sum, o) => sum + (o.priceLkr || 0), 0);
 
   // Derive initials for avatar
@@ -377,7 +386,7 @@ export const UserProfileModal = () => {
               >
                 <div className="flex items-center gap-2.5 text-blue-600 text-xs font-extrabold">
                   <ShoppingBag className="w-4 h-4 fill-blue-100" />
-                  <span className="text-slate-900">Recent Purchases ({(orders || []).length})</span>
+                  <span className="text-slate-900">Recent Purchases ({userOrders.length})</span>
                 </div>
 
                 <div className="text-slate-400">
@@ -388,12 +397,12 @@ export const UserProfileModal = () => {
               {/* Recent Purchases List */}
               {isRecentPurchasesOpen && (
                 <div className="p-4 bg-slate-50/50 space-y-3">
-                  {(orders || []).length === 0 ? (
+                  {userOrders.length === 0 ? (
                     <div className="text-center py-8 text-slate-400 text-xs font-semibold">
                       No purchases yet.
                     </div>
                   ) : (
-                    (orders || []).map((ord) => (
+                    userOrders.map((ord) => (
                       <div 
                         key={ord.id}
                         className="p-3.5 rounded-xl bg-white border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
