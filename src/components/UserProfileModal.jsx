@@ -111,21 +111,21 @@ export const UserProfileModal = () => {
         {/* Scrollable Container */}
         <div className="overflow-y-auto flex-1 p-4 sm:p-6 space-y-6">
 
-          {/* VIBRANT PURPLE HEADER BANNER (Matching Screenshot) */}
-          <div className="bg-gradient-to-r from-purple-700 via-indigo-600 to-purple-800 rounded-3xl p-6 sm:p-8 text-white relative text-center shadow-xl overflow-hidden">
+          {/* RICH RED THEME HEADER BANNER (Matching Web Theme) */}
+          <div className="bg-gradient-to-r from-[#cc040a] via-[#dc2626] to-[#990207] rounded-3xl p-6 sm:p-8 text-white relative text-center shadow-2xl overflow-hidden border border-red-600/30">
             {/* Background Glow Shapes */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-400/20 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-red-950/40 rounded-full blur-3xl pointer-events-none"></div>
 
             {/* Avatar Circle */}
             <div className="relative z-10">
-              <div className="w-24 h-24 rounded-full bg-slate-900 border-4 border-white flex items-center justify-center font-black text-3xl text-white shadow-2xl mx-auto relative group">
+              <div className="w-24 h-24 rounded-full bg-slate-950 border-4 border-white flex items-center justify-center font-black text-3xl text-white shadow-2xl mx-auto relative group">
                 <span>{getInitials(userProfile.name)}</span>
                 
                 {/* Camera Edit Overlay */}
                 <button 
                   onClick={() => setIsEditMode(!isEditMode)}
-                  className="w-7 h-7 bg-white text-purple-700 rounded-full flex items-center justify-center shadow-md absolute bottom-0 right-0 border border-purple-100 cursor-pointer hover:scale-110 transition-transform"
+                  className="w-7 h-7 bg-white text-[#cc040a] rounded-full flex items-center justify-center shadow-md absolute bottom-0 right-0 border border-red-100 cursor-pointer hover:scale-110 transition-transform"
                 >
                   <Camera className="w-3.5 h-3.5" />
                 </button>
@@ -135,7 +135,7 @@ export const UserProfileModal = () => {
               <h2 className="text-2xl sm:text-3xl font-black font-heading mt-3 text-white tracking-tight">
                 {userProfile.name}
               </h2>
-              <p className="text-xs text-purple-200 font-medium mt-0.5">
+              <p className="text-xs text-red-100 font-medium mt-0.5">
                 {userProfile.email}
               </p>
 
@@ -149,7 +149,7 @@ export const UserProfileModal = () => {
               </div>
             </div>
 
-            {/* 3 STAT / WALLET PILL CARDS (Matching Screenshot) */}
+            {/* 3 STAT / WALLET PILL CARDS (Matching Web Red Theme) */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 relative z-10 mt-6 pt-5 border-t border-white/15">
               {/* Stat 1: Lifetime Spend */}
               <div className="bg-white/10 backdrop-blur-md p-3.5 rounded-2xl border border-white/20 flex items-center gap-3">
@@ -157,7 +157,7 @@ export const UserProfileModal = () => {
                   <Award className="w-5 h-5" />
                 </div>
                 <div className="text-left">
-                  <span className="text-[9px] font-black text-purple-200 uppercase tracking-wider block">LIFETIME SPEND</span>
+                  <span className="text-[9px] font-black text-red-100 uppercase tracking-wider block">LIFETIME SPEND</span>
                   <span className="text-base font-black text-white font-heading">{(totalSpentLkr || 0).toFixed(2)} LKR</span>
                 </div>
               </div>
@@ -179,7 +179,7 @@ export const UserProfileModal = () => {
                   <Wallet className="w-5 h-5" />
                 </div>
                 <div className="text-left">
-                  <span className="text-[9px] font-black text-purple-200 uppercase tracking-wider block">EZ WALLET</span>
+                  <span className="text-[9px] font-black text-red-100 uppercase tracking-wider block">EZ WALLET</span>
                   <span className="text-base font-black text-white font-heading">{(userProfile?.walletBalance || 0).toFixed(2)} LKR</span>
                 </div>
               </div>
@@ -201,7 +201,7 @@ export const UserProfileModal = () => {
                   <DollarSign className="w-5 h-5" />
                 </div>
                 <div className="text-left">
-                  <span className="text-[9px] font-black text-purple-200 uppercase tracking-wider block">BINANCE</span>
+                  <span className="text-[9px] font-black text-red-100 uppercase tracking-wider block">BINANCE</span>
                   <span className="text-base font-black text-white font-heading">{(userProfile?.walletUsdt || 0).toFixed(2)} USDT</span>
                 </div>
               </div>
