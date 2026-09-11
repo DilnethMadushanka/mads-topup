@@ -791,7 +791,7 @@ export const AppProvider = ({ children }) => {
             id: 'MSG-2',
             sender: 'admin',
             senderName: 'MADS Support Team',
-            text: 'Hello Dilneth! We checked your order ORD-31699. MooGold reference 46388090 is verified & active!',
+            text: 'Hello Dilneth! We checked your order ORD-31699. Reference 46388090 is verified & active!',
             timestamp: new Date(Date.now() - 1800000).toISOString()
           }
         ]

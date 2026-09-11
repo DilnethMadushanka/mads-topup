@@ -101,7 +101,7 @@ const MainContent = () => {
           {/* Bottom Copyright Bar */}
           <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-gray-500 font-semibold">
             <p>© 2026 MADS TOPUP. All rights reserved.</p>
-            <p className="text-gray-500">POWERED BY MOONGOLD API ENGINE • SRI LANKA OFFICIAL STORE</p>
+            <p className="text-gray-500">POWERED BY MADS AUTOMATED ENGINE • SRI LANKA OFFICIAL STORE</p>
           </div>
         </div>
       </footer>

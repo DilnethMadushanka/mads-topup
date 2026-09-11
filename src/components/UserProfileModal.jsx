@@ -425,7 +425,7 @@ Thank you for using MADS TOPUP Sri Lanka!
 
                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <span className="font-extrabold text-slate-900 text-sm block">Moongold Dispatch Audit Log</span>
+                    <span className="font-extrabold text-slate-900 text-sm block">Automated Dispatch Audit Log</span>
                     <span className="text-slate-500 text-xs font-medium">Raw CSV spreadsheet export of order timestamps & refs</span>
                   </div>
                   <button 

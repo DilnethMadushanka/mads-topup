@@ -304,7 +304,7 @@ export const GameTopupPage = () => {
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 font-medium mt-1.5">
               {completedOrder.status === 'COMPLETED' 
-                ? 'Your order has been verified & credited via MooGold Engine.' 
+                ? 'Your order has been verified & credited via MADS Automated Engine.' 
                 : 'Your payment slip has been submitted! Our admin team will verify your receipt & credit items shortly.'}
             </p>
           </div>

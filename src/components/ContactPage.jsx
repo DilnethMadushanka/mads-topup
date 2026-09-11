@@ -397,7 +397,7 @@ export const ContactPage = () => {
 
                 <div className="flex items-center gap-2.5">
                   <Zap className="w-4 h-4 text-[#cc040a]" />
-                  <span>Powered by automated MooGold API engine</span>
+                  <span>Powered by automated MADS API engine</span>
                 </div>
               </div>
             </div>

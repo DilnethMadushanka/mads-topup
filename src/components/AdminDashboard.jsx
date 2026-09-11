@@ -394,9 +394,9 @@ export const AdminDashboard = () => {
         isLoading: false,
         lastFetched: new Date().toLocaleTimeString()
       });
-      showToast(`MooGold Live Balance: Rs. ${result.balanceLkr.toLocaleString()} ($${result.balanceUsd} USD)`);
+      showToast(`API Merchant Live Balance: Rs. ${result.balanceLkr.toLocaleString()} ($${result.balanceUsd} USD)`);
     } else {
-      showToast(`MooGold Live Balance: Rs. ${moongoldConfig.merchantBalanceLkr.toLocaleString()} ($${moongoldConfig.merchantBalanceUsd} USD)`);
+      showToast(`API Merchant Live Balance: Rs. ${moongoldConfig.merchantBalanceLkr.toLocaleString()} ($${moongoldConfig.merchantBalanceUsd} USD)`);
     }
   };
 
@@ -546,7 +546,7 @@ export const AdminDashboard = () => {
             { id: 'credit', label: 'Credit', icon: DollarSign },
             { id: 'games', label: 'Games', icon: Award },
             { id: 'vouchers', label: 'Vouchers', icon: Ticket },
-            { id: 'moongold', label: 'MooGold', icon: Zap },
+            { id: 'moongold', label: 'API Config', icon: Zap },
             { id: 'r2', label: 'R2 Storage', icon: Cloud },
             { id: 'announcement', label: 'Notice', icon: Megaphone }
           ].map((item) => {

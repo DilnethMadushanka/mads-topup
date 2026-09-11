@@ -304,7 +304,7 @@ export const dispatchMoongoldOrder = async (orderData) => {
       success: true,
       moongoldRef: partnerOrderId,
       status: 'COMPLETED',
-      message: 'MooGold Topup Success! Items credited instantly.',
+      message: 'Topup Success! Items credited instantly.',
       timestamp: new Date().toISOString()
     };
   }
@@ -351,7 +351,7 @@ export const dispatchMoongoldOrder = async (orderData) => {
           success: true,
           moongoldRef: data.order_id || partnerOrderId,
           status: 'COMPLETED',
-          message: data.message || 'Order created successfully on MooGold!',
+          message: data.message || 'Order created successfully!',
           data
         };
       } else if (data && data.err_message) {
@@ -386,7 +386,7 @@ export const dispatchMoongoldOrder = async (orderData) => {
         success: true,
         moongoldRef: data.order_id || data.account_details?.order_id || partnerOrderId,
         status: 'COMPLETED',
-        message: data.message || 'Order created successfully on MooGold!',
+        message: data.message || 'Order created successfully!',
         data
       };
     }
@@ -400,7 +400,7 @@ export const dispatchMoongoldOrder = async (orderData) => {
       success: true,
       moongoldRef: partnerOrderId,
       status: 'COMPLETED',
-      message: 'Order processed & credited via MooGold Automated Engine!',
+      message: 'Order processed & credited via MADS Automated Engine!',
       timestamp: new Date().toISOString()
     };
   }
