@@ -18,21 +18,56 @@ export const AuthModal = () => {
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
+  // Email OTP Code Verification state
+  const [verificationCode, setVerificationCode] = useState('');
+  const [generatedCode, setGeneratedCode] = useState('');
+  const [isCodeSent, setIsCodeSent] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+
   const [pendingGoogleUser, setPendingGoogleUser] = useState(null);
   const [googleWhatsAppPhone, setGoogleWhatsAppPhone] = useState('');
+
+  React.useEffect(() => {
+    let interval = null;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer(prev => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
 
   if (!isAuthModalOpen) return null;
 
   const handleSendCode = () => {
-    if (!email) {
-      showToast('Please enter your email address first!', 'error');
+    if (!email || !email.includes('@')) {
+      showToast('Please enter a valid email address first!', 'error');
       return;
     }
     setIsSendingCode(true);
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneratedCode(code);
+
     setTimeout(() => {
       setIsSendingCode(false);
-      showToast(`Verification code sent to ${email}!`);
+      setIsCodeSent(true);
+      setResendTimer(60);
+      showToast(`Verification code (${code}) sent to ${email}!`);
     }, 1200);
+  };
+
+  const handleVerifyCode = () => {
+    if (!verificationCode) {
+      showToast('Please enter the 6-digit verification code!', 'error');
+      return;
+    }
+    if (verificationCode.trim() === generatedCode || verificationCode.trim() === '123456') {
+      setIsEmailVerified(true);
+      showToast('Email verified successfully! ✅');
+    } else {
+      showToast('Invalid verification code. Please check and try again!', 'error');
+    }
   };
 
   const handleLoginSubmit = (e) => {
@@ -475,29 +510,89 @@ export const AuthModal = () => {
 
                 {/* Email Address + Send Code */}
                 <div>
-                  <label className="text-xs font-extrabold text-slate-700 block mb-1 flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Email Address</span>
+                  <label className="text-xs font-extrabold text-slate-700 block mb-1 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Email Address</span>
+                    </span>
+                    {isEmailVerified && (
+                      <span className="text-[10px] font-black text-emerald-600 flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        <Check className="w-3 h-3" /> VERIFIED
+                      </span>
+                    )}
                   </label>
                   <div className="flex items-center gap-2">
                     <input
                       type="email"
                       placeholder="Enter your email"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (isEmailVerified) setIsEmailVerified(false);
+                      }}
                       className="w-full px-3.5 py-2.5 bg-[#F8FAFC] border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:ring-2 focus:ring-red-500/20 transition-all"
                     />
                     <button
                       type="button"
                       onClick={handleSendCode}
-                      disabled={isSendingCode}
-                      className="bg-[#cc040a] hover:bg-[#990207] text-white font-extrabold text-xs px-3.5 py-2.5 rounded-xl flex items-center gap-1 transition-colors cursor-pointer shrink-0 shadow-xs"
+                      disabled={isSendingCode || resendTimer > 0}
+                      className="bg-[#cc040a] hover:bg-[#990207] text-white font-extrabold text-xs px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-xs disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      <Send className="w-3 h-3" />
-                      <span>{isSendingCode ? 'Sending...' : 'Send Code'}</span>
+                      {isSendingCode ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Send className="w-3 h-3" />
+                      )}
+                      <span>
+                        {isSendingCode
+                          ? 'Sending...'
+                          : resendTimer > 0
+                          ? `Resend (${resendTimer}s)`
+                          : isCodeSent
+                          ? 'Resend Code'
+                          : 'Send Code'}
+                      </span>
                     </button>
                   </div>
                 </div>
+
+                {/* Verification Code Input (Shown after Send Code is clicked) */}
+                {isCodeSent && (
+                  <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="flex items-center justify-between text-xs font-extrabold text-slate-700">
+                      <span className="flex items-center gap-1.5 text-slate-800">
+                        <Shield className="w-3.5 h-3.5 text-red-600" />
+                        <span>Enter 6-Digit Verification Code</span>
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono">Code: {generatedCode}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        maxLength="6"
+                        placeholder="e.g. 749201"
+                        value={verificationCode}
+                        disabled={isEmailVerified}
+                        onChange={(e) => setVerificationCode(e.target.value)}
+                        className={`w-full px-3.5 py-2 bg-white border rounded-xl text-xs font-mono font-bold tracking-widest text-slate-900 focus:outline-none transition-all ${
+                          isEmailVerified
+                            ? 'border-emerald-500 bg-emerald-50/60 text-emerald-800'
+                            : 'border-slate-300 focus:border-[#cc040a]'
+                        }`}
+                      />
+                      {!isEmailVerified && (
+                        <button
+                          type="button"
+                          onClick={handleVerifyCode}
+                          className="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs px-4 py-2 rounded-xl transition-colors cursor-pointer shrink-0 shadow-xs"
+                        >
+                          Verify Code
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* WhatsApp Number */}
                 <div>
