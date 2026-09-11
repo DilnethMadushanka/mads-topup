@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { X, Wallet, Copy, Check, Clipboard, DollarSign, Gift, ArrowRight, XCircle, Ban, Key, Clock } from 'lucide-react';
+import { X, Wallet, Copy, Check, Clipboard, DollarSign, Gift, ArrowRight, XCircle, Ban, Key, Clock, RefreshCw, Zap } from 'lucide-react';
 
 export const WalletModal = () => {
   const { 
@@ -47,7 +47,9 @@ export const WalletModal = () => {
     }
   };
 
-  const handleBinanceSubmit = (e) => {
+  const [isBinanceVerifying, setIsBinanceVerifying] = useState(false);
+
+  const handleBinanceSubmit = async (e) => {
     e.preventDefault();
     if (!binanceOrderId) {
       showToast('Please enter your Binance Order ID!', 'error');
@@ -58,22 +60,85 @@ export const WalletModal = () => {
       return;
     }
     const amt = parseFloat(binanceAmount) || 10;
-    addManualPayment({
-      id: 'PAY-' + Math.floor(1000 + Math.random() * 9000),
-      userEmail: userProfile?.email || 'guest@madstopup.com',
-      userName: userProfile?.name || 'Gamer',
-      method: 'Binance Pay',
-      referenceNumber: `Order: ${binanceOrderId} | PayID: ${binancePayId}`,
-      amount: amt,
-      currency: 'USDT',
-      slipUrl: '',
-      status: 'PENDING',
-      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
-    });
-    showToast('Binance Pay deposit request submitted! Admin will verify and credit your wallet.');
-    setBinanceOrderId('');
-    setBinancePayId('');
-    setIsWalletModalOpen(false);
+
+    setIsBinanceVerifying(true);
+
+    try {
+      // Call automated Binance verification endpoint
+      const response = await fetch('/api/binance/verify-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: binanceOrderId,
+          payId: binancePayId,
+          amount: amt
+        })
+      });
+
+      const resData = await response.json();
+
+      if (resData.verified && resData.autoApproved) {
+        // Auto-approve and credit wallet instantly!
+        creditUserWallet(0, amt);
+
+        addManualPayment({
+          id: 'PAY-' + Math.floor(1000 + Math.random() * 9000),
+          userEmail: userProfile?.email || 'guest@madstopup.com',
+          userName: userProfile?.name || 'Gamer',
+          method: 'Binance Pay (Automated)',
+          referenceNumber: `Order: ${binanceOrderId} | PayID: ${binancePayId}`,
+          amount: amt,
+          currency: 'USDT',
+          slipUrl: '',
+          status: 'VERIFIED',
+          createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
+        });
+
+        showToast(`⚡ BINANCE PAYMENT VERIFIED! +${amt} USDT credited to your wallet instantly!`);
+        setBinanceOrderId('');
+        setBinancePayId('');
+        setIsWalletModalOpen(false);
+      } else {
+        // Submit for manual fallback check if verification returned pending
+        addManualPayment({
+          id: 'PAY-' + Math.floor(1000 + Math.random() * 9000),
+          userEmail: userProfile?.email || 'guest@madstopup.com',
+          userName: userProfile?.name || 'Gamer',
+          method: 'Binance Pay',
+          referenceNumber: `Order: ${binanceOrderId} | PayID: ${binancePayId}`,
+          amount: amt,
+          currency: 'USDT',
+          slipUrl: '',
+          status: 'PENDING',
+          createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
+        });
+        showToast('Deposit submitted for admin verification.');
+        setBinanceOrderId('');
+        setBinancePayId('');
+        setIsWalletModalOpen(false);
+      }
+    } catch (err) {
+      console.warn('Binance verify call note:', err.message);
+      // Fallback: Add as pending for admin review
+      addManualPayment({
+        id: 'PAY-' + Math.floor(1000 + Math.random() * 9000),
+        userEmail: userProfile?.email || 'guest@madstopup.com',
+        userName: userProfile?.name || 'Gamer',
+        method: 'Binance Pay',
+        referenceNumber: `Order: ${binanceOrderId} | PayID: ${binancePayId}`,
+        amount: amt,
+        currency: 'USDT',
+        slipUrl: '',
+        status: 'PENDING',
+        createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
+      });
+      showToast('Deposit submitted for admin verification.');
+      setBinanceOrderId('');
+      setBinancePayId('');
+      setIsWalletModalOpen(false);
+    } finally {
+      setIsBinanceVerifying(false);
+    }
   };
 
   const handleEzCashSubmit = (e) => {
@@ -279,9 +344,20 @@ export const WalletModal = () => {
                 {/* Submit Action Button */}
                 <button
                   type="submit"
-                  className="w-full py-3.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-colors cursor-pointer shadow-xs mt-2 flex items-center justify-center gap-2"
+                  disabled={isBinanceVerifying}
+                  className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-all cursor-pointer shadow-lg shadow-emerald-600/20 mt-2 flex items-center justify-center gap-2 disabled:opacity-75"
                 >
-                  <span>SUBMIT DEPOSIT FOR ADMIN APPROVAL</span>
+                  {isBinanceVerifying ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>VERIFYING WITH BINANCE API...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-4 h-4 text-amber-300 fill-amber-300" />
+                      <span>VERIFY & INSTANT AUTO-CREDIT WALLET</span>
+                    </>
+                  )}
                 </button>
               </form>
 
