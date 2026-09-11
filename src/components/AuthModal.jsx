@@ -50,28 +50,38 @@ export const AuthModal = () => {
     setGeneratedCode(code);
 
     try {
-      // 1. First try backend server endpoint /api/send-otp (Zoho Mail Delivery) with 12s timeout
+      // 1. Try backend server endpoints (/api/send-otp, https://madstopup.com/api/send-otp, http://152.42.202.221:3000/api/send-otp)
       let sentSuccess = false;
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 12000);
+      const apiEndpoints = [
+        '/api/send-otp',
+        'https://madstopup.com/api/send-otp',
+        'http://152.42.202.221:3000/api/send-otp'
+      ];
 
-        const apiRes = await fetch('/api/send-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, otp: code, name: username || 'Gamer' }),
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
+      for (const endpoint of apiEndpoints) {
+        if (sentSuccess) break;
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 6000);
 
-        if (apiRes.ok) {
-          const data = await apiRes.json();
-          if (data && data.success) {
-            sentSuccess = true;
+          const apiRes = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, otp: code, name: username || 'Gamer' }),
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+
+          if (apiRes.ok) {
+            const data = await apiRes.json();
+            if (data && data.success) {
+              sentSuccess = true;
+              console.log(`[OTP Sent via ${endpoint}]`, data);
+            }
           }
+        } catch (backendErr) {
+          console.warn(`[OTP Endpoint ${endpoint} Note]:`, backendErr.message);
         }
-      } catch (backendErr) {
-        console.warn('Backend /api/send-otp note:', backendErr);
       }
 
       // 2. Fallback to EmailJS if backend route is unavailable
