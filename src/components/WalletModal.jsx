@@ -10,12 +10,16 @@ export const WalletModal = () => {
     setWalletActiveTab,
     userProfile,
     showToast,
-    setIsNoticeModalOpen
+    addManualPayment,
+    vouchers,
+    creditUserWallet
   } = useApp();
 
   const [binanceOrderId, setBinanceOrderId] = useState('');
   const [binancePayId, setBinancePayId] = useState('');
+  const [binanceAmount, setBinanceAmount] = useState('10');
   const [ezCashRnNumber, setEzCashRnNumber] = useState('');
+  const [ezCashAmount, setEzCashAmount] = useState('1000');
   const [voucherCode, setVoucherCode] = useState('');
   const [isCopied, setIsCopied] = useState(false);
 
@@ -53,17 +57,46 @@ export const WalletModal = () => {
       showToast('Please enter your Binance Pay ID!', 'error');
       return;
     }
-    showToast('Binance Pay deposit submitted for instant verification!');
+    const amt = parseFloat(binanceAmount) || 10;
+    addManualPayment({
+      id: 'PAY-' + Math.floor(1000 + Math.random() * 9000),
+      userEmail: userProfile?.email || 'guest@madstopup.com',
+      userName: userProfile?.name || 'Gamer',
+      method: 'Binance Pay',
+      referenceNumber: `Order: ${binanceOrderId} | PayID: ${binancePayId}`,
+      amount: amt,
+      currency: 'USDT',
+      slipUrl: '',
+      status: 'PENDING',
+      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
+    });
+    showToast('Binance Pay deposit request submitted! Admin will verify and credit your wallet.');
+    setBinanceOrderId('');
+    setBinancePayId('');
     setIsWalletModalOpen(false);
   };
 
   const handleEzCashSubmit = (e) => {
     e.preventDefault();
-    if (!ezCashRnNumber || ezCashRnNumber.length < 14) {
-      showToast('Please enter a valid 14-digit RN number!', 'error');
+    if (!ezCashRnNumber || ezCashRnNumber.length < 10) {
+      showToast('Please enter a valid RN Transaction Number!', 'error');
       return;
     }
-    showToast('EZ Cash deposit submitted for 5-sec verification!');
+    const amt = parseFloat(ezCashAmount) || 1000;
+    addManualPayment({
+      id: 'PAY-' + Math.floor(1000 + Math.random() * 9000),
+      userEmail: userProfile?.email || 'guest@madstopup.com',
+      userName: userProfile?.name || 'Gamer',
+      method: 'EZ Cash',
+      referenceNumber: ezCashRnNumber,
+      amount: amt,
+      currency: 'LKR',
+      slipUrl: '',
+      status: 'PENDING',
+      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
+    });
+    showToast('EZ Cash deposit request submitted! Admin will verify and credit your wallet.');
+    setEzCashRnNumber('');
     setIsWalletModalOpen(false);
   };
 
@@ -73,8 +106,19 @@ export const WalletModal = () => {
       showToast('Please enter a valid voucher code!', 'error');
       return;
     }
-    showToast('Voucher redeemed successfully! Balance added.');
-    setIsWalletModalOpen(false);
+    const foundVoucher = (vouchers || []).find(v => v.code.toUpperCase() === voucherCode.trim().toUpperCase() && v.active);
+    if (foundVoucher) {
+      if (foundVoucher.currency === 'USDT') {
+        creditUserWallet(0, foundVoucher.value);
+      } else {
+        creditUserWallet(foundVoucher.value, 0);
+      }
+      showToast(`Voucher ${foundVoucher.code} redeemed! Credited ${foundVoucher.value} ${foundVoucher.currency}.`);
+      setVoucherCode('');
+      setIsWalletModalOpen(false);
+    } else {
+      showToast('Invalid or expired voucher code!', 'error');
+    }
   };
 
   return (
@@ -218,12 +262,26 @@ export const WalletModal = () => {
                   />
                 </div>
 
+                {/* Deposit Amount USDT */}
+                <div>
+                  <label className="font-extrabold text-slate-700 block mb-1.5">
+                    Deposit Amount (USDT)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 10"
+                    value={binanceAmount}
+                    onChange={(e) => setBinanceAmount(e.target.value)}
+                    className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-emerald-500 shadow-xs"
+                  />
+                </div>
+
                 {/* Submit Action Button */}
                 <button
                   type="submit"
                   className="w-full py-3.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-colors cursor-pointer shadow-xs mt-2 flex items-center justify-center gap-2"
                 >
-                  <span>CONFIRM TRANSFER</span>
+                  <span>SUBMIT DEPOSIT FOR ADMIN APPROVAL</span>
                 </button>
               </form>
 
@@ -260,6 +318,19 @@ export const WalletModal = () => {
               <form onSubmit={handleEzCashSubmit} className="space-y-4 text-xs">
                 <div>
                   <label className="font-extrabold text-slate-700 block mb-1.5">
+                    Deposit Amount (LKR)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 1000"
+                    value={ezCashAmount}
+                    onChange={(e) => setEzCashAmount(e.target.value)}
+                    className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-red-500 shadow-xs mb-3"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-extrabold text-slate-700 block mb-1.5">
                     14-Digit RN Transaction Number
                   </label>
                   <input
@@ -279,7 +350,7 @@ export const WalletModal = () => {
                   type="submit"
                   className="w-full py-3.5 bg-[#cc040a] hover:bg-[#990207] text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-colors cursor-pointer shadow-lg shadow-red-500/20 flex items-center justify-center gap-2"
                 >
-                  <span>CONFIRM EZ CASH TRANSFER</span>
+                  <span>SUBMIT DEPOSIT FOR ADMIN APPROVAL</span>
                 </button>
               </form>
 

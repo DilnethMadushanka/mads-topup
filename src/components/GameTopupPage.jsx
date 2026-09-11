@@ -21,7 +21,8 @@ export const GameTopupPage = () => {
     userProfile,
     currency,
     setCurrency,
-    creditUserWallet
+    creditUserWallet,
+    setIsWalletModalOpen
   } = useApp();
 
   const [playerId, setPlayerId] = useState('');
@@ -154,13 +155,15 @@ export const GameTopupPage = () => {
       if (currency === 'USD') {
         const requiredUsdt = totalLkr / 305;
         if (availUsdt < requiredUsdt && availLkr < totalLkr) {
-          showToast(`Insufficient Wallet Balance! Available: $${availUsdt.toFixed(2)} USDT / Rs. ${availLkr}. Please top up your wallet.`, 'error');
+          showToast(`Insufficient Wallet Balance! Available: $${availUsdt.toFixed(2)} USDT / Rs. ${availLkr.toFixed(2)}. Please top up your wallet first!`, 'error');
+          setIsWalletModalOpen(true);
           return;
         }
         creditUserWallet(0, -requiredUsdt);
       } else {
         if (availLkr < totalLkr && (availUsdt * 305) < totalLkr) {
-          showToast(`Insufficient Wallet Balance! Available: Rs. ${availLkr}. Please top up your wallet or select Bank / eZ Cash.`, 'error');
+          showToast(`Insufficient Wallet Balance! Available: Rs. ${availLkr.toFixed(2)}. Please top up your wallet first!`, 'error');
+          setIsWalletModalOpen(true);
           return;
         }
         creditUserWallet(-totalLkr, 0);

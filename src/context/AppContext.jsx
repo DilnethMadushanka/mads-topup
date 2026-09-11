@@ -457,17 +457,26 @@ export const AppProvider = ({ children }) => {
   };
 
   const updateUserBalance = (userEmail, lkrAmount, usdtAmount = 0) => {
+    if (!userEmail) return;
     setUsersList(prev => prev.map(u => {
-      if (u.email.toLowerCase() === userEmail.toLowerCase()) {
+      if (u.email && u.email.toLowerCase() === userEmail.toLowerCase()) {
+        const newLkr = Math.max(0, (u.walletBalance || 0) + lkrAmount);
+        const newUsdt = Math.max(0, (u.walletUsdt || 0) + usdtAmount);
+        if (u.uid) {
+          updateUserProfileInFirestore(u.uid, { walletBalance: newLkr, walletUsdt: newUsdt });
+        }
         return {
           ...u,
-          walletBalance: Math.max(0, u.walletBalance + lkrAmount),
-          walletUsdt: Math.max(0, u.walletUsdt + usdtAmount)
+          walletBalance: newLkr,
+          walletUsdt: newUsdt
         };
       }
       return u;
     }));
-    creditUserWallet(lkrAmount, usdtAmount);
+
+    if (userProfile && userProfile.email && userProfile.email.toLowerCase() === userEmail.toLowerCase()) {
+      creditUserWallet(lkrAmount, usdtAmount);
+    }
   };
 
   const approveManualPayment = (paymentId) => {

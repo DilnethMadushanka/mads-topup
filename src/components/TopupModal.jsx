@@ -19,7 +19,8 @@ export const TopupModal = () => {
     formatPrice,
     savePlayerId,
     userProfile,
-    creditUserWallet
+    creditUserWallet,
+    setIsWalletModalOpen
   } = useApp();
 
   const [step, setStep] = useState(1); // 1: ID, 2: Package, 3: Payment, 4: Success
@@ -118,7 +119,9 @@ export const TopupModal = () => {
       const availLkr = userProfile?.walletBalance || 0;
       const price = selectedPackage.priceLkr;
       if (availLkr < price) {
-        showToast(`Insufficient Wallet Balance! Available: Rs. ${availLkr}. Please top up wallet first.`, 'error');
+        showToast(`Insufficient Wallet Balance! Available: Rs. ${availLkr.toFixed(2)}. Please top up your wallet first!`, 'error');
+        setIsTopupModalOpen(false);
+        setIsWalletModalOpen(true);
         return;
       }
       creditUserWallet(-price, 0);
