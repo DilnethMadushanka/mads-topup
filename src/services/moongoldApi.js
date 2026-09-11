@@ -321,6 +321,8 @@ export const dispatchMoongoldOrder = async (orderData) => {
 
   if (gameId.includes('pubg') || idLabel.includes('character')) {
     dataPayload['Character ID'] = orderData.playerId || '';
+  } else if (gameId.includes('freefire')) {
+    dataPayload['Player ID'] = orderData.playerId || '';
   } else {
     dataPayload['User ID'] = orderData.playerId || '';
     if (orderData.zoneId) {
