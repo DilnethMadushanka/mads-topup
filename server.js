@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import crypto from 'crypto';
-import nodemailer from 'nodemailer';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -23,17 +22,6 @@ app.use((req, res, next) => {
 app.use(cors());
 app.use(express.json({ limit: '2mb' }));
 
-// Configure Zoho Mail Transporter
-const mailTransporter = nodemailer.createTransport({
-  host: process.env.ZOHO_SMTP_HOST || 'smtppro.zoho.com',
-  port: parseInt(process.env.ZOHO_SMTP_PORT || '465'),
-  secure: true,
-  auth: {
-    user: process.env.ZOHO_EMAIL || 'info@trivexit.com',
-    pass: process.env.ZOHO_PASSWORD || process.env.VITE_ZOHO_PASSWORD || 'jXi8hF56aCYb'
-  }
-});
-
 // Direct OTP Email sending API endpoint
 app.post('/api/send-otp', async (req, res) => {
   try {
@@ -42,8 +30,26 @@ app.post('/api/send-otp', async (req, res) => {
       return res.status(400).json({ error: 'Missing email or otp' });
     }
 
+    let nodemailer;
+    try {
+      const nmModule = await import('nodemailer');
+      nodemailer = nmModule.default || nmModule;
+    } catch (e) {
+      console.warn('Nodemailer dynamic import note:', e.message);
+    }
+
     const zohoPass = process.env.ZOHO_PASSWORD || process.env.VITE_ZOHO_PASSWORD || 'jXi8hF56aCYb';
-    if (zohoPass) {
+
+    if (nodemailer && zohoPass) {
+      const mailTransporter = nodemailer.createTransport({
+        host: process.env.ZOHO_SMTP_HOST || 'smtppro.zoho.com',
+        port: parseInt(process.env.ZOHO_SMTP_PORT || '465'),
+        secure: true,
+        auth: {
+          user: process.env.ZOHO_EMAIL || 'info@trivexit.com',
+          pass: zohoPass
+        }
+      });
       const mailOptions = {
         from: '"MADS TOPUP" <info@trivexit.com>',
         to: email,
