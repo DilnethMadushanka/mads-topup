@@ -139,7 +139,7 @@ export const Navbar = () => {
               {/* Red Wallet LKR Pill */}
               <div 
                 onClick={() => handleWalletClick('ezcash')}
-                className="bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-black px-4 py-1.5 rounded-full flex items-center gap-1.5 shadow-xs cursor-pointer transition-all shrink-0"
+                className="bg-[#cc040a] hover:bg-[#990207] text-white text-xs font-black px-4 py-1.5 rounded-full flex items-center gap-1.5 shadow-xs cursor-pointer transition-all shrink-0"
               >
                 <Wallet className="w-3.5 h-3.5 text-white fill-white shrink-0" />
                 <span className="tracking-wide">{(userProfile.walletBalance || 0).toFixed(2)} LKR</span>
@@ -306,10 +306,10 @@ export const Navbar = () => {
           <div className="flex flex-col items-center gap-3.5 pt-1">
             {isUserLoggedIn ? (
               <>
-                {/* Blue LKR Wallet Pill */}
+                {/* Red LKR Wallet Pill */}
                 <button
                   onClick={() => { handleWalletClick('ezcash'); setIsMobileMenuOpen(false); }}
-                  className="w-full max-w-xs bg-[#0284C7] hover:bg-[#0369A1] text-white font-black text-xs py-2.5 px-5 rounded-full flex items-center justify-center gap-2 shadow-lg transition-all"
+                  className="w-full max-w-xs bg-[#cc040a] hover:bg-[#990207] text-white font-black text-xs py-2.5 px-5 rounded-full flex items-center justify-center gap-2 shadow-lg transition-all"
                 >
                   <Wallet className="w-4 h-4 text-white fill-white" />
                   <span>{(userProfile.walletBalance || 0).toFixed(2)} LKR</span>
