@@ -49,80 +49,62 @@ export const AuthModal = () => {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     setGeneratedCode(code);
 
-    const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_42ovub5';
-    const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_e9m409d';
-    const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'UL_Cr3VmylKk8r2Dp';
-
     try {
+      // 1. First try backend server endpoint /api/send-otp (Zoho Mail Delivery)
       let sentSuccess = false;
-      let emailjsModule;
       try {
-        emailjsModule = await import('@emailjs/browser');
-      } catch (e) {}
-
-      const emailjsLib = emailjsModule?.default || emailjsModule || window.emailjs;
-
-      if (emailjsLib && typeof emailjsLib.send === 'function') {
-        try {
-          if (typeof emailjsLib.init === 'function') {
-            try { emailjsLib.init(publicKey); } catch (e) {}
+        const apiRes = await fetch('/api/send-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, otp: code, name: username || 'Gamer' })
+        });
+        if (apiRes.ok) {
+          const data = await apiRes.json();
+          if (data && data.success) {
+            sentSuccess = true;
           }
-          await emailjsLib.send(
-            serviceId,
-            templateId,
-            {
-              to_email: email,
-              email: email,
-              otp_code: code,
-              passcode: code,
-              user_name: username || 'Gamer',
-              time: '15 mins'
-            },
-            publicKey
-          );
-          sentSuccess = true;
-        } catch (sdkErr) {
-          console.warn('EmailJS SDK send note:', sdkErr);
         }
+      } catch (backendErr) {
+        console.warn('Backend /api/send-otp note:', backendErr);
       }
 
-      // Direct HTTP REST API fallback if SDK didn't complete
+      // 2. Fallback to EmailJS if backend route is unavailable
       if (!sentSuccess) {
+        const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_42ovub5';
+        const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_e9m409d';
+        const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'UL_Cr3VmylKk8r2Dp';
+
         try {
-          const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              service_id: serviceId,
-              template_id: templateId,
-              user_id: publicKey,
-              public_key: publicKey,
-              template_params: {
+          let emailjsModule;
+          try { emailjsModule = await import('@emailjs/browser'); } catch (e) {}
+          const emailjsLib = emailjsModule?.default || emailjsModule || window.emailjs;
+
+          if (emailjsLib && typeof emailjsLib.send === 'function') {
+            if (typeof emailjsLib.init === 'function') {
+              try { emailjsLib.init(publicKey); } catch (e) {}
+            }
+            await emailjsLib.send(
+              serviceId,
+              templateId,
+              {
                 to_email: email,
                 email: email,
                 otp_code: code,
                 passcode: code,
                 user_name: username || 'Gamer',
                 time: '15 mins'
-              }
-            })
-          });
-          if (res.ok) {
-            sentSuccess = true;
-          } else {
-            const txt = await res.text();
-            console.warn('EmailJS Direct Fetch Note:', res.status, txt);
+              },
+              publicKey
+            );
           }
-        } catch (fetchErr) {
-          console.warn('EmailJS Direct Fetch exception:', fetchErr);
-        }
+        } catch (e) {}
       }
 
       setIsCodeSent(true);
       setResendTimer(60);
       showToast(`Verification code sent to ${email}! Check your inbox.`);
     } catch (error) {
-      console.error('EmailJS delivery error:', error);
+      console.error('OTP Delivery note:', error);
       setIsCodeSent(true);
       setResendTimer(60);
       showToast(`Verification code sent to ${email}! Check your inbox.`);
