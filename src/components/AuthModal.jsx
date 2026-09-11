@@ -50,14 +50,20 @@ export const AuthModal = () => {
     setGeneratedCode(code);
 
     try {
-      // 1. First try backend server endpoint /api/send-otp (Zoho Mail Delivery)
+      // 1. First try backend server endpoint /api/send-otp (Zoho Mail Delivery) with 3.5s timeout
       let sentSuccess = false;
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+
         const apiRes = await fetch('/api/send-otp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, otp: code, name: username || 'Gamer' })
+          body: JSON.stringify({ email, otp: code, name: username || 'Gamer' }),
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
+
         if (apiRes.ok) {
           const data = await apiRes.json();
           if (data && data.success) {
