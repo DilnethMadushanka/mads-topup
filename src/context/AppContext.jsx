@@ -143,6 +143,10 @@ export const AppProvider = ({ children }) => {
 
   const openCatalog = () => {
     setIsGameCatalogOpen(true);
+    setIsUserProfileOpen(false);
+    setIsContactPageOpen(false);
+    setIsReviewsPageOpen(false);
+    setIsReferralPageOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -153,6 +157,7 @@ export const AppProvider = ({ children }) => {
 
   const openReviewsPage = () => {
     setIsReviewsPageOpen(true);
+    setIsUserProfileOpen(false);
     setIsContactPageOpen(false);
     setIsReferralPageOpen(false);
     setIsGameCatalogOpen(false);
@@ -167,6 +172,7 @@ export const AppProvider = ({ children }) => {
 
   const openContactPage = () => {
     setIsContactPageOpen(true);
+    setIsUserProfileOpen(false);
     setIsReviewsPageOpen(false);
     setIsReferralPageOpen(false);
     setIsGameCatalogOpen(false);
@@ -181,6 +187,7 @@ export const AppProvider = ({ children }) => {
 
   const openReferralPage = () => {
     setIsReferralPageOpen(true);
+    setIsUserProfileOpen(false);
     setIsContactPageOpen(false);
     setIsReviewsPageOpen(false);
     setIsGameCatalogOpen(false);
@@ -190,6 +197,21 @@ export const AppProvider = ({ children }) => {
 
   const closeReferralPage = () => {
     setIsReferralPageOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const openUserProfilePage = () => {
+    setIsUserProfileOpen(true);
+    setIsContactPageOpen(false);
+    setIsReviewsPageOpen(false);
+    setIsReferralPageOpen(false);
+    setIsGameCatalogOpen(false);
+    setSelectedGame(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const closeUserProfilePage = () => {
+    setIsUserProfileOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -929,6 +951,8 @@ export const AppProvider = ({ children }) => {
       openTopup,
       isUserProfileOpen,
       setIsUserProfileOpen,
+      openUserProfilePage,
+      closeUserProfilePage,
       isAdminOpen,
       setIsAdminOpen,
       isGameCatalogOpen,

@@ -4,7 +4,8 @@ import { Gamepad2, Gift, BookOpen, Download, User, Wallet, ChevronDown, Headset,
 
 export const Navbar = () => {
   const { 
-    setIsUserProfileOpen, 
+    setIsUserProfileOpen,
+    openUserProfilePage, 
     orders,
     openCatalog,
     closeCatalog,
@@ -159,7 +160,7 @@ export const Navbar = () => {
 
               {/* User Profile Dropdown Pill */}
               <div 
-                onClick={() => setIsUserProfileOpen(true)}
+                onClick={openUserProfilePage}
                 className="flex items-center gap-2 cursor-pointer group shrink-0 ml-0.5"
               >
                 <div className="w-9 h-9 rounded-full bg-[#cc040a] border-2 border-white ring-1 ring-slate-200/60 flex items-center justify-center font-black text-white text-xs shadow-xs shrink-0 tracking-wider overflow-hidden">
@@ -284,7 +285,7 @@ export const Navbar = () => {
             {/* My Orders */}
             <button 
               onClick={() => { 
-                if (isUserLoggedIn) { setIsUserProfileOpen(true); } else { openAuth('login'); }
+                if (isUserLoggedIn) { openUserProfilePage(); } else { openAuth('login'); }
                 setIsMobileMenuOpen(false); 
               }}
               className="w-full flex items-center justify-between text-sm font-extrabold text-slate-200 hover:text-indigo-400 py-1 transition-colors text-left"
@@ -329,7 +330,7 @@ export const Navbar = () => {
 
                 {/* Profile Pill (Avatar + Username + Chevron) */}
                 <button
-                  onClick={() => { setIsUserProfileOpen(true); setIsMobileMenuOpen(false); }}
+                  onClick={() => { openUserProfilePage(); setIsMobileMenuOpen(false); }}
                   className="w-full max-w-xs bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-slate-100 font-extrabold text-xs py-2 px-4 rounded-full flex items-center justify-center gap-2 shadow-md transition-all mt-1"
                 >
                   <div className="w-7 h-7 rounded-full bg-[#cc040a] text-white font-black text-[11px] flex items-center justify-center overflow-hidden border border-white/20">

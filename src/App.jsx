@@ -11,7 +11,7 @@ import { PromoSection } from './components/PromoSection';
 import { BlogSection } from './components/BlogSection';
 import { GameTopupPage } from './components/GameTopupPage';
 import { AuthModal } from './components/AuthModal';
-import { UserProfileModal } from './components/UserProfileModal';
+import { UserProfilePage } from './components/UserProfilePage';
 import { AdminDashboard } from './components/AdminDashboard';
 import { ImportantNoticeModal } from './components/ImportantNoticeModal';
 import { WalletModal } from './components/WalletModal';
@@ -25,7 +25,7 @@ import { ToastNotification } from './components/ToastNotification';
 import { Flame } from 'lucide-react';
 
 const MainContent = () => {
-  const { setIsAdminOpen, setIsUserProfileOpen, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, isReferralPageOpen, openContactPage, selectedGame } = useApp();
+  const { setIsAdminOpen, isUserProfileOpen, openUserProfilePage, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, isReferralPageOpen, openContactPage, selectedGame } = useApp();
 
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
@@ -38,6 +38,8 @@ const MainContent = () => {
         <Navbar />
         {selectedGame ? (
           <GameTopupPage />
+        ) : isUserProfileOpen ? (
+          <UserProfilePage />
         ) : isReferralPageOpen ? (
           <ReferralProgramPage />
         ) : isContactPageOpen ? (
@@ -60,7 +62,7 @@ const MainContent = () => {
       </div>
 
       {/* Footer Matching Clean Minimalist Screenshot */}
-      <footer className="bg-gray-950 text-white border-t border-gray-800 pt-16 pb-10">
+      <footer className="bg-gray-950 text-[#ffffff] border-t border-gray-800 pt-16 pb-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 pb-12 border-b border-gray-800">
             
@@ -82,7 +84,7 @@ const MainContent = () => {
               <ul className="space-y-2.5 text-xs text-slate-400 font-bold uppercase tracking-wide font-mono">
                 <li onClick={openContactPage} className="hover:text-[#cc040a] cursor-pointer transition-colors">ABOUT US</li>
                 <li onClick={openContactPage} className="hover:text-[#cc040a] cursor-pointer transition-colors">CONTACT</li>
-                <li onClick={() => setIsUserProfileOpen(true)} className="hover:text-[#cc040a] cursor-pointer transition-colors">MY ORDERS</li>
+                <li onClick={openUserProfilePage} className="hover:text-[#cc040a] cursor-pointer transition-colors">MY ORDERS</li>
                 <li onClick={openContactPage} className="hover:text-[#cc040a] cursor-pointer transition-colors">TERMS OF SERVICE</li>
                 <li onClick={openContactPage} className="hover:text-[#cc040a] cursor-pointer transition-colors">PRIVACY POLICY</li>
               </ul>
@@ -111,7 +113,6 @@ const MainContent = () => {
 
       {/* Modals & Popups */}
       <AuthModal />
-      <UserProfileModal />
       <AdminDashboard />
       <ImportantNoticeModal />
       <WalletModal />
