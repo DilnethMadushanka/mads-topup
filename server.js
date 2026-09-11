@@ -4,7 +4,6 @@ import path from 'path';
 import crypto from 'crypto';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { Resend } from 'resend';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -77,27 +76,31 @@ app.post('/api/send-otp', async (req, res) => {
     const resendApiKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY || defaultResendKey;
     if (resendApiKey) {
       try {
-        const resend = new Resend(resendApiKey);
-        const fromAddress = process.env.RESEND_FROM || 'MADS TOPUP <noreply@madstopup.com>';
-        let data;
-        try {
-          data = await resend.emails.send({
-            from: fromAddress,
-            to: [email],
-            subject: `Your Verification Code: ${otp}`,
-            html: emailHtml
-          });
-        } catch (domainErr) {
-          // Fallback to onboarding@resend.dev
-          data = await resend.emails.send({
-            from: 'MADS TOPUP <onboarding@resend.dev>',
-            to: [email],
-            subject: `Your Verification Code: ${otp}`,
-            html: emailHtml
-          });
+        const resendMod = await import('resend');
+        const ResendCls = resendMod.Resend || resendMod.default?.Resend || resendMod.default;
+        if (ResendCls) {
+          const resend = new ResendCls(resendApiKey);
+          const fromAddress = process.env.RESEND_FROM || 'MADS TOPUP <noreply@madstopup.com>';
+          let data;
+          try {
+            data = await resend.emails.send({
+              from: fromAddress,
+              to: [email],
+              subject: `Your Verification Code: ${otp}`,
+              html: emailHtml
+            });
+          } catch (domainErr) {
+            // Fallback to onboarding@resend.dev
+            data = await resend.emails.send({
+              from: 'MADS TOPUP <onboarding@resend.dev>',
+              to: [email],
+              subject: `Your Verification Code: ${otp}`,
+              html: emailHtml
+            });
+          }
+          console.log(`[Resend OTP Sent] Sent to ${email}, id: ${data?.id}`);
+          return res.json({ success: true, provider: 'Resend', messageId: data?.id });
         }
-        console.log(`[Resend OTP Sent] Sent to ${email}, id: ${data?.id}`);
-        return res.json({ success: true, provider: 'Resend', messageId: data?.id });
       } catch (rErr) {
         console.warn('[Resend API Note]:', rErr.message);
       }
