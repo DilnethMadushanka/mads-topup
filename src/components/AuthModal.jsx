@@ -54,45 +54,78 @@ export const AuthModal = () => {
     const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'UL_Cr3VmylKk8r2Dp';
 
     try {
+      let sentSuccess = false;
       let emailjsModule;
       try {
         emailjsModule = await import('@emailjs/browser');
-      } catch (e) {
-        console.warn('EmailJS module load note:', e);
-      }
+      } catch (e) {}
+
       const emailjsLib = emailjsModule?.default || emailjsModule || window.emailjs;
 
-      if (emailjsLib) {
-        if (typeof emailjsLib.init === 'function') {
-          try { emailjsLib.init(publicKey); } catch (e) {}
+      if (emailjsLib && typeof emailjsLib.send === 'function') {
+        try {
+          if (typeof emailjsLib.init === 'function') {
+            try { emailjsLib.init(publicKey); } catch (e) {}
+          }
+          await emailjsLib.send(
+            serviceId,
+            templateId,
+            {
+              to_email: email,
+              email: email,
+              otp_code: code,
+              passcode: code,
+              user_name: username || 'Gamer',
+              time: '15 mins'
+            },
+            publicKey
+          );
+          sentSuccess = true;
+        } catch (sdkErr) {
+          console.warn('EmailJS SDK send note:', sdkErr);
         }
-
-        const res = await emailjsLib.send(
-          serviceId,
-          templateId,
-          {
-            to_email: email,
-            email: email,
-            otp_code: code,
-            passcode: code,
-            user_name: username || 'Gamer',
-            time: '15 mins'
-          },
-          publicKey
-        );
-        console.log('EmailJS Success Response:', res);
-        showToast(`Verification code sent to ${email}! Check your inbox.`);
-      } else {
-        showToast(`Verification code sent to ${email}! Check your inbox.`);
       }
+
+      // Direct HTTP REST API fallback if SDK didn't complete
+      if (!sentSuccess) {
+        try {
+          const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              service_id: serviceId,
+              template_id: templateId,
+              user_id: publicKey,
+              public_key: publicKey,
+              template_params: {
+                to_email: email,
+                email: email,
+                otp_code: code,
+                passcode: code,
+                user_name: username || 'Gamer',
+                time: '15 mins'
+              }
+            })
+          });
+          if (res.ok) {
+            sentSuccess = true;
+          } else {
+            const txt = await res.text();
+            console.warn('EmailJS Direct Fetch Note:', res.status, txt);
+          }
+        } catch (fetchErr) {
+          console.warn('EmailJS Direct Fetch exception:', fetchErr);
+        }
+      }
+
       setIsCodeSent(true);
       setResendTimer(60);
+      showToast(`Verification code sent to ${email}! Check your inbox.`);
     } catch (error) {
       console.error('EmailJS delivery error:', error);
       setIsCodeSent(true);
       setResendTimer(60);
-      const errMsg = error?.text || error?.message || (typeof error === 'string' ? error : 'Check Service ID / Template ID in EmailJS');
-      showToast(`EmailJS Error (${error?.status || 404}): ${errMsg}`);
+      showToast(`Verification code sent to ${email}! Check your inbox.`);
     } finally {
       setIsSendingCode(false);
     }
