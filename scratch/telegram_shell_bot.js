@@ -3,12 +3,15 @@ import { Bot } from 'node-telegram-bot-api';
 import puppeteer from 'puppeteer';
 
 // 1. Get Telegram Bot Token from process.env or fallback to user token
-const token = process.env.TELEGRAM_BOT_TOKEN || '8721752035:AAE0Ny6F-WKKrfDf9gA9rnIU6wwTyZ9b8T4';
+const token = process.env.TELEGRAM_BOT_TOKEN || '8721752035:AAHT3qzLWgytmhk8ApCEAEHVrTfD3iujgr0';
 
 // 2. Initialize Telegram Bot
 const bot = new Bot(token);
 
 console.log('🤖 MADS TOPUP Telegram Garena Shell Bot (@mads_shell_topup_bot) is LIVE!');
+
+// Start polling Telegram server for incoming messages
+bot.startPolling();
 
 // Command: /start
 bot.command('start', (ctx) => {
