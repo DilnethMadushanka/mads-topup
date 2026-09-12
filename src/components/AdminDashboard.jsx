@@ -42,7 +42,9 @@ export const AdminDashboard = () => {
     supportTickets,
     sendTicketMessage,
     updateTicketStatus,
-    updateTicketPriority
+    updateTicketPriority,
+    resellerApplications,
+    updateResellerApplicationStatus
   } = useApp();
 
   // Admin Authentication State (Requires login when accessing /admin)
@@ -519,6 +521,12 @@ export const AdminDashboard = () => {
     setIsAddPaymentOpen(false);
   };
 
+  // Reseller Application Filters
+  const [resellerSearch, setResellerSearch] = useState('');
+  const [resellerStatusFilter, setResellerStatusFilter] = useState('ALL');
+  const safeResellerApps = resellerApplications || [];
+  const pendingResellersCount = safeResellerApps.filter(a => a.status === 'PENDING').length;
+
   return (
     <div className="fixed inset-0 z-50 bg-[#0b0f17] text-white w-screen h-screen min-h-screen overflow-hidden flex flex-col animate-in fade-in duration-200">
         
@@ -576,6 +584,7 @@ export const AdminDashboard = () => {
         <div className="md:hidden bg-[#0d121c] border-b border-slate-800 px-3 py-2.5 flex items-center gap-2 overflow-x-auto shrink-0 font-mono text-xs">
           {[
             { id: 'overview', label: 'Overview', icon: TrendingUp },
+            { id: 'resellers', label: 'Resellers', icon: Crown, badge: pendingResellersCount },
             { id: 'support', label: 'Support', icon: Headset, badge: openTicketsCount },
             { id: 'orders', label: 'Orders', icon: Activity, badge: pendingCount },
             { id: 'deposits', label: 'Deposits', icon: FileCheck, badge: pendingPaymentsCount },
@@ -641,6 +650,25 @@ export const AdminDashboard = () => {
                 <TrendingUp className="w-4 h-4" />
                 <span>Dashboard Overview</span>
               </div>
+            </button>
+
+            <button
+              onClick={() => handleTabSelect('resellers')}
+              className={`w-full px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition-all cursor-pointer ${
+                adminTab === 'resellers' ? 'bg-[#cc040a] text-white shadow-lg shadow-red-600/30' : 'text-slate-400 hover:bg-slate-900 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Crown className="w-4 h-4 text-amber-400" />
+                <span>Reseller Partner Network</span>
+              </div>
+              {pendingResellersCount > 0 ? (
+                <span className="px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 font-mono font-black text-[10px]">
+                  {pendingResellersCount}
+                </span>
+              ) : (
+                <span className="text-[10px] font-mono text-slate-500">{safeResellerApps.length}</span>
+              )}
             </button>
 
             <button
@@ -886,6 +914,144 @@ export const AdminDashboard = () => {
                     </div>
                     <p className="text-xs text-slate-400">Cloudflare object storage connected for fast receipt uploads.</p>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* RESELLER APPLICATIONS MANAGEMENT PANEL */}
+            {adminTab === 'resellers' && (
+              <div className="space-y-6 animate-in fade-in">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-black font-heading text-white">Reseller Partner Network Applications</h3>
+                    <p className="text-xs text-slate-400">Review, approve, or reject reseller partner store applications</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-3.5 py-1.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-xl text-xs font-extrabold font-mono">
+                      {pendingResellersCount} PENDING REQUESTS
+                    </span>
+                  </div>
+                </div>
+
+                {/* Search & Status Filter Bar */}
+                <div className="bg-[#111622] p-4 rounded-2xl border border-slate-800 space-y-3 sm:space-y-0 sm:flex sm:items-center sm:justify-between gap-4 text-xs">
+                  <div className="relative flex-1">
+                    <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search by applicant name, store name, whatsapp or email..."
+                      value={resellerSearch}
+                      onChange={(e) => setResellerSearch(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white font-semibold text-xs focus:outline-none focus:border-red-500 shadow-inner"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2 overflow-x-auto">
+                    {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map((st) => (
+                      <button
+                        key={st}
+                        onClick={() => setResellerStatusFilter(st)}
+                        className={`px-3.5 py-2 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer ${
+                          resellerStatusFilter === st
+                            ? 'bg-[#cc040a] text-white shadow-md shadow-red-600/30'
+                            : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                        }`}
+                      >
+                        {st}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Reseller Applications Cards */}
+                <div className="space-y-4">
+                  {safeResellerApps
+                    .filter(app => {
+                      const matchSearch = 
+                        (app.realName && app.realName.toLowerCase().includes(resellerSearch.toLowerCase())) ||
+                        (app.storeName && app.storeName.toLowerCase().includes(resellerSearch.toLowerCase())) ||
+                        (app.whatsappNumber && app.whatsappNumber.includes(resellerSearch)) ||
+                        (app.emailAddress && app.emailAddress.toLowerCase().includes(resellerSearch.toLowerCase()));
+                      const matchStatus = resellerStatusFilter === 'ALL' || app.status === resellerStatusFilter;
+                      return matchSearch && matchStatus;
+                    })
+                    .map((app) => (
+                      <div key={app.id || app.firestoreId} className="bg-[#111622] p-5 rounded-2xl border border-slate-800 shadow-md space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
+                          <div className="flex items-center gap-3">
+                            <div className="w-11 h-11 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-extrabold shadow-inner">
+                              <Crown className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <h4 className="text-base font-black text-white">{app.storeName}</h4>
+                              <p className="text-xs text-slate-400 font-medium">Applicant: <span className="text-slate-200 font-bold">{app.realName}</span> ({app.id})</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span className={`px-3 py-1 rounded-full text-[10px] font-extrabold uppercase font-mono tracking-wider ${
+                              app.status === 'APPROVED' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                              app.status === 'REJECTED' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+                              'bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse'
+                            }`}>
+                              {app.status}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                          <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                            <span className="text-[10px] text-slate-400 font-mono font-bold uppercase block mb-0.5">WHATSAPP CONTACT</span>
+                            <span className="text-white font-bold">{app.whatsappNumber}</span>
+                          </div>
+
+                          <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                            <span className="text-[10px] text-slate-400 font-mono font-bold uppercase block mb-0.5">EMAIL ADDRESS</span>
+                            <span className="text-white font-bold">{app.emailAddress}</span>
+                          </div>
+
+                          <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                            <span className="text-[10px] text-slate-400 font-mono font-bold uppercase block mb-0.5">DAILY AVERAGE SALE</span>
+                            <span className="text-amber-400 font-bold">{app.dailySale}</span>
+                          </div>
+
+                          <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                            <span className="text-[10px] text-slate-400 font-mono font-bold uppercase block mb-0.5">STORE & REACH</span>
+                            <span className="text-slate-200 font-medium">
+                              {app.isRunningStore ? '✅ Active Store' : '❌ No Store'} • {app.hasSocialReach ? '✅ Social Reach' : '❌ No Reach'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2">
+                          <span className="text-[11px] text-slate-500 font-mono">
+                            Submitted: {new Date(app.submittedAt).toLocaleString()}
+                          </span>
+
+                          <div className="flex items-center gap-2">
+                            {app.status !== 'APPROVED' && (
+                              <button
+                                onClick={() => updateResellerApplicationStatus(app.id || app.firestoreId, app.userId, 'APPROVED')}
+                                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black shadow-md flex items-center gap-1.5 cursor-pointer transition-all active:scale-[0.98]"
+                              >
+                                <UserCheck className="w-4 h-4" />
+                                <span>APPROVE RESELLER</span>
+                              </button>
+                            )}
+
+                            {app.status !== 'REJECTED' && (
+                              <button
+                                onClick={() => updateResellerApplicationStatus(app.id || app.firestoreId, app.userId, 'REJECTED')}
+                                className="px-3.5 py-2 bg-red-950 hover:bg-red-900 border border-red-800 text-red-300 rounded-xl text-xs font-extrabold flex items-center gap-1.5 cursor-pointer transition-all active:scale-[0.98]"
+                              >
+                                <UserX className="w-4 h-4" />
+                                <span>REJECT</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                 </div>
               </div>
             )}

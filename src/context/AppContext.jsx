@@ -4,7 +4,11 @@ import { GAMES_DATA } from '../data/games';
 import { getMoongoldConfig, saveMoongoldConfig } from '../services/moongoldApi';
 import { getR2Config, saveR2Config } from '../services/storageService';
 import { auth, onAuthStateChanged, logoutGoogle } from '../services/firebaseAuth';
-import { syncUserProfileToFirestore, updateUserProfileInFirestore, subscribeUserProfile, saveOrderToFirestore, subscribeAllUsersFromFirestore, subscribeOrdersFromFirestore, updateOrderStatusInFirestore } from '../services/firestoreService';
+import { 
+  syncUserProfileToFirestore, updateUserProfileInFirestore, subscribeUserProfile, 
+  saveOrderToFirestore, subscribeAllUsersFromFirestore, subscribeOrdersFromFirestore, updateOrderStatusInFirestore,
+  saveResellerApplicationToFirestore, subscribeResellerApplicationsFromFirestore, updateResellerApplicationStatusInFirestore
+} from '../services/firestoreService';
 
 const INITIAL_REVIEWS = [
   {
@@ -1008,6 +1012,66 @@ export const AppProvider = ({ children }) => {
     showToast(`Ticket ${ticketId} priority set to ${newPriority}`);
   };
 
+  // Reseller Applications State & Handlers
+  const [resellerApplications, setResellerApplications] = useState(() => {
+    const saved = localStorage.getItem('mads_reseller_applications');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return [
+      {
+        id: 'APP-90182',
+        userId: 'usr-101',
+        realName: 'Kasun Priyashantha',
+        storeName: 'Kasun TopUp Store',
+        whatsappNumber: '+94 77 987 6543',
+        emailAddress: 'kasun@madstopup.com',
+        isRunningStore: true,
+        hasSocialReach: true,
+        dailySale: '5,000 - 10,000 LKR',
+        status: 'PENDING',
+        submittedAt: new Date(Date.now() - 3600000).toISOString()
+      }
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('mads_reseller_applications', JSON.stringify(resellerApplications));
+  }, [resellerApplications]);
+
+  useEffect(() => {
+    const unsub = subscribeResellerApplicationsFromFirestore((remoteApps) => {
+      if (remoteApps && remoteApps.length > 0) {
+        setResellerApplications(prev => {
+          const map = new Map();
+          [...remoteApps, ...prev].forEach(item => map.set(item.id || item.firestoreId, item));
+          return Array.from(map.values());
+        });
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  const addResellerApplication = (appData) => {
+    setResellerApplications(prev => [appData, ...prev]);
+    saveResellerApplicationToFirestore(appData);
+    setUserProfileState(prev => ({ ...prev, resellerStatus: 'PENDING' }));
+  };
+
+  const updateResellerApplicationStatus = (appId, userId, newStatus) => {
+    setResellerApplications(prev => prev.map(app => {
+      if (app.id === appId || app.firestoreId === appId) {
+        return { ...app, status: newStatus, updatedAt: new Date().toISOString() };
+      }
+      return app;
+    }));
+    updateResellerApplicationStatusInFirestore(appId, userId, newStatus);
+    if (newStatus === 'APPROVED' && userId && userProfileState?.uid === userId) {
+      setUserProfileState(prev => ({ ...prev, isReseller: true, role: 'reseller', resellerStatus: 'APPROVED' }));
+    }
+    showToast(`Reseller Application ${appId} set to ${newStatus}`);
+  };
+
   return (
     <AppContext.Provider value={{
       currency,
@@ -1050,6 +1114,9 @@ export const AppProvider = ({ children }) => {
       setIsResellerLoginPageOpen,
       openResellerLoginPage,
       closeResellerLoginPage,
+      resellerApplications,
+      addResellerApplication,
+      updateResellerApplicationStatus,
       userReviews,
       addReview,
       userProfile,

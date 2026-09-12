@@ -272,3 +272,104 @@ export const subscribeAllUsersFromFirestore = (callback) => {
     if (typeof unsubFirestore === 'function') unsubFirestore();
   };
 };
+
+/**
+ * Save reseller application to Database
+ */
+export const saveResellerApplicationToFirestore = async (appData) => {
+  const payload = {
+    ...appData,
+    submittedAt: new Date().toISOString()
+  };
+
+  if (rtdb) {
+    try {
+      const appRef = dbRef(rtdb, `reseller_applications/${appData.id || Date.now()}`);
+      await rtdbSet(appRef, payload);
+    } catch (e) {
+      console.warn('RTDB reseller app save note:', e);
+    }
+  }
+
+  if (db) {
+    try {
+      const colRef = collection(db, 'reseller_applications');
+      await addDoc(colRef, payload);
+    } catch (err) {
+      console.warn('Firestore reseller app save note:', err);
+    }
+  }
+};
+
+/**
+ * Subscribe to all reseller applications
+ */
+export const subscribeResellerApplicationsFromFirestore = (callback) => {
+  let unsubRtdb = null;
+  let unsubFirestore = null;
+
+  if (rtdb) {
+    try {
+      const appsRef = dbRef(rtdb, 'reseller_applications');
+      unsubRtdb = rtdbOnValue(appsRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const list = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+          if (list.length > 0) callback(list);
+        }
+      });
+    } catch (e) {
+      console.warn('RTDB reseller apps listener note:', e);
+    }
+  }
+
+  if (db) {
+    try {
+      const colRef = collection(db, 'reseller_applications');
+      unsubFirestore = onSnapshot(colRef, (snapshot) => {
+        const list = snapshot.docs.map(docSnap => ({ firestoreId: docSnap.id, ...docSnap.data() }));
+        if (list.length > 0) callback(list);
+      });
+    } catch (err) {
+      console.warn('Firestore reseller apps listener note:', err);
+    }
+  }
+
+  return () => {
+    if (typeof unsubRtdb === 'function') unsubRtdb();
+    if (typeof unsubFirestore === 'function') unsubFirestore();
+  };
+};
+
+/**
+ * Update reseller application status and sync user reseller role
+ */
+export const updateResellerApplicationStatusInFirestore = async (appId, userId, newStatus) => {
+  if (rtdb) {
+    try {
+      const appRef = dbRef(rtdb, `reseller_applications/${appId}`);
+      await rtdbUpdate(appRef, {
+        status: newStatus,
+        updatedAt: new Date().toISOString()
+      });
+      if (userId && newStatus === 'APPROVED') {
+        const userRef = dbRef(rtdb, `users/${userId}`);
+        await rtdbUpdate(userRef, { isReseller: true, role: 'reseller', resellerStatus: 'APPROVED' });
+      }
+    } catch (e) {
+      console.warn('RTDB reseller app status update note:', e);
+    }
+  }
+
+  if (db) {
+    try {
+      const userRef = doc(db, 'users', userId);
+      if (newStatus === 'APPROVED') {
+        await updateDoc(userRef, { isReseller: true, role: 'reseller', resellerStatus: 'APPROVED' });
+      }
+    } catch (err) {
+      console.warn('Firestore reseller status update note:', err);
+    }
+  }
+};
+

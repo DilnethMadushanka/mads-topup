@@ -7,7 +7,7 @@ import confetti from 'canvas-confetti';
 import { 
   ArrowLeft, Check, ShieldCheck, Zap, AlertCircle, RefreshCw, 
   CreditCard, ChevronRight, BookmarkPlus, CheckCircle2, Copy, UploadCloud, Cloud,
-  Clipboard, Plus, Minus, ChevronUp, ChevronDown, HelpCircle, Shield, Edit3
+  Clipboard, Plus, Minus, ChevronUp, ChevronDown, HelpCircle, Shield, Edit3, Crown
 } from 'lucide-react';
 
 export const GameTopupPage = () => {
@@ -115,9 +115,15 @@ export const GameTopupPage = () => {
     });
   };
 
+  // Check if current user is an approved reseller partner
+  const isApprovedReseller = Boolean(userProfile?.isReseller || userProfile?.role === 'reseller');
+
   // Compute Total Price & Items
   const selectedItems = selectedGame.packages.filter(pkg => (cartQuantities[pkg.id] || 0) > 0);
-  const totalLkr = selectedItems.reduce((sum, pkg) => sum + (pkg.priceLkr * (cartQuantities[pkg.id] || 0)), 0);
+  const totalLkr = selectedItems.reduce((sum, pkg) => {
+    const effectivePrice = isApprovedReseller ? Math.round(pkg.priceLkr * 0.95) : pkg.priceLkr;
+    return sum + (effectivePrice * (cartQuantities[pkg.id] || 0));
+  }, 0);
   const totalItemsCount = selectedItems.reduce((sum, pkg) => sum + (cartQuantities[pkg.id] || 0), 0);
 
   // Upload Receipt to Cloudflare R2
@@ -559,11 +565,30 @@ export const GameTopupPage = () => {
               </div>
             </div>
 
-            {/* Packages Grid (Larger Beautiful Cards matching screenshot) */}
+            {/* Reseller Wholesale Banner if User is Approved Reseller */}
+            {isApprovedReseller && (
+              <div className="mb-5 p-4 bg-gradient-to-r from-red-950/90 via-rose-950/90 to-red-950/90 border border-red-500/50 text-white rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-extrabold shrink-0 shadow-inner">
+                    <Crown className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-black uppercase tracking-wider text-amber-300">Reseller Partner Pricing Activated 👑</h4>
+                    <p className="text-[11px] sm:text-xs text-slate-300 font-medium">You are receiving exclusive reseller wholesale prices (5% discount applied across all packages)</p>
+                  </div>
+                </div>
+                <span className="px-3.5 py-1.5 bg-red-600/40 border border-red-500/50 rounded-xl text-xs font-mono font-black text-amber-300 shrink-0 shadow-sm">
+                  5% DISCOUNT ACTIVE
+                </span>
+              </div>
+            )}
+
+            {/* Packages Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
               {selectedGame.packages.map((pkg) => {
                 const qty = cartQuantities[pkg.id] || 0;
                 const isSelected = qty > 0;
+                const effectivePrice = isApprovedReseller ? Math.round(pkg.priceLkr * 0.95) : pkg.priceLkr;
 
                 return (
                   <div
@@ -601,9 +626,22 @@ export const GameTopupPage = () => {
                       </span>
                     )}
 
-                    {/* Price */}
-                    <div className="font-black text-base sm:text-lg text-[#2563EB] font-heading my-1 tracking-tight">
-                      {formatPrice(pkg.priceLkr)}
+                    {/* Price Display (With Reseller Wholesale Discounting) */}
+                    <div className="my-1 text-center">
+                      {isApprovedReseller ? (
+                        <div className="flex flex-col items-center">
+                          <span className="font-black text-base sm:text-lg text-emerald-600 font-heading tracking-tight leading-none">
+                            {formatPrice(effectivePrice)}
+                          </span>
+                          <span className="text-[10px] text-slate-400 line-through font-bold mt-0.5">
+                            {formatPrice(pkg.priceLkr)}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="font-black text-base sm:text-lg text-[#2563EB] font-heading tracking-tight">
+                          {formatPrice(pkg.priceLkr)}
+                        </div>
+                      )}
                     </div>
 
                     {/* Counter Buttons (- 0 +) */}

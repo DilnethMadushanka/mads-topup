@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 
 export const ResellerProgramPage = () => {
-  const { userProfile, openResellerLoginPage, showToast, closeResellerPage } = useApp();
+  const { userProfile, openResellerLoginPage, showToast, closeResellerPage, addResellerApplication } = useApp();
 
   const [realName, setRealName] = useState(userProfile?.name || '');
   const [storeName, setStoreName] = useState('');
@@ -49,7 +49,22 @@ export const ResellerProgramPage = () => {
 
     setIsSubmitting(true);
 
+    const newApp = {
+      id: 'APP-' + Math.floor(10000 + Math.random() * 90000),
+      userId: userProfile?.uid || 'usr-' + Date.now(),
+      realName: realName || userProfile?.name || 'Partner Reseller',
+      storeName: storeName.trim(),
+      whatsappNumber: whatsappNumber.trim(),
+      emailAddress: emailAddress.trim() || userProfile?.email || '',
+      isRunningStore,
+      hasSocialReach,
+      dailySale,
+      status: 'PENDING',
+      submittedAt: new Date().toISOString()
+    };
+
     setTimeout(() => {
+      addResellerApplication(newApp);
       setIsSubmitting(false);
       setIsSubmittedSuccess(true);
       showToast('Application Submitted Successfully! Our Admin Team will review your application within 24 hours.');
@@ -59,12 +74,12 @@ export const ResellerProgramPage = () => {
           particleCount: 120,
           spread: 90,
           origin: { y: 0.5 },
-          colors: ['#06b6d4', '#3b82f6', '#10b981', '#f59e0b']
+          colors: ['#ef4444', '#f43f5e', '#10b981', '#f59e0b']
         });
       } catch (err) {}
 
       window.scrollTo({ top: 200, behavior: 'smooth' });
-    }, 1200);
+    }, 1000);
   };
 
   return (
