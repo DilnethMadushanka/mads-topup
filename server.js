@@ -431,9 +431,9 @@ app.post('/api/ezcash/webhook', (req, res) => {
     const textContent = smsText || message || body || JSON.stringify(req.body);
     console.log(`[EZ Cash SMS Webhook Received]:`, textContent);
 
-    // Extract 14-digit RN number using Regex pattern matching Dialog EZ Cash SMS
-    const rnMatch = textContent.match(/(\d{14})/) || textContent.match(/RN[:\s]*(\d+)/i) || textContent.match(/Trans ID[:\s]*(\d+)/i);
-    const amtMatch = textContent.match(/LKR[\s:]*([0-9,.]+)/i) || textContent.match(/Rs[\s:]*([0-9,.]+)/i);
+    // Extract 14-digit RN number & amount using Regex pattern matching exact Dialog EZ Cash SMS formats
+    const rnMatch = textContent.match(/RN[:\s]*(\d{10,16})/i) || textContent.match(/Trans ID[:\s]*(\d+)/i) || textContent.match(/(\d{14})/);
+    const amtMatch = textContent.match(/Net Received[:\s]*Rs\.?\s*([0-9,.]+)/i) || textContent.match(/Rs\.?\s*([0-9,.]+)/i) || textContent.match(/LKR[\s:]*([0-9,.]+)/i);
 
     if (rnMatch && rnMatch[1]) {
       const rnNo = rnMatch[1];
