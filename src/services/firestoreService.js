@@ -176,6 +176,64 @@ export const saveOrderToFirestore = async (uid, order) => {
 };
 
 /**
+ * Subscribe to real-time order updates for user or admin
+ */
+export const subscribeOrdersFromFirestore = (uid, callback) => {
+  let unsubRtdb = null;
+  let unsubFirestore = null;
+
+  if (rtdb) {
+    try {
+      const ordersRef = dbRef(rtdb, 'orders');
+      unsubRtdb = rtdbOnValue(ordersRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const list = Object.keys(data).map(key => ({ ...data[key], key }));
+          const filtered = uid ? list.filter(o => o.userId === uid || o.userEmail === uid) : list;
+          if (filtered.length > 0) callback(filtered);
+        }
+      });
+    } catch (e) {
+      console.warn('RTDB orders listener note:', e);
+    }
+  }
+
+  if (db) {
+    try {
+      const ordersCol = collection(db, 'orders');
+      unsubFirestore = onSnapshot(ordersCol, (snapshot) => {
+        const list = snapshot.docs.map(docSnap => ({ firestoreId: docSnap.id, ...docSnap.data() }));
+        const filtered = uid ? list.filter(o => o.userId === uid || o.userEmail === uid) : list;
+        if (filtered.length > 0) callback(filtered);
+      });
+    } catch (err) {
+      console.warn('Firestore orders listener note:', err);
+    }
+  }
+
+  return () => {
+    if (typeof unsubRtdb === 'function') unsubRtdb();
+    if (typeof unsubFirestore === 'function') unsubFirestore();
+  };
+};
+
+/**
+ * Update order status in Realtime Database & Firestore
+ */
+export const updateOrderStatusInFirestore = async (orderId, newStatus, moongoldRef = null) => {
+  if (rtdb) {
+    try {
+      const orderRef = dbRef(rtdb, `orders/${orderId}`);
+      await rtdbUpdate(orderRef, {
+        status: newStatus,
+        ...(moongoldRef ? { moongoldRef } : {}),
+        updatedAt: new Date().toISOString()
+      });
+    } catch (e) {}
+  }
+};
+
+/**
  * Subscribe to all registered users in Firestore or Realtime Database
  */
 export const subscribeAllUsersFromFirestore = (callback) => {

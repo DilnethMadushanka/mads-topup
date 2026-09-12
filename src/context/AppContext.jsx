@@ -4,7 +4,7 @@ import { GAMES_DATA } from '../data/games';
 import { getMoongoldConfig, saveMoongoldConfig } from '../services/moongoldApi';
 import { getR2Config, saveR2Config } from '../services/storageService';
 import { auth, onAuthStateChanged, logoutGoogle } from '../services/firebaseAuth';
-import { syncUserProfileToFirestore, updateUserProfileInFirestore, subscribeUserProfile, saveOrderToFirestore, subscribeAllUsersFromFirestore } from '../services/firestoreService';
+import { syncUserProfileToFirestore, updateUserProfileInFirestore, subscribeUserProfile, saveOrderToFirestore, subscribeAllUsersFromFirestore, subscribeOrdersFromFirestore, updateOrderStatusInFirestore } from '../services/firestoreService';
 
 const INITIAL_REVIEWS = [
   {
@@ -492,6 +492,27 @@ export const AppProvider = ({ children }) => {
     return () => unsubAll();
   }, []);
 
+  // Realtime subscribe to live orders from Firestore / RTDB
+  useEffect(() => {
+    const unsubOrders = subscribeOrdersFromFirestore(userProfile?.uid, (remoteOrders) => {
+      if (remoteOrders && remoteOrders.length > 0) {
+        setOrders(prev => {
+          const merged = [...prev];
+          remoteOrders.forEach(ro => {
+            const idx = merged.findIndex(o => o.id === ro.id);
+            if (idx >= 0) {
+              merged[idx] = { ...merged[idx], ...ro };
+            } else {
+              merged.unshift(ro);
+            }
+          });
+          return merged;
+        });
+      }
+    });
+    return () => unsubOrders();
+  }, [userProfile?.uid]);
+
   useEffect(() => {
     localStorage.setItem('mads_orders', JSON.stringify(orders));
   }, [orders]);
@@ -516,6 +537,7 @@ export const AppProvider = ({ children }) => {
 
   const addOrder = (newOrder) => {
     setOrders(prev => [newOrder, ...prev]);
+    saveOrderToFirestore(userProfile?.uid || 'guest', newOrder);
   };
 
   const updateOrderStatus = (orderId, newStatus, moongoldRef = null) => {
@@ -529,6 +551,7 @@ export const AppProvider = ({ children }) => {
       }
       return ord;
     }));
+    updateOrderStatusInFirestore(orderId, newStatus, moongoldRef);
   };
 
   const formatPrice = (priceLkr) => {
