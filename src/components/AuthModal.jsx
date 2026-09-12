@@ -5,7 +5,7 @@ import { syncUserProfileToFirestore, updateUserProfileInFirestore } from '../ser
 import { X, Eye, EyeOff, Shield, Zap, Clock, User, Mail, Phone, Lock, Check, Send, LogIn, ArrowRight, Loader2 } from 'lucide-react';
 
 export const AuthModal = () => {
-  const { isAuthModalOpen, setIsAuthModalOpen, authMode, setAuthMode, showToast, setUserProfile, setIsLoggedIn } = useApp();
+  const { isAuthModalOpen, setIsAuthModalOpen, authMode, setAuthMode, showToast, setUserProfile, setIsLoggedIn, openResellerPage } = useApp();
 
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -17,6 +17,11 @@ export const AuthModal = () => {
   const [keepLoggedIn, setKeepLoggedIn] = useState(true);
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  // Reseller Login state
+  const [resellerUsername, setResellerUsername] = useState('');
+  const [resellerPassword, setResellerPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
 
   // Email OTP Code Verification state
   const [verificationCode, setVerificationCode] = useState('');
@@ -157,6 +162,28 @@ export const AuthModal = () => {
       email: username.includes('@') ? username : (prev.email || `${username}@gmail.com`)
     }));
     showToast(`Welcome back, ${username}! Successfully logged in.`);
+    setIsAuthModalOpen(false);
+  };
+
+  const handleResellerLoginSubmit = (e) => {
+    e.preventDefault();
+    if (!resellerUsername) {
+      showToast('Please enter your reseller username!', 'error');
+      return;
+    }
+    if (!resellerPassword) {
+      showToast('Please enter your password!', 'error');
+      return;
+    }
+    setIsLoggedIn(true);
+    setUserProfile(prev => ({
+      ...prev,
+      name: resellerUsername,
+      role: 'Reseller Partner',
+      isReseller: true,
+      email: resellerUsername.includes('@') ? resellerUsername : `${resellerUsername}@madstopup.com`
+    }));
+    showToast(`Welcome back, Reseller ${resellerUsername}! Logged into Reseller Portal.`);
     setIsAuthModalOpen(false);
   };
 
@@ -328,6 +355,107 @@ export const AuthModal = () => {
             >
               COMPLETE REGISTRATION
             </button>
+          </form>
+        </div>
+      ) : authMode === 'reseller' ? (
+        /* RESELLER LOGIN MODAL CARD (Matching Screenshot) */
+        <div className="w-full max-w-md bg-white text-slate-900 rounded-3xl p-8 sm:p-10 shadow-2xl border border-slate-200/90 text-center relative animate-in zoom-in-95 duration-200 my-auto">
+          {/* Close Button */}
+          <button
+            onClick={() => setIsAuthModalOpen(false)}
+            className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 flex items-center justify-center transition-colors cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+
+          {/* Header Title */}
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading mb-6 tracking-tight">
+            Reseller Login
+          </h2>
+
+          {/* Form */}
+          <form onSubmit={handleResellerLoginSubmit} className="space-y-4 text-left">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                Reseller Username
+              </label>
+              <input
+                type="text"
+                placeholder="Enter reseller username"
+                value={resellerUsername}
+                onChange={(e) => setResellerUsername(e.target.value)}
+                className="w-full px-4 py-3 bg-white border border-slate-300 focus:border-red-600 focus:ring-2 focus:ring-red-600/20 rounded-xl text-sm font-semibold text-slate-900 outline-none transition-all shadow-xs"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Enter password"
+                  value={resellerPassword}
+                  onChange={(e) => setResellerPassword(e.target.value)}
+                  className="w-full px-4 py-3 pr-10 bg-white border border-slate-300 focus:border-red-600 focus:ring-2 focus:ring-red-600/20 rounded-xl text-sm font-semibold text-slate-900 outline-none transition-all shadow-xs"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3.5 text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-1">
+              <input
+                type="checkbox"
+                id="remember-me"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded border-slate-300 text-red-600 focus:ring-red-600 cursor-pointer"
+              />
+              <label htmlFor="remember-me" className="text-xs text-slate-600 font-medium cursor-pointer select-none">
+                Remember me
+              </label>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-3.5 bg-gradient-to-r from-red-600 via-rose-600 to-red-500 hover:from-red-500 hover:to-rose-500 text-white font-extrabold text-xs sm:text-sm tracking-widest uppercase rounded-xl transition-all shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 cursor-pointer mt-3 active:scale-[0.99]"
+            >
+              <span>LOGIN</span>
+            </button>
+
+            <div className="pt-3 border-t border-slate-200/80 mt-4 space-y-2 text-center text-xs font-semibold">
+              <div>
+                <span className="text-slate-500">Not a reseller? </span>
+                <button
+                  type="button"
+                  onClick={() => setAuthMode('login')}
+                  className="text-red-600 hover:underline font-extrabold cursor-pointer"
+                >
+                  Login as a regular user
+                </button>
+              </div>
+
+              <div>
+                <span className="text-slate-500">Want to become a reseller? </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAuthModalOpen(false);
+                    openResellerPage();
+                  }}
+                  className="text-red-600 hover:underline font-extrabold cursor-pointer"
+                >
+                  Apply Here
+                </button>
+              </div>
+            </div>
           </form>
         </div>
       ) : (

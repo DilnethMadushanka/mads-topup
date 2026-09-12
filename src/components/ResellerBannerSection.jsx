@@ -77,7 +77,7 @@ export const ResellerBannerSection = () => {
             </div>
 
             <button
-              onClick={() => openAuth('login')}
+              onClick={() => openAuth('reseller')}
               className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-red-600/25 cursor-pointer uppercase tracking-wider active:scale-[0.99]"
             >
               <span>LOGIN</span>
