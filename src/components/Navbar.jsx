@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Gamepad2, Gift, BookOpen, Download, User, Wallet, ChevronDown, Headset, Menu, X, LogIn, UserPlus, Home, ShoppingBag, Smartphone } from 'lucide-react';
+import { Gamepad2, Gift, BookOpen, Download, User, Wallet, ChevronDown, Headset, Menu, X, LogIn, UserPlus, Home, ShoppingBag, Smartphone, Crown } from 'lucide-react';
 
 export const Navbar = () => {
   const { 
@@ -19,7 +19,9 @@ export const Navbar = () => {
     setIsWalletModalOpen,
     setIsSupportOpen,
     setIsDownloadAppModalOpen,
-    openContactPage
+    openContactPage,
+    openResellerPage,
+    isResellerPageOpen
   } = useApp();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -121,6 +123,16 @@ export const Navbar = () => {
               <Download className="w-3.5 h-3.5" />
             </span>
             <span>Download App</span>
+          </button>
+
+          <button 
+            onClick={() => { openResellerPage(); setIsMobileMenuOpen(false); }}
+            className={`flex items-center gap-2 hover:text-cyan-600 transition-colors cursor-pointer group py-2 ${isResellerPageOpen ? 'text-cyan-600' : ''}`}
+          >
+            <span className="w-6 h-6 rounded-lg bg-cyan-100 text-cyan-600 flex items-center justify-center">
+              <Crown className="w-3.5 h-3.5" />
+            </span>
+            <span>Reseller Program</span>
           </button>
 
           <button 

@@ -21,11 +21,12 @@ import { DownloadAppModal } from './components/DownloadAppModal';
 import { ReviewsPage } from './components/ReviewsPage';
 import { ContactPage } from './components/ContactPage';
 import { ReferralProgramPage } from './components/ReferralProgramPage';
+import { ResellerProgramPage } from './components/ResellerProgramPage';
 import { ToastNotification } from './components/ToastNotification';
 import { Flame } from 'lucide-react';
 
 const MainContent = () => {
-  const { setIsAdminOpen, isUserProfileOpen, isWalletModalOpen, openUserProfilePage, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, isReferralPageOpen, openContactPage, selectedGame } = useApp();
+  const { setIsAdminOpen, isUserProfileOpen, isWalletModalOpen, openUserProfilePage, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, isReferralPageOpen, isResellerPageOpen, openResellerPage, openContactPage, selectedGame } = useApp();
 
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
@@ -42,6 +43,8 @@ const MainContent = () => {
           <UserProfilePage />
         ) : isWalletModalOpen ? (
           <WalletPage />
+        ) : isResellerPageOpen ? (
+          <ResellerProgramPage />
         ) : isReferralPageOpen ? (
           <ReferralProgramPage />
         ) : isContactPageOpen ? (
@@ -84,6 +87,7 @@ const MainContent = () => {
             <div>
               <h4 className="font-extrabold text-sm text-white uppercase tracking-wider mb-4 font-heading">Quick Links</h4>
               <ul className="space-y-2.5 text-xs text-slate-400 font-bold uppercase tracking-wide font-mono">
+                <li onClick={openResellerPage} className="hover:text-cyan-400 cursor-pointer transition-colors text-cyan-400 font-black flex items-center gap-1">RESELLER PROGRAM 👑</li>
                 <li onClick={openContactPage} className="hover:text-[#cc040a] cursor-pointer transition-colors">ABOUT US</li>
                 <li onClick={openContactPage} className="hover:text-[#cc040a] cursor-pointer transition-colors">CONTACT</li>
                 <li onClick={openUserProfilePage} className="hover:text-[#cc040a] cursor-pointer transition-colors">MY ORDERS</li>

@@ -122,6 +122,7 @@ export const AppProvider = ({ children }) => {
   const [isReviewsPageOpen, setIsReviewsPageOpen] = useState(false);
   const [isContactPageOpen, setIsContactPageOpen] = useState(false);
   const [isReferralPageOpen, setIsReferralPageOpen] = useState(false);
+  const [isResellerPageOpen, setIsResellerPageOpen] = useState(false);
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
@@ -138,6 +139,7 @@ export const AppProvider = ({ children }) => {
     setIsContactPageOpen(false);
     setIsReviewsPageOpen(false);
     setIsReferralPageOpen(false);
+    setIsResellerPageOpen(false);
     setIsGameCatalogOpen(false);
     setSelectedGame(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -154,6 +156,7 @@ export const AppProvider = ({ children }) => {
     setIsContactPageOpen(false);
     setIsReviewsPageOpen(false);
     setIsReferralPageOpen(false);
+    setIsResellerPageOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -167,6 +170,7 @@ export const AppProvider = ({ children }) => {
     setIsUserProfileOpen(false);
     setIsContactPageOpen(false);
     setIsReferralPageOpen(false);
+    setIsResellerPageOpen(false);
     setIsGameCatalogOpen(false);
     setSelectedGame(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -182,6 +186,7 @@ export const AppProvider = ({ children }) => {
     setIsUserProfileOpen(false);
     setIsReviewsPageOpen(false);
     setIsReferralPageOpen(false);
+    setIsResellerPageOpen(false);
     setIsGameCatalogOpen(false);
     setSelectedGame(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -197,6 +202,7 @@ export const AppProvider = ({ children }) => {
     setIsUserProfileOpen(false);
     setIsContactPageOpen(false);
     setIsReviewsPageOpen(false);
+    setIsResellerPageOpen(false);
     setIsGameCatalogOpen(false);
     setSelectedGame(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -204,6 +210,22 @@ export const AppProvider = ({ children }) => {
 
   const closeReferralPage = () => {
     setIsReferralPageOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const openResellerPage = () => {
+    setIsResellerPageOpen(true);
+    setIsReferralPageOpen(false);
+    setIsUserProfileOpen(false);
+    setIsContactPageOpen(false);
+    setIsReviewsPageOpen(false);
+    setIsGameCatalogOpen(false);
+    setSelectedGame(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const closeResellerPage = () => {
+    setIsResellerPageOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -1001,6 +1023,10 @@ export const AppProvider = ({ children }) => {
       setIsReferralPageOpen,
       openReferralPage,
       closeReferralPage,
+      isResellerPageOpen,
+      setIsResellerPageOpen,
+      openResellerPage,
+      closeResellerPage,
       userReviews,
       addReview,
       userProfile,
