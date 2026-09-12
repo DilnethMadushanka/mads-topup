@@ -261,7 +261,7 @@ app.post('/api/binance/verify-order', async (req, res) => {
       const bodyObj = { binanceOrderNo: orderId };
       const bodyStr = JSON.stringify(bodyObj);
       const payloadToSign = `${timestamp}\n${nonce}\n${bodyStr}\n`;
-      
+
       const signature = crypto
         .createHmac('sha512', process.env.BINANCE_PAY_SECRET)
         .update(payloadToSign)
@@ -315,9 +315,9 @@ app.post('/api/binance/verify-order', async (req, res) => {
         console.log(`[Binance Personal Pay History]:`, payHistoryData);
 
         if (payHistoryData && Array.isArray(payHistoryData.data)) {
-          const matchTxn = payHistoryData.data.find(tx => 
-            String(tx.orderId) === String(orderId) || 
-            String(tx.tranId) === String(orderId) || 
+          const matchTxn = payHistoryData.data.find(tx =>
+            String(tx.orderId) === String(orderId) ||
+            String(tx.tranId) === String(orderId) ||
             String(tx.payerId) === String(payId)
           );
 
