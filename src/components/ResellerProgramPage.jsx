@@ -3,11 +3,11 @@ import { useApp } from '../context/AppContext';
 import confetti from 'canvas-confetti';
 import { 
   UserPlus, LogIn, Crown, ShieldCheck, DollarSign, TrendingUp, Send, 
-  Smartphone, FileText, Users, CheckCircle2, ArrowRight, Sparkles, CheckSquare, HelpCircle
+  Smartphone, FileText, Users, CheckCircle2, ArrowRight, Sparkles, CheckSquare, HelpCircle, ArrowLeft
 } from 'lucide-react';
 
 export const ResellerProgramPage = () => {
-  const { userProfile, openAuth, showToast } = useApp();
+  const { userProfile, openAuth, showToast, closeResellerPage } = useApp();
 
   const [realName, setRealName] = useState(userProfile?.name || '');
   const [storeName, setStoreName] = useState('');
@@ -63,13 +63,29 @@ export const ResellerProgramPage = () => {
         });
       } catch (err) {}
 
-      window.scrollTo({ top: 400, behavior: 'smooth' });
+      window.scrollTo({ top: 200, behavior: 'smooth' });
     }, 1200);
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFF] py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12">
+    <div className="min-h-screen bg-[#F8FAFF] py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8">
       
+      {/* Top Navigation Bar */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={closeResellerPage}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-slate-800 hover:bg-slate-100 font-extrabold text-xs border border-slate-200 cursor-pointer transition-all shadow-xs"
+        >
+          <ArrowLeft className="w-4 h-4 text-cyan-600" />
+          <span>Back to Homepage</span>
+        </button>
+
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 animate-pulse"></span>
+          <span className="text-xs font-bold text-slate-600 font-mono uppercase">24/7 Verified Reseller Network</span>
+        </div>
+      </div>
+
       {/* 1. HERO CHOICE BANNER CONTAINER (Matching Screenshot 1) */}
       <div className="bg-[#0B132B] text-white rounded-3xl p-6 sm:p-12 border border-slate-800 shadow-2xl relative overflow-hidden text-center">
         

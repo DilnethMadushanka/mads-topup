@@ -22,6 +22,7 @@ import { ReviewsPage } from './components/ReviewsPage';
 import { ContactPage } from './components/ContactPage';
 import { ReferralProgramPage } from './components/ReferralProgramPage';
 import { ResellerProgramPage } from './components/ResellerProgramPage';
+import { ResellerBannerSection } from './components/ResellerBannerSection';
 import { ToastNotification } from './components/ToastNotification';
 import { Flame } from 'lucide-react';
 
@@ -62,9 +63,7 @@ const MainContent = () => {
             <ReviewsSection />
             <BlogSection />
             <PromoSection />
-            <div id="reseller-section" className="pt-8">
-              <ResellerProgramPage />
-            </div>
+            <ResellerBannerSection />
           </>
         )}
       </div>
