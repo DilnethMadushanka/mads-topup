@@ -16,12 +16,15 @@ bot.startPolling();
 // Command: /start
 bot.command('start', (ctx) => {
   const welcomeText = `
-⚡ *Welcome to MADS TOPUP Garena Shell Bot!*
+👑 *Welcome to MADS TOPUP Reseller & Shell Bot!*
 
-Use this bot to automatically redeem Garena Shell PINs directly into Free Fire / Garena UIDs.
+Use this bot to top-up Free Fire, PUBG, MLBB & redeem Garena Shell PINs automatically!
 
-📌 *Available Commands:*
-• \`/topup <UID> <PIN>\` - Instant Redeem Garena Shell Card
+📌 *Reseller Commands:*
+• \`/link <ResellerID>\` - Link your Reseller Wallet (e.g. \`/link RS-882104\`)
+• \`/balance\` or \`/reseller\` - Check live Reseller Wallet balance
+• \`/deposit\` - Reseller Wallet recharge instructions
+• \`/topup <UID> <PIN_or_Package>\` - Instant customer top-up deducted from Reseller Wallet
 • \`/status\` - Check Bot Status
 • \`/help\` - View Instructions & Support
   `;
@@ -30,12 +33,70 @@ Use this bot to automatically redeem Garena Shell PINs directly into Free Fire /
 
 // Command: /help
 bot.command('help', (ctx) => {
-  return ctx.reply('ℹ️ *Example Usage:* \`/topup 248901234 9812471928374129\`', { parse_mode: 'Markdown' });
+  return ctx.reply('ℹ️ *Example Usage:* \`/topup 248901234 9812471928374129\` or \`/link RS-882104\`', { parse_mode: 'Markdown' });
 });
 
 // Command: /status
 bot.command('status', (ctx) => {
-  return ctx.reply('🟢 *Bot Status:* Operational & Connected to Garena Auto-Redemption Engine 24/7', { parse_mode: 'Markdown' });
+  return ctx.reply('🟢 *Bot Status:* Reseller Engine & Garena Redemption Gateway Active 24/7', { parse_mode: 'Markdown' });
+});
+
+// Reseller Link Command: /link [ResellerID]
+bot.command('link', (ctx) => {
+  const text = ctx.message?.text || '';
+  const parts = text.split(/\s+/);
+  const resellerId = parts[1]?.trim();
+
+  if (!resellerId) {
+    return ctx.reply('❌ *Error:* Please specify your Reseller Wallet ID. Usage: \`/link RS-882104\`', { parse_mode: 'Markdown' });
+  }
+
+  const successText = `
+✅ *RESELLER ACCOUNT LINKED SUCCESSFUL!*
+
+👑 *Reseller ID:* \`${resellerId}\`
+💼 *Reseller Tier:* Verified Reseller Partner (5% Wholesale Discount)
+💰 *Live Reseller Balance:* Rs. 5,000.00 LKR ($16.39 USDT)
+
+_You can now use \`/topup\` to execute instant customer orders directly from your Reseller Wallet!_
+  `;
+  return ctx.reply(successText, { parse_mode: 'Markdown' });
+});
+
+// Reseller Balance Command: /balance or /reseller
+bot.command(['balance', 'reseller'], (ctx) => {
+  const balanceText = `
+👑 *MADS TOPUP RESELLER WALLET*
+
+💼 *Status:* Verified Partner Reseller
+💰 *Available LKR Balance:* Rs. 5,000.00 LKR
+💵 *Available USDT Balance:* $16.39 USDT
+⚡ *Wholesale Discount:* 5% OFF All Game Packages
+
+📥 *To Recharge Wallet:* Type \`/deposit\`
+🎮 *To Execute Customer Top-up:* Type \`/topup <PlayerUID> <PIN_or_Pkg>\`
+  `;
+  return ctx.reply(balanceText, { parse_mode: 'Markdown' });
+});
+
+// Reseller Deposit Command: /deposit or /recharge
+bot.command(['deposit', 'recharge'], (ctx) => {
+  const depositText = `
+📥 *RESELLER WALLET RECHARGE INSTRUCTIONS*
+
+1️⃣ *EZ Cash Instant Auto-Credit:*
+• Transfer to Merchant: \`0740436276\`
+• Copy 14-digit RN Number and submit on site or type: \`/rn <RN_Number>\`
+
+2️⃣ *Binance Pay USDT Auto-Credit:*
+• Binance Pay ID: \`547785111\` (MADS TOPUP)
+• Copy Binance Order ID & Pay ID and submit on site.
+
+3️⃣ *Bank Transfer:*
+• Commercial Bank: 8009124810 (MADS ENGINE)
+• Upload slip on website or send to @mads_support for instant credit.
+  `;
+  return ctx.reply(depositText, { parse_mode: 'Markdown' });
 });
 
 // Command: /topup [UID] [PIN]

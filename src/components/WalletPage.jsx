@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
   X, Wallet, Copy, Check, Clipboard, DollarSign, Gift, ArrowLeft, ArrowRight, XCircle, 
-  Ban, Key, Clock, RefreshCw, Zap, CheckCircle2, ShieldCheck, HelpCircle, Smartphone, AlertTriangle 
+  Ban, Key, Clock, RefreshCw, Zap, CheckCircle2, ShieldCheck, HelpCircle, Smartphone, AlertTriangle, Crown, Send
 } from 'lucide-react';
 
 export const WalletPage = () => {
@@ -236,6 +236,9 @@ export const WalletPage = () => {
     return p.userEmail && p.userEmail.toLowerCase() === userProfile.email.toLowerCase();
   });
 
+  const isApprovedReseller = Boolean(userProfile?.isReseller || userProfile?.role === 'reseller');
+  const resellerWalletId = `RS-${(userProfile?.uid || '882104').slice(-6).toUpperCase()}`;
+
   return (
     <div className="min-h-screen bg-[#F8FAFF] pb-20 pt-6 animate-in fade-in duration-300 font-sans text-slate-900">
       
@@ -260,33 +263,89 @@ export const WalletPage = () => {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
 
-        {/* RICH RED THEME TOTAL BALANCE BANNER (Full Page Version) */}
-        <div className="bg-gradient-to-r from-[#cc040a] via-[#dc2626] to-[#990207] rounded-3xl p-6 sm:p-10 text-white text-center shadow-2xl relative overflow-hidden border border-red-600/30">
-          
-          {/* Background Glow Shapes */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-red-950/40 rounded-full blur-3xl pointer-events-none"></div>
+        {/* RICH TOTAL BALANCE BANNER (With Special Reseller Wallet Styling if Approved) */}
+        {isApprovedReseller ? (
+          <div className="bg-gradient-to-r from-slate-950 via-[#1E1656] to-slate-950 rounded-3xl p-6 sm:p-10 text-white text-center shadow-2xl relative overflow-hidden border-2 border-amber-500/50">
+            {/* Background Decorative Lighting */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none"></div>
 
-          <div className="relative z-10">
-            <span className="text-xs font-black text-red-100 uppercase tracking-widest font-mono block mb-1">
-              ACCOUNT TOTAL BALANCE
-            </span>
-            <h1 className="text-4xl sm:text-6xl font-black font-heading text-white tracking-tight">
-              LKR {(userProfile?.walletBalance || 0).toFixed(2)}
-            </h1>
+            <div className="relative z-10 space-y-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-mono font-bold tracking-widest uppercase">
+                <Crown className="w-4 h-4 fill-amber-400 text-amber-400" />
+                <span>RESELLER PARTNER WALLET</span>
+              </div>
 
-            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-bold text-white mt-4 border border-white/30 shadow-xs">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
-              <span>{(userProfile?.walletUsdt || 0).toFixed(2)} USDT</span>
+              <div>
+                <span className="text-xs font-black text-slate-300 uppercase tracking-widest font-mono block mb-1">
+                  AVAILABLE RESELLER BALANCE
+                </span>
+                <h1 className="text-4xl sm:text-6xl font-black font-heading text-white tracking-tight">
+                  LKR {(userProfile?.walletBalance || 0).toFixed(2)}
+                </h1>
+              </div>
+
+              <div className="flex items-center justify-center gap-3 pt-2 flex-wrap">
+                <div className="inline-flex items-center gap-2 bg-slate-900/90 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-bold text-white border border-amber-500/30 shadow-xs">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span>{(userProfile?.walletUsdt || 0).toFixed(2)} USDT</span>
+                </div>
+
+                <div className="inline-flex items-center gap-2 bg-slate-900/90 border border-slate-700 px-4 py-1.5 rounded-full text-xs font-mono font-bold text-amber-300 shadow-xs">
+                  <span>WALLET ID:</span>
+                  <span className="text-white font-black">{resellerWalletId}</span>
+                  <button 
+                    onClick={() => handleCopy(resellerWalletId)} 
+                    className="hover:text-white transition-colors" 
+                    title="Copy Reseller Wallet ID"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-gradient-to-r from-[#cc040a] via-[#dc2626] to-[#990207] rounded-3xl p-6 sm:p-10 text-white text-center shadow-2xl relative overflow-hidden border border-red-600/30">
+            {/* Background Glow Shapes */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-red-950/40 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div className="relative z-10">
+              <span className="text-xs font-black text-red-100 uppercase tracking-widest font-mono block mb-1">
+                ACCOUNT TOTAL BALANCE
+              </span>
+              <h1 className="text-4xl sm:text-6xl font-black font-heading text-white tracking-tight">
+                LKR {(userProfile?.walletBalance || 0).toFixed(2)}
+              </h1>
+
+              <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-bold text-white mt-4 border border-white/30 shadow-xs">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+                <span>{(userProfile?.walletUsdt || 0).toFixed(2)} USDT</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* TAB SWITCHER PILLS */}
-        <div className="bg-white rounded-full p-2 border border-slate-200/90 shadow-sm max-w-lg mx-auto flex items-center justify-around text-xs font-black">
+        <div className="bg-white rounded-full p-2 border border-slate-200/90 shadow-sm max-w-2xl mx-auto flex items-center justify-around text-xs font-black overflow-x-auto gap-1">
+          {isApprovedReseller && (
+            <button
+              onClick={() => setWalletActiveTab('telegram_bot')}
+              className={`py-3 px-4 rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 ${
+                walletActiveTab === 'telegram_bot'
+                  ? 'bg-gradient-to-r from-indigo-600 to-sky-500 text-white shadow-md'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Send className="w-3.5 h-3.5 text-sky-300" />
+              <span>Telegram Bot Topup</span>
+            </button>
+          )}
+
           <button
             onClick={() => setWalletActiveTab('binance')}
-            className={`flex-1 py-3 px-4 rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`flex-1 py-3 px-4 rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 ${
               walletActiveTab === 'binance'
                 ? 'bg-[#cc040a] text-white shadow-md'
                 : 'text-slate-600 hover:text-slate-900'
@@ -298,7 +357,7 @@ export const WalletPage = () => {
 
           <button
             onClick={() => setWalletActiveTab('ezcash')}
-            className={`flex-1 py-3 px-4 rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`flex-1 py-3 px-4 rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 ${
               walletActiveTab === 'ezcash'
                 ? 'bg-[#cc040a] text-white shadow-md'
                 : 'text-slate-600 hover:text-slate-900'
@@ -310,16 +369,121 @@ export const WalletPage = () => {
 
           <button
             onClick={() => setWalletActiveTab('redeem')}
-            className={`flex-1 py-3 px-4 rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`flex-1 py-3 px-4 rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 ${
               walletActiveTab === 'redeem'
                 ? 'bg-[#cc040a] text-white shadow-md'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <span>🎁</span>
-            <span>Redeem Voucher</span>
+            <span>Voucher</span>
           </button>
         </div>
+
+        {/* TAB: TELEGRAM BOT RESELLER TOPUP PANEL */}
+        {walletActiveTab === 'telegram_bot' && (
+          <div className="space-y-6 animate-in fade-in">
+            <div className="bg-gradient-to-br from-[#0f172a] via-[#1e1b4b] to-[#0f172a] rounded-3xl p-6 sm:p-8 border border-indigo-500/40 text-white shadow-2xl space-y-6">
+              
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-indigo-500/30">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-500 to-sky-400 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 shrink-0">
+                    <Send className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-white font-heading">
+                      Reseller Telegram Automation Bot
+                    </h3>
+                    <p className="text-xs text-slate-300 font-medium mt-0.5">
+                      Execute instant customer top-ups right inside Telegram using your Reseller Wallet balance
+                    </p>
+                  </div>
+                </div>
+
+                <a
+                  href="https://t.me/mads_shell_topup_bot"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-5 py-3 rounded-2xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-extrabold text-xs tracking-wider uppercase flex items-center justify-center gap-2 shadow-lg shadow-sky-500/30 transition-all cursor-pointer shrink-0"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>Open Telegram Bot (@mads_shell_topup_bot)</span>
+                </a>
+              </div>
+
+              {/* Step by Step Reseller Bot Instructions */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                
+                <div className="bg-slate-900/80 p-4 rounded-2xl border border-indigo-500/30 space-y-2">
+                  <div className="flex items-center gap-2 text-sky-400 font-extrabold">
+                    <span className="w-6 h-6 rounded-full bg-sky-500/20 flex items-center justify-center text-xs">1</span>
+                    <span>Link Reseller Wallet</span>
+                  </div>
+                  <p className="text-slate-300 leading-relaxed">
+                    Open Telegram Bot <span className="text-sky-300 font-bold">@mads_shell_topup_bot</span> and send your wallet link command:
+                  </p>
+                  <div className="bg-slate-950 p-2.5 rounded-xl font-mono text-amber-300 font-bold flex items-center justify-between border border-slate-800">
+                    <span>/link {resellerWalletId}</span>
+                    <button
+                      onClick={() => handleCopy(`/link ${resellerWalletId}`)}
+                      className="text-xs bg-slate-800 hover:bg-slate-700 text-white px-2 py-1 rounded cursor-pointer"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-slate-900/80 p-4 rounded-2xl border border-indigo-500/30 space-y-2">
+                  <div className="flex items-center gap-2 text-amber-400 font-extrabold">
+                    <span className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-xs">2</span>
+                    <span>Check Wallet Balance</span>
+                  </div>
+                  <p className="text-slate-300 leading-relaxed">
+                    Check your live Reseller Wallet balance and wholesale discount tier at any time by sending:
+                  </p>
+                  <div className="bg-slate-950 p-2.5 rounded-xl font-mono text-amber-300 font-bold flex items-center justify-between border border-slate-800">
+                    <span>/balance</span>
+                    <button
+                      onClick={() => handleCopy('/balance')}
+                      className="text-xs bg-slate-800 hover:bg-slate-700 text-white px-2 py-1 rounded cursor-pointer"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-slate-900/80 p-4 rounded-2xl border border-indigo-500/30 space-y-2">
+                  <div className="flex items-center gap-2 text-emerald-400 font-extrabold">
+                    <span className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs">3</span>
+                    <span>Instant Customer Top-Up</span>
+                  </div>
+                  <p className="text-slate-300 leading-relaxed">
+                    Send command to topup your customer's UID. The discounted reseller price will be deducted from your wallet:
+                  </p>
+                  <div className="bg-slate-950 p-2.5 rounded-xl font-mono text-emerald-400 font-bold flex items-center justify-between border border-slate-800">
+                    <span>/topup 248901234 9812471928374129</span>
+                    <button
+                      onClick={() => handleCopy('/topup 248901234 9812471928374129')}
+                      className="text-xs bg-slate-800 hover:bg-slate-700 text-white px-2 py-1 rounded cursor-pointer"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Instant Command Helper */}
+              <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2.5 text-slate-300">
+                  <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>Reseller Wholesale Discount (5%) is automatically applied to all bot top-ups!</span>
+                </div>
+                <span className="text-emerald-400 font-bold font-mono">STATUS: 🟢 BOT OPERATIONAL</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* TAB 1: BINANCE DEPOSIT PANEL WITH STEP-BY-STEP INSTRUCTIONS */}
         {walletActiveTab === 'binance' && (
