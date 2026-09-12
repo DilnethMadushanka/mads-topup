@@ -23,12 +23,13 @@ import { ContactPage } from './components/ContactPage';
 import { ReferralProgramPage } from './components/ReferralProgramPage';
 import { ResellerProgramPage } from './components/ResellerProgramPage';
 import { ResellerLoginPage } from './components/ResellerLoginPage';
+import { ResellerDashboard } from './components/ResellerDashboard';
 import { ResellerBannerSection } from './components/ResellerBannerSection';
 import { ToastNotification } from './components/ToastNotification';
 import { Flame } from 'lucide-react';
 
 const MainContent = () => {
-  const { setIsAdminOpen, isUserProfileOpen, isWalletModalOpen, openUserProfilePage, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, isReferralPageOpen, isResellerPageOpen, isResellerLoginPageOpen, openResellerPage, openContactPage, selectedGame } = useApp();
+  const { setIsAdminOpen, isUserProfileOpen, isWalletModalOpen, openUserProfilePage, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, isReferralPageOpen, isResellerPageOpen, isResellerLoginPageOpen, isResellerDashboardOpen, openResellerPage, openContactPage, selectedGame } = useApp();
 
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
@@ -36,7 +37,7 @@ const MainContent = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFF] flex flex-col justify-between pb-0 font-sans text-slate-900">
+    <div className="min-h-screen bg-[#F8FAFF] flex flex-col justify-between pb-0 font-sans text-[#0f172a]">
       <div>
         <Navbar />
         {selectedGame ? (
@@ -45,6 +46,8 @@ const MainContent = () => {
           <UserProfilePage />
         ) : isWalletModalOpen ? (
           <WalletPage />
+        ) : isResellerDashboardOpen ? (
+          <ResellerDashboard />
         ) : isResellerLoginPageOpen ? (
           <ResellerLoginPage />
         ) : isResellerPageOpen ? (

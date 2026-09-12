@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 
 export const ResellerProgramPage = () => {
-  const { userProfile, openResellerLoginPage, showToast, closeResellerPage, addResellerApplication } = useApp();
+  const { userProfile, openResellerLoginPage, showToast, closeResellerPage, addResellerApplication, openResellerDashboard } = useApp();
 
   const [realName, setRealName] = useState(userProfile?.name || '');
   const [storeName, setStoreName] = useState('');
@@ -100,6 +100,29 @@ export const ResellerProgramPage = () => {
           <span className="text-xs font-bold text-slate-600 font-mono uppercase">24/7 Verified Reseller Network</span>
         </div>
       </div>
+
+      {/* Verified Reseller Quick Access Banner */}
+      {(userProfile?.isReseller || userProfile?.role === 'reseller') && (
+        <div className="bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-slate-950 p-6 rounded-2xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 font-sans">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-slate-950 text-amber-400 flex items-center justify-center font-black shrink-0">
+              <Crown className="w-7 h-7 fill-amber-400" />
+            </div>
+            <div>
+              <h3 className="text-lg font-black tracking-tight">You are a Verified Reseller Partner!</h3>
+              <p className="text-xs font-bold text-slate-900/80">Access your live Reseller Dashboard, wholesale topup terminal, & Telegram bot setup.</p>
+            </div>
+          </div>
+
+          <button
+            onClick={openResellerDashboard}
+            className="px-6 py-3 bg-slate-950 hover:bg-slate-900 text-amber-400 font-extrabold text-xs rounded-xl shadow-lg flex items-center gap-2 transition-all shrink-0 cursor-pointer uppercase tracking-wider"
+          >
+            <span>OPEN RESELLER DASHBOARD</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* 1. HERO CHOICE BANNER CONTAINER (Matching Screenshot 1) */}
       {/* 1. HERO CHOICE BANNER */}

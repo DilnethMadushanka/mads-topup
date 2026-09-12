@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { Eye, EyeOff, User, Lock, ArrowLeft, LogIn, Crown } from 'lucide-react';
 
 export const ResellerLoginPage = () => {
-  const { openResellerPage, openAuth, showToast, setUserProfile, setIsLoggedIn, closeResellerLoginPage } = useApp();
+  const { openResellerPage, openAuth, showToast, setUserProfile, setIsLoggedIn, closeResellerLoginPage, openResellerDashboard } = useApp();
 
   const [username, setUsername] = useState('S');
   const [password, setPassword] = useState('');
@@ -29,8 +29,8 @@ export const ResellerLoginPage = () => {
       isReseller: true,
       email: username.includes('@') ? username : `${username}@madstopup.com`
     }));
-    showToast(`Welcome back, Reseller ${username}! Logged into Reseller Portal.`);
-    closeResellerLoginPage();
+    showToast(`Welcome back, Reseller ${username}! Logged into Reseller Dashboard.`);
+    openResellerDashboard();
   };
 
   return (

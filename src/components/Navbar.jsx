@@ -21,7 +21,9 @@ export const Navbar = () => {
     setIsDownloadAppModalOpen,
     openContactPage,
     openResellerPage,
-    isResellerPageOpen
+    isResellerPageOpen,
+    openResellerDashboard,
+    isResellerDashboardOpen
   } = useApp();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -125,15 +127,25 @@ export const Navbar = () => {
             <span>Download App</span>
           </button>
 
-          <button 
-            onClick={() => { openResellerPage(); setIsMobileMenuOpen(false); }}
-            className={`flex items-center gap-2 hover:text-cyan-600 transition-colors cursor-pointer group py-2 ${isResellerPageOpen ? 'text-cyan-600' : ''}`}
-          >
-            <span className="w-6 h-6 rounded-lg bg-cyan-100 text-cyan-600 flex items-center justify-center">
-              <Crown className="w-3.5 h-3.5" />
-            </span>
-            <span>Reseller Program</span>
-          </button>
+          {(userProfile?.isReseller || userProfile?.role === 'reseller') ? (
+            <button 
+              onClick={() => { openResellerDashboard(); setIsMobileMenuOpen(false); }}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black text-xs hover:from-amber-400 hover:to-yellow-400 shadow-sm transition-all cursor-pointer ${isResellerDashboardOpen ? 'ring-2 ring-amber-400' : ''}`}
+            >
+              <Crown className="w-4 h-4 fill-slate-950" />
+              <span>RESELLER DASHBOARD</span>
+            </button>
+          ) : (
+            <button 
+              onClick={() => { openResellerPage(); setIsMobileMenuOpen(false); }}
+              className={`flex items-center gap-2 hover:text-cyan-600 transition-colors cursor-pointer group py-2 ${isResellerPageOpen ? 'text-cyan-600' : ''}`}
+            >
+              <span className="w-6 h-6 rounded-lg bg-cyan-100 text-cyan-600 flex items-center justify-center">
+                <Crown className="w-3.5 h-3.5" />
+              </span>
+              <span>Reseller Program</span>
+            </button>
+          )}
 
           <button 
             onClick={() => { openContactPage(); setIsMobileMenuOpen(false); }}
@@ -282,6 +294,30 @@ export const Navbar = () => {
               </span>
               <span className="text-[10px] font-black text-white bg-[#cc040a] px-2 py-0.5 rounded-full uppercase shadow-xs">App</span>
             </button>
+
+            {/* Reseller Program / Dashboard */}
+            {(userProfile?.isReseller || userProfile?.role === 'reseller') ? (
+              <button 
+                onClick={() => { openResellerDashboard(); setIsMobileMenuOpen(false); }}
+                className="w-full flex items-center justify-between text-sm font-extrabold text-amber-400 hover:text-amber-300 py-1 transition-colors text-left"
+              >
+                <span className="flex items-center gap-3">
+                  <Crown className="w-5 h-5 text-amber-400 fill-amber-400" />
+                  <span>Reseller Dashboard</span>
+                </span>
+                <span className="text-[10px] font-black text-slate-950 bg-amber-400 px-2 py-0.5 rounded-full uppercase shadow-xs">PARTNER</span>
+              </button>
+            ) : (
+              <button 
+                onClick={() => { openResellerPage(); setIsMobileMenuOpen(false); }}
+                className="w-full flex items-center justify-between text-sm font-extrabold text-slate-200 hover:text-cyan-400 py-1 transition-colors text-left"
+              >
+                <span className="flex items-center gap-3">
+                  <Crown className="w-5 h-5 text-cyan-400" />
+                  <span>Reseller Program</span>
+                </span>
+              </button>
+            )}
 
             {/* 24/7 Support */}
             <button 
