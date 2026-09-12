@@ -62,6 +62,9 @@ const MainContent = () => {
             <ReviewsSection />
             <BlogSection />
             <PromoSection />
+            <div id="reseller-section" className="pt-8">
+              <ResellerProgramPage />
+            </div>
           </>
         )}
       </div>
