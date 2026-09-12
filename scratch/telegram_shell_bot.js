@@ -38,11 +38,9 @@ bot.command('status', (ctx) => {
   return ctx.reply('🟢 *Bot Status:* Operational & Connected to Garena Auto-Redemption Engine 24/7', { parse_mode: 'Markdown' });
 });
 
-// Text listener for /topup [UID] [PIN]
-bot.on('text', async (ctx) => {
-  const text = ctx.text || '';
-  if (!text.startsWith('/topup')) return;
-
+// Command: /topup [UID] [PIN]
+bot.command('topup', async (ctx) => {
+  const text = ctx.message?.text || '';
   const parts = text.split(/\s+/);
   const playerUid = parts[1]?.trim();
   const shellPin = parts[2]?.trim();
