@@ -22,12 +22,13 @@ import { ReviewsPage } from './components/ReviewsPage';
 import { ContactPage } from './components/ContactPage';
 import { ReferralProgramPage } from './components/ReferralProgramPage';
 import { ResellerProgramPage } from './components/ResellerProgramPage';
+import { ResellerLoginPage } from './components/ResellerLoginPage';
 import { ResellerBannerSection } from './components/ResellerBannerSection';
 import { ToastNotification } from './components/ToastNotification';
 import { Flame } from 'lucide-react';
 
 const MainContent = () => {
-  const { setIsAdminOpen, isUserProfileOpen, isWalletModalOpen, openUserProfilePage, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, isReferralPageOpen, isResellerPageOpen, openResellerPage, openContactPage, selectedGame } = useApp();
+  const { setIsAdminOpen, isUserProfileOpen, isWalletModalOpen, openUserProfilePage, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, isReferralPageOpen, isResellerPageOpen, isResellerLoginPageOpen, openResellerPage, openContactPage, selectedGame } = useApp();
 
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
@@ -44,6 +45,8 @@ const MainContent = () => {
           <UserProfilePage />
         ) : isWalletModalOpen ? (
           <WalletPage />
+        ) : isResellerLoginPageOpen ? (
+          <ResellerLoginPage />
         ) : isResellerPageOpen ? (
           <ResellerProgramPage />
         ) : isReferralPageOpen ? (

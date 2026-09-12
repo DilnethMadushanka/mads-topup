@@ -123,6 +123,7 @@ export const AppProvider = ({ children }) => {
   const [isContactPageOpen, setIsContactPageOpen] = useState(false);
   const [isReferralPageOpen, setIsReferralPageOpen] = useState(false);
   const [isResellerPageOpen, setIsResellerPageOpen] = useState(false);
+  const [isResellerLoginPageOpen, setIsResellerLoginPageOpen] = useState(false);
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
@@ -215,6 +216,7 @@ export const AppProvider = ({ children }) => {
 
   const openResellerPage = () => {
     setIsResellerPageOpen(true);
+    setIsResellerLoginPageOpen(false);
     setIsReferralPageOpen(false);
     setIsUserProfileOpen(false);
     setIsContactPageOpen(false);
@@ -226,6 +228,23 @@ export const AppProvider = ({ children }) => {
 
   const closeResellerPage = () => {
     setIsResellerPageOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const openResellerLoginPage = () => {
+    setIsResellerLoginPageOpen(true);
+    setIsResellerPageOpen(false);
+    setIsReferralPageOpen(false);
+    setIsUserProfileOpen(false);
+    setIsContactPageOpen(false);
+    setIsReviewsPageOpen(false);
+    setIsGameCatalogOpen(false);
+    setSelectedGame(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const closeResellerLoginPage = () => {
+    setIsResellerLoginPageOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -1027,6 +1046,10 @@ export const AppProvider = ({ children }) => {
       setIsResellerPageOpen,
       openResellerPage,
       closeResellerPage,
+      isResellerLoginPageOpen,
+      setIsResellerLoginPageOpen,
+      openResellerLoginPage,
+      closeResellerLoginPage,
       userReviews,
       addReview,
       userProfile,

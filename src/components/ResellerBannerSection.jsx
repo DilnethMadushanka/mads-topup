@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { UserPlus, LogIn, Crown } from 'lucide-react';
 
 export const ResellerBannerSection = () => {
-  const { openResellerPage, openAuth } = useApp();
+  const { openResellerPage, openResellerLoginPage } = useApp();
 
   return (
     <section id="reseller-section" className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
@@ -77,7 +77,7 @@ export const ResellerBannerSection = () => {
             </div>
 
             <button
-              onClick={() => openAuth('reseller')}
+              onClick={openResellerLoginPage}
               className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-red-600/25 cursor-pointer uppercase tracking-wider active:scale-[0.99]"
             >
               <span>LOGIN</span>
