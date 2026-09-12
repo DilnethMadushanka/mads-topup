@@ -396,6 +396,9 @@ app.post('/api/ezcash/verify-rn', (req, res) => {
     if (matchedSms) {
       usedEzCashRnNumbers.add(cleanRn);
       const creditedAmt = matchedSms.amountLkr || amtLkr;
+      matchedSms.status = 'REDEEMED';
+      matchedSms.redeemedBy = userEmail;
+      matchedSms.redeemedAt = new Date().toISOString();
       console.log(`[EZ Cash WEBHOOK VERIFIED SUCCESS] RN: ${cleanRn}, Amount: Rs. ${creditedAmt}, User: ${userEmail}`);
       return res.json({
         verified: true,
@@ -438,10 +441,15 @@ app.post('/api/ezcash/webhook', (req, res) => {
     if (rnMatch && rnMatch[1]) {
       const rnNo = rnMatch[1];
       const parsedAmt = amtMatch ? parseFloat(amtMatch[1].replace(/,/g, '')) : 0;
+      const existing = receivedEzCashSmsLog.get(rnNo);
       receivedEzCashSmsLog.set(rnNo, {
         rnNumber: rnNo,
         amountLkr: parsedAmt,
-        receivedAt: new Date().toISOString()
+        rawSms: textContent,
+        sender: sender || 'Dialog EZ Cash Gateway',
+        status: existing?.status || 'UNCLAIMED',
+        redeemedBy: existing?.redeemedBy || null,
+        receivedAt: existing?.receivedAt || new Date().toISOString()
       });
       console.log(`[Dialog EZ Cash SMS Stored] RN: ${rnNo}, Amount: Rs. ${parsedAmt}`);
     }
@@ -449,6 +457,20 @@ app.post('/api/ezcash/webhook', (req, res) => {
     res.json({ success: true, message: 'SMS logged successfully' });
   } catch (e) {
     res.status(500).json({ error: e.message });
+  }
+});
+
+// Admin API: Retrieve all received EZ Cash Webhook SMS logs
+app.get('/api/ezcash/webhook-logs', (req, res) => {
+  try {
+    const logs = Array.from(receivedEzCashSmsLog.values()).sort((a, b) => new Date(b.receivedAt) - new Date(a.receivedAt));
+    res.json({
+      success: true,
+      count: logs.length,
+      logs: logs
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

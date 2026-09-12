@@ -7,7 +7,8 @@ import {
   CheckCircle2, Clock, XCircle, Zap, Key, Server, Database, Save, Eye, EyeOff, Cloud, UploadCloud,
   Users, CreditCard, Ticket, Megaphone, Search, Filter, Plus, Trash2, ArrowUpRight, ArrowDownRight,
   TrendingUp, Check, AlertTriangle, ShieldAlert, FileText, Gift, Award, CornerDownRight, ChevronRight, Lock,
-  BadgeCheck, UserCheck, UserX, FileCheck, ExternalLink, Image, Menu, Headset
+  BadgeCheck, UserCheck, UserX, FileCheck, ExternalLink, Image, Menu, Headset,
+  Smartphone, Copy, MessageSquare
 } from 'lucide-react';
 
 export const AdminDashboard = () => {
@@ -122,6 +123,27 @@ export const AdminDashboard = () => {
   // Game List Price State Editor
   const [gamesCatalog, setGamesCatalog] = useState(GAMES_DATA);
 
+  // EZ Cash Webhook Logs State
+  const [ezcashLogs, setEzcashLogs] = useState([]);
+  const [isEzcashLogsLoading, setIsEzcashLogsLoading] = useState(false);
+  const [ezcashSearch, setEzcashSearch] = useState('');
+  const [ezcashStatusFilter, setEzcashStatusFilter] = useState('ALL');
+
+  const fetchEzcashLogs = async () => {
+    try {
+      setIsEzcashLogsLoading(true);
+      const res = await fetch('/api/ezcash/webhook-logs');
+      const data = await res.json();
+      if (data && data.success) {
+        setEzcashLogs(data.logs || []);
+      }
+    } catch (err) {
+      console.error('[Admin] Error fetching EZ Cash logs:', err);
+    } finally {
+      setIsEzcashLogsLoading(false);
+    }
+  };
+
   // Live Moongold Balance state (MUST BE DECLARED WITH HOOKS AT TOP LEVEL)
   const [liveMoongoldBalance, setLiveMoongoldBalance] = useState({
     balanceUsd: moongoldConfig.merchantBalanceUsd || 480.00,
@@ -148,8 +170,10 @@ export const AdminDashboard = () => {
   useEffect(() => {
     if (isAdminAuthenticated && isAdminOpen) {
       fetchLiveBalance();
+      fetchEzcashLogs();
       const interval = setInterval(() => {
         fetchLiveBalance();
+        fetchEzcashLogs();
       }, 10000); // Live realtime sync every 10 seconds
       return () => clearInterval(interval);
     }
@@ -335,6 +359,19 @@ export const AdminDashboard = () => {
   });
 
   const activeInspectTicket = selectedTicketInspect || filteredSupportTickets[0] || null;
+
+  // Filtered EZ Cash Webhook Logs Calculation
+  const filteredEzcashLogs = (ezcashLogs || []).filter(item => {
+    const query = ezcashSearch.toLowerCase().trim();
+    const matchesSearch = !query || 
+      item.rnNumber.toLowerCase().includes(query) ||
+      (item.rawSms && item.rawSms.toLowerCase().includes(query)) ||
+      (item.redeemedBy && item.redeemedBy.toLowerCase().includes(query));
+
+    const matchesStatus = ezcashStatusFilter === 'ALL' || item.status === ezcashStatusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
 
   const handleSendAdminReply = (e) => {
     e.preventDefault();
@@ -542,6 +579,7 @@ export const AdminDashboard = () => {
             { id: 'support', label: 'Support', icon: Headset, badge: openTicketsCount },
             { id: 'orders', label: 'Orders', icon: Activity, badge: pendingCount },
             { id: 'deposits', label: 'Deposits', icon: FileCheck, badge: pendingPaymentsCount },
+            { id: 'ezcash', label: 'EZ Cash Logs', icon: Smartphone, badge: ezcashLogs.length },
             { id: 'users', label: 'Users', icon: Users },
             { id: 'credit', label: 'Credit', icon: DollarSign },
             { id: 'games', label: 'Games', icon: Award },
@@ -635,6 +673,23 @@ export const AdminDashboard = () => {
               {pendingPaymentsCount > 0 && (
                 <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-mono font-black text-[10px]">
                   {pendingPaymentsCount}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => handleTabSelect('ezcash')}
+              className={`w-full px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition-all cursor-pointer ${
+                adminTab === 'ezcash' ? 'bg-[#cc040a] text-white shadow-lg shadow-red-600/30' : 'text-slate-400 hover:bg-slate-900 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Smartphone className="w-4 h-4 text-emerald-400" />
+                <span>EZ Cash Webhook Logs</span>
+              </div>
+              {ezcashLogs.length > 0 && (
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-mono font-black text-[10px]">
+                  {ezcashLogs.length}
                 </span>
               )}
             </button>
@@ -960,13 +1015,22 @@ export const AdminDashboard = () => {
                     <p className="text-xs text-slate-400">Review, verify, and approve EZ Cash 14-digit RNs, Binance Order IDs & Bank Receipts</p>
                   </div>
 
-                  <button
-                    onClick={() => setIsAddPaymentOpen(true)}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-lg shadow-emerald-600/20 cursor-pointer"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Record Offline Payment</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleTabSelect('ezcash')}
+                      className="px-3.5 py-2 bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-700/50 text-emerald-300 rounded-xl font-extrabold text-xs flex items-center gap-2 cursor-pointer transition-all"
+                    >
+                      <Smartphone className="w-4 h-4 text-emerald-400" />
+                      <span>SMS Webhook Logs ({ezcashLogs.length})</span>
+                    </button>
+                    <button
+                      onClick={() => setIsAddPaymentOpen(true)}
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-lg shadow-emerald-600/20 cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Record Offline Payment</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Filters & Search */}
@@ -1057,6 +1121,128 @@ export const AdminDashboard = () => {
                                   </button>
                                 </>
                               )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* 3.5. EZ CASH WEBHOOK SMS LOGS TAB */}
+            {adminTab === 'ezcash' && (
+              <div className="space-y-4 animate-in fade-in">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-xl font-black font-heading text-white flex items-center gap-2">
+                      <Smartphone className="w-5 h-5 text-emerald-400" />
+                      <span>Dialog EZ Cash Webhook Received SMS Logs</span>
+                    </h3>
+                    <p className="text-xs text-slate-400">Live SMS records received from phone shortcut / forwarder gateway</p>
+                  </div>
+
+                  <button
+                    onClick={fetchEzcashLogs}
+                    disabled={isEzcashLogsLoading}
+                    className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl border border-slate-700 flex items-center gap-2 cursor-pointer transition-all"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 text-emerald-400 ${isEzcashLogsLoading ? 'animate-spin' : ''}`} />
+                    <span>Refresh Logs</span>
+                  </button>
+                </div>
+
+                {/* Filters & Search */}
+                <div className="bg-[#111622] p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row gap-4 justify-between items-center text-xs">
+                  <div className="relative flex-1 w-full">
+                    <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search by 14-digit RN Number, SMS Text, or User Email..."
+                      value={ezcashSearch}
+                      onChange={(e) => setEzcashSearch(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <select
+                    value={ezcashStatusFilter}
+                    onChange={(e) => setEzcashStatusFilter(e.target.value)}
+                    className="px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white font-bold cursor-pointer w-full sm:w-auto"
+                  >
+                    <option value="ALL">All Statuses ({ezcashLogs.length})</option>
+                    <option value="UNCLAIMED">Unclaimed / Pending</option>
+                    <option value="REDEEMED">Auto-Approved / Redeemed</option>
+                  </select>
+                </div>
+
+                {/* Table */}
+                <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-[#111622]">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-[#0d121c] text-slate-400 uppercase font-mono text-[10px]">
+                      <tr>
+                        <th className="p-3.5">RN Trans Number</th>
+                        <th className="p-3.5">Amount (LKR)</th>
+                        <th className="p-3.5">Status</th>
+                        <th className="p-3.5">Redeemed By User</th>
+                        <th className="p-3.5">Received Time</th>
+                        <th className="p-3.5">Raw Dialog SMS Message</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60 font-medium">
+                      {filteredEzcashLogs.length === 0 ? (
+                        <tr>
+                          <td colSpan="6" className="p-12 text-center text-slate-500 font-semibold">
+                            <div className="space-y-2">
+                              <Smartphone className="w-8 h-8 text-slate-600 mx-auto" />
+                              <p>No EZ Cash Webhook SMS logs received yet.</p>
+                              <p className="text-[11px] text-slate-600">When your phone shortcut sends SMS to <code className="bg-slate-950 px-2 py-1 rounded text-emerald-400">/api/ezcash/webhook</code>, they will appear here live.</p>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredEzcashLogs.map((log, index) => (
+                          <tr key={log.rnNumber || index} className="hover:bg-slate-900/60 transition-colors">
+                            <td className="p-3.5 font-mono font-bold text-amber-400">
+                              <div className="flex items-center gap-1.5">
+                                <span>{log.rnNumber}</span>
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(log.rnNumber);
+                                    showToast(`Copied RN ${log.rnNumber}`);
+                                  }}
+                                  className="text-slate-500 hover:text-white p-1 rounded transition-colors"
+                                  title="Copy RN Number"
+                                >
+                                  <Copy className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </td>
+                            <td className="p-3.5 font-black text-emerald-400 font-heading text-sm">
+                              Rs. {(log.amountLkr || 0).toLocaleString()}
+                            </td>
+                            <td className="p-3.5">
+                              <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase ${
+                                log.status === 'REDEEMED' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-amber-950 text-amber-400 border border-amber-800'
+                              }`}>
+                                {log.status === 'REDEEMED' ? '✅ REDEEMED' : '⏳ UNCLAIMED'}
+                              </span>
+                            </td>
+                            <td className="p-3.5 text-slate-300 font-mono text-[11px]">
+                              {log.redeemedBy ? (
+                                <div className="text-emerald-300 font-bold">{log.redeemedBy}</div>
+                              ) : (
+                                <span className="text-slate-500 italic">Not redeemed yet</span>
+                              )}
+                            </td>
+                            <td className="p-3.5 text-slate-400 font-mono text-[10px]">
+                              {new Date(log.receivedAt).toLocaleString()}
+                            </td>
+                            <td className="p-3.5 max-w-xs">
+                              <div className="p-2 bg-slate-950 rounded-lg text-[10px] font-mono text-slate-300 border border-slate-800 truncate" title={log.rawSms}>
+                                {log.rawSms || 'No raw SMS text recorded'}
+                              </div>
                             </td>
                           </tr>
                         ))
