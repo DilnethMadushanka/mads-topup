@@ -390,32 +390,32 @@ app.post('/api/ezcash/verify-rn', (req, res) => {
 
     const amtLkr = parseFloat(amount) || 1000;
 
-    // Strict Security Rule: Auto-approve ONLY if the RN number matches an actual received Dialog SMS in Webhook log
+    // Strict Webhook Verification: Only auto-approve if exact RN match was received via Webhook SMS
     const matchedSms = receivedEzCashSmsLog.get(cleanRn);
 
     if (matchedSms) {
       usedEzCashRnNumbers.add(cleanRn);
       const creditedAmt = matchedSms.amountLkr || amtLkr;
-      console.log(`[EZ Cash SMS Webhook Match VERIFIED] RN: ${cleanRn}, Amount: Rs. ${creditedAmt}, User: ${userEmail}`);
+      console.log(`[EZ Cash WEBHOOK VERIFIED SUCCESS] RN: ${cleanRn}, Amount: Rs. ${creditedAmt}, User: ${userEmail}`);
       return res.json({
         verified: true,
         autoApproved: true,
         status: 'VERIFIED',
         amountLkr: creditedAmt,
         rnNumber: cleanRn,
-        message: `⚡ EZ Cash RN ${cleanRn} verified with Dialog SMS! Rs. ${creditedAmt.toLocaleString()} credited.`
+        message: `⚡ EZ Cash RN ${cleanRn} verified via Webhook! Rs. ${creditedAmt.toLocaleString()} credited to your wallet.`
       });
     }
 
-    // Safe Protection: If no SMS Webhook match received yet, submit to Admin Queue (PENDING)
-    console.log(`[EZ Cash Pending Admin Queue - No Webhook Match Yet] RN: ${cleanRn}, Amount: Rs. ${amtLkr}, User: ${userEmail}`);
+    // Safe Protection: If SMS has not reached Webhook yet, send to Pending Admin Queue
+    console.log(`[EZ Cash Pending - Webhook SMS Not Received] RN: ${cleanRn}, Amount: Rs. ${amtLkr}, User: ${userEmail}`);
     return res.json({
       verified: false,
       autoApproved: false,
       status: 'PENDING_ADMIN_VERIFICATION',
       amountLkr: amtLkr,
       rnNumber: cleanRn,
-      message: 'Deposit recorded. Submitted for 1-click Admin Verification.'
+      message: 'SMS Webhook verification pending. If you just made the transfer, please wait 5-10 seconds for phone sync or Admin approval.'
     });
 
   } catch (err) {
