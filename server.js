@@ -390,24 +390,25 @@ app.post('/api/ezcash/verify-rn', (req, res) => {
 
     const amtLkr = parseFloat(amount) || 1000;
 
-    // Check if RN number matches actual received Dialog SMS in system log
+    // Strict Security Rule: Auto-approve ONLY if the RN number matches an actual received Dialog SMS in Webhook log
     const matchedSms = receivedEzCashSmsLog.get(cleanRn);
 
     if (matchedSms) {
       usedEzCashRnNumbers.add(cleanRn);
-      console.log(`[EZ Cash SMS Match VERIFIED] RN: ${cleanRn}, Amount: Rs. ${matchedSms.amountLkr}, User: ${userEmail}`);
+      const creditedAmt = matchedSms.amountLkr || amtLkr;
+      console.log(`[EZ Cash SMS Webhook Match VERIFIED] RN: ${cleanRn}, Amount: Rs. ${creditedAmt}, User: ${userEmail}`);
       return res.json({
         verified: true,
         autoApproved: true,
         status: 'VERIFIED',
-        amountLkr: matchedSms.amountLkr || amtLkr,
+        amountLkr: creditedAmt,
         rnNumber: cleanRn,
-        message: `EZ Cash RN ${cleanRn} verified with Dialog SMS! Rs. ${matchedSms.amountLkr || amtLkr} credited.`
+        message: `⚡ EZ Cash RN ${cleanRn} verified with Dialog SMS! Rs. ${creditedAmt.toLocaleString()} credited.`
       });
     }
 
-    // Safe Protection: If no SMS match yet, submit to Admin Queue (PENDING) so fake RN numbers CANNOT scam free credits!
-    console.log(`[EZ Cash Pending Admin Queue] RN: ${cleanRn}, Amount: Rs. ${amtLkr}, User: ${userEmail}`);
+    // Safe Protection: If no SMS Webhook match received yet, submit to Admin Queue (PENDING)
+    console.log(`[EZ Cash Pending Admin Queue - No Webhook Match Yet] RN: ${cleanRn}, Amount: Rs. ${amtLkr}, User: ${userEmail}`);
     return res.json({
       verified: false,
       autoApproved: false,
