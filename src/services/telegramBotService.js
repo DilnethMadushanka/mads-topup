@@ -2,7 +2,7 @@ import { createRequire } from 'module';
 import crypto from 'crypto';
 import { GAMES_DATA } from '../data/games.js';
 import { lookupFreePlayerIgn } from './playerLookup.js';
-import { getResellerProfileByKey, deductResellerWalletBalance, saveOrderToFirestore } from './firestoreService.js';
+import { getResellerProfileByKey, getResellerProfileByKeyAsync, deductResellerWalletBalance, saveOrderToFirestore } from './firestoreService.js';
 
 const require = createRequire(import.meta.url);
 const { Bot, longPoll } = require('node-telegram-bot-api');
@@ -456,7 +456,7 @@ Support for ALL games on website: Mobile Legends, Free Fire, PUBG Mobile, Blood 
           return ctx.reply('❌ Error: Please specify your unique Security Key or Reseller Code.\nUsage: /auth MADS-SEC-50048A92');
         }
 
-        const reseller = getResellerProfileByKey(keyArg);
+        const reseller = await getResellerProfileByKeyAsync(keyArg);
 
         if (reseller) {
           boundChatSessions.set(chatId, reseller);
@@ -716,7 +716,7 @@ Send: /auth <SecurityKey>
 
         let firstArg = parts[1] || '';
         if (!reseller && firstArg) {
-          const potentialKeyReseller = getResellerProfileByKey(firstArg);
+          const potentialKeyReseller = await getResellerProfileByKeyAsync(firstArg);
           if (potentialKeyReseller) {
             reseller = potentialKeyReseller;
             boundChatSessions.set(chatId, reseller);

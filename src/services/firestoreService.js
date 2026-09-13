@@ -34,28 +34,7 @@ export const ensureResellerCredentials = (user) => {
 };
 
 // Active reseller memory registry for Telegram bot & instant validation
-export const activeResellerRegistry = new Map([
-  ['MADS-SEC-882104', {
-    uid: 'user-882104',
-    name: 'Dilneth Reseller Partner',
-    email: 'reseller@madstopup.com',
-    resellerCode: 'RS-882104',
-    securityKey: 'MADS-SEC-882104',
-    walletBalance: 15000.00,
-    walletUsdt: 49.18,
-    isReseller: true
-  }],
-  ['RS-882104', {
-    uid: 'user-882104',
-    name: 'Dilneth Reseller Partner',
-    email: 'reseller@madstopup.com',
-    resellerCode: 'RS-882104',
-    securityKey: 'MADS-SEC-882104',
-    walletBalance: 15000.00,
-    walletUsdt: 49.18,
-    isReseller: true
-  }]
-]);
+export const activeResellerRegistry = new Map();
 
 export const registerResellerInRegistry = (profile) => {
   if (!profile) return null;
@@ -66,7 +45,97 @@ export const registerResellerInRegistry = (profile) => {
   if (creds.resellerCode) {
     activeResellerRegistry.set(creds.resellerCode.toUpperCase(), creds);
   }
+  if (creds.uid) {
+    activeResellerRegistry.set(String(creds.uid).toUpperCase(), creds);
+  }
   return creds;
+};
+
+/**
+ * Async lookup for reseller profile in memory, Realtime Database (RTDB), or Firestore
+ */
+export const getResellerProfileByKeyAsync = async (keyOrCode) => {
+  if (!keyOrCode) return null;
+  const cleanKey = String(keyOrCode).trim().toUpperCase();
+
+  // 1. Check in-memory registry first
+  if (activeResellerRegistry.has(cleanKey)) {
+    return activeResellerRegistry.get(cleanKey);
+  }
+
+  // 2. Search Realtime Database (RTDB) for matching securityKey, resellerCode, or uid
+  if (rtdb) {
+    try {
+      const usersRef = dbRef(rtdb, 'users');
+      const snapshot = await rtdbGet(usersRef);
+      if (snapshot.exists()) {
+        const usersData = snapshot.val();
+        for (const [uidKey, userObj] of Object.entries(usersData)) {
+          if (!userObj) continue;
+          const userSecKey = String(userObj.securityKey || '').trim().toUpperCase();
+          const userCode = String(userObj.resellerCode || '').trim().toUpperCase();
+          const cleanUid = String(userObj.uid || uidKey).trim().toUpperCase();
+
+          if (userSecKey === cleanKey || userCode === cleanKey || cleanUid === cleanKey) {
+            const profile = {
+              uid: userObj.uid || uidKey,
+              name: userObj.name || userObj.storeName || userObj.fullName || 'Verified Reseller Partner',
+              email: userObj.email || '',
+              phone: userObj.phone || '',
+              resellerCode: userObj.resellerCode || `RS-${cleanUid.slice(-6)}`,
+              securityKey: userObj.securityKey || cleanKey,
+              walletBalance: parseFloat(userObj.walletBalance || 0),
+              walletUsdt: parseFloat((userObj.walletBalance || 0) / 305),
+              isReseller: true
+            };
+            activeResellerRegistry.set(cleanKey, profile);
+            if (profile.securityKey) activeResellerRegistry.set(profile.securityKey.toUpperCase(), profile);
+            if (profile.resellerCode) activeResellerRegistry.set(profile.resellerCode.toUpperCase(), profile);
+            return profile;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('RTDB reseller lookup error:', e);
+    }
+  }
+
+  // 3. Search Firestore for matching securityKey or resellerCode
+  if (db) {
+    try {
+      const usersCol = collection(db, 'users');
+      const qSec = query(usersCol, where('securityKey', '==', cleanKey));
+      let qSnap = await getDocs(qSec);
+
+      if (qSnap.empty) {
+        const qCode = query(usersCol, where('resellerCode', '==', cleanKey));
+        qSnap = await getDocs(qCode);
+      }
+
+      if (!qSnap.empty) {
+        const docData = qSnap.docs[0].data();
+        const profile = {
+          uid: docData.uid || qSnap.docs[0].id,
+          name: docData.name || docData.storeName || docData.fullName || 'Verified Reseller Partner',
+          email: docData.email || '',
+          phone: docData.phone || '',
+          resellerCode: docData.resellerCode || cleanKey,
+          securityKey: docData.securityKey || cleanKey,
+          walletBalance: parseFloat(docData.walletBalance || 0),
+          walletUsdt: parseFloat((docData.walletBalance || 0) / 305),
+          isReseller: true
+        };
+        activeResellerRegistry.set(cleanKey, profile);
+        if (profile.securityKey) activeResellerRegistry.set(profile.securityKey.toUpperCase(), profile);
+        if (profile.resellerCode) activeResellerRegistry.set(profile.resellerCode.toUpperCase(), profile);
+        return profile;
+      }
+    } catch (err) {
+      console.warn('Firestore reseller lookup error:', err);
+    }
+  }
+
+  return null;
 };
 
 export const getResellerProfileByKey = (keyOrCode) => {
@@ -77,26 +146,8 @@ export const getResellerProfileByKey = (keyOrCode) => {
     return activeResellerRegistry.get(cleanKey);
   }
 
-  // Dynamic fallback for generated reseller security keys or codes (e.g. MADS-SEC-XXXXXX or RS-XXXXXX)
-  if (cleanKey.startsWith('MADS-SEC-') || cleanKey.startsWith('RS-') || cleanKey.includes('SEC-') || cleanKey.length >= 6) {
-    const cleanUid = cleanKey.replace(/[^A-Z0-9]/g, '').slice(-6);
-    const dynamicProfile = {
-      uid: `user-${cleanUid}`,
-      name: 'Official Reseller Partner',
-      email: 'reseller@madstopup.com',
-      resellerCode: cleanKey.startsWith('RS-') ? cleanKey : `RS-${cleanUid}`,
-      securityKey: cleanKey.startsWith('MADS-SEC-') ? cleanKey : `MADS-SEC-${cleanUid}`,
-      walletBalance: 10000.00,
-      walletUsdt: 32.78,
-      isReseller: true
-    };
-
-    activeResellerRegistry.set(cleanKey, dynamicProfile);
-    if (dynamicProfile.securityKey) activeResellerRegistry.set(dynamicProfile.securityKey.toUpperCase(), dynamicProfile);
-    if (dynamicProfile.resellerCode) activeResellerRegistry.set(dynamicProfile.resellerCode.toUpperCase(), dynamicProfile);
-
-    return dynamicProfile;
-  }
+  // Trigger background async database lookup to populate cache
+  getResellerProfileByKeyAsync(cleanKey).catch(() => {});
 
   return null;
 };
