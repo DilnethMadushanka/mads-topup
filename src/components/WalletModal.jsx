@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { X, Wallet, Copy, Check, Clipboard, DollarSign, Gift, ArrowRight, XCircle, Ban, Key, Clock, RefreshCw, Zap } from 'lucide-react';
+import { X, Wallet, Copy, Check, Clipboard, DollarSign, Gift, ArrowRight, XCircle, Ban, Key, Clock, RefreshCw, Zap, Building2, Upload, Image } from 'lucide-react';
 
 export const WalletModal = () => {
   const { 
@@ -23,6 +23,72 @@ export const WalletModal = () => {
   const [voucherCode, setVoucherCode] = useState('');
   const [isCopied, setIsCopied] = useState(false);
   const [isBinanceVerifying, setIsBinanceVerifying] = useState(false);
+
+  // Bank Deposit State
+  const [bankAmount, setBankAmount] = useState('1000');
+  const [bankRef, setBankRef] = useState('');
+  const [bankSlipPreview, setBankSlipPreview] = useState('');
+  const [bankSlipFileName, setBankSlipFileName] = useState('');
+
+  const bankAccountDetails = {
+    bankName: 'Commercial Bank of Ceylon',
+    accountName: 'MADS TOPUP ENTERPRISE',
+    accountNumber: '8019482104',
+    branch: 'Colombo Main Branch'
+  };
+
+  const handleBankFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('Receipt slip image size must be less than 5MB!', 'error');
+        return;
+      }
+      setBankSlipFileName(file.name);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setBankSlipPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleBankDepositSubmit = (e) => {
+    e.preventDefault();
+    if (!bankAmount || parseFloat(bankAmount) <= 0) {
+      showToast('Please enter a valid deposit amount!', 'error');
+      return;
+    }
+    if (!bankRef.trim()) {
+      showToast('Please enter your Bank Reference or Sender Name!', 'error');
+      return;
+    }
+    if (!bankSlipPreview) {
+      showToast('Please upload your Bank Deposit Payment Receipt (Respit)!', 'error');
+      return;
+    }
+
+    const amt = parseFloat(bankAmount);
+    addManualPayment({
+      id: 'PAY-' + Math.floor(1000 + Math.random() * 9000),
+      userEmail: userProfile?.email || 'guest@madstopup.com',
+      userName: userProfile?.name || 'Gamer',
+      method: 'Bank Deposit',
+      referenceNumber: bankRef.trim(),
+      amount: amt,
+      currency: 'LKR',
+      slipUrl: bankSlipPreview,
+      receiptUrl: bankSlipPreview,
+      status: 'PENDING',
+      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
+    });
+
+    showToast('🏦 Bank deposit receipt submitted! Admin will verify and credit your wallet.');
+    setBankRef('');
+    setBankSlipPreview('');
+    setBankSlipFileName('');
+    setIsWalletModalOpen(false);
+  };
 
   if (!isWalletModalOpen) return null;
 
@@ -221,11 +287,11 @@ export const WalletModal = () => {
             </div>
           </div>
 
-          {/* TAB SWITCHER PILL CONTAINER (Matching Screenshot 2) */}
-          <div className="bg-white rounded-full p-1.5 border border-slate-200/90 shadow-sm max-w-md mx-auto flex items-center justify-around text-xs font-black">
+          {/* TAB SWITCHER PILL CONTAINER */}
+          <div className="bg-white rounded-full p-1.5 border border-slate-200/90 shadow-sm max-w-lg mx-auto flex items-center justify-around text-xs font-black overflow-x-auto gap-1">
             <button
               onClick={() => setWalletActiveTab('ezcash')}
-              className={`py-2 px-4 rounded-full transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`py-2 px-3 sm:px-4 rounded-full transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                 walletActiveTab === 'ezcash'
                   ? 'bg-slate-100 text-slate-900 border border-slate-200/80 shadow-xs'
                   : 'text-slate-500 hover:text-slate-900'
@@ -236,8 +302,20 @@ export const WalletModal = () => {
             </button>
 
             <button
+              onClick={() => setWalletActiveTab('bank')}
+              className={`py-2 px-3 sm:px-4 rounded-full transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                walletActiveTab === 'bank'
+                  ? 'bg-slate-100 text-red-600 border border-slate-200/80 shadow-xs font-black'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              <span>🏦</span>
+              <span>Bank Deposit</span>
+            </button>
+
+            <button
               onClick={() => setWalletActiveTab('binance')}
-              className={`py-2 px-4 rounded-full transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`py-2 px-3 sm:px-4 rounded-full transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                 walletActiveTab === 'binance'
                   ? 'bg-slate-100 text-slate-900 border border-slate-200/80 shadow-xs'
                   : 'text-slate-500 hover:text-slate-900'
@@ -249,7 +327,7 @@ export const WalletModal = () => {
 
             <button
               onClick={() => setWalletActiveTab('redeem')}
-              className={`py-2 px-4 rounded-full transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`py-2 px-3 sm:px-4 rounded-full transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                 walletActiveTab === 'redeem'
                   ? 'bg-slate-100 text-slate-900 border border-slate-200/80 shadow-xs'
                   : 'text-slate-500 hover:text-slate-900'
@@ -259,6 +337,118 @@ export const WalletModal = () => {
               <span>Redeem</span>
             </button>
           </div>
+
+          {/* TAB 1: BANK DEPOSIT PANEL */}
+          {walletActiveTab === 'bank' && (
+            <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-md space-y-5 animate-in fade-in">
+              
+              {/* Bank Account Info Card */}
+              <div className="border-2 border-dashed border-sky-300 bg-sky-50/50 rounded-2xl p-5 text-center relative">
+                <span className="text-[11px] font-bold text-sky-800 block uppercase tracking-wider">
+                  Commercial Bank Account Details
+                </span>
+                <div className="text-xl sm:text-2xl font-black text-sky-900 font-mono tracking-wider my-1">
+                  {bankAccountDetails.accountNumber}
+                </div>
+                <span className="text-xs font-bold text-sky-700 block mb-1">
+                  {bankAccountDetails.accountName}
+                </span>
+                <span className="text-[11px] text-slate-500 font-semibold block mb-3">
+                  {bankAccountDetails.bankName} • {bankAccountDetails.branch}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => handleCopy(bankAccountDetails.accountNumber)}
+                  className="px-4 py-1.5 bg-white text-sky-700 font-extrabold text-xs rounded-xl border border-sky-200 hover:bg-sky-100 transition-colors shadow-xs cursor-pointer inline-flex items-center gap-1.5"
+                >
+                  {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{isCopied ? 'COPIED' : 'COPY ACCOUNT NO'}</span>
+                </button>
+              </div>
+
+              {/* Form Fields */}
+              <form onSubmit={handleBankDepositSubmit} className="space-y-4 text-xs">
+                <div>
+                  <label className="font-extrabold text-slate-700 block mb-1.5">
+                    Deposit Amount (LKR)
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    placeholder="e.g. 2500"
+                    value={bankAmount}
+                    onChange={(e) => setBankAmount(e.target.value)}
+                    className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-red-500 shadow-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-extrabold text-slate-700 block mb-1.5">
+                    Bank Transfer Ref / Sender Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Ref No: 981240 / Kasun Perera"
+                    value={bankRef}
+                    onChange={(e) => setBankRef(e.target.value)}
+                    className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-red-500 shadow-xs"
+                  />
+                </div>
+
+                {/* Slip Image File Upload */}
+                <div>
+                  <label className="font-extrabold text-slate-700 block mb-1.5">
+                    Upload Payment Receipt Slip (Respit)
+                  </label>
+                  
+                  <label className="border-2 border-dashed border-slate-300 hover:border-red-500 bg-[#F8FAFC] hover:bg-red-50/30 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer transition-all">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleBankFileChange}
+                      className="hidden"
+                    />
+                    <Upload className="w-6 h-6 text-slate-400 mb-1" />
+                    <span className="text-xs font-bold text-slate-700">Click to Select Bank Receipt Image</span>
+                    <span className="text-[10px] text-slate-400 font-medium mt-0.5">JPG, PNG or WEBP (Max 5MB)</span>
+                  </label>
+
+                  {bankSlipPreview && (
+                    <div className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        <img src={bankSlipPreview} alt="Receipt preview" className="w-12 h-12 rounded-xl object-cover border border-slate-300 shrink-0" />
+                        <div className="truncate">
+                          <span className="text-xs font-bold text-slate-800 block truncate">{bankSlipFileName || 'Receipt_Slip.jpg'}</span>
+                          <span className="text-[10px] text-emerald-600 font-extrabold flex items-center gap-1">
+                            <Check className="w-3 h-3" /> Ready to Submit
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBankSlipPreview('');
+                          setBankSlipFileName('');
+                        }}
+                        className="p-1 text-slate-400 hover:text-red-600 rounded-lg"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3.5 bg-[#cc040a] hover:bg-[#990207] text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-colors cursor-pointer shadow-lg shadow-red-500/20 flex items-center justify-center gap-2 mt-2"
+                >
+                  <span>SUBMIT BANK RECEIPT FOR ADMIN APPROVAL</span>
+                </button>
+              </form>
+            </div>
+          )}
 
           {/* TAB 1: BINANCE DEPOSIT PANEL (Matching Screenshot 2 100%) */}
           {walletActiveTab === 'binance' && (

@@ -49,14 +49,22 @@ export const AdminDashboard = () => {
     updateGamePrices
   } = useApp();
 
-  // Admin Authentication State (Requires login when accessing /admin)
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  // Admin Authentication State (Persisted in localStorage across page refreshes)
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('mads_admin_authenticated') === 'true';
+    }
+    return false;
+  });
   const [adminAuthEmail, setAdminAuthEmail] = useState('');
   const [adminAuthPassword, setAdminAuthPassword] = useState('');
   const [showAdminAuthPassword, setShowAdminAuthPassword] = useState(false);
   const [adminAuthError, setAdminAuthError] = useState('');
   // Active Admin Sidebar Tab
   const [adminTab, setAdminTab] = useState('overview'); 
+
+  // Selected Bank Deposit Payment Receipt Inspection Modal State
+  const [selectedReceiptPay, setSelectedReceiptPay] = useState(null);
   // Options: 'overview' | 'orders' | 'deposits' | 'users' | 'credit' | 'games' | 'vouchers' | 'moongold' | 'r2' | 'announcement' | 'support'
 
   // Price Management State
@@ -221,6 +229,7 @@ export const AdminDashboard = () => {
   const handleAdminLoginSubmit = (e) => {
     e.preventDefault();
     if (adminAuthEmail.trim().toLowerCase() === 'madsruzza@gmail.com' && adminAuthPassword === 'Mads2004@#') {
+      localStorage.setItem('mads_admin_authenticated', 'true');
       setIsAdminAuthenticated(true);
       showToast('Admin Authentication Successful! Welcome Super Admin.');
       setAdminAuthError('');
@@ -232,6 +241,7 @@ export const AdminDashboard = () => {
   };
 
   const handleAdminLogout = () => {
+    localStorage.removeItem('mads_admin_authenticated');
     setIsAdminAuthenticated(false);
     setIsAdminOpen(false);
     showToast('Logged out from Admin Portal.');
@@ -1292,10 +1302,20 @@ export const AdminDashboard = () => {
                           <tr key={pay.id} className="hover:bg-slate-900/60 transition-colors">
                             <td className="p-3.5 font-mono text-slate-400">{pay.id}</td>
                             <td className="p-3.5 font-bold text-white">
-                              {pay.method === 'EZ Cash' ? '💸 EZ Cash' : pay.method === 'Binance Pay' ? '🔶 Binance Pay' : '🏦 Bank Slip'}
+                              {pay.method === 'EZ Cash' ? '💸 EZ Cash' : pay.method === 'Binance Pay' ? '🔶 Binance Pay' : '🏦 Bank Deposit'}
                             </td>
                             <td className="p-3.5 font-mono font-bold text-amber-400">
-                              {pay.referenceNumber}
+                              <div>{pay.referenceNumber}</div>
+                              {(pay.slipUrl || pay.receiptUrl) && (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedReceiptPay(pay)}
+                                  className="mt-1 text-[10px] font-extrabold text-sky-400 hover:text-sky-300 underline inline-flex items-center gap-1 cursor-pointer"
+                                >
+                                  <Eye className="w-3 h-3" />
+                                  <span>View Receipt Slip</span>
+                                </button>
+                              )}
                             </td>
                             <td className="p-3.5 text-slate-300">
                               <div className="font-bold text-white">{pay.userName}</div>
@@ -1312,7 +1332,17 @@ export const AdminDashboard = () => {
                                 {pay.status}
                               </span>
                             </td>
-                            <td className="p-3.5 text-right space-x-1.5">
+                            <td className="p-3.5 text-right space-x-1.5 whitespace-nowrap">
+                              {(pay.slipUrl || pay.receiptUrl || pay.method === 'Bank Deposit' || pay.method === 'Bank Slip') && (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedReceiptPay(pay)}
+                                  className="px-2.5 py-1 bg-sky-600/30 hover:bg-sky-600 border border-sky-500/50 text-sky-200 hover:text-white font-extrabold text-[10px] rounded-lg cursor-pointer transition-colors inline-flex items-center gap-1"
+                                >
+                                  <Eye className="w-3 h-3" />
+                                  <span>Slip</span>
+                                </button>
+                              )}
                               {pay.status === 'PENDING' && (
                                 <>
                                   <button
@@ -2568,6 +2598,125 @@ export const AdminDashboard = () => {
                 Record Payment Request
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 4: VIEW BANK PAYMENT RECEIPT SLIP LIGHTBOX */}
+      {selectedReceiptPay && (
+        <div className="fixed inset-0 z-70 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-[#111622] text-white w-full max-w-2xl rounded-3xl border border-slate-800 p-6 space-y-5 relative shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-sky-400 font-extrabold">
+                  📷
+                </div>
+                <div>
+                  <h3 className="text-base font-black font-heading text-white">Bank Deposit Payment Receipt</h3>
+                  <p className="text-xs text-slate-400 font-mono">Payment ID: {selectedReceiptPay.id}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedReceiptPay(null)}
+                className="p-1.5 rounded-xl bg-slate-900 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 space-y-4 pr-1">
+              {/* Slip Image Container */}
+              <div className="bg-slate-950 rounded-2xl border border-slate-800 p-3 flex flex-col items-center justify-center min-h-[220px]">
+                {selectedReceiptPay.slipUrl || selectedReceiptPay.receiptUrl ? (
+                  <div className="space-y-2 text-center w-full">
+                    <img 
+                      src={selectedReceiptPay.slipUrl || selectedReceiptPay.receiptUrl} 
+                      alt="Bank Receipt Slip" 
+                      className="max-h-[380px] w-auto max-w-full rounded-xl object-contain mx-auto border border-slate-800 shadow-md"
+                    />
+                    <a
+                      href={selectedReceiptPay.slipUrl || selectedReceiptPay.receiptUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-sky-400 hover:text-sky-300 pt-1"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>Open Full Size Image</span>
+                    </a>
+                  </div>
+                ) : (
+                  <div className="text-center py-10 space-y-2">
+                    <p className="text-slate-500 font-bold text-xs">No receipt image attached to this payment record.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Payment Details Metadata Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase block mb-0.5">USER NAME</span>
+                  <span className="text-white font-bold">{selectedReceiptPay.userName}</span>
+                </div>
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase block mb-0.5">USER EMAIL</span>
+                  <span className="text-white font-bold font-mono text-[11px] truncate block">{selectedReceiptPay.userEmail}</span>
+                </div>
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase block mb-0.5">DEPOSIT METHOD</span>
+                  <span className="text-white font-bold">{selectedReceiptPay.method}</span>
+                </div>
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase block mb-0.5">REFERENCE / SENDER</span>
+                  <span className="text-amber-400 font-mono font-bold">{selectedReceiptPay.referenceNumber}</span>
+                </div>
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase block mb-0.5">AMOUNT</span>
+                  <span className="text-emerald-400 font-heading font-black text-sm">{selectedReceiptPay.amount} {selectedReceiptPay.currency}</span>
+                </div>
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase block mb-0.5">CURRENT STATUS</span>
+                  <span className={`text-xs font-black uppercase ${
+                    selectedReceiptPay.status === 'VERIFIED' ? 'text-emerald-400' :
+                    selectedReceiptPay.status === 'REJECTED' ? 'text-red-400' : 'text-amber-400'
+                  }`}>
+                    {selectedReceiptPay.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="pt-3 border-t border-slate-800 flex items-center justify-end gap-2">
+              {selectedReceiptPay.status === 'PENDING' ? (
+                <>
+                  <button
+                    onClick={() => {
+                      rejectManualPayment(selectedReceiptPay.id);
+                      setSelectedReceiptPay(null);
+                    }}
+                    className="px-4 py-2 bg-red-950 hover:bg-red-900 border border-red-800 text-red-300 font-extrabold text-xs rounded-xl cursor-pointer"
+                  >
+                    Reject Payment
+                  </button>
+                  <button
+                    onClick={() => {
+                      approveManualPayment(selectedReceiptPay.id);
+                      setSelectedReceiptPay(null);
+                    }}
+                    className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl cursor-pointer shadow-lg shadow-emerald-600/20"
+                  >
+                    Approve & Credit Wallet
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setSelectedReceiptPay(null)}
+                  className="px-5 py-2 bg-slate-800 text-slate-200 font-bold text-xs rounded-xl cursor-pointer hover:bg-slate-700"
+                >
+                  Close
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

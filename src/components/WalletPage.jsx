@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
   X, Wallet, Copy, Check, Clipboard, DollarSign, Gift, ArrowLeft, ArrowRight, XCircle, 
-  Ban, Key, Clock, RefreshCw, Zap, CheckCircle2, ShieldCheck, HelpCircle, Smartphone, AlertTriangle, Crown, Send
+  Ban, Key, Clock, RefreshCw, Zap, CheckCircle2, ShieldCheck, HelpCircle, Smartphone, AlertTriangle, Crown, Send, Building2, Upload, Image
 } from 'lucide-react';
 
 export const WalletPage = () => {
@@ -28,6 +28,71 @@ export const WalletPage = () => {
   const [voucherCode, setVoucherCode] = useState('');
   const [isCopied, setIsCopied] = useState(false);
   const [isBinanceVerifying, setIsBinanceVerifying] = useState(false);
+
+  // Bank Deposit State
+  const [bankAmount, setBankAmount] = useState('1000');
+  const [bankRef, setBankRef] = useState('');
+  const [bankSlipPreview, setBankSlipPreview] = useState('');
+  const [bankSlipFileName, setBankSlipFileName] = useState('');
+
+  const bankAccountDetails = {
+    bankName: 'Commercial Bank of Ceylon',
+    accountName: 'MADS TOPUP ENTERPRISE',
+    accountNumber: '8019482104',
+    branch: 'Colombo Main Branch'
+  };
+
+  const handleBankFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('Receipt slip image size must be less than 5MB!', 'error');
+        return;
+      }
+      setBankSlipFileName(file.name);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setBankSlipPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleBankDepositSubmit = (e) => {
+    e.preventDefault();
+    if (!bankAmount || parseFloat(bankAmount) <= 0) {
+      showToast('Please enter a valid deposit amount!', 'error');
+      return;
+    }
+    if (!bankRef.trim()) {
+      showToast('Please enter your Bank Reference or Sender Name!', 'error');
+      return;
+    }
+    if (!bankSlipPreview) {
+      showToast('Please upload your Bank Deposit Payment Receipt (Respit)!', 'error');
+      return;
+    }
+
+    const amt = parseFloat(bankAmount);
+    addManualPayment({
+      id: 'PAY-' + Math.floor(1000 + Math.random() * 9000),
+      userEmail: userProfile?.email || 'guest@madstopup.com',
+      userName: userProfile?.name || 'Gamer',
+      method: 'Bank Deposit',
+      referenceNumber: bankRef.trim(),
+      amount: amt,
+      currency: 'LKR',
+      slipUrl: bankSlipPreview,
+      receiptUrl: bankSlipPreview,
+      status: 'PENDING',
+      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
+    });
+
+    showToast('🏦 Bank deposit receipt submitted! Admin will verify and credit your wallet.');
+    setBankRef('');
+    setBankSlipPreview('');
+    setBankSlipFileName('');
+  };
 
   const binanceMerchantId = "547785111";
   const ezCashMerchantNumber = "0740436276";
@@ -328,7 +393,7 @@ export const WalletPage = () => {
         )}
 
         {/* TAB SWITCHER PILLS */}
-        <div className="bg-white rounded-full p-2 border border-slate-200/90 shadow-sm max-w-2xl mx-auto flex items-center justify-around text-xs font-black overflow-x-auto gap-1">
+        <div className="bg-white rounded-full p-2 border border-slate-200/90 shadow-sm max-w-3xl mx-auto flex items-center justify-around text-xs font-black overflow-x-auto gap-1">
           {isApprovedReseller && (
             <button
               onClick={() => setWalletActiveTab('telegram_bot')}
@@ -344,15 +409,15 @@ export const WalletPage = () => {
           )}
 
           <button
-            onClick={() => setWalletActiveTab('binance')}
+            onClick={() => setWalletActiveTab('bank')}
             className={`flex-1 py-3 px-4 rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 ${
-              walletActiveTab === 'binance'
+              walletActiveTab === 'bank'
                 ? 'bg-[#cc040a] text-white shadow-md'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <span>🔶</span>
-            <span>Binance Pay</span>
+            <span>🏦</span>
+            <span>Bank Deposit</span>
           </button>
 
           <button
@@ -368,6 +433,18 @@ export const WalletPage = () => {
           </button>
 
           <button
+            onClick={() => setWalletActiveTab('binance')}
+            className={`flex-1 py-3 px-4 rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 ${
+              walletActiveTab === 'binance'
+                ? 'bg-[#cc040a] text-white shadow-md'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <span>🔶</span>
+            <span>Binance Pay</span>
+          </button>
+
+          <button
             onClick={() => setWalletActiveTab('redeem')}
             className={`flex-1 py-3 px-4 rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 ${
               walletActiveTab === 'redeem'
@@ -379,6 +456,117 @@ export const WalletPage = () => {
             <span>Voucher</span>
           </button>
         </div>
+
+        {/* TAB: BANK DEPOSIT PANEL */}
+        {walletActiveTab === 'bank' && (
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-md space-y-6 animate-in fade-in">
+            {/* Bank Info Card */}
+            <div className="border-2 border-dashed border-sky-300 bg-sky-50/50 rounded-2xl p-6 text-center relative space-y-2">
+              <span className="text-xs font-black text-sky-800 uppercase tracking-wider block">
+                COMMERCIAL BANK OF CEYLON
+              </span>
+              <div className="text-2xl sm:text-4xl font-black text-sky-900 font-mono tracking-wider">
+                {bankAccountDetails.accountNumber}
+              </div>
+              <p className="text-sm font-extrabold text-sky-800">
+                Account Name: <span className="font-black text-sky-950">{bankAccountDetails.accountName}</span>
+              </p>
+              <p className="text-xs text-slate-500 font-semibold">
+                Branch: {bankAccountDetails.branch}
+              </p>
+
+              <button
+                type="button"
+                onClick={() => handleCopy(bankAccountDetails.accountNumber)}
+                className="mt-2 px-5 py-2 bg-white text-sky-800 font-extrabold text-xs rounded-xl border border-sky-200 hover:bg-sky-100 transition-colors shadow-xs cursor-pointer inline-flex items-center gap-1.5"
+              >
+                {isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                <span>{isCopied ? 'COPIED' : 'COPY ACCOUNT NUMBER'}</span>
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleBankDepositSubmit} className="space-y-4 text-xs">
+              <div>
+                <label className="font-extrabold text-slate-700 block mb-1.5">
+                  Deposit Amount (LKR)
+                </label>
+                <input
+                  type="number"
+                  required
+                  placeholder="e.g. 2500"
+                  value={bankAmount}
+                  onChange={(e) => setBankAmount(e.target.value)}
+                  className="w-full px-4 py-3.5 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-red-500 shadow-xs"
+                />
+              </div>
+
+              <div>
+                <label className="font-extrabold text-slate-700 block mb-1.5">
+                  Bank Reference Number / Depositor Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Ref: 981240 / Kasun Perera"
+                  value={bankRef}
+                  onChange={(e) => setBankRef(e.target.value)}
+                  className="w-full px-4 py-3.5 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-red-500 shadow-xs"
+                />
+              </div>
+
+              {/* Receipt File Picker */}
+              <div>
+                <label className="font-extrabold text-slate-700 block mb-1.5">
+                  Upload Payment Receipt / Deposit Slip (Respit Photo)
+                </label>
+                
+                <label className="border-2 border-dashed border-slate-300 hover:border-red-500 bg-[#F8FAFC] hover:bg-red-50/30 rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleBankFileChange}
+                    className="hidden"
+                  />
+                  <Upload className="w-8 h-8 text-slate-400 mb-2" />
+                  <span className="text-xs font-black text-slate-700">Click to Select Bank Receipt Image</span>
+                  <span className="text-[10px] text-slate-400 font-medium mt-1">Supports JPG, PNG, WEBP (Max 5MB)</span>
+                </label>
+
+                {bankSlipPreview && (
+                  <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between gap-3 shadow-xs">
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <img src={bankSlipPreview} alt="Receipt preview" className="w-14 h-14 rounded-xl object-cover border border-slate-300 shrink-0" />
+                      <div className="truncate">
+                        <span className="text-xs font-black text-slate-800 block truncate">{bankSlipFileName || 'Receipt_Slip.jpg'}</span>
+                        <span className="text-xs text-emerald-600 font-extrabold flex items-center gap-1 mt-0.5">
+                          <Check className="w-3.5 h-3.5" /> Ready for Admin Approval
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBankSlipPreview('');
+                        setBankSlipFileName('');
+                      }}
+                      className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-slate-200 transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-4 bg-[#cc040a] hover:bg-[#990207] text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-colors cursor-pointer shadow-lg shadow-red-500/20 flex items-center justify-center gap-2 mt-3"
+              >
+                <span>SUBMIT BANK DEPOSIT RECEIPT FOR ADMIN VERIFICATION</span>
+              </button>
+            </form>
+          </div>
+        )}
 
         {/* TAB: TELEGRAM BOT RESELLER TOPUP PANEL */}
         {walletActiveTab === 'telegram_bot' && (
