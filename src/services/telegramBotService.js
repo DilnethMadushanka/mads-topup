@@ -11,6 +11,12 @@ let botInstance = null;
 // Chat session bindings: chatId -> resellerProfile
 const boundChatSessions = new Map();
 
+// Security Rate Limiter: chatId -> { failedAttempts, lockoutUntil }
+const authRateLimiter = new Map();
+
+// Concurrent Order Lock: chatId -> boolean
+const processingLocks = new Set();
+
 /**
  * Match game in website catalog (GAMES_DATA)
  */
@@ -209,6 +215,16 @@ Support for ALL games on website: Mobile Legends, Free Fire, PUBG Mobile, Blood 
         const matchStr = (typeof ctx.match === 'string' ? ctx.match : (Array.isArray(ctx.match) ? ctx.match[0] : ''));
         const keyArg = (matchStr || parts[1] || parts[0]?.replace(/^\/(auth|link|key)\s*/i, '') || '').trim();
 
+        if (!chatId) return;
+
+        // Anti-Brute-Force Rate Limiting Check
+        const now = Date.now();
+        const rateData = authRateLimiter.get(chatId) || { failedAttempts: 0, lockoutUntil: 0 };
+        if (rateData.lockoutUntil > now) {
+          const waitMins = Math.ceil((rateData.lockoutUntil - now) / 60000);
+          return ctx.reply(`🛡️ SECURITY LOCKOUT ACTIVATED\n\nToo many failed auth attempts. Chat locked for ${waitMins} minute(s) to prevent key brute-forcing.`);
+        }
+
         if (!keyArg || keyArg.startsWith('/')) {
           return ctx.reply('❌ Error: Please specify your unique Security Key or Reseller Code.\nUsage: /auth MADS-SEC-50048A92');
         }
@@ -216,7 +232,8 @@ Support for ALL games on website: Mobile Legends, Free Fire, PUBG Mobile, Blood 
         const reseller = getResellerProfileByKey(keyArg);
 
         if (reseller) {
-          if (chatId) boundChatSessions.set(chatId, reseller);
+          boundChatSessions.set(chatId, reseller);
+          authRateLimiter.delete(chatId);
 
           const successText = `
 ✅ RESELLER ACCOUNT LINKED SUCCESSFULLY!
@@ -232,10 +249,18 @@ Your Telegram chat is now bound to your Reseller Wallet! You can use /topup for 
           `.trim();
           return ctx.reply(successText);
         } else {
+          rateData.failedAttempts += 1;
+          if (rateData.failedAttempts >= 5) {
+            rateData.lockoutUntil = now + (15 * 60 * 1000); // 15 mins lock
+            authRateLimiter.set(chatId, rateData);
+            return ctx.reply('🛡️ SECURITY LOCKOUT ACTIVATED: 5 consecutive failed authentication attempts. Chat locked for 15 minutes to prevent key brute-forcing.');
+          }
+          authRateLimiter.set(chatId, rateData);
+
           const failText = `
 ❌ AUTHENTICATION FAILED
 
-Invalid Security Key or Reseller Code (${keyArg}).
+Invalid Security Key or Reseller Code (${keyArg}). [Attempt ${rateData.failedAttempts}/5]
 Please copy your unique Security Key from your MADS TOPUP Reseller Dashboard and try again.
 
 Usage: /auth MADS-SEC-50048A92
