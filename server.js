@@ -378,7 +378,7 @@ app.get('/api/ip', async (req, res) => {
   }
 });
 
-// Automated Binance Pay Auto-Verification Endpoint
+// Automated Binance Pay Deposit Verification Endpoint (Admin Approval Mode)
 app.post('/api/binance/verify-order', async (req, res) => {
   try {
     const { orderId, payId, amount } = req.body || {};
@@ -386,103 +386,20 @@ app.post('/api/binance/verify-order', async (req, res) => {
       return res.status(400).json({ error: 'Missing Order ID or Pay ID' });
     }
 
-    const binanceApiKey = process.env.BINANCE_PAY_KEY || process.env.BINANCE_API_KEY || process.env.VITE_BINANCE_PAY_KEY;
-    const binanceSecretKey = process.env.BINANCE_PAY_SECRET || process.env.BINANCE_API_SECRET || process.env.VITE_BINANCE_PAY_SECRET;
+    console.log(`[Binance Deposit Submitted for Admin Approval] Order: ${orderId}, PayID: ${payId}, Amount: ${amount} USDT`);
 
-    console.log(`[Binance Auto-Verify Check] Order: ${orderId}, PayID: ${payId}, Amount: ${amount} USDT`);
-
-    // Option 1: Official Binance Pay Merchant API (if Merchant keys configured)
-    if (process.env.BINANCE_PAY_KEY && process.env.BINANCE_PAY_SECRET) {
-      const timestamp = Date.now();
-      const nonce = crypto.randomBytes(16).toString('hex');
-      const bodyObj = { binanceOrderNo: orderId };
-      const bodyStr = JSON.stringify(bodyObj);
-      const payloadToSign = `${timestamp}\n${nonce}\n${bodyStr}\n`;
-
-      const signature = crypto
-        .createHmac('sha512', process.env.BINANCE_PAY_SECRET)
-        .update(payloadToSign)
-        .digest('hex')
-        .toUpperCase();
-
-      const bRes = await fetch('https://bpay.binanceapi.com/binancepay/openapi/v2/order/query', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'BinancePay-Timestamp': timestamp.toString(),
-          'BinancePay-Nonce': nonce,
-          'BinancePay-Certificate-SN': process.env.BINANCE_PAY_KEY,
-          'BinancePay-Signature': signature
-        },
-        body: bodyStr
-      });
-
-      const bData = await bRes.json();
-      console.log(`[Binance Merchant API Query Result]:`, bData);
-
-      if (bData && bData.status === 'SUCCESS' && (bData.data?.status === 'PAID' || bData.data?.status === 'SUCCESS')) {
-        return res.json({
-          verified: true,
-          autoApproved: true,
-          status: 'SUCCESS',
-          amountUsdt: bData.data?.totalFee || amount,
-          message: 'Binance Pay payment verified successfully via Official Merchant API!'
-        });
-      }
-    }
-
-    // Option 2: Binance Personal Account Read-Only API (from Binance -> Settings -> API Management)
-    if (binanceApiKey && binanceSecretKey) {
-      try {
-        const timestamp = Date.now();
-        const queryString = `timestamp=${timestamp}`;
-        const signature = crypto
-          .createHmac('sha256', binanceSecretKey)
-          .update(queryString)
-          .digest('hex');
-
-        const payHistoryRes = await fetch(`https://api.binance.com/sapi/v1/pay/transactions?${queryString}&signature=${signature}`, {
-          method: 'GET',
-          headers: {
-            'X-MBX-APIKEY': binanceApiKey
-          }
-        });
-
-        const payHistoryData = await payHistoryRes.json();
-        console.log(`[Binance Personal Pay History]:`, payHistoryData);
-
-        if (payHistoryData && Array.isArray(payHistoryData.data)) {
-          const matchTxn = payHistoryData.data.find(tx =>
-            String(tx.orderId) === String(orderId) ||
-            String(tx.tranId) === String(orderId) ||
-            String(tx.payerId) === String(payId)
-          );
-
-          if (matchTxn && (matchTxn.status === 'SUCCESS' || matchTxn.status === 'COMPLETED')) {
-            return res.json({
-              verified: true,
-              autoApproved: true,
-              status: 'SUCCESS',
-              amountUsdt: parseFloat(matchTxn.amount) || amount,
-              message: 'Binance transaction verified via Personal Account API!'
-            });
-          }
-        }
-      } catch (pErr) {
-        console.warn('[Personal API Check Note]:', pErr.message);
-      }
-    }
-
-    // Safe Default Fallback: Submit to Admin Queue as PENDING so fake Order IDs cannot scam free money
+    // Route directly to Admin Queue for Manual Admin Approval
     return res.json({
       verified: false,
       autoApproved: false,
       status: 'PENDING_ADMIN_VERIFICATION',
-      message: 'Deposit recorded. Submitted for 1-click Admin Verification.'
+      amountUsdt: amount,
+      orderId,
+      payId,
+      message: 'Binance Pay deposit submitted! Pending 1-click Admin Verification.'
     });
-
   } catch (err) {
-    console.error('[Binance Auto-Verify Error]:', err);
+    console.error('[Binance Verify Error]:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -498,14 +415,10 @@ app.post('/api/binance/webhook', (req, res) => {
 });
 
 // Memory store for received Dialog EZ Cash SMS records via Webhook
-const receivedEzCashSmsLog = new Map([
-  ['20260910123456', { rnNumber: '20260910123456', amountLkr: 1000, receivedAt: new Date().toISOString() }]
-]);
-
-// Cache for used EZ Cash RN numbers to prevent double redemption
+const receivedEzCashSmsLog = new Map();
 const usedEzCashRnNumbers = new Set();
 
-// Automated EZ Cash RN Auto-Verification Endpoint
+// Automated EZ Cash RN Deposit Verification Endpoint (Admin Approval Mode)
 app.post('/api/ezcash/verify-rn', (req, res) => {
   try {
     const { rnNumber, amount, userEmail } = req.body || {};
@@ -518,51 +431,24 @@ app.post('/api/ezcash/verify-rn', (req, res) => {
       });
     }
 
-    if (usedEzCashRnNumbers.has(cleanRn)) {
-      return res.status(400).json({
-        verified: false,
-        error: 'This RN Transaction Number has already been redeemed.'
-      });
-    }
-
     const amtLkr = parseFloat(amount) || 1000;
+    console.log(`[EZ Cash Deposit Submitted for Admin Approval] RN: ${cleanRn}, Amount: Rs. ${amtLkr}, User: ${userEmail}`);
 
-    // Strict Webhook Verification: Only auto-approve if exact RN match was received via Webhook SMS
-    const matchedSms = receivedEzCashSmsLog.get(cleanRn);
-
-    if (matchedSms) {
-      usedEzCashRnNumbers.add(cleanRn);
-      const creditedAmt = matchedSms.amountLkr || amtLkr;
-      matchedSms.status = 'REDEEMED';
-      matchedSms.redeemedBy = userEmail;
-      matchedSms.redeemedAt = new Date().toISOString();
-      console.log(`[EZ Cash WEBHOOK VERIFIED SUCCESS] RN: ${cleanRn}, Amount: Rs. ${creditedAmt}, User: ${userEmail}`);
-      return res.json({
-        verified: true,
-        autoApproved: true,
-        status: 'VERIFIED',
-        amountLkr: creditedAmt,
-        rnNumber: cleanRn,
-        message: `⚡ EZ Cash RN ${cleanRn} verified via Webhook! Rs. ${creditedAmt.toLocaleString()} credited to your wallet.`
-      });
-    }
-
-    // Safe Protection: If SMS has not reached Webhook yet, send to Pending Admin Queue
-    console.log(`[EZ Cash Pending - Webhook SMS Not Received] RN: ${cleanRn}, Amount: Rs. ${amtLkr}, User: ${userEmail}`);
+    // Route directly to Admin Queue for Manual Admin Approval
     return res.json({
       verified: false,
       autoApproved: false,
       status: 'PENDING_ADMIN_VERIFICATION',
       amountLkr: amtLkr,
       rnNumber: cleanRn,
-      message: 'SMS Webhook verification pending. If you just made the transfer, please wait 5-10 seconds for phone sync or Admin approval.'
+      message: 'EZ Cash deposit submitted! Pending 1-click Admin Verification.'
     });
-
   } catch (err) {
     console.error('[EZ Cash Verify Error]:', err);
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // EZ Cash SMS Gateway Webhook Endpoint (Receives Dialog SMS from SMS Forwarder / iPhone Shortcut / Gateway)
 app.post('/api/ezcash/webhook', (req, res) => {
