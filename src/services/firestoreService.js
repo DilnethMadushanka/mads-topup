@@ -113,14 +113,11 @@ export const getResellerProfileByKeyAsync = async (keyOrCode) => {
     const userSecKey = String(userObj.securityKey || '').trim().toUpperCase();
     const userCode = String(userObj.resellerCode || '').trim().toUpperCase();
     const cleanUid = String(userObj.uid || uidKey || '').trim().toUpperCase();
-    const uidSuffix = cleanUid.replace(/[^A-Z0-9]/g, '').slice(-4);
 
-    if (userSecKey === cleanKey || userCode === cleanKey || cleanUid === cleanKey) {
-      return true;
-    }
-    if (uidSuffix && uidSuffix.length >= 4 && (cleanKey.includes(uidSuffix) || userCode.endsWith(uidSuffix))) {
-      return true;
-    }
+    if (userSecKey && userSecKey === cleanKey) return true;
+    if (userCode && userCode === cleanKey) return true;
+    if (cleanUid && cleanUid === cleanKey) return true;
+
     return false;
   };
 
