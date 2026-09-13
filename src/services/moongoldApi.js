@@ -326,6 +326,7 @@ export const dispatchMoongoldOrder = async (orderData) => {
   } else {
     dataPayload['User ID'] = orderData.playerId || '';
     if (orderData.zoneId) {
+      dataPayload['Server ID'] = orderData.zoneId;
       dataPayload['Server'] = orderData.zoneId;
     }
   }

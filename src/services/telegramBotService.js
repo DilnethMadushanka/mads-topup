@@ -134,6 +134,7 @@ async function sendMoongoldLiveOrder(game, pkg, playerId, zoneId, orderRef) {
   } else {
     dataPayload['User ID'] = playerId;
     if (zoneId) {
+      dataPayload['Server ID'] = zoneId;
       dataPayload['Server'] = zoneId;
     }
   }
