@@ -1,5 +1,5 @@
 import { db, rtdb } from './firebaseAuth.js';
-import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { ref as dbRef, get as rtdbGet, set as rtdbSet, update as rtdbUpdate, onValue as rtdbOnValue } from 'firebase/database';
 
 /**
@@ -467,7 +467,7 @@ export const subscribeResellerApplicationsFromFirestore = (callback) => {
 /**
  * Update reseller application status and sync user reseller role
  */
-export const updateResellerApplicationStatusInFirestore = async (appId, userId, newStatus) => {
+export const updateResellerApplicationStatusInFirestore = async (appId, userId, newStatus, firestoreId = null) => {
   if (rtdb) {
     try {
       const appRef = dbRef(rtdb, `reseller_applications/${appId}`);
@@ -493,16 +493,30 @@ export const updateResellerApplicationStatusInFirestore = async (appId, userId, 
 
   if (db) {
     try {
-      const userRef = doc(db, 'users', userId);
-      if (newStatus === 'APPROVED') {
+      // 1. Update reseller_applications collection in Firestore
+      if (firestoreId) {
+        const docRef = doc(db, 'reseller_applications', firestoreId);
+        await updateDoc(docRef, { status: newStatus, updatedAt: new Date().toISOString() });
+      } else {
+        const appsCol = collection(db, 'reseller_applications');
+        const q = query(appsCol, where('id', '==', appId));
+        const qSnap = await getDocs(q);
+        qSnap.forEach(async (d) => {
+          await updateDoc(doc(db, 'reseller_applications', d.id), { status: newStatus, updatedAt: new Date().toISOString() });
+        });
+      }
+
+      // 2. Update user document in Firestore users collection
+      if (userId && newStatus === 'APPROVED') {
         const cleanUid = String(userId).slice(-6).toUpperCase();
-        await updateDoc(userRef, { 
+        const userRef = doc(db, 'users', userId);
+        await setDoc(userRef, { 
           isReseller: true, 
           role: 'reseller', 
           resellerStatus: 'APPROVED',
           resellerCode: `RS-${cleanUid}`,
           securityKey: `MADS-SEC-${cleanUid.slice(0, 4)}8A92`
-        });
+        }, { merge: true });
       }
     } catch (err) {
       console.warn('Firestore reseller status update note:', err);

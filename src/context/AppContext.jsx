@@ -1071,7 +1071,14 @@ export const AppProvider = ({ children }) => {
       if (remoteApps && remoteApps.length > 0) {
         setResellerApplications(prev => {
           const map = new Map();
-          [...remoteApps, ...prev].forEach(item => map.set(item.id || item.firestoreId, item));
+          remoteApps.forEach(item => map.set(item.id || item.firestoreId, item));
+          prev.forEach(item => {
+            const key = item.id || item.firestoreId;
+            const existing = map.get(key);
+            if (!existing || item.status === 'APPROVED' || item.status === 'REJECTED') {
+              map.set(key, item);
+            }
+          });
           return Array.from(map.values());
         });
       }
@@ -1088,13 +1095,19 @@ export const AppProvider = ({ children }) => {
   const updateResellerApplicationStatus = async (appId, userId, newStatus, appObject = null) => {
     let targetApp = appObject || resellerApplications.find(app => app.id === appId || app.firestoreId === appId);
     
-    setResellerApplications(prev => prev.map(app => {
-      if (app.id === appId || app.firestoreId === appId) {
-        return { ...app, status: newStatus, updatedAt: new Date().toISOString() };
-      }
-      return app;
-    }));
-    updateResellerApplicationStatusInFirestore(appId, userId, newStatus);
+    setResellerApplications(prev => {
+      const updated = prev.map(app => {
+        if (app.id === appId || app.firestoreId === appId || (targetApp && (app.id === targetApp.id || app.firestoreId === targetApp.firestoreId))) {
+          return { ...app, status: newStatus, updatedAt: new Date().toISOString() };
+        }
+        return app;
+      });
+      localStorage.setItem('mads_reseller_applications', JSON.stringify(updated));
+      return updated;
+    });
+
+    const targetFirestoreId = targetApp?.firestoreId || null;
+    updateResellerApplicationStatusInFirestore(appId, userId, newStatus, targetFirestoreId);
     
     if (newStatus === 'APPROVED') {
       if (userId && userProfileState?.uid === userId) {
