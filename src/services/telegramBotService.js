@@ -188,46 +188,58 @@ Support for ALL games on website: Mobile Legends, Free Fire, PUBG Mobile, Blood 
     });
 
     // Command: /auth [SecurityKey]  or  /link [SecurityKey]
-    const handleAuth = (ctx) => {
-      const chatId = ctx.message?.chat?.id;
-      const text = ctx.message?.text || '';
-      const parts = text.split(/\s+/).filter(Boolean);
-      const keyArg = parts[1]?.trim();
+    const handleAuth = async (ctx) => {
+      try {
+        const chatId = ctx.message?.chat?.id || ctx.chat?.id;
+        const text = ctx.message?.text || ctx.msg?.text || '';
+        const parts = text.split(/\s+/).filter(Boolean);
+        const matchStr = (typeof ctx.match === 'string' ? ctx.match : (Array.isArray(ctx.match) ? ctx.match[0] : ''));
+        const keyArg = (matchStr || parts[1] || parts[0]?.replace(/^\/(auth|link|key)\s*/i, '') || '').trim();
 
-      if (!keyArg) {
-        return ctx.reply('❌ *Error:* Please specify your unique Security Key or Reseller Code.\nUsage: \`/auth MADS-SEC-882104\` or \`/link RS-882104\`', { parse_mode: 'Markdown' });
-      }
+        if (!keyArg || keyArg.startsWith('/')) {
+          return ctx.reply('❌ Error: Please specify your unique Security Key or Reseller Code.\nUsage: /auth MADS-SEC-50048A92');
+        }
 
-      const reseller = getResellerProfileByKey(keyArg);
+        const reseller = getResellerProfileByKey(keyArg);
 
-      if (reseller) {
-        boundChatSessions.set(chatId, reseller);
+        if (reseller) {
+          if (chatId) boundChatSessions.set(chatId, reseller);
 
-        const successText = `
-✅ *RESELLER ACCOUNT LINKED SUCCESSFULLY!*
+          const successText = `
+✅ RESELLER ACCOUNT LINKED SUCCESSFULLY!
 
-👑 *Reseller Name:* ${reseller.name || 'Verified Reseller Store'}
-🏷️ *Unique Reseller Code:* \`${reseller.resellerCode}\`
-🔑 *Security Key:* \`${reseller.securityKey}\`
-💼 *Wholesale Tier:* Verified Reseller Partner (5% Wholesale Discount)
-💰 *Available LKR Balance:* Rs. ${(reseller.walletBalance || 0).toLocaleString()} LKR
-💵 *Available USDT Balance:* $${((reseller.walletBalance || 0) / 305).toFixed(2)} USDT
+👑 Reseller Name: ${reseller.name || 'Verified Reseller Partner'}
+🏷️ Unique Reseller Code: ${reseller.resellerCode}
+🔑 Security Key: ${reseller.securityKey}
+💼 Wholesale Tier: Verified Reseller Partner (5% Wholesale Discount)
+💰 Available LKR Balance: Rs. ${(reseller.walletBalance || 0).toLocaleString()} LKR
+💵 Available USDT Balance: $${((reseller.walletBalance || 0) / 305).toFixed(2)} USDT
 
-_Your Telegram chat is now bound to your Reseller Wallet! You can use \`/topup\` for any game on the website._
-        `;
-        return ctx.reply(successText, { parse_mode: 'Markdown' });
-      } else {
-        const failText = `
-❌ *AUTHENTICATION FAILED*
+Your Telegram chat is now bound to your Reseller Wallet! You can use /topup for any game on the website.
+          `.trim();
+          return ctx.reply(successText);
+        } else {
+          const failText = `
+❌ AUTHENTICATION FAILED
 
-Invalid Security Key or Reseller Code (\`${keyArg}\`).
+Invalid Security Key or Reseller Code (${keyArg}).
 Please copy your unique Security Key from your MADS TOPUP Reseller Dashboard and try again.
 
-Usage: \`/auth MADS-SEC-882104\`
-        `;
-        return ctx.reply(failText, { parse_mode: 'Markdown' });
+Usage: /auth MADS-SEC-50048A92
+          `.trim();
+          return ctx.reply(failText);
+        }
+      } catch (err) {
+        console.error('[Telegram Auth Error]:', err);
+        try {
+          return ctx.reply(`❌ Auth Error: ${err.message}`);
+        } catch (e) {}
       }
     };
+
+    bot.catch((err) => {
+      console.error('[Telegram Bot Engine Catch]:', err.message || err);
+    });
 
     bot.command('auth', handleAuth);
     bot.command('link', handleAuth);
