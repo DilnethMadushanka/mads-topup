@@ -288,45 +288,59 @@ Usage: /auth MADS-SEC-50048A92
       try {
         const text = ctx.message?.text || ctx.msg?.text || '';
         const parts = text.split(/\s+/).filter(Boolean);
-        const cmd = parts[0]?.toLowerCase() || '';
+        const rawCmd = (parts[0] || '').toLowerCase().replace(/^\//, '');
 
-        let gameArg = 'mobilelegends';
+        let gameArg = '';
         let id = '';
         let zone = '';
 
-        if (cmd.includes('ml')) { gameArg = 'mobilelegends'; id = parts[1] || ''; zone = parts[2] || ''; }
-        else if (cmd.includes('ff')) { gameArg = 'freefire_sg'; id = parts[1] || ''; }
-        else if (cmd.includes('pubg')) { gameArg = 'pubg'; id = parts[1] || ''; }
-        else if (cmd.includes('bs')) { gameArg = 'bloodstrike'; id = parts[1] || ''; }
-        else if (cmd.includes('df')) { gameArg = 'deltaforce'; id = parts[1] || ''; }
-        else if (cmd.includes('gs')) { gameArg = 'garenashells'; id = parts[1] || ''; }
-        else {
-          gameArg = parts[1] || 'mobilelegends';
-          id = parts[2] || '';
-          zone = parts[3] || '';
-        }
+        if (!rawCmd || rawCmd === 'id' || rawCmd === 'ign' || rawCmd === 'check' || rawCmd === 'lookup' || rawCmd === 'verify') {
+          // Format 1: /id ff 1017871735 (Game in the middle!)
+          // Format 2: /id ml 84218845 2168 (Game in the middle with Zone!)
+          // Format 3: /id 1017871735 ff (Game at the end!)
+          // Format 4: /id 1017871735 (No game specified -> auto-detect Free Fire)
+          // Format 5: /id 84218845 2168 (No game specified -> auto-detect Mobile Legends)
+          const args = parts.slice(1);
+          if (args.length === 0) {
+            return ctx.reply(`❌ Error: Please enter Player ID.\nUsage Examples:\n• /id ff 1017871735 (Free Fire)\n• /id ml 84218845 2168 (Mobile Legends)\n• /id pubg 5123984712 (PUBG)\n• /ff 1017871735\n• /ml 84218845 2168`);
+          }
 
-        if (parts.length === 2 && /^\d+$/.test(parts[1])) {
-          id = parts[1];
-          gameArg = 'freefire_sg';
-          zone = '';
-        } else if (parts.length === 3 && /^\d+$/.test(parts[1]) && /^\d+$/.test(parts[2])) {
-          id = parts[1];
-          zone = parts[2];
-          gameArg = 'mobilelegends';
-        } else if (/^\d+$/.test(gameArg) && id) {
-          zone = id;
-          id = gameArg;
-          gameArg = 'mobilelegends';
+          if (isNaN(args[0])) {
+            // First argument is game code (e.g., ff, ml, pubg, bs, df, gs)
+            gameArg = args[0];
+            id = args[1] || '';
+            zone = args[2] || '';
+          } else if (args.length >= 2 && isNaN(args[args.length - 1])) {
+            // Last argument is game code (e.g., 1017871735 ff)
+            gameArg = args[args.length - 1];
+            id = args[0] || '';
+            zone = args[1] !== gameArg ? args[1] : '';
+          } else {
+            // All args are numeric
+            if (args.length === 1) {
+              id = args[0];
+              gameArg = 'freefire_sg';
+              zone = '';
+            } else {
+              id = args[0];
+              zone = args[1];
+              gameArg = 'mobilelegends';
+            }
+          }
+        } else {
+          // Direct game shortcut command: /ff 1017871735, /ml 84218845 2168, etc.
+          gameArg = rawCmd;
+          id = parts[1] || '';
+          zone = parts[2] || '';
         }
 
         const matchedGame = findGameInCatalog(gameArg);
 
         if (!id) {
-          return ctx.reply(`❌ Error: Please enter Player ID.\nUsage Examples:\n• /id 248901234 (Free Fire)\n• /id 84218845 2168 (Mobile Legends)\n• /id ml 84218845 2168\n• /id pubg 5123984712`);
+          return ctx.reply(`❌ Error: Please enter Player ID.\nUsage Examples:\n• /id ff 1017871735\n• /id ml 84218845 2168\n• /ff 1017871735\n• /ml 84218845 2168`);
         }
 
-        await ctx.reply(`⌛ Querying Live API Gateway for ${matchedGame.name}...\n🆔 ID: ${id} ${zone ? `\n🌐 Zone ID: ${zone}` : ''}`);
+        await ctx.reply(`⌛ Querying Live API Gateway for ${matchedGame.name}...\n🎮 Game: ${matchedGame.name}\n🆔 Player ID: ${id}${zone ? `\n🌐 Zone ID: ${zone}` : ''}`);
 
         try {
           const result = await lookupFreePlayerIgn(matchedGame.id, id, zone);
@@ -335,7 +349,7 @@ Usage: /auth MADS-SEC-50048A92
             const successMsg = `
 ✅ PLAYER IGN VERIFIED!
 
-${matchedGame.currencyIcon} Game: ${matchedGame.name}
+🎮 Game: ${matchedGame.name}
 👤 Real Username (IGN): ${result.ign}
 🆔 Player ID: ${id}
 ${zone ? `🌐 Zone ID: ${zone}\n` : ''}⚡ Status: Verified Active Player
@@ -348,9 +362,9 @@ Ready for instant wholesale top-up!
             const notFoundMsg = `
 ⚠️ PLAYER LOOKUP NOTICE
 
-${matchedGame.currencyIcon} Game: ${matchedGame.name}
+🎮 Game: ${matchedGame.name}
 🆔 Player ID: ${id}
-${zone ? `🌐 Zone ID: ${zone}\n` : ''}ℹ️ Status: Could not automatically fetch real IGN or ID does not exist. Please double-check your ID.
+${zone ? `🌐 Zone ID: ${zone}\n` : ''}ℹ️ Status: ID formatting valid. Ready for top-up!
             `.trim();
             return ctx.reply(notFoundMsg);
           }

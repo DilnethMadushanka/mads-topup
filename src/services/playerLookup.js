@@ -116,26 +116,29 @@ export const lookupFreePlayerIgn = async (gameId = '', playerId = '', zoneId = '
     }
   }
 
-  // 3. Free Fire Community API
+  // 3. Free Fire Community & Multi-Gateway API
   if (gKey.includes('freefire') || gKey.includes('ff')) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const ffEndpoints = [
+      `https://ff-api-cyan.vercel.app/api/info?uid=${cleanId}`,
+      `https://free-fire-api-seven.vercel.app/api/info?uid=${cleanId}`,
+      `https://region-info-freefire.vercel.app/api/info?uid=${cleanId}`,
+      `https://api.vytis.id.vn/ff/info?uid=${cleanId}`
+    ];
 
-      const response = await fetch(`https://ff-api-cyan.vercel.app/api/info?uid=${cleanId}`, {
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const data = await response.json();
-        const realName = data.nickname || data.name || data.username || data.player_name;
-        if (realName) {
-          saveCachedIgn(cleanId, realName);
-          return { success: true, ign: realName, isReal: true, source: 'COMMUNITY_API' };
+    for (const endpoint of ffEndpoints) {
+      try {
+        const res = await fetch(endpoint, { signal: AbortSignal.timeout(2500) });
+        if (res.ok) {
+          const data = await res.json();
+          const realName = data.nickname || data.name || data.username || data.player_name || data.data?.nickname;
+          if (realName && String(realName).trim()) {
+            const finalIgn = String(realName).trim();
+            saveCachedIgn(cleanId, finalIgn);
+            return { success: true, ign: finalIgn, isReal: true, source: 'FF_COMMUNITY_API' };
+          }
         }
-      }
-    } catch (err) {}
+      } catch (err) {}
+    }
   }
 
   // 4. RapidAPI Lookup for All Games
