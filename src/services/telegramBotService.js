@@ -487,7 +487,15 @@ _Order credited & delivered instantly via MADS Bot Engine!_
     });
 
     // Start Polling runner safely with error catch
-    longPoll(bot);
+    try {
+      if (typeof bot.startPolling === 'function') {
+        bot.startPolling();
+      } else if (typeof longPoll === 'function') {
+        longPoll(bot);
+      }
+    } catch (pollErr) {
+      console.warn('[Telegram Polling Start Note]:', pollErr.message);
+    }
     console.log('🤖 Telegram Bot polling started successfully for ALL games on website!');
 
   } catch (err) {
