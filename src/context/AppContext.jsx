@@ -1110,8 +1110,8 @@ export const AppProvider = ({ children }) => {
     updateResellerApplicationStatusInFirestore(appId, userId, newStatus, targetFirestoreId);
     
     if (newStatus === 'APPROVED') {
-      if (userId && userProfileState?.uid === userId) {
-        setUserProfileState(prev => ({ ...prev, isReseller: true, role: 'reseller', resellerStatus: 'APPROVED' }));
+      if (userId && userProfile?.uid === userId) {
+        setUserProfile(prev => ({ ...prev, isReseller: true, role: 'reseller', resellerStatus: 'APPROVED' }));
       }
 
       // Generate / retrieve credentials for email dispatch
@@ -1124,7 +1124,7 @@ export const AppProvider = ({ children }) => {
         targetApp?.email || 
         targetApp?.userEmail || 
         usersList.find(u => u.uid === userId || (targetApp?.userId && u.uid === targetApp.userId))?.email || 
-        (userId && userProfileState?.uid === userId ? userProfileState?.email : '');
+        (userId && userProfile?.uid === userId ? userProfile?.email : '');
 
       const targetName = 
         targetApp?.realName || 
