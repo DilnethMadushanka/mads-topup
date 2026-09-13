@@ -1085,8 +1085,8 @@ export const AppProvider = ({ children }) => {
     setUserProfileState(prev => ({ ...prev, resellerStatus: 'PENDING' }));
   };
 
-  const updateResellerApplicationStatus = async (appId, userId, newStatus) => {
-    let targetApp = resellerApplications.find(app => app.id === appId || app.firestoreId === appId);
+  const updateResellerApplicationStatus = async (appId, userId, newStatus, appObject = null) => {
+    let targetApp = appObject || resellerApplications.find(app => app.id === appId || app.firestoreId === appId);
     
     setResellerApplications(prev => prev.map(app => {
       if (app.id === appId || app.firestoreId === appId) {
@@ -1105,12 +1105,25 @@ export const AppProvider = ({ children }) => {
       const cleanUid = String(userId || targetApp?.userId || Math.random().toString(36).substring(2, 8)).slice(-6).toUpperCase();
       const resellerCode = targetApp?.resellerCode || `RS-${cleanUid}`;
       const securityKey = targetApp?.securityKey || `MADS-SEC-${cleanUid.slice(0, 4)}8A92`;
-      const targetEmail = targetApp?.email || targetApp?.userEmail || (userId && userProfileState?.uid === userId ? userProfileState?.email : '');
-      const targetName = targetApp?.fullName || targetApp?.name || targetApp?.userName || 'Valued Reseller';
+      
+      const targetEmail = 
+        targetApp?.emailAddress || 
+        targetApp?.email || 
+        targetApp?.userEmail || 
+        usersList.find(u => u.uid === userId || (targetApp?.userId && u.uid === targetApp.userId))?.email || 
+        (userId && userProfileState?.uid === userId ? userProfileState?.email : '');
+
+      const targetName = 
+        targetApp?.realName || 
+        targetApp?.fullName || 
+        targetApp?.name || 
+        targetApp?.userName || 
+        targetApp?.storeName || 
+        'Valued Reseller';
 
       if (targetEmail) {
         try {
-          await fetch('/api/send-reseller-approval', {
+          const res = await fetch('/api/send-reseller-approval', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1120,7 +1133,12 @@ export const AppProvider = ({ children }) => {
               securityKey
             })
           });
-          showToast(`Reseller Approved! Approval email sent to ${targetEmail}`, 'success');
+          const data = await res.json();
+          if (data && data.success) {
+            showToast(`Reseller Approved! Approval email sent to ${targetEmail}`, 'success');
+          } else {
+            showToast(`Reseller Approved! (Email status: ${data?.error || 'sent'})`);
+          }
         } catch (e) {
           console.warn('[Approval Email Error]:', e);
           showToast(`Reseller Approved! (Email notification note: ${e.message})`);

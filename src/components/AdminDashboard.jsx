@@ -1033,7 +1033,7 @@ export const AdminDashboard = () => {
                           <div className="flex items-center gap-2">
                             {app.status !== 'APPROVED' && (
                               <button
-                                onClick={() => updateResellerApplicationStatus(app.id || app.firestoreId, app.userId, 'APPROVED')}
+                                onClick={() => updateResellerApplicationStatus(app.id || app.firestoreId, app.userId, 'APPROVED', app)}
                                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black shadow-md flex items-center gap-1.5 cursor-pointer transition-all active:scale-[0.98]"
                               >
                                 <UserCheck className="w-4 h-4" />
