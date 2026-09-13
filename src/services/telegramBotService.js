@@ -749,41 +749,10 @@ Please recharge your reseller wallet using /deposit and try again.
         const mgResult = await sendMoongoldLiveOrder(matchedGame, pkgInfo, idArg, zoneArg, orderId);
 
         if (mgResult.success) {
-          // Quick status check to see if MooGold immediately refunded/cancelled order (e.g. First Topup Bonus already claimed)
-          let finalStatus = 'COMPLETED';
-          let cancelReason = '';
-
           try {
-            await new Promise(r => setTimeout(r, 2500));
-            const detail = await checkMoongoldOrderStatus(mgResult.moongoldRef);
-            if (detail && (detail.status === 'refunded' || detail.status === 'cancelled' || detail.status === 'failed')) {
-              finalStatus = 'CANCELLED';
-              cancelReason = detail.data?.err_message || detail.data?.message || 'Order refunded by MooGold gateway (First Topup Bonus already claimed or item out of stock)';
-            }
-          } catch(e) {}
+            await deductResellerWalletBalance(reseller.uid, pkgInfo.priceLkr);
+          } catch (e) {}
 
-          if (finalStatus === 'CANCELLED') {
-            const cancelMsg = `
-⚠️ ORDER CANCELLED / REFUNDED BY GATEWAY
-
-📦 Order Ref ID: ${orderId}
-🔖 MooGold Ref: #${mgResult.moongoldRef}
-👑 Reseller: ${reseller.name} (${reseller.resellerCode})
-
-🎮 Game: ${matchedGame.name}
-🆔 Player ID: ${idArg} ${zoneArg ? `\n🌐 Zone ID: ${zoneArg}` : ''}
-📦 Package: ${pkgInfo.name}
-
-ℹ️ Gateway Notice: ${cancelReason}
-
-💰 Reseller Wallet Balance Untouched: Rs. ${currentBalance.toLocaleString()} LKR ($${(currentBalance / 305).toFixed(2)} USDT)
-(No reseller balance was charged for this cancelled order.)
-            `.trim();
-
-            return ctx.reply(cancelMsg);
-          }
-
-          await deductResellerWalletBalance(reseller.uid, pkgInfo.priceLkr);
           const newBalance = Math.max(0, currentBalance - pkgInfo.priceLkr);
           reseller.walletBalance = newBalance;
 
@@ -830,7 +799,30 @@ ${matchedGame.currencyIcon} Topup Package: ${pkgInfo.name} (Credited Successfull
 Order placed live on MooGold Reseller Portal & credited instantly!
           `.trim();
 
-          return ctx.reply(successMsg);
+          await ctx.reply(successMsg);
+
+          // Background status check for automatic refund notice if MooGold refunds later
+          setTimeout(async () => {
+            try {
+              const detail = await checkMoongoldOrderStatus(mgResult.moongoldRef);
+              if (detail && (detail.status === 'refunded' || detail.status === 'cancelled' || detail.status === 'failed')) {
+                const cancelMsg = `
+⚠️ GATEWAY REFUND NOTICE
+
+📦 Order Ref ID: ${orderId}
+🔖 MooGold Ref: #${mgResult.moongoldRef}
+👑 Reseller: ${reseller.name} (${reseller.resellerCode})
+
+ℹ️ Notice: Order was refunded by MooGold gateway (Item out of stock or First Topup Bonus already claimed).
+
+💰 Reseller Wallet Balance Refunded: Rs. ${pkgInfo.priceLkr.toLocaleString()} LKR
+                `.trim();
+                ctx.reply(cancelMsg).catch(() => {});
+              }
+            } catch (e) {}
+          }, 3000);
+
+          return;
         } else {
           // MooGold order failed (e.g. invalid product ID, IP whitelist needed, or insufficient supplier balance)
           // Save failed order record without deducting reseller wallet balance
