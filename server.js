@@ -139,7 +139,7 @@ app.post('/api/send-otp', async (req, res) => {
       try {
         const resend = new Resend(resendApiKey);
         const data = await resend.emails.send({
-          from: 'MADS TOPUP <onboarding@resend.dev>',
+          from: process.env.RESEND_FROM_EMAIL || 'MADS TOPUP <onboarding@madstopup.com>',
           to: [email],
           subject: `Your Verification Code: ${otp}`,
           html: emailHtml
@@ -285,7 +285,7 @@ app.post('/api/send-reseller-approval', async (req, res) => {
       try {
         const resend = new Resend(resendApiKey);
         const data = await resend.emails.send({
-          from: 'MADS TOPUP <onboarding@resend.dev>',
+          from: process.env.RESEND_FROM_EMAIL || 'MADS TOPUP <onboarding@madstopup.com>',
           to: [email],
           subject: `🎉 Reseller Partner Approved! Your Reseller Code & Security Key`,
           html: emailHtml
