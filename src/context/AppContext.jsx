@@ -1175,7 +1175,44 @@ export const AppProvider = ({ children }) => {
         }
 
         if (!sentSuccess) {
-          showToast(`Reseller Approved! Note: Live server in simulated mode until PM2 restart (Email queued for ${targetEmail})`, 'warning');
+          // Attempt EmailJS fallback directly from browser
+          const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_42ovub5';
+          const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_e9m409d';
+          const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'UL_Cr3VmylKk8r2Dp';
+
+          try {
+            let emailjsModule;
+            try { emailjsModule = await import('@emailjs/browser'); } catch (e) {}
+            const emailjsLib = emailjsModule?.default || emailjsModule || window.emailjs;
+
+            if (emailjsLib && typeof emailjsLib.send === 'function') {
+              if (typeof emailjsLib.init === 'function') {
+                try { emailjsLib.init(publicKey); } catch (e) {}
+              }
+              await emailjsLib.send(
+                serviceId,
+                templateId,
+                {
+                  to_email: targetEmail,
+                  email: targetEmail,
+                  user_name: targetName,
+                  otp_code: `RS CODE: ${resellerCode} | KEY: ${securityKey}`,
+                  passcode: `RS CODE: ${resellerCode} | KEY: ${securityKey}`,
+                  message: `🎉 Official Reseller Partner Approved!\nReseller Code: ${resellerCode}\nSecurity Key: ${securityKey}\nTelegram Bot Auth: /auth ${securityKey}\nReseller Portal: https://madstopup.com/reseller-login`,
+                  time: 'Immediate'
+                },
+                publicKey
+              );
+              sentSuccess = true;
+              showToast(`Reseller Approved! Credentials email sent to ${targetEmail}`, 'success');
+            }
+          } catch (ejsErr) {
+            console.warn('[EmailJS Reseller Approval Fallback Note]:', ejsErr.message);
+          }
+        }
+
+        if (!sentSuccess) {
+          showToast(`Reseller Approved! Credentials: Code ${resellerCode} | Key ${securityKey} (Restart live server for Zoho SMTP)`, 'warning');
         }
       } else {
         showToast(`Reseller Application ${appId} APPROVED successfully!`);
