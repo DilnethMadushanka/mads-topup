@@ -1,4 +1,5 @@
 import { createRequire } from 'module';
+import crypto from 'crypto';
 import { GAMES_DATA } from '../data/games.js';
 import { lookupFreePlayerIgn } from './playerLookup.js';
 import { getResellerProfileByKey, deductResellerWalletBalance, saveOrderToFirestore } from './firestoreService.js';
@@ -98,6 +99,95 @@ function findPackageInGame(game, pkgArg) {
     currencyIcon: game.currencyIcon || '💎',
     currencyName: game.currencyName || 'Items'
   };
+/**
+ * Dispatch Live Order to MooGold Reseller API
+ */
+async function sendMoongoldLiveOrder(game, pkg, playerId, zoneId, orderRef) {
+  const partnerId = process.env.MOONGOLD_PARTNER_ID || process.env.VITE_MOONGOLD_PARTNER_ID || 'f27cabc8d2c2122bbedacabce632db68';
+  const secretKey = process.env.MOONGOLD_SECRET_KEY || process.env.VITE_MOONGOLD_SECRET_KEY || 'PM67SGqyed';
+  const baseUrl = 'https://moogold.com/wp-json/v1/api';
+  const apiPath = 'order/create_order';
+
+  const categoryId = game.moongoldCategoryId || (game.id === 'freefire_sg' ? '50' : '1');
+  const productId = pkg.moongoldProductId || '15972928';
+
+  const dataPayload = {
+    category: categoryId,
+    'product-id': productId,
+    quantity: '1'
+  };
+
+  const gId = (game.id || '').toLowerCase();
+  if (gId.includes('pubg')) {
+    dataPayload['Character ID'] = playerId;
+  } else if (gId.includes('freefire') || gId.includes('ff')) {
+    dataPayload['Player ID'] = playerId;
+  } else {
+    dataPayload['User ID'] = playerId;
+    if (zoneId) {
+      dataPayload['Server'] = zoneId;
+    }
+  }
+
+  const partnerOrderId = crypto.randomUUID ? crypto.randomUUID() : (`ORD-TG-${Date.now()}`);
+
+  const bodyObj = {
+    path: apiPath,
+    data: dataPayload,
+    partnerOrderId
+  };
+
+  const timestamp = Math.floor(Date.now() / 1000);
+  const payloadStr = JSON.stringify(bodyObj);
+  const stringToSign = payloadStr + timestamp + apiPath;
+
+  const hmac = crypto.createHmac('sha256', secretKey);
+  hmac.update(stringToSign);
+  const authSignature = hmac.digest('hex');
+  const basicAuth = 'Basic ' + Buffer.from(`${partnerId}:${secretKey}`).toString('base64');
+
+  console.log(`[Moongold Live Order Attempt] Ref: ${orderRef}, ProductID: ${productId}, UserID: ${playerId}, Zone: ${zoneId}`);
+
+  try {
+    const res = await fetch(`${baseUrl}/${apiPath}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': basicAuth,
+        'auth': authSignature,
+        'timestamp': timestamp.toString(),
+        'User-Agent': 'Mozilla/5.0'
+      },
+      body: payloadStr
+    });
+
+    const resText = await res.text();
+    console.log(`[Moongold API Response] HTTP ${res.status}:`, resText);
+
+    let resJson = null;
+    try { resJson = JSON.parse(resText); } catch (e) {}
+
+    if (res.ok && resJson && (resJson.order_id || resJson.status === 'processing' || resJson.status === true || resJson.status === 1)) {
+      return {
+        success: true,
+        moongoldRef: String(resJson.order_id || partnerOrderId),
+        message: resJson.message || 'Order placed successfully'
+      };
+    } else {
+      return {
+        success: false,
+        moongoldRef: partnerOrderId,
+        error: resJson?.err_message || resJson?.message || resText.substring(0, 200) || `HTTP ${res.status}`
+      };
+    }
+  } catch (err) {
+    console.error('[Moongold API Network Error]:', err.message);
+    return {
+      success: false,
+      error: err.message
+    };
+  }
 }
 
 export function initTelegramBot() {
@@ -580,7 +670,7 @@ Please recharge your reseller wallet using /deposit and try again.
           return ctx.reply(failBalanceMsg);
         }
 
-        await ctx.reply(`⌛ Processing Top-up Order #${orderId}...\n\n${matchedGame.currencyIcon} Game: ${matchedGame.name}\n🆔 Player ID: ${idArg} ${zoneArg ? `\n🌐 Zone ID: ${zoneArg}` : ''}\n📦 Package: ${pkgInfo.name}\n\nQuerying Real IGN & Deducting Reseller Wallet...`);
+        await ctx.reply(`⌛ Processing Top-up Order #${orderId}...\n\n${matchedGame.currencyIcon} Game: ${matchedGame.name}\n🆔 Player ID: ${idArg} ${zoneArg ? `\n🌐 Zone ID: ${zoneArg}` : ''}\n📦 Package: ${pkgInfo.name}\n\nDispatching order to MooGold API & verifying IGN...`);
 
         let realIgn = `Player ${idArg}`;
         try {
@@ -590,36 +680,41 @@ Please recharge your reseller wallet using /deposit and try again.
           }
         } catch (e) {}
 
-        await deductResellerWalletBalance(reseller.uid, pkgInfo.priceLkr);
-        const newBalance = Math.max(0, currentBalance - pkgInfo.priceLkr);
-        reseller.walletBalance = newBalance;
+        // Dispatch live order to MooGold API
+        const mgResult = await sendMoongoldLiveOrder(matchedGame, pkgInfo, idArg, zoneArg, orderId);
 
-        const newOrder = {
-          id: orderId,
-          userId: reseller.uid,
-          userEmail: reseller.email,
-          gameId: matchedGame.id,
-          gameName: matchedGame.name,
-          packageName: pkgInfo.name,
-          playerId: idArg,
-          zoneId: zoneArg,
-          ign: realIgn,
-          priceLkr: pkgInfo.priceLkr,
-          paymentMethod: `Reseller Wallet (${reseller.resellerCode})`,
-          isResellerOrder: true,
-          status: 'COMPLETED',
-          moongoldRef: 'MG-TG-' + Math.floor(10000000 + Math.random() * 90000000),
-          createdAt: new Date().toISOString()
-        };
+        if (mgResult.success) {
+          await deductResellerWalletBalance(reseller.uid, pkgInfo.priceLkr);
+          const newBalance = Math.max(0, currentBalance - pkgInfo.priceLkr);
+          reseller.walletBalance = newBalance;
 
-        try {
-          await saveOrderToFirestore(reseller.uid, newOrder);
-        } catch (e) {}
+          const newOrder = {
+            id: orderId,
+            userId: reseller.uid,
+            userEmail: reseller.email,
+            gameId: matchedGame.id,
+            gameName: matchedGame.name,
+            packageName: pkgInfo.name,
+            playerId: idArg,
+            zoneId: zoneArg,
+            ign: realIgn,
+            priceLkr: pkgInfo.priceLkr,
+            paymentMethod: `Reseller Wallet (${reseller.resellerCode})`,
+            isResellerOrder: true,
+            status: 'COMPLETED',
+            moongoldRef: mgResult.moongoldRef,
+            createdAt: new Date().toISOString()
+          };
 
-        const successMsg = `
+          try {
+            await saveOrderToFirestore(reseller.uid, newOrder);
+          } catch (e) {}
+
+          const successMsg = `
 ✅ TOP-UP SUCCESSFUL!
 
 📦 Order Ref ID: ${orderId}
+🔖 MooGold Ref: #${mgResult.moongoldRef}
 👑 Reseller: ${reseller.name} (${reseller.resellerCode})
 🔑 Security Key: ${(reseller.securityKey || 'MADS-SEC-50048A92').slice(0, 10)}****
 
@@ -633,10 +728,43 @@ ${matchedGame.currencyIcon} Topup Package: ${pkgInfo.name} (Credited Successfull
 💵 Wholesale Price Paid: Rs. ${pkgInfo.priceLkr.toLocaleString()} LKR
 💰 Remaining Reseller Balance: Rs. ${newBalance.toLocaleString()} LKR ($${(newBalance / 305).toFixed(2)} USDT)
 
-Order credited & delivered instantly via MADS Bot Engine!
-        `.trim();
+Order placed live on MooGold Reseller Portal & credited instantly!
+          `.trim();
 
-        return ctx.reply(successMsg);
+          return ctx.reply(successMsg);
+        } else {
+          // MooGold order failed (e.g. invalid product ID, IP whitelist needed, or insufficient supplier balance)
+          // Save failed order record without deducting reseller wallet balance
+          const failedOrder = {
+            id: orderId,
+            userId: reseller.uid,
+            gameId: matchedGame.id,
+            packageName: pkgInfo.name,
+            playerId: idArg,
+            zoneId: zoneArg,
+            priceLkr: pkgInfo.priceLkr,
+            status: 'FAILED',
+            error: mgResult.error,
+            createdAt: new Date().toISOString()
+          };
+          try {
+            await saveOrderToFirestore(reseller.uid, failedOrder);
+          } catch (e) {}
+
+          const failMsg = `
+❌ TOP-UP GATEWAY FAILURE
+
+📦 Order Ref ID: ${orderId}
+👑 Reseller: ${reseller.name} (${reseller.resellerCode})
+⚠️ Gateway Response: ${mgResult.error}
+
+💰 Wallet Balance Untouched: Rs. ${currentBalance.toLocaleString()} LKR ($${(currentBalance / 305).toFixed(2)} USDT)
+
+Please check product availability or contact support. No reseller funds were charged.
+          `.trim();
+
+          return ctx.reply(failMsg);
+        }
       } catch (err) {
         console.error('Topup Error:', err);
         try {
