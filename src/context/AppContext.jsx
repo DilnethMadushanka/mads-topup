@@ -7,8 +7,10 @@ import { auth, onAuthStateChanged, logoutGoogle } from '../services/firebaseAuth
 import { 
   syncUserProfileToFirestore, updateUserProfileInFirestore, subscribeUserProfile, 
   saveOrderToFirestore, subscribeAllUsersFromFirestore, subscribeOrdersFromFirestore, updateOrderStatusInFirestore,
-  saveResellerApplicationToFirestore, subscribeResellerApplicationsFromFirestore, updateResellerApplicationStatusInFirestore
+  saveResellerApplicationToFirestore, subscribeResellerApplicationsFromFirestore, updateResellerApplicationStatusInFirestore,
+  saveCustomGamePricesToFirestore, subscribeCustomGamePricesFromFirestore
 } from '../services/firestoreService';
+
 
 const INITIAL_REVIEWS = [
   {
@@ -311,8 +313,46 @@ export const AppProvider = ({ children }) => {
     if (showToast) showToast('Thank you! Your review has been published successfully.');
   };
   
+  // Dynamic Games Catalog State & Realtime Custom Prices Sync
+  const [gamesCatalog, setGamesCatalog] = useState(GAMES_DATA);
+
+  useEffect(() => {
+    const unsub = subscribeCustomGamePricesFromFirestore((customPricesMap) => {
+      if (!customPricesMap || typeof customPricesMap !== 'object') return;
+
+      GAMES_DATA.forEach(game => {
+        if (game.packages) {
+          game.packages.forEach(pkg => {
+            if (customPricesMap[pkg.id] !== undefined && customPricesMap[pkg.id] !== null) {
+              const newPrice = Number(customPricesMap[pkg.id]);
+              if (!isNaN(newPrice) && newPrice > 0) {
+                pkg.priceLkr = newPrice;
+                pkg.priceUsd = Number((newPrice / 305).toFixed(2));
+              }
+            }
+          });
+        }
+      });
+
+      setGamesCatalog(GAMES_DATA.map(g => ({ ...g, packages: [...g.packages] })));
+    });
+
+    return () => unsub();
+  }, []);
+
+  const updateGamePrices = async (customPricesMap) => {
+    try {
+      await saveCustomGamePricesToFirestore(customPricesMap);
+      return true;
+    } catch (err) {
+      console.error('[AppContext] Save Prices Error:', err);
+      return false;
+    }
+  };
+
   // Moongold state
   const [moongoldConfig, setMoongoldConfigState] = useState(getMoongoldConfig());
+
   
   // Cloudflare R2 Storage State
   const [r2Config, setR2ConfigState] = useState(getR2Config());
@@ -1278,7 +1318,10 @@ export const AppProvider = ({ children }) => {
       orders,
       addOrder,
       updateOrderStatus,
+      gamesCatalog,
+      updateGamePrices,
       moongoldConfig,
+
       updateMoongoldConfig,
       r2Config,
       updateR2Config,

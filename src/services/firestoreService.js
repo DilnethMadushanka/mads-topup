@@ -549,3 +549,75 @@ export const updateResellerApplicationStatusInFirestore = async (appId, userId, 
     }
   }
 };
+
+/**
+ * Save custom game package prices to Firestore & Realtime Database
+ */
+export const saveCustomGamePricesToFirestore = async (customPricesMap) => {
+  if (!customPricesMap) return false;
+
+  if (rtdb) {
+    try {
+      const pricesRef = dbRef(rtdb, 'settings/customPrices');
+      await rtdbSet(pricesRef, customPricesMap);
+    } catch (e) {
+      console.warn('RTDB custom prices save note:', e);
+    }
+  }
+
+  if (db) {
+    try {
+      const settingsDocRef = doc(db, 'settings', 'customPrices');
+      await setDoc(settingsDocRef, {
+        prices: customPricesMap,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+    } catch (err) {
+      console.warn('Firestore custom prices save note:', err);
+    }
+  }
+
+  return true;
+};
+
+/**
+ * Subscribe to realtime custom game prices from Firestore & Realtime Database
+ */
+export const subscribeCustomGamePricesFromFirestore = (callback) => {
+  let unsubRtdb = null;
+  let unsubFirestore = null;
+
+  if (rtdb) {
+    try {
+      const pricesRef = dbRef(rtdb, 'settings/customPrices');
+      unsubRtdb = rtdbOnValue(pricesRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          if (data) callback(data);
+        }
+      });
+    } catch (e) {
+      console.warn('RTDB custom prices listener note:', e);
+    }
+  }
+
+  if (db) {
+    try {
+      const docRef = doc(db, 'settings', 'customPrices');
+      unsubFirestore = onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data && data.prices) callback(data.prices);
+        }
+      });
+    } catch (err) {
+      console.warn('Firestore custom prices listener note:', err);
+    }
+  }
+
+  return () => {
+    if (typeof unsubRtdb === 'function') unsubRtdb();
+    if (typeof unsubFirestore === 'function') unsubFirestore();
+  };
+};
+

@@ -44,7 +44,9 @@ export const AdminDashboard = () => {
     updateTicketStatus,
     updateTicketPriority,
     resellerApplications,
-    updateResellerApplicationStatus
+    updateResellerApplicationStatus,
+    gamesCatalog,
+    updateGamePrices
   } = useApp();
 
   // Admin Authentication State (Requires login when accessing /admin)
@@ -56,6 +58,37 @@ export const AdminDashboard = () => {
   // Active Admin Sidebar Tab
   const [adminTab, setAdminTab] = useState('overview'); 
   // Options: 'overview' | 'orders' | 'deposits' | 'users' | 'credit' | 'games' | 'vouchers' | 'moongold' | 'r2' | 'announcement' | 'support'
+
+  // Price Management State
+  const [editedPricesMap, setEditedPricesMap] = useState({});
+  const [selectedGameCatalogId, setSelectedGameCatalogId] = useState('ALL');
+  const [catalogSearch, setCatalogSearch] = useState('');
+  const [isSavingPrices, setIsSavingPrices] = useState(false);
+
+  const handlePriceInputChange = (pkgId, val) => {
+    const num = parseFloat(val);
+    setEditedPricesMap(prev => ({
+      ...prev,
+      [pkgId]: isNaN(num) ? 0 : num
+    }));
+  };
+
+  const handleSaveAllPrices = async () => {
+    setIsSavingPrices(true);
+    const fullPriceMap = {};
+    (gamesCatalog || []).forEach(game => {
+      (game.packages || []).forEach(pkg => {
+        fullPriceMap[pkg.id] = editedPricesMap[pkg.id] !== undefined ? editedPricesMap[pkg.id] : pkg.priceLkr;
+      });
+    });
+
+    const success = await updateGamePrices(fullPriceMap);
+    setIsSavingPrices(false);
+    if (success) {
+      showToast('⚡ ALL PACKAGE PRICES SAVED & PUBLISHED LIVE TO DATABASE!');
+    }
+  };
+
 
   // Mobile Drawer State
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -122,10 +155,8 @@ export const AdminDashboard = () => {
   // Announcement Form
   const [tickerNoticeInput, setTickerNoticeInput] = useState(tickerNotice);
 
-  // Game List Price State Editor
-  const [gamesCatalog, setGamesCatalog] = useState(GAMES_DATA);
-
   // EZ Cash Webhook Logs State
+
   const [ezcashLogs, setEzcashLogs] = useState([]);
   const [isEzcashLogsLoading, setIsEzcashLogsLoading] = useState(false);
   const [ezcashSearch, setEzcashSearch] = useState('');
@@ -1625,40 +1656,169 @@ export const AdminDashboard = () => {
               </div>
             )}
 
-            {/* 6. GAME CATALOG MANAGER */}
+            {/* 6. GAME CATALOG & LIVE PRICE MANAGER */}
             {adminTab === 'games' && (
-              <div className="space-y-4 animate-in fade-in">
-                <div className="flex items-center justify-between">
+              <div className="space-y-6 animate-in fade-in">
+                {/* Header & Save Action Bar */}
+                <div className="bg-[#111622] p-6 rounded-3xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
                   <div>
-                    <h3 className="text-xl font-black font-heading text-white">Game Catalog & Pricing</h3>
-                    <p className="text-xs text-slate-400">View active games and customize diamond/UC package prices</p>
+                    <h3 className="text-xl font-black font-heading text-white flex items-center gap-2">
+                      <span>🎮 Game Catalog & Live Price Manager</span>
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Edit retail prices for any package across all games. Click Save & Publish to instantly update prices on the Website & Telegram Bot in real-time!
+                    </p>
                   </div>
+
+                  <button
+                    onClick={handleSaveAllPrices}
+                    disabled={isSavingPrices}
+                    className="px-6 py-3 bg-[#cc040a] hover:bg-red-700 disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider rounded-2xl flex items-center gap-2 shadow-lg shadow-red-600/30 cursor-pointer transition-all shrink-0"
+                  >
+                    <Save className={`w-4 h-4 ${isSavingPrices ? 'animate-spin' : ''}`} />
+                    <span>{isSavingPrices ? 'Saving to Database...' : '💾 Save & Publish All Prices Live'}</span>
+                  </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {gamesCatalog.map((game) => (
-                    <div key={game.id} className="bg-[#111622] p-4 rounded-2xl border border-slate-800 space-y-3">
-                      <div className="flex items-center gap-3">
-                        <span className="text-3xl">{game.currencyIcon || '🎮'}</span>
-                        <div>
-                          <h4 className="font-extrabold text-white text-base">{game.name}</h4>
-                          <span className="text-[10px] font-mono text-slate-400 uppercase">{game.publisher} • {game.packages?.length || 0} Packages</span>
-                        </div>
-                      </div>
+                {/* Filter Bar */}
+                <div className="bg-[#111622] p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row gap-4 items-center justify-between text-xs">
+                  <div className="relative flex-1 w-full">
+                    <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search package name, diamond amount, or game title..."
+                      value={catalogSearch}
+                      onChange={(e) => setCatalogSearch(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-red-500"
+                    />
+                  </div>
 
-                      <div className="space-y-1.5 border-t border-slate-800/80 pt-2 text-xs">
-                        {(game.packages || []).slice(0, 3).map((pkg) => (
-                          <div key={pkg.id} className="flex justify-between items-center text-slate-300">
-                            <span>{pkg.name}</span>
-                            <span className="font-mono font-black text-amber-400">{formatPrice(pkg.priceLkr)}</span>
+                  <select
+                    value={selectedGameCatalogId}
+                    onChange={(e) => setSelectedGameCatalogId(e.target.value)}
+                    className="px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white font-bold cursor-pointer w-full sm:w-auto font-mono"
+                  >
+                    <option value="ALL">ALL GAMES ({(gamesCatalog || []).length})</option>
+                    {(gamesCatalog || []).map(g => (
+                      <option key={g.id} value={g.id}>{g.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Game Cards List with Package Price Editors */}
+                <div className="space-y-6">
+                  {(gamesCatalog || [])
+                    .filter(g => selectedGameCatalogId === 'ALL' || g.id === selectedGameCatalogId)
+                    .map((game) => {
+                      const matchingPackages = (game.packages || []).filter(pkg => 
+                        !catalogSearch || 
+                        pkg.name.toLowerCase().includes(catalogSearch.toLowerCase()) || 
+                        game.name.toLowerCase().includes(catalogSearch.toLowerCase())
+                      );
+
+                      if (matchingPackages.length === 0) return null;
+
+                      return (
+                        <div key={game.id} className="bg-[#111622] rounded-3xl border border-slate-800 overflow-hidden shadow-lg">
+                          {/* Game Header */}
+                          <div className="p-5 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <span className="text-3xl">{game.currencyIcon || '🎮'}</span>
+                              <div>
+                                <h4 className="font-black text-white text-lg font-heading">{game.name}</h4>
+                                <span className="text-xs font-mono text-slate-400 uppercase">
+                                  {game.publisher} • {game.category} • {game.packages?.length || 0} Packages
+                                </span>
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={handleSaveAllPrices}
+                              disabled={isSavingPrices}
+                              className="px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/40 text-xs font-extrabold rounded-xl transition-all cursor-pointer"
+                            >
+                              Save Prices
+                            </button>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+
+                          {/* Packages Price Grid Table */}
+                          <div className="p-4 sm:p-6 overflow-x-auto">
+                            <table className="w-full text-left text-xs">
+                              <thead className="bg-slate-950 text-slate-400 font-mono text-[10px] uppercase border-b border-slate-800">
+                                <tr>
+                                  <th className="p-3">Package Name</th>
+                                  <th className="p-3">Retail Price (LKR)</th>
+                                  <th className="p-3">Reseller Wholesale (5% OFF)</th>
+                                  <th className="p-3">USD Price ($)</th>
+                                  <th className="p-3 text-right">Package Code</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-800/60 font-medium">
+                                {matchingPackages.map((pkg) => {
+                                  const currentPrice = editedPricesMap[pkg.id] !== undefined ? editedPricesMap[pkg.id] : pkg.priceLkr;
+                                  const wholesalePrice = Math.round(currentPrice * 0.95);
+                                  const usdPrice = (currentPrice / 305).toFixed(2);
+
+                                  return (
+                                    <tr key={pkg.id} className="hover:bg-slate-900/40 transition-colors">
+                                      <td className="p-3 font-bold text-white">
+                                        <div className="flex items-center gap-2">
+                                          {pkg.image && <img src={pkg.image} alt="" className="w-6 h-6 object-contain" />}
+                                          <span>{pkg.name}</span>
+                                          {pkg.bonus && (
+                                            <span className="text-[9px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-0.5 rounded font-mono">
+                                              {pkg.bonus}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </td>
+                                      <td className="p-3">
+                                        <div className="relative w-36">
+                                          <span className="absolute left-3 top-2 text-slate-400 font-mono text-xs">Rs.</span>
+                                          <input
+                                            type="number"
+                                            value={currentPrice}
+                                            onChange={(e) => handlePriceInputChange(pkg.id, e.target.value)}
+                                            className="w-full pl-9 pr-3 py-1.5 bg-slate-950 border border-slate-700 focus:border-red-500 rounded-xl text-amber-400 font-mono font-black text-xs focus:outline-none"
+                                          />
+                                        </div>
+                                      </td>
+                                      <td className="p-3 font-mono font-bold text-emerald-400">
+                                        Rs. {wholesalePrice.toLocaleString()} LKR
+                                      </td>
+                                      <td className="p-3 font-mono text-slate-300">
+                                        ${usdPrice} USDT
+                                      </td>
+                                      <td className="p-3 text-right">
+                                        <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-950 px-2 py-1 rounded-lg border border-slate-800">
+                                          {pkg.id}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+
+                {/* Bottom Save Action Button */}
+                <div className="pt-4 flex justify-end">
+                  <button
+                    onClick={handleSaveAllPrices}
+                    disabled={isSavingPrices}
+                    className="px-8 py-3.5 bg-[#cc040a] hover:bg-red-700 disabled:opacity-50 text-white font-black text-sm uppercase tracking-wider rounded-2xl flex items-center gap-2 shadow-xl shadow-red-600/30 cursor-pointer transition-all"
+                  >
+                    <Save className={`w-5 h-5 ${isSavingPrices ? 'animate-spin' : ''}`} />
+                    <span>{isSavingPrices ? 'Saving to Database...' : '💾 Save & Publish All Prices Live'}</span>
+                  </button>
                 </div>
               </div>
             )}
+
 
             {/* 7. PROMO VOUCHERS GENERATOR */}
             {adminTab === 'vouchers' && (
