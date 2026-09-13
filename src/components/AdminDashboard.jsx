@@ -8,7 +8,7 @@ import {
   Users, CreditCard, Ticket, Megaphone, Search, Filter, Plus, Trash2, ArrowUpRight, ArrowDownRight,
   TrendingUp, Check, AlertTriangle, ShieldAlert, FileText, Gift, Award, CornerDownRight, ChevronRight, Lock,
   BadgeCheck, UserCheck, UserX, FileCheck, ExternalLink, Image, Menu, Headset,
-  Smartphone, Copy, MessageSquare, Crown
+  Smartphone, Copy, MessageSquare, Crown, Mail
 } from 'lucide-react';
 
 export const AdminDashboard = () => {
@@ -1031,13 +1031,22 @@ export const AdminDashboard = () => {
                           </span>
 
                           <div className="flex items-center gap-2">
-                            {app.status !== 'APPROVED' && (
+                            {app.status !== 'APPROVED' ? (
                               <button
                                 onClick={() => updateResellerApplicationStatus(app.id || app.firestoreId, app.userId, 'APPROVED', app)}
                                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black shadow-md flex items-center gap-1.5 cursor-pointer transition-all active:scale-[0.98]"
                               >
                                 <UserCheck className="w-4 h-4" />
                                 <span>APPROVE RESELLER</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => updateResellerApplicationStatus(app.id || app.firestoreId, app.userId, 'APPROVED', app)}
+                                className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black shadow-md flex items-center gap-1.5 cursor-pointer transition-all active:scale-[0.98]"
+                                title="Click to Send or Resend Approval Email with Reseller Code & Security Key"
+                              >
+                                <Mail className="w-4 h-4" />
+                                <span>RESEND APPROVAL EMAIL</span>
                               </button>
                             )}
 

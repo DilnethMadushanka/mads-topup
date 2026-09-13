@@ -1162,9 +1162,11 @@ export const AppProvider = ({ children }) => {
 
             if (res.ok) {
               const data = await res.json();
-              if (data && data.success) {
+              if (data && data.success && !data.simulated) {
                 sentSuccess = true;
-                showToast(`Reseller Approved! Approval email sent to ${targetEmail}`, 'success');
+                showToast(`Reseller Approved! Approval email sent to ${targetEmail} via ${data.provider || 'Zoho SMTP'}`, 'success');
+              } else if (data && data.simulated) {
+                console.warn(`[Approval Email Note]: ${endpoint} returned simulated: true (Server needs git pull & pm2 restart).`);
               }
             }
           } catch (e) {
@@ -1173,7 +1175,7 @@ export const AppProvider = ({ children }) => {
         }
 
         if (!sentSuccess) {
-          showToast(`Reseller Application APPROVED! (Email trigger queued)`);
+          showToast(`Reseller Approved! Note: Live server in simulated mode until PM2 restart (Email queued for ${targetEmail})`, 'warning');
         }
       } else {
         showToast(`Reseller Application ${appId} APPROVED successfully!`);
