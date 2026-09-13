@@ -63,13 +63,13 @@ export const Navbar = () => {
   const isUserLoggedIn = isLoggedIn || Boolean(userProfile?.name || userProfile?.email);
 
   return (
-    <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-xl border-b border-slate-200/80 shadow-xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-slate-200/80 shadow-xs">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3 xl:gap-6">
         
         {/* Brand Logo */}
         <div 
           onClick={() => { setSelectedGame(null); closeCatalog(); setIsMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-          className="flex items-center gap-2 cursor-pointer group"
+          className="flex items-center gap-2.5 cursor-pointer group shrink-0 mr-1 xl:mr-4"
         >
           <div className="w-10 h-10 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform duration-300 overflow-hidden p-0.5">
             <img src="/mads-logo.jpg" alt="MADS TOPUP Logo" className="w-full h-full object-contain rounded-lg" />
@@ -86,125 +86,125 @@ export const Navbar = () => {
         </div>
 
         {/* Desktop Navigation Links */}
-        <nav className="hidden lg:flex items-center gap-7 text-xs font-bold text-slate-800 uppercase tracking-wide">
+        <nav className="hidden lg:flex items-center gap-2.5 xl:gap-5 2xl:gap-7 text-xs font-bold text-slate-800 uppercase tracking-wide">
           <button 
             onClick={() => { setSelectedGame(null); openCatalog(); setIsMobileMenuOpen(false); }}
-            className={`flex items-center gap-2 hover:text-[#cc040a] transition-colors cursor-pointer group py-2 ${isGameCatalogOpen ? 'text-[#cc040a]' : ''}`}
+            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 hover:text-[#cc040a] transition-all cursor-pointer group ${isGameCatalogOpen ? 'text-[#cc040a] bg-red-50/80' : ''}`}
           >
-            <span className="w-6 h-6 rounded-lg bg-red-100 text-[#cc040a] flex items-center justify-center">
+            <span className="w-6 h-6 rounded-lg bg-red-100 text-[#cc040a] flex items-center justify-center shrink-0">
               <Gamepad2 className="w-3.5 h-3.5" />
             </span>
-            <span>Game List</span>
+            <span className="whitespace-nowrap">Game List</span>
           </button>
 
           <button 
             onClick={() => handleNavClick('services-section')}
-            className="flex items-center gap-2 hover:text-[#cc040a] transition-colors cursor-pointer group py-2"
+            className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 hover:text-[#cc040a] transition-all cursor-pointer group"
           >
-            <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
+            <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
               <Gift className="w-3.5 h-3.5" />
             </span>
-            <span>Cards</span>
+            <span className="whitespace-nowrap">Cards</span>
           </button>
 
           <button 
             onClick={() => handleNavClick('why-choose-us')}
-            className="flex items-center gap-2 hover:text-[#cc040a] transition-colors cursor-pointer group py-2"
+            className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 hover:text-[#cc040a] transition-all cursor-pointer group"
           >
-            <span className="w-6 h-6 rounded-lg bg-red-50 text-[#cc040a] flex items-center justify-center">
+            <span className="w-6 h-6 rounded-lg bg-red-50 text-[#cc040a] flex items-center justify-center shrink-0">
               <BookOpen className="w-3.5 h-3.5" />
             </span>
-            <span>Blog</span>
+            <span className="whitespace-nowrap">Blog</span>
           </button>
 
           <button 
             onClick={() => { setIsDownloadAppModalOpen(true); setIsMobileMenuOpen(false); }}
-            className="flex items-center gap-2 hover:text-[#cc040a] transition-colors cursor-pointer group py-2"
+            className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 hover:text-[#cc040a] transition-all cursor-pointer group"
           >
-            <span className="w-6 h-6 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center">
+            <span className="w-6 h-6 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
               <Download className="w-3.5 h-3.5" />
             </span>
-            <span>Download App</span>
+            <span className="whitespace-nowrap">Download App</span>
           </button>
 
           {(userProfile?.isReseller || userProfile?.role === 'reseller') ? (
             <button 
               onClick={() => { openResellerDashboard(); setIsMobileMenuOpen(false); }}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black text-xs hover:from-amber-400 hover:to-yellow-400 shadow-sm transition-all cursor-pointer ${isResellerDashboardOpen ? 'ring-2 ring-amber-400' : ''}`}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black text-xs hover:from-amber-400 hover:to-yellow-400 shadow-sm transition-all cursor-pointer shrink-0 mx-1 ${isResellerDashboardOpen ? 'ring-2 ring-amber-400' : ''}`}
             >
-              <Crown className="w-4 h-4 fill-slate-950" />
-              <span>RESELLER DASHBOARD</span>
+              <Crown className="w-4 h-4 fill-slate-950 shrink-0" />
+              <span className="whitespace-nowrap">RESELLER DASHBOARD</span>
             </button>
           ) : (
             <button 
               onClick={() => { openResellerPage(); setIsMobileMenuOpen(false); }}
-              className={`flex items-center gap-2 hover:text-cyan-600 transition-colors cursor-pointer group py-2 ${isResellerPageOpen ? 'text-cyan-600' : ''}`}
+              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-cyan-50 hover:text-cyan-600 transition-all cursor-pointer group ${isResellerPageOpen ? 'text-cyan-600 bg-cyan-50/80' : ''}`}
             >
-              <span className="w-6 h-6 rounded-lg bg-cyan-100 text-cyan-600 flex items-center justify-center">
+              <span className="w-6 h-6 rounded-lg bg-cyan-100 text-cyan-600 flex items-center justify-center shrink-0">
                 <Crown className="w-3.5 h-3.5" />
               </span>
-              <span>Reseller Program</span>
+              <span className="whitespace-nowrap">Reseller Program</span>
             </button>
           )}
 
           <button 
             onClick={() => { openContactPage(); setIsMobileMenuOpen(false); }}
-            className="flex items-center gap-2 hover:text-[#cc040a] transition-colors cursor-pointer group py-2"
+            className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 hover:text-[#cc040a] transition-all cursor-pointer group"
           >
-            <span className="w-6 h-6 rounded-lg bg-red-100 text-[#cc040a] flex items-center justify-center">
+            <span className="w-6 h-6 rounded-lg bg-red-100 text-[#cc040a] flex items-center justify-center shrink-0">
               <Headset className="w-3.5 h-3.5" />
             </span>
-            <span>24/7 Support</span>
+            <span className="whitespace-nowrap">24/7 Support</span>
           </button>
         </nav>
 
         {/* Desktop Right Controls */}
-        <div className="hidden lg:flex items-center gap-3">
+        <div className="hidden lg:flex items-center gap-3 xl:gap-4 shrink-0">
           {isUserLoggedIn ? (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5 xl:gap-3.5">
               {/* Red Wallet LKR Pill */}
               <div 
                 onClick={() => handleWalletClick('ezcash')}
-                className="bg-[#cc040a] hover:bg-[#990207] text-white text-xs font-black px-4 py-1.5 rounded-full flex items-center gap-1.5 shadow-xs cursor-pointer transition-all shrink-0"
+                className="bg-[#cc040a] hover:bg-[#990207] text-white text-xs font-black px-3.5 py-1.5 rounded-full flex items-center gap-2 shadow-xs cursor-pointer transition-all shrink-0"
               >
                 <Wallet className="w-3.5 h-3.5 text-white fill-white shrink-0" />
-                <span className="tracking-wide">{(userProfile.walletBalance || 0).toFixed(2)} LKR</span>
+                <span className="tracking-wide whitespace-nowrap">{(userProfile.walletBalance || 0).toFixed(2)} LKR</span>
               </div>
 
               {/* Green Crypto USDT Pill */}
               <div 
                 onClick={() => handleWalletClick('binance')}
-                className="bg-[#0E8A50] hover:bg-[#0C7A46] text-white text-xs font-black px-4 py-1.5 rounded-full flex items-center gap-2 shadow-xs cursor-pointer transition-all shrink-0"
+                className="bg-[#0E8A50] hover:bg-[#0C7A46] text-white text-xs font-black px-3.5 py-1.5 rounded-full flex items-center gap-2 shadow-xs cursor-pointer transition-all shrink-0"
               >
                 <div className="w-4 h-4 rounded-full bg-white text-[#0E8A50] font-black text-[10px] flex items-center justify-center italic shrink-0 leading-none">
                   B
                 </div>
-                <span className="tracking-wide">{(userProfile.walletUsdt || 0).toFixed(2)} U</span>
+                <span className="tracking-wide whitespace-nowrap">{(userProfile.walletUsdt || 0).toFixed(2)} U</span>
               </div>
 
               {/* User Profile Dropdown Pill */}
               <div 
                 onClick={openUserProfilePage}
-                className="flex items-center gap-2 cursor-pointer group shrink-0 ml-0.5"
+                className="flex items-center gap-2 bg-slate-100/90 hover:bg-slate-200/90 border border-slate-200/80 pl-1.5 pr-3 py-1 rounded-full cursor-pointer group shrink-0 transition-all shadow-xs"
               >
-                <div className="w-9 h-9 rounded-full bg-[#cc040a] border-2 border-white ring-1 ring-slate-200/60 flex items-center justify-center font-black text-white text-xs shadow-xs shrink-0 tracking-wider overflow-hidden">
+                <div className="w-7 h-7 rounded-full bg-[#cc040a] border border-white ring-1 ring-slate-200 flex items-center justify-center font-black text-white text-[11px] shadow-xs shrink-0 tracking-wider overflow-hidden">
                   {userProfile.avatar ? (
                     <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
                     getInitials(userProfile.name)
                   )}
                 </div>
-                <span className="text-slate-800 font-extrabold text-sm group-hover:text-[#cc040a] transition-colors">
+                <span className="text-slate-800 font-extrabold text-xs group-hover:text-[#cc040a] transition-colors max-w-[110px] xl:max-w-[140px] truncate">
                   {userProfile.name || 'Gamer'}
                 </span>
-                <ChevronDown className="w-4 h-4 text-slate-500 group-hover:translate-y-0.5 transition-transform" />
+                <ChevronDown className="w-3.5 h-3.5 text-slate-500 group-hover:translate-y-0.5 transition-transform shrink-0" />
               </div>
             </div>
           ) : (
             <div className="flex items-center gap-3">
               <button 
                 onClick={() => openAuth('login')}
-                className="text-xs font-black text-slate-700 hover:text-slate-950 uppercase tracking-wider cursor-pointer font-heading"
+                className="text-xs font-black text-slate-700 hover:text-slate-950 uppercase tracking-wider cursor-pointer font-heading px-3 py-1.5 rounded-lg hover:bg-slate-100"
               >
                 Login
               </button>

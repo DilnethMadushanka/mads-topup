@@ -396,9 +396,17 @@ export const ResellerDashboard = () => {
                           : 'border-slate-800 bg-slate-950 text-slate-400 hover:text-white hover:border-slate-700'
                       }`}
                     >
-                      <div className="w-10 h-10 rounded-xl bg-slate-900 p-1 border border-slate-800 overflow-hidden shrink-0">
-                        {game.logo || game.banner ? (
-                          <img src={game.logo || game.banner} alt={game.name} className="w-full h-full object-cover rounded-lg" />
+                      <div className="w-10 h-10 rounded-xl bg-slate-900 p-1 border border-slate-800 overflow-hidden shrink-0 flex items-center justify-center">
+                        {game.logo || game.banner || game.image ? (
+                          <img 
+                            src={game.logo || game.banner || game.image} 
+                            alt={game.name} 
+                            className="w-full h-full object-cover rounded-lg" 
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = '/mads-logo.jpg';
+                            }}
+                          />
                         ) : (
                           <span className="text-xl flex items-center justify-center h-full">{game.currencyIcon || '🎮'}</span>
                         )}
