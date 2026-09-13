@@ -61,29 +61,36 @@ function findPackageInGame(game, pkgArg) {
     };
   }
 
-  const pStr = String(pkgArg || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const rawStr = String(pkgArg || '').trim().toLowerCase();
+  const pClean = rawStr.replace(/[^a-z0-9]/g, '');
 
-  // 1. Direct match by package ID
-  let match = game.packages.find(p => p.id.toLowerCase().replace(/[^a-z0-9]/g, '') === pStr);
+  // 1. Direct match by exact package ID (e.g. 'ml-78', 'ff-100', 'pubg-60')
+  let match = game.packages.find(p => p.id.toLowerCase() === rawStr || p.id.toLowerCase().replace(/[^a-z0-9]/g, '') === pClean);
 
-  // 2. Match by numeric amount or ID number or name number
+  // 2. Exact match by package total amount (e.g. 86 diamonds for 78+8, 172 for 156+16, 257 for 234+23, 706 for 625+81)
   if (!match) {
-    const num = parseInt(pStr);
+    const num = parseInt(pClean);
+    if (!isNaN(num)) {
+      match = game.packages.find(p => p.amount === num);
+    }
+  }
+
+  // 3. Match by ID suffix or prefix number (e.g. '78' matches 'ml-78', '100' matches 'ff-100')
+  if (!match) {
+    const num = parseInt(pClean);
     if (!isNaN(num)) {
       match = game.packages.find(p => 
-        p.amount === num || 
         p.id.endsWith(`-${num}`) || 
-        p.id.includes(`${num}`) ||
+        p.id === `${game.id}-${num}` || 
         p.name.startsWith(`${num} `) || 
-        p.name.includes(`${num}+`) || 
-        p.name.includes(`${num} `)
+        p.name.startsWith(`${num}+`)
       );
     }
   }
 
-  // 3. Match by name or bonus substring
+  // 4. Match by name or bonus substring
   if (!match) {
-    match = game.packages.find(p => p.name.toLowerCase().includes(pStr) || (p.bonus && p.bonus.toLowerCase().includes(pStr)));
+    match = game.packages.find(p => p.name.toLowerCase().includes(pClean) || (p.bonus && p.bonus.toLowerCase().includes(pClean)));
   }
 
   // Fallback to first package if no match
@@ -97,6 +104,7 @@ function findPackageInGame(game, pkgArg) {
     priceLkr: wholesalePrice,
     retailPriceLkr: selected.priceLkr,
     currencyIcon: game.currencyIcon || '💎',
+    currencyName: game.currencyName || 'Items'
   };
 }
 
