@@ -80,6 +80,34 @@ export const getResellerProfileByKeyAsync = async (keyOrCode) => {
     return activeResellerRegistry.get(cleanKey);
   }
 
+  let cachedApps = null;
+  const fetchAppsData = async () => {
+    if (cachedApps) return cachedApps;
+    try {
+      const res = await fetch('https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/reseller_applications.json');
+      if (res.ok) {
+        cachedApps = (await res.json()) || {};
+        return cachedApps;
+      }
+    } catch (e) {}
+    return {};
+  };
+
+  const findAppInfo = async (userId) => {
+    const apps = await fetchAppsData();
+    for (const [appId, app] of Object.entries(apps)) {
+      if (!app) continue;
+      if (
+        (app.userId && String(app.userId).toUpperCase() === String(userId).toUpperCase()) ||
+        (app.securityKey && String(app.securityKey).toUpperCase() === cleanKey) ||
+        (app.resellerCode && String(app.resellerCode).toUpperCase() === cleanKey)
+      ) {
+        return app;
+      }
+    }
+    return null;
+  };
+
   const isMatch = (userObj, uidKey) => {
     if (!userObj) return false;
     const userSecKey = String(userObj.securityKey || '').trim().toUpperCase();
@@ -96,17 +124,23 @@ export const getResellerProfileByKeyAsync = async (keyOrCode) => {
     return false;
   };
 
-  const createProfile = (userObj, uidKey) => {
-    const cleanUid = String(userObj.uid || uidKey || '').trim().toUpperCase();
+  const createProfile = async (userObj, uidKey) => {
+    const cleanUid = String(userObj?.uid || uidKey || '').trim().toUpperCase();
+    const appInfo = await findAppInfo(userObj?.uid || uidKey);
+
+    const name = userObj?.name || userObj?.storeName || userObj?.fullName || appInfo?.realName || appInfo?.fullName || appInfo?.storeName || appInfo?.name || 'Verified Reseller Partner';
+    const email = userObj?.email || appInfo?.emailAddress || appInfo?.email || appInfo?.userEmail || '';
+    const phone = userObj?.phone || userObj?.whatsapp || appInfo?.phone || appInfo?.whatsapp || '';
+
     return {
-      uid: userObj.uid || uidKey,
-      name: userObj.name || userObj.storeName || userObj.fullName || 'Verified Reseller Partner',
-      email: userObj.email || '',
-      phone: userObj.phone || '',
-      resellerCode: userObj.resellerCode || `RS-${cleanUid.slice(-6)}`,
-      securityKey: userObj.securityKey || cleanKey,
-      walletBalance: parseFloat(userObj.walletBalance || 0),
-      walletUsdt: parseFloat((userObj.walletBalance || 0) / 305),
+      uid: userObj?.uid || uidKey,
+      name,
+      email,
+      phone,
+      resellerCode: userObj?.resellerCode || appInfo?.resellerCode || `RS-${cleanUid.slice(-6)}`,
+      securityKey: userObj?.securityKey || appInfo?.securityKey || cleanKey,
+      walletBalance: parseFloat(userObj?.walletBalance || 0),
+      walletUsdt: parseFloat((userObj?.walletBalance || 0) / 305),
       isReseller: true
     };
   };
@@ -120,7 +154,7 @@ export const getResellerProfileByKeyAsync = async (keyOrCode) => {
         const usersData = snapshot.val();
         for (const [uidKey, userObj] of Object.entries(usersData)) {
           if (isMatch(userObj, uidKey)) {
-            const profile = createProfile(userObj, uidKey);
+            const profile = await createProfile(userObj, uidKey);
             activeResellerRegistry.set(cleanKey, profile);
             if (profile.securityKey) activeResellerRegistry.set(profile.securityKey.toUpperCase(), profile);
             if (profile.resellerCode) activeResellerRegistry.set(profile.resellerCode.toUpperCase(), profile);
@@ -142,7 +176,7 @@ export const getResellerProfileByKeyAsync = async (keyOrCode) => {
       if (usersData) {
         for (const [uidKey, userObj] of Object.entries(usersData)) {
           if (isMatch(userObj, uidKey)) {
-            const profile = createProfile(userObj, uidKey);
+            const profile = await createProfile(userObj, uidKey);
             activeResellerRegistry.set(cleanKey, profile);
             if (profile.securityKey) activeResellerRegistry.set(profile.securityKey.toUpperCase(), profile);
             if (profile.resellerCode) activeResellerRegistry.set(profile.resellerCode.toUpperCase(), profile);
@@ -155,7 +189,21 @@ export const getResellerProfileByKeyAsync = async (keyOrCode) => {
     console.warn('RTDB REST API lookup note:', restErr.message);
   }
 
-  // 4. Search Firestore for matching securityKey or resellerCode
+  // 4. Search reseller_applications node directly if not matched in users
+  try {
+    const apps = await fetchAppsData();
+    for (const [appId, app] of Object.entries(apps)) {
+      if (isMatch(app, appId)) {
+        const profile = await createProfile(app, appId);
+        activeResellerRegistry.set(cleanKey, profile);
+        if (profile.securityKey) activeResellerRegistry.set(profile.securityKey.toUpperCase(), profile);
+        if (profile.resellerCode) activeResellerRegistry.set(profile.resellerCode.toUpperCase(), profile);
+        return profile;
+      }
+    }
+  } catch (e) {}
+
+  // 5. Search Firestore for matching securityKey or resellerCode
   if (db) {
     try {
       const usersCol = collection(db, 'users');
@@ -169,7 +217,7 @@ export const getResellerProfileByKeyAsync = async (keyOrCode) => {
 
       if (!qSnap.empty) {
         const docData = qSnap.docs[0].data();
-        const profile = createProfile(docData, qSnap.docs[0].id);
+        const profile = await createProfile(docData, qSnap.docs[0].id);
         activeResellerRegistry.set(cleanKey, profile);
         if (profile.securityKey) activeResellerRegistry.set(profile.securityKey.toUpperCase(), profile);
         if (profile.resellerCode) activeResellerRegistry.set(profile.resellerCode.toUpperCase(), profile);
