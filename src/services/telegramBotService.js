@@ -65,15 +65,22 @@ function findPackageInGame(game, pkgArg) {
   // 1. Direct match by package ID
   let match = game.packages.find(p => p.id.toLowerCase().replace(/[^a-z0-9]/g, '') === pStr);
 
-  // 2. Match by numeric amount
+  // 2. Match by numeric amount or ID number or name number
   if (!match) {
     const num = parseInt(pStr);
     if (!isNaN(num)) {
-      match = game.packages.find(p => p.amount === num);
+      match = game.packages.find(p => 
+        p.amount === num || 
+        p.id.endsWith(`-${num}`) || 
+        p.id.includes(`${num}`) ||
+        p.name.startsWith(`${num} `) || 
+        p.name.includes(`${num}+`) || 
+        p.name.includes(`${num} `)
+      );
     }
   }
 
-  // 3. Match by name or bonus
+  // 3. Match by name or bonus substring
   if (!match) {
     match = game.packages.find(p => p.name.toLowerCase().includes(pStr) || (p.bonus && p.bonus.toLowerCase().includes(pStr)));
   }
@@ -130,6 +137,7 @@ export function initTelegramBot() {
           { command: 'topup', description: '⚡ Execute Topup (/topup ff 1017871735 100)' },
           { command: 'balance', description: '💰 View Wallet Balance & Security Key' },
           { command: 'deposit', description: '📥 Wallet Recharge Info (EZ Cash, Binance)' },
+          { command: 'packages', description: '📦 View Diamond Packages & Prices (/packages ml)' },
           { command: 'games', description: '🎮 View All Website Games & Packages' },
           { command: 'status', description: '🟢 View Bot & API Status' },
           { command: 'help', description: 'ℹ️ Complete Bot Command Guide' }
@@ -202,15 +210,55 @@ Support for ALL games on website: Mobile Legends, Free Fire, PUBG Mobile, Blood 
       return ctx.reply(helpText);
     });
 
-    // Command: /games
-    bot.command('games', (ctx) => {
-      let gamesText = `🎮 SUPPORTED GAMES ON MADS TOPUP WEBSITE:\n\n`;
-      GAMES_DATA.forEach(g => {
-        gamesText += `${g.currencyIcon} ${g.name} (ID: ${g.id})\n  • Currency: ${g.currencyName} | Packages: ${g.packages.length}\n  • ID Format: ${g.idLabel}\n\n`;
-      });
-      gamesText += `Type /topup <game_id> <player_id> [zone] <package> to order!`;
-      return ctx.reply(gamesText);
-    });
+    // Command: /games & /packages [game]
+    const handlePackages = (ctx) => {
+      try {
+        const text = ctx.message?.text || ctx.msg?.text || '';
+        const parts = text.split(/\s+/).filter(Boolean);
+        const gameArg = parts[1]?.toLowerCase();
+
+        if (gameArg) {
+          const matchedGame = findGameInCatalog(gameArg);
+          let replyText = `📦 ${matchedGame.name.toUpperCase()} PACKAGES & RESELLER WHOLESALE PRICES (5% OFF):\n\n`;
+
+          matchedGame.packages.forEach((pkg, index) => {
+            const wholesalePrice = Math.round(pkg.priceLkr * 0.95);
+            replyText += `${index + 1}. ${matchedGame.currencyIcon} ${pkg.name}\n`;
+            replyText += `   • Reseller Price: Rs. ${wholesalePrice.toLocaleString()} LKR (Retail: Rs. ${pkg.priceLkr.toLocaleString()})\n`;
+            replyText += `   • Topup Code: ${pkg.amount || pkg.id}\n\n`;
+          });
+
+          const gAlias = matchedGame.id === 'mobilelegends' ? 'ml' : matchedGame.id === 'freefire_sg' ? 'ff' : matchedGame.id;
+          replyText += `⚡ How to Order:\n• /topup ${gAlias} <player_id> ${matchedGame.requiresServer ? '<zone_id> ' : ''}<code_or_amount>`;
+          return ctx.reply(replyText);
+        }
+
+        // Summary of all website games & diamond packages
+        let summaryText = `📦 MADS TOPUP GAME PACKAGES & WHOLESALE PRICE LIST\n\n`;
+        summaryText += `💡 Type /packages <game> (e.g. /packages ml or /packages ff) to view ALL packages for a specific game!\n\n`;
+
+        GAMES_DATA.forEach(g => {
+          const gAlias = g.id === 'mobilelegends' ? 'ml' : g.id === 'freefire_sg' ? 'ff' : g.id;
+          summaryText += `${g.currencyIcon} ${g.name} (${g.packages.length} Packages):\n`;
+          const top4 = g.packages.slice(0, 4);
+          top4.forEach(p => {
+            const wPrice = Math.round(p.priceLkr * 0.95);
+            summaryText += `  • ${p.name}: Rs. ${wPrice.toLocaleString()} LKR\n`;
+          });
+          summaryText += `  👉 Type /packages ${gAlias} for full list\n\n`;
+        });
+
+        summaryText += `⚡ Reseller Wholesale Advantage: 5% OFF All Retail Prices Instant Deduct from Reseller Balance!`;
+        return ctx.reply(summaryText);
+      } catch (e) {
+        console.error('Packages Error:', e);
+      }
+    };
+
+    bot.command('games', handlePackages);
+    bot.command('packages', handlePackages);
+    bot.command('packs', handlePackages);
+    bot.command('prices', handlePackages);
 
     // Command: /status
     bot.command('status', (ctx) => {
