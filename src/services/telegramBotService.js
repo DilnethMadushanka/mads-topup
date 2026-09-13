@@ -218,7 +218,7 @@ Support for ALL games on website: Mobile Legends, Free Fire, PUBG Mobile, Blood 
 🟢 MADS TOPUP BOT & ENGINE STATUS
 
 ⚡ Telegram Engine: Active 24/7
-👑 MLBB & FF Real IGN API Gateways: ONLINE (SmileOne + RapidAPI + Community)
+👑 Live Player IGN Verification: ONLINE (MADS Direct Verification Engine)
 🐚 Garena Automation Engine: Active
 🎮 Games Supported: ${GAMES_DATA.length} Games (${GAMES_DATA.map(g => g.name).join(', ')})
 💰 Reseller Payment Gateways: Online (EZ Cash, Binance Pay, Bank)
@@ -360,7 +360,7 @@ Usage: /auth MADS-SEC-50048A92
           return ctx.reply(`❌ Error: Please enter Player ID.\nUsage Examples:\n• /id ff 1017871735\n• /id ml 84218845 2168\n• /ff 1017871735\n• /ml 84218845 2168`);
         }
 
-        await ctx.reply(`⌛ Querying Live API Gateway for ${matchedGame.name}...\n🎮 Game: ${matchedGame.name}\n🆔 Player ID: ${id}${zone ? `\n🌐 Zone ID: ${zone}` : ''}`);
+        await ctx.reply(`⌛ Checking Player IGN for ${matchedGame.name}...\n🎮 Game: ${matchedGame.name}\n🆔 Player ID: ${id}${zone ? `\n🌐 Zone ID: ${zone}` : ''}`);
 
         try {
           const result = await lookupFreePlayerIgn(matchedGame.id, id, zone);
@@ -373,7 +373,6 @@ Usage: /auth MADS-SEC-50048A92
 👤 Real Username (IGN): ${result.ign}
 🆔 Player ID: ${id}
 ${zone ? `🌐 Zone ID: ${zone}\n` : ''}⚡ Status: Verified Active Player
-📡 API Gateway: ${result.source || 'Live Gateway'}
 
 Ready for instant wholesale top-up!
             `.trim();
