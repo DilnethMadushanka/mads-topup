@@ -18,8 +18,10 @@ export const ResellerDashboard = () => {
     showToast, 
     closeResellerDashboard,
     creditUserWallet,
-    openWalletModal
+    openWalletModal,
+    gamesCatalog
   } = useApp();
+
 
   const [activeTab, setActiveTab] = useState('dispatch'); // 'dispatch' | 'orders' | 'pricing' | 'bot' | 'settings'
 
@@ -380,7 +382,7 @@ export const ResellerDashboard = () => {
                   1. Select Game
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {GAMES_DATA.map((game) => (
+                  {(gamesCatalog || GAMES_DATA).map((game) => (
                     <button
                       key={game.id}
                       type="button"
@@ -395,7 +397,11 @@ export const ResellerDashboard = () => {
                       }`}
                     >
                       <div className="w-10 h-10 rounded-xl bg-slate-900 p-1 border border-slate-800 overflow-hidden shrink-0">
-                        <img src={game.image} alt={game.name} className="w-full h-full object-cover rounded-lg" />
+                        {game.logo || game.banner ? (
+                          <img src={game.logo || game.banner} alt={game.name} className="w-full h-full object-cover rounded-lg" />
+                        ) : (
+                          <span className="text-xl flex items-center justify-center h-full">{game.currencyIcon || '🎮'}</span>
+                        )}
                       </div>
                       <div>
                         <h4 className="text-xs font-black text-white font-heading">{game.name}</h4>
@@ -405,6 +411,7 @@ export const ResellerDashboard = () => {
                   ))}
                 </div>
               </div>
+
 
               {/* 2. Customer Credentials */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

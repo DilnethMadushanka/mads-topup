@@ -599,10 +599,29 @@ export const AppProvider = ({ children }) => {
           });
           return merged;
         });
+
+        // Live sync current logged-in user / reseller wallet balance in real time
+        setUserProfileState(prev => {
+          if (!prev) return prev;
+          const match = remoteUsersList.find(ru => 
+            (ru.uid && prev.uid && ru.uid === prev.uid) || 
+            (ru.email && prev.email && ru.email.toLowerCase() === prev.email.toLowerCase())
+          );
+          if (match && (match.walletBalance !== prev.walletBalance || match.walletUsdt !== prev.walletUsdt)) {
+            return {
+              ...prev,
+              ...match,
+              walletBalance: match.walletBalance !== undefined ? match.walletBalance : prev.walletBalance,
+              walletUsdt: match.walletUsdt !== undefined ? match.walletUsdt : prev.walletUsdt
+            };
+          }
+          return prev;
+        });
       }
     });
     return () => unsubAll();
   }, []);
+
 
   // Realtime subscribe to live orders from Firestore / RTDB
   useEffect(() => {
