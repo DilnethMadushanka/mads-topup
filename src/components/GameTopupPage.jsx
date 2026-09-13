@@ -692,38 +692,61 @@ export const GameTopupPage = () => {
             </div>
 
             {/* Payment Method Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
               {PAYMENT_METHODS.map((method) => {
                 const isSelected = selectedPayment.id === method.id;
                 return (
                   <div
                     key={method.id}
                     onClick={() => setSelectedPayment(method)}
-                    className={`p-3.5 sm:p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
+                    className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
                       isSelected
-                        ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20'
+                        ? 'bg-[#2563EB] text-white border-blue-600 shadow-md shadow-blue-500/20'
                         : 'bg-white text-slate-900 border-slate-200 hover:border-slate-300'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xl sm:text-2xl">{method.icon}</span>
-                      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${
-                        isSelected ? 'bg-white text-slate-900' : 'bg-blue-100 text-blue-800'
+                      <span className="text-2xl">{method.icon}</span>
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                        isSelected ? 'bg-white text-blue-700' : 'bg-blue-100 text-blue-800'
                       }`}>
                         {method.badge}
                       </span>
                     </div>
 
                     <div>
-                      <div className="font-extrabold text-xs font-heading">{method.name}</div>
-                      <div className={`text-[10px] mt-0.5 ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
+                      <div className="font-extrabold text-sm font-heading">{method.name}</div>
+                      <div className={`text-xs mt-0.5 ${isSelected ? 'text-blue-100' : 'text-slate-500'}`}>
                         {method.subtitle}
                       </div>
                     </div>
                   </div>
                 );
               })}
+
+              {/* Recharge Wallet Helper Card */}
+              <div
+                onClick={() => setIsWalletModalOpen(true)}
+                className="p-4 rounded-2xl border-2 border-dashed border-emerald-300 bg-emerald-50/50 hover:bg-emerald-50 text-slate-900 cursor-pointer transition-all flex flex-col justify-between group"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-2xl">📥</span>
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-600 text-white uppercase tracking-wider">
+                    Recharge Wallet
+                  </span>
+                </div>
+                <div>
+                  <div className="font-extrabold text-sm text-emerald-900 font-heading group-hover:text-emerald-700 flex items-center gap-1">
+                    <span>Recharge Wallet Balance</span>
+                    <span className="text-xs">→</span>
+                  </div>
+                  <div className="text-xs text-emerald-700 mt-0.5">
+                    Deposit via EZ Cash, Binance Pay, or Bank Transfer
+                  </div>
+                </div>
+              </div>
             </div>
+
 
             {/* Payment Details Instructions & R2 Upload */}
             {selectedPayment.accountDetails && (

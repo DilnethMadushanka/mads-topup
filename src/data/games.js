@@ -228,62 +228,11 @@ export const PAYMENT_METHODS = [
   {
     id: 'wallet',
     name: 'MADS Wallet Balance',
-    subtitle: 'Instant Auto-Topup using your site wallet',
+    subtitle: 'Instant Automated Delivery via Site Wallet',
     icon: '💰',
-    badge: 'INSTANT',
+    badge: 'INSTANT 24/7',
     popular: true,
     accountDetails: null
-  },
-  {
-    id: 'bank',
-    name: 'Bank Transfer (Sri Lanka)',
-    subtitle: 'Hatton National Bank (HNB) Direct Transfer',
-    icon: '🏦',
-    badge: '0% FEE',
-    popular: true,
-    accountDetails: {
-      bankName: 'Hatton National Bank (HNB)',
-      accountName: 'DILNETH MADUSHANKA',
-      accountNumber: '011020433679',
-      branch: 'BADULLA',
-      instructions: 'Please upload transfer receipt screenshot or reference code after transfer.'
-    }
-  },
-  {
-    id: 'ezcash',
-    name: 'eZ Cash / mCash',
-    subtitle: 'Dialog / Mobitel Instant Mobile Wallet',
-    icon: '📱',
-    badge: 'INSTANT',
-    popular: true,
-    accountDetails: {
-      number: '0740436276',
-      name: 'MADS TOPUP Official',
-      instructions: 'Transfer funds to the eZ Cash number and enter your Transaction ID.'
-    }
-  },
-  {
-    id: 'card',
-    name: 'Credit / Debit Card',
-    subtitle: 'Visa, Mastercard, LankaPay',
-    icon: '💳',
-    badge: 'AUTO CHECKOUT',
-    popular: false,
-    accountDetails: {
-      instructions: 'Instant automatic payment processing via Secure LankaPay Gateway.'
-    }
-  },
-  {
-    id: 'binance',
-    name: 'Binance Pay / Crypto',
-    subtitle: 'USDT (TRC20), Pay ID',
-    icon: '⚡',
-    badge: 'WEB3',
-    popular: false,
-    accountDetails: {
-      payId: '829104721',
-      trc20Address: 'TY9xK8...xP2qZ',
-      instructions: 'Pay exact USDT equivalent and submit TxHash.'
-    }
   }
 ];
+
