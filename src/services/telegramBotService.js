@@ -117,6 +117,26 @@ export function initTelegramBot() {
       body: JSON.stringify({ short_description: '👑 MADS TOPUP Official Reseller & Automated Game Topup Bot.' })
     }).catch(() => {});
 
+    fetch(`https://api.telegram.org/bot${token}/setMyCommands`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        commands: [
+          { command: 'id', description: '🎮 Check Player IGN (/id ff 1017871735)' },
+          { command: 'ff', description: '🔥 Check Free Fire IGN (/ff 1017871735)' },
+          { command: 'ml', description: '⚔️ Check MLBB IGN (/ml 84218845 2168)' },
+          { command: 'pubg', description: '🪂 Check PUBG Mobile IGN (/pubg 512345678)' },
+          { command: 'auth', description: '🔑 Link Reseller Wallet (/auth SecurityKey)' },
+          { command: 'topup', description: '⚡ Execute Topup (/topup ff 1017871735 100)' },
+          { command: 'balance', description: '💰 View Wallet Balance & Security Key' },
+          { command: 'deposit', description: '📥 Wallet Recharge Info (EZ Cash, Binance)' },
+          { command: 'games', description: '🎮 View All Website Games & Packages' },
+          { command: 'status', description: '🟢 View Bot & API Status' },
+          { command: 'help', description: 'ℹ️ Complete Bot Command Guide' }
+        ]
+      })
+    }).catch(() => {});
+
     // Command: /start
     bot.command('start', (ctx) => {
       const welcomeText = `
