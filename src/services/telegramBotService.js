@@ -534,18 +534,18 @@ ${zone ? `🌐 Zone ID: ${zone}\n` : ''}ℹ️ Status: ID formatting valid. Read
           reseller = getResellerProfileByKey('MADS-SEC-50048A92');
         }
 
-        let gameArg = parts[1]?.toLowerCase() || 'mobilelegends';
-        let idArg = parts[2] || '';
-        let zoneArg = parts[3] || '';
-        let pkgArg = parts[4] || '';
+        let gameArg = (parts[1] || 'mobilelegends').toLowerCase().replace(/[()[\]]/g, '');
+        let idArg = (parts[2] || '').replace(/[()[\]]/g, '');
+        let zoneArg = (parts[3] || '').replace(/[()[\]]/g, '');
+        let pkgArg = (parts[4] || '').replace(/[()[\]]/g, '');
 
         const matchedGame = findGameInCatalog(gameArg);
 
         if (!matchedGame.requiresServer && parts.length === 4) {
-          pkgArg = parts[3];
+          pkgArg = (parts[3] || '').replace(/[()[\]]/g, '');
           zoneArg = '';
         } else if (matchedGame.requiresServer && parts.length === 4 && !pkgArg) {
-          pkgArg = parts[3];
+          pkgArg = (parts[3] || '').replace(/[()[\]]/g, '');
         }
 
         if (!idArg || !pkgArg) {
