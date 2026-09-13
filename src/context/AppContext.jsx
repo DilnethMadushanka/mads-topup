@@ -1145,7 +1145,7 @@ export const AppProvider = ({ children }) => {
           if (sentSuccess) break;
           try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            const timeoutId = setTimeout(() => controller.abort(), 45000);
 
             const res = await fetch(endpoint, {
               method: 'POST',
