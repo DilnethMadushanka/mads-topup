@@ -41,7 +41,17 @@ export const ResellerDashboard = () => {
   const [whatsappContact, setWhatsappContact] = useState(userProfile?.phone || '');
   const [storeEmail, setStoreEmail] = useState(userProfile?.email || '');
 
-  const resellerWalletId = `RS-${(userProfile?.uid || '882104').slice(-6).toUpperCase()}`;
+  const cleanUid = String(userProfile?.uid || '882104').slice(-6).toUpperCase();
+  const resellerWalletId = userProfile?.resellerCode || `RS-${cleanUid}`;
+  const resellerSecurityKey = userProfile?.securityKey || `MADS-SEC-${cleanUid.slice(0, 4)}8A92`;
+  const [isCopiedKey, setIsCopiedKey] = useState(false);
+
+  const handleCopySecurityKey = () => {
+    navigator.clipboard.writeText(resellerSecurityKey);
+    setIsCopiedKey(true);
+    showToast('Unique Security Key copied to clipboard!');
+    setTimeout(() => setIsCopiedKey(false), 2000);
+  };
 
   const currentGame = GAMES_DATA.find(g => g.id === selectedGameId) || GAMES_DATA[0];
   const selectedPackage = currentGame?.packages?.find(p => p.id === selectedPackageId) || currentGame?.packages?.[0];
@@ -219,22 +229,41 @@ export const ResellerDashboard = () => {
               </p>
             </div>
 
-            {/* Reseller Wallet ID Card */}
-            <div className="bg-slate-900/90 border border-amber-500/40 rounded-2xl p-5 text-center min-w-[240px] shadow-xl shrink-0">
-              <span className="text-[10px] text-slate-400 font-mono font-bold uppercase block mb-1">
-                YOUR RESELLER WALLET ID
-              </span>
-              <div className="flex items-center justify-center gap-2 bg-slate-950 px-3.5 py-2 rounded-xl border border-slate-800">
-                <span className="font-mono text-base font-black text-amber-300 tracking-wider">{resellerWalletId}</span>
-                <button
-                  onClick={handleCopyResellerId}
-                  className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
-                  title="Copy Reseller Wallet ID"
-                >
-                  {isCopiedId ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                </button>
+            {/* Reseller Wallet ID & Security Key Card */}
+            <div className="bg-slate-900/90 border border-amber-500/40 rounded-2xl p-5 text-center min-w-[280px] shadow-xl shrink-0 space-y-3">
+              <div>
+                <span className="text-[10px] text-slate-400 font-mono font-bold uppercase block mb-1">
+                  YOUR UNIQUE RESELLER CODE
+                </span>
+                <div className="flex items-center justify-center gap-2 bg-slate-950 px-3.5 py-1.5 rounded-xl border border-slate-800">
+                  <span className="font-mono text-sm font-black text-amber-300 tracking-wider">{resellerWalletId}</span>
+                  <button
+                    onClick={handleCopyResellerId}
+                    className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                    title="Copy Reseller Code"
+                  >
+                    {isCopiedId ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
-              <span className="text-[10px] text-emerald-400 font-bold font-mono block mt-2">
+
+              <div>
+                <span className="text-[10px] text-slate-400 font-mono font-bold uppercase block mb-1">
+                  TELEGRAM BOT SECURITY KEY
+                </span>
+                <div className="flex items-center justify-center gap-2 bg-slate-950 px-3.5 py-1.5 rounded-xl border border-slate-800">
+                  <span className="font-mono text-xs font-black text-emerald-400 tracking-wider">{resellerSecurityKey}</span>
+                  <button
+                    onClick={handleCopySecurityKey}
+                    className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                    title="Copy Security Key"
+                  >
+                    {isCopiedKey ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <span className="text-[10px] text-emerald-400 font-bold font-mono block">
                 🟢 5% WHOLESALE MARGIN ACTIVE
               </span>
             </div>
@@ -628,18 +657,55 @@ export const ResellerDashboard = () => {
               </a>
             </div>
 
-            <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
-              <h4 className="text-sm font-black text-white font-heading">Link Reseller Wallet to Telegram</h4>
-              <p className="text-xs text-slate-300">Copy your link command below and send it to the Telegram Bot:</p>
-              
-              <div className="bg-[#111622] p-4 rounded-xl font-mono text-amber-300 font-black text-sm flex items-center justify-between border border-slate-800">
-                <span>/link {resellerWalletId}</span>
-                <button
-                  onClick={handleCopyResellerId}
-                  className="px-3 py-1 bg-red-600 hover:bg-red-500 text-white text-xs font-sans font-extrabold rounded-lg cursor-pointer"
-                >
-                  Copy Command
-                </button>
+            <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-6">
+              <div>
+                <h4 className="text-sm font-black text-white font-heading mb-1">1. Link Reseller Security Key to Telegram</h4>
+                <p className="text-xs text-slate-300 mb-3">Copy your unique auth command below and send it to the Telegram Bot to link your wallet:</p>
+                
+                <div className="bg-[#111622] p-4 rounded-xl font-mono text-emerald-400 font-black text-sm flex items-center justify-between border border-slate-800 mb-2">
+                  <span>/auth {resellerSecurityKey}</span>
+                  <button
+                    onClick={handleCopySecurityKey}
+                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-sans font-extrabold rounded-lg cursor-pointer flex items-center gap-1.5"
+                  >
+                    {isCopiedKey ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>Copy Auth Key</span>
+                  </button>
+                </div>
+                
+                <div className="bg-[#111622] p-3 rounded-xl font-mono text-amber-300 font-bold text-xs flex items-center justify-between border border-slate-800">
+                  <span>Alternative Code: /link {resellerWalletId}</span>
+                  <button
+                    onClick={handleCopyResellerId}
+                    className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-sans font-bold rounded cursor-pointer"
+                  >
+                    Copy Code
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-800 space-y-3">
+                <h4 className="text-sm font-black text-white font-heading">2. Instant Topup Commands & Real IGN Lookup</h4>
+                <p className="text-xs text-slate-300">Send topup commands to Telegram Bot. Real IGN Name is fetched live from API and confirmed in the message:</p>
+                
+                <div className="space-y-2 text-xs font-mono">
+                  <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+                    <span className="text-amber-300 font-bold">/topup ml 84218845 2168 86</span>
+                    <span className="text-slate-400 text-[11px]">Mobile Legends (86 Diamonds)</span>
+                  </div>
+                  <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+                    <span className="text-amber-300 font-bold">/topup ff 248901234 100</span>
+                    <span className="text-slate-400 text-[11px]">Free Fire (100 Diamonds)</span>
+                  </div>
+                  <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+                    <span className="text-amber-300 font-bold">/topup pubg 512345678 60</span>
+                    <span className="text-slate-400 text-[11px]">PUBG Mobile (60 UC)</span>
+                  </div>
+                  <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+                    <span className="text-sky-300 font-bold">/ml 84218845 2168</span>
+                    <span className="text-slate-400 text-[11px]">Check Real MLBB IGN Only</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

@@ -3,15 +3,18 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChang
 import { getFirestore } from 'firebase/firestore';
 import { getDatabase } from 'firebase/database';
 
+const env = (typeof import.meta !== 'undefined' && import.meta.env) || (typeof process !== 'undefined' && process.env) || {};
+
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAzgbA7GdTY5Dv2CtgY8cVOswkpfcQpNcE",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "mads-topup-76445.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "mads-topup-76445",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "mads-topup-76445.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "404411554890",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:404411554890:web:8a88922ecb041fab7a1ab3",
-  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || "https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app"
+  apiKey: env.VITE_FIREBASE_API_KEY || "AIzaSyAzgbA7GdTY5Dv2CtgY8cVOswkpfcQpNcE",
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || "mads-topup-76445.firebaseapp.com",
+  projectId: env.VITE_FIREBASE_PROJECT_ID || "mads-topup-76445",
+  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || "mads-topup-76445.firebasestorage.app",
+  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || "404411554890",
+  appId: env.VITE_FIREBASE_APP_ID || "1:404411554890:web:8a88922ecb041fab7a1ab3",
+  databaseURL: env.VITE_FIREBASE_DATABASE_URL || "https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
+
 
 const isFirebaseConfigured = Boolean(firebaseConfig.apiKey);
 

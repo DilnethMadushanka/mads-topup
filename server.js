@@ -4,6 +4,8 @@ import path from 'path';
 import crypto from 'crypto';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { initTelegramBot } from './src/services/telegramBotService.js';
+import { lookupFreePlayerIgn } from './src/services/playerLookup.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -474,6 +476,23 @@ app.get('/api/ezcash/webhook-logs', (req, res) => {
   }
 });
 
+// Express endpoint for Live Game Player IGN Lookup (Mobile Legends, Free Fire, PUBG, etc.)
+app.get('/api/player-lookup', async (req, res) => {
+  try {
+    const { game = 'mobilelegends', id, zone } = req.query;
+    if (!id) {
+      return res.status(400).json({ success: false, message: 'Missing Player ID' });
+    }
+    const result = await lookupFreePlayerIgn(game, id, zone);
+    if (result && result.ign) {
+      return res.json({ success: true, ...result });
+    }
+    return res.json({ success: false, message: 'Player ID or Zone not found', ign: `Player ${id}` });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Serve built static assets from dist
 app.use(express.static(path.join(__dirname, 'dist')));
 
@@ -484,4 +503,9 @@ app.use((req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 Production Server running on port ${PORT}`);
+  try {
+    initTelegramBot();
+  } catch (e) {
+    console.warn('[Telegram Bot Init Note]:', e.message);
+  }
 });

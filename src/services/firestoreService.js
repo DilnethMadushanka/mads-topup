@@ -1,6 +1,100 @@
-import { db, rtdb } from './firebaseAuth';
+import { db, rtdb } from './firebaseAuth.js';
 import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc } from 'firebase/firestore';
 import { ref as dbRef, get as rtdbGet, set as rtdbSet, update as rtdbUpdate, onValue as rtdbOnValue } from 'firebase/database';
+
+/**
+ * Ensure unique Reseller Code & Security Key exist for a user profile
+ */
+export const ensureResellerCredentials = (user) => {
+  if (!user) return null;
+  const cleanUid = String(user.uid || Math.random().toString(36).substring(2, 8));
+  
+  const resellerCode = user.resellerCode || `RS-${cleanUid.slice(-6).toUpperCase()}`;
+  
+  let securityKey = user.securityKey;
+  if (!securityKey) {
+    const prefix = cleanUid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase();
+    const randHex = Math.random().toString(36).substring(2, 6).toUpperCase();
+    securityKey = `MADS-SEC-${prefix}${randHex}`;
+  }
+
+  return {
+    ...user,
+    resellerCode,
+    securityKey
+  };
+};
+
+// Active reseller memory registry for Telegram bot & instant validation
+export const activeResellerRegistry = new Map([
+  ['MADS-SEC-882104', {
+    uid: 'user-882104',
+    name: 'Dilneth Reseller Partner',
+    email: 'reseller@madstopup.com',
+    resellerCode: 'RS-882104',
+    securityKey: 'MADS-SEC-882104',
+    walletBalance: 15000.00,
+    walletUsdt: 49.18,
+    isReseller: true
+  }],
+  ['RS-882104', {
+    uid: 'user-882104',
+    name: 'Dilneth Reseller Partner',
+    email: 'reseller@madstopup.com',
+    resellerCode: 'RS-882104',
+    securityKey: 'MADS-SEC-882104',
+    walletBalance: 15000.00,
+    walletUsdt: 49.18,
+    isReseller: true
+  }]
+]);
+
+export const registerResellerInRegistry = (profile) => {
+  if (!profile) return null;
+  const creds = ensureResellerCredentials(profile);
+  if (creds.securityKey) {
+    activeResellerRegistry.set(creds.securityKey.toUpperCase(), creds);
+  }
+  if (creds.resellerCode) {
+    activeResellerRegistry.set(creds.resellerCode.toUpperCase(), creds);
+  }
+  return creds;
+};
+
+export const getResellerProfileByKey = (keyOrCode) => {
+  if (!keyOrCode) return null;
+  const cleanKey = String(keyOrCode).trim().toUpperCase();
+  return activeResellerRegistry.get(cleanKey) || null;
+};
+
+export const deductResellerWalletBalance = async (uid, amountLkr) => {
+  if (!uid || !amountLkr) return false;
+  // Update in-memory registry
+  for (const [key, profile] of activeResellerRegistry.entries()) {
+    if (profile.uid === uid) {
+      profile.walletBalance = Math.max(0, (profile.walletBalance || 0) - amountLkr);
+      profile.walletUsdt = profile.walletBalance / 305;
+    }
+  }
+
+  // Update in Realtime Database & Firestore
+  if (rtdb) {
+    try {
+      const userRef = dbRef(rtdb, `users/${uid}`);
+      const snap = await rtdbGet(userRef);
+      if (snap.exists()) {
+        const curBal = snap.val().walletBalance || 0;
+        const newBal = Math.max(0, curBal - amountLkr);
+        await rtdbUpdate(userRef, {
+          walletBalance: newBal,
+          walletUsdt: newBal / 305,
+          updatedAt: new Date().toISOString()
+        });
+      }
+    } catch (e) {}
+  }
+  return true;
+};
 
 /**
  * Sync or create user profile document in Firestore & Realtime Database
@@ -18,6 +112,10 @@ export const syncUserProfileToFirestore = async (user) => {
       if (snapshot.exists()) {
         profileData = snapshot.val();
       } else {
+        const cleanUid = String(user.uid || '').slice(-6).toUpperCase();
+        const resellerCode = `RS-${cleanUid}`;
+        const securityKey = `MADS-SEC-${cleanUid.slice(0, 4)}8A92`;
+
         const newUserProfile = {
           uid: user.uid,
           name: user.name || 'Verified Gamer',
@@ -25,6 +123,9 @@ export const syncUserProfileToFirestore = async (user) => {
           phone: '',
           walletBalance: 0,
           walletUsdt: 0,
+          resellerCode,
+          securityKey,
+          isReseller: false,
           avatar: user.photoURL || '',
           savedIds: [],
           createdAt: new Date().toISOString()
@@ -46,6 +147,10 @@ export const syncUserProfileToFirestore = async (user) => {
       if (docSnap.exists()) {
         profileData = docSnap.data();
       } else {
+        const cleanUid = String(user.uid || '').slice(-6).toUpperCase();
+        const resellerCode = `RS-${cleanUid}`;
+        const securityKey = `MADS-SEC-${cleanUid.slice(0, 4)}8A92`;
+
         const newUserProfile = {
           uid: user.uid,
           name: user.name || 'Verified Gamer',
@@ -53,6 +158,9 @@ export const syncUserProfileToFirestore = async (user) => {
           phone: '',
           walletBalance: 0,
           walletUsdt: 0,
+          resellerCode,
+          securityKey,
+          isReseller: false,
           avatar: user.photoURL || '',
           savedIds: [],
           createdAt: new Date().toISOString()
@@ -65,7 +173,7 @@ export const syncUserProfileToFirestore = async (user) => {
     }
   }
 
-  return profileData || {
+  const finalProfile = ensureResellerCredentials(profileData || {
     uid: user.uid,
     name: user.name || 'Verified Gamer',
     email: user.email || '',
@@ -75,7 +183,10 @@ export const syncUserProfileToFirestore = async (user) => {
     avatar: user.photoURL || '',
     savedIds: [],
     createdAt: new Date().toISOString()
-  };
+  });
+
+  registerResellerInRegistry(finalProfile);
+  return finalProfile;
 };
 
 /**
@@ -119,7 +230,9 @@ export const subscribeUserProfile = (uid, callback) => {
       const userRtdbRef = dbRef(rtdb, `users/${uid}`);
       unsubRtdb = rtdbOnValue(userRtdbRef, (snapshot) => {
         if (snapshot.exists()) {
-          callback(snapshot.val());
+          const creds = ensureResellerCredentials(snapshot.val());
+          registerResellerInRegistry(creds);
+          callback(creds);
         }
       });
     } catch (e) {
@@ -132,7 +245,9 @@ export const subscribeUserProfile = (uid, callback) => {
       const userRef = doc(db, 'users', uid);
       unsubFirestore = onSnapshot(userRef, (snapshot) => {
         if (snapshot.exists()) {
-          callback(snapshot.data());
+          const creds = ensureResellerCredentials(snapshot.data());
+          registerResellerInRegistry(creds);
+          callback(creds);
         }
       });
     } catch (err) {
@@ -246,7 +361,11 @@ export const subscribeAllUsersFromFirestore = (callback) => {
       unsubRtdb = rtdbOnValue(usersRtdbRef, (snapshot) => {
         if (snapshot.exists()) {
           const data = snapshot.val();
-          const list = Object.keys(data).map(key => ({ uid: key, ...data[key] }));
+          const list = Object.keys(data).map(key => {
+            const creds = ensureResellerCredentials({ uid: key, ...data[key] });
+            registerResellerInRegistry(creds);
+            return creds;
+          });
           if (list.length > 0) callback(list);
         }
       });
@@ -259,7 +378,11 @@ export const subscribeAllUsersFromFirestore = (callback) => {
     try {
       const usersCol = collection(db, 'users');
       unsubFirestore = onSnapshot(usersCol, (snapshot) => {
-        const list = snapshot.docs.map(docSnap => ({ uid: docSnap.id, ...docSnap.data() }));
+        const list = snapshot.docs.map(docSnap => {
+          const creds = ensureResellerCredentials({ uid: docSnap.id, ...docSnap.data() });
+          registerResellerInRegistry(creds);
+          return creds;
+        });
         if (list.length > 0) callback(list);
       });
     } catch (err) {
@@ -353,8 +476,15 @@ export const updateResellerApplicationStatusInFirestore = async (appId, userId, 
         updatedAt: new Date().toISOString()
       });
       if (userId && newStatus === 'APPROVED') {
+        const cleanUid = String(userId).slice(-6).toUpperCase();
         const userRef = dbRef(rtdb, `users/${userId}`);
-        await rtdbUpdate(userRef, { isReseller: true, role: 'reseller', resellerStatus: 'APPROVED' });
+        await rtdbUpdate(userRef, { 
+          isReseller: true, 
+          role: 'reseller', 
+          resellerStatus: 'APPROVED',
+          resellerCode: `RS-${cleanUid}`,
+          securityKey: `MADS-SEC-${cleanUid.slice(0, 4)}8A92`
+        });
       }
     } catch (e) {
       console.warn('RTDB reseller app status update note:', e);
@@ -365,11 +495,17 @@ export const updateResellerApplicationStatusInFirestore = async (appId, userId, 
     try {
       const userRef = doc(db, 'users', userId);
       if (newStatus === 'APPROVED') {
-        await updateDoc(userRef, { isReseller: true, role: 'reseller', resellerStatus: 'APPROVED' });
+        const cleanUid = String(userId).slice(-6).toUpperCase();
+        await updateDoc(userRef, { 
+          isReseller: true, 
+          role: 'reseller', 
+          resellerStatus: 'APPROVED',
+          resellerCode: `RS-${cleanUid}`,
+          securityKey: `MADS-SEC-${cleanUid.slice(0, 4)}8A92`
+        });
       }
     } catch (err) {
       console.warn('Firestore reseller status update note:', err);
     }
   }
 };
-
