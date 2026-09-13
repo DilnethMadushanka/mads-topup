@@ -98,6 +98,19 @@ export function initTelegramBot() {
 
     console.log('🤖 MADS TOPUP Telegram Bot (@mads_shell_topup_bot) Initializing...');
 
+    // Auto-sync official Telegram bot description & menu commands
+    fetch(`https://api.telegram.org/bot${token}/setMyDescription`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: '👑 Official MADS TOPUP Reseller Partner & Automated Game Top-up Bot.\n\nInstant automated delivery for Mobile Legends, Free Fire, PUBG Mobile, Blood Strike, Delta Force & Garena Shells.' })
+    }).catch(() => {});
+
+    fetch(`https://api.telegram.org/bot${token}/setMyShortDescription`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ short_description: '👑 MADS TOPUP Official Reseller & Automated Game Topup Bot.' })
+    }).catch(() => {});
+
     // Command: /start
     bot.command('start', (ctx) => {
       const welcomeText = `
