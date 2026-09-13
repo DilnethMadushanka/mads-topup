@@ -1130,12 +1130,17 @@ export const AppProvider = ({ children }) => {
       if (remoteApps && remoteApps.length > 0) {
         setResellerApplications(prev => {
           const map = new Map();
-          remoteApps.forEach(item => map.set(item.id || item.firestoreId, item));
+          remoteApps.forEach(item => {
+            const key = item.id || item.firestoreId || item.userId;
+            if (key) map.set(key, { ...item, id: key });
+          });
           prev.forEach(item => {
-            const key = item.id || item.firestoreId;
-            const existing = map.get(key);
-            if (!existing || item.status === 'APPROVED' || item.status === 'REJECTED') {
-              map.set(key, item);
+            const key = item.id || item.firestoreId || item.userId;
+            if (key) {
+              const existing = map.get(key);
+              if (!existing || item.status === 'APPROVED' || item.status === 'REJECTED') {
+                map.set(key, { ...item, id: key });
+              }
             }
           });
           return Array.from(map.values());
@@ -1146,17 +1151,30 @@ export const AppProvider = ({ children }) => {
   }, []);
 
   const addResellerApplication = (appData) => {
-    setResellerApplications(prev => [appData, ...prev]);
-    saveResellerApplicationToFirestore(appData);
+    const newId = appData.id || appData.firestoreId || `app-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const fullApp = { ...appData, id: newId };
+    setResellerApplications(prev => [fullApp, ...prev]);
+    saveResellerApplicationToFirestore(fullApp);
     setUserProfileState(prev => ({ ...prev, resellerStatus: 'PENDING' }));
   };
 
   const updateResellerApplicationStatus = async (appId, userId, newStatus, appObject = null) => {
-    let targetApp = appObject || resellerApplications.find(app => app.id === appId || app.firestoreId === appId);
-    
+    const targetApp = appObject || resellerApplications.find(app => (appId && (app.id === appId || app.firestoreId === appId)) || (userId && app.userId === userId));
+    const targetId = appId || targetApp?.id || targetApp?.firestoreId;
+    const targetUserId = userId || targetApp?.userId;
+
+    if (!targetId && !targetUserId) {
+      console.warn('[updateResellerApplicationStatus] No valid target ID found.');
+      return;
+    }
+
     setResellerApplications(prev => {
       const updated = prev.map(app => {
-        if (app.id === appId || app.firestoreId === appId || (targetApp && (app.id === targetApp.id || app.firestoreId === targetApp.firestoreId))) {
+        const matchesById = Boolean(targetId && (app.id === targetId || app.firestoreId === targetId));
+        const matchesByUserId = Boolean(targetUserId && app.userId === targetUserId);
+        const matchesTargetApp = Boolean(targetApp && ((targetApp.id && app.id === targetApp.id) || (targetApp.firestoreId && app.firestoreId === targetApp.firestoreId)));
+
+        if (matchesById || matchesByUserId || matchesTargetApp) {
           return { ...app, status: newStatus, updatedAt: new Date().toISOString() };
         }
         return app;
@@ -1165,8 +1183,8 @@ export const AppProvider = ({ children }) => {
       return updated;
     });
 
-    const targetFirestoreId = targetApp?.firestoreId || null;
-    updateResellerApplicationStatusInFirestore(appId, userId, newStatus, targetFirestoreId);
+    const targetFirestoreId = targetApp?.firestoreId || (targetId && targetId !== targetUserId ? targetId : null);
+    updateResellerApplicationStatusInFirestore(targetId || targetUserId, targetUserId, newStatus, targetFirestoreId);
     
     if (newStatus === 'APPROVED') {
       if (userId && userProfile?.uid === userId) {

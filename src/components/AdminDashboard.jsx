@@ -1083,7 +1083,7 @@ export const AdminDashboard = () => {
 
                             {app.status !== 'REJECTED' && (
                               <button
-                                onClick={() => updateResellerApplicationStatus(app.id || app.firestoreId, app.userId, 'REJECTED')}
+                                onClick={() => updateResellerApplicationStatus(app.id || app.firestoreId || app.userId, app.userId, 'REJECTED', app)}
                                 className="px-3.5 py-2 bg-red-950 hover:bg-red-900 border border-red-800 text-red-300 rounded-xl text-xs font-extrabold flex items-center gap-1.5 cursor-pointer transition-all active:scale-[0.98]"
                               >
                                 <UserX className="w-4 h-4" />
