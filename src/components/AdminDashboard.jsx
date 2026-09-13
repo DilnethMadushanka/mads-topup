@@ -131,6 +131,10 @@ export const AdminDashboard = () => {
   const [ezcashSearch, setEzcashSearch] = useState('');
   const [ezcashStatusFilter, setEzcashStatusFilter] = useState('ALL');
 
+  // Reseller Application Filters State
+  const [resellerSearch, setResellerSearch] = useState('');
+  const [resellerStatusFilter, setResellerStatusFilter] = useState('ALL');
+
   const fetchEzcashLogs = async () => {
     try {
       setIsEzcashLogsLoading(true);
@@ -522,8 +526,6 @@ export const AdminDashboard = () => {
   };
 
   // Reseller Application Filters
-  const [resellerSearch, setResellerSearch] = useState('');
-  const [resellerStatusFilter, setResellerStatusFilter] = useState('ALL');
   const safeResellerApps = resellerApplications || [];
   const pendingResellersCount = safeResellerApps.filter(a => a.status === 'PENDING').length;
 

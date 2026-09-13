@@ -22,6 +22,7 @@ export const WalletModal = () => {
   const [ezCashAmount, setEzCashAmount] = useState('1000');
   const [voucherCode, setVoucherCode] = useState('');
   const [isCopied, setIsCopied] = useState(false);
+  const [isBinanceVerifying, setIsBinanceVerifying] = useState(false);
 
   if (!isWalletModalOpen) return null;
 
@@ -46,8 +47,6 @@ export const WalletModal = () => {
       showToast('Please manually paste your Order ID', 'error');
     }
   };
-
-  const [isBinanceVerifying, setIsBinanceVerifying] = useState(false);
 
   const handleBinanceSubmit = async (e) => {
     e.preventDefault();
