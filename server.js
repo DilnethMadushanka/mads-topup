@@ -100,8 +100,12 @@ app.post('/api/send-otp', async (req, res) => {
               html: emailHtml
             });
           }
-          console.log(`[Resend OTP Sent] Sent to ${email}, id: ${data?.id}`);
-          return res.json({ success: true, provider: 'Resend', messageId: data?.id });
+          if (data?.id && !data?.error) {
+            console.log(`[Resend OTP Sent] Sent to ${email}, id: ${data?.id}`);
+            return res.json({ success: true, provider: 'Resend', messageId: data?.id });
+          } else {
+            console.warn('[Resend API Fallthrough]:', data?.error?.message || 'Resend error, attempting SMTP fallback...');
+          }
         }
       } catch (rErr) {
         console.warn('[Resend API Note]:', rErr.message);
@@ -257,8 +261,12 @@ app.post('/api/send-reseller-approval', async (req, res) => {
               html: emailHtml
             });
           }
-          console.log(`[Resend Reseller Approval Sent] Sent to ${email}, id: ${data?.id}`);
-          return res.json({ success: true, provider: 'Resend', messageId: data?.id });
+          if (data?.id && !data?.error) {
+            console.log(`[Resend Reseller Approval Sent] Sent to ${email}, id: ${data?.id}`);
+            return res.json({ success: true, provider: 'Resend', messageId: data?.id });
+          } else {
+            console.warn('[Resend Reseller Approval Fallthrough]:', data?.error?.message || 'Resend error, attempting SMTP fallback...');
+          }
         }
       } catch (rErr) {
         console.warn('[Resend API Note]:', rErr.message);
