@@ -1111,7 +1111,7 @@ export const AppProvider = ({ children }) => {
     
     if (newStatus === 'APPROVED') {
       if (userId && userProfile?.uid === userId) {
-        setUserProfile(prev => ({ ...prev, isReseller: true, role: 'reseller', resellerStatus: 'APPROVED' }));
+        setUserProfileState(prev => ({ ...prev, isReseller: true, role: 'reseller', resellerStatus: 'APPROVED' }));
       }
 
       // Generate / retrieve credentials for email dispatch
