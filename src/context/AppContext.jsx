@@ -1183,18 +1183,18 @@ export const AppProvider = ({ children }) => {
       return updated;
     });
 
+    // Generate / retrieve credentials for email dispatch and database save
+    const cleanUid = String(userId || targetApp?.userId || Math.random().toString(36).substring(2, 8)).slice(-6).toUpperCase();
+    const resellerCode = targetApp?.resellerCode || `RS-${cleanUid}`;
+    const securityKey = targetApp?.securityKey || generateUniqueSecurityKey(userId || targetApp?.userId);
+
     const targetFirestoreId = targetApp?.firestoreId || (targetId && targetId !== targetUserId ? targetId : null);
-    updateResellerApplicationStatusInFirestore(targetId || targetUserId, targetUserId, newStatus, targetFirestoreId);
+    updateResellerApplicationStatusInFirestore(targetId || targetUserId, targetUserId, newStatus, targetFirestoreId, securityKey);
     
     if (newStatus === 'APPROVED') {
       if (userId && userProfile?.uid === userId) {
-        setUserProfileState(prev => ({ ...prev, isReseller: true, role: 'reseller', resellerStatus: 'APPROVED' }));
+        setUserProfileState(prev => ({ ...prev, isReseller: true, role: 'reseller', resellerStatus: 'APPROVED', resellerCode, securityKey }));
       }
-
-      // Generate / retrieve credentials for email dispatch
-      const cleanUid = String(userId || targetApp?.userId || Math.random().toString(36).substring(2, 8)).slice(-6).toUpperCase();
-      const resellerCode = targetApp?.resellerCode || `RS-${cleanUid}`;
-      const securityKey = targetApp?.securityKey || generateUniqueSecurityKey(userId || targetApp?.userId);
       
       const targetEmail = 
         targetApp?.emailAddress || 

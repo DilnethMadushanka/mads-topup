@@ -5,11 +5,28 @@ import { ref as dbRef, get as rtdbGet, set as rtdbSet, update as rtdbUpdate, onV
 /**
  * Helper function to generate a 100% unique Security Key for each user/reseller
  */
-export const generateUniqueSecurityKey = (seed) => {
-  const cleanSeed = String(seed || Math.random().toString(36).substring(2, 10)).replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-  const part1 = cleanSeed.length >= 4 ? cleanSeed.slice(-4) : Math.random().toString(36).substring(2, 6).toUpperCase();
-  const part2 = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `MADS-SEC-${part1}${part2}`;
+export const generateUniqueSecurityKey = (seedStr, existingKey = null) => {
+  if (existingKey && String(existingKey).startsWith('MADS-SEC-')) {
+    return existingKey;
+  }
+  const cleanSeed = String(seedStr || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+  if (!cleanSeed) {
+    return `MADS-SEC-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+  }
+
+  let hash1 = 5381;
+  let hash2 = 0;
+  for (let i = 0; i < cleanSeed.length; i++) {
+    const char = cleanSeed.charCodeAt(i);
+    hash1 = ((hash1 << 5) + hash1) + char;
+    hash2 = char + (hash2 << 6) + (hash2 << 16) - hash2;
+  }
+
+  const hex1 = Math.abs(hash1).toString(36).toUpperCase().padStart(4, '0').slice(-4);
+  const hex2 = Math.abs(hash2).toString(36).toUpperCase().padStart(4, '0').slice(-4);
+  const part1 = cleanSeed.slice(-4).padStart(4, 'X');
+
+  return `MADS-SEC-${part1.slice(0, 2)}${hex1.slice(0, 3)}${hex2.slice(0, 3)}`;
 };
 
 /**
@@ -552,23 +569,28 @@ export const subscribeResellerApplicationsFromFirestore = (callback) => {
 /**
  * Update reseller application status and sync user reseller role
  */
-export const updateResellerApplicationStatusInFirestore = async (appId, userId, newStatus, firestoreId = null) => {
+export const updateResellerApplicationStatusInFirestore = async (appId, userId, newStatus, firestoreId = null, targetSecurityKey = null) => {
+  const cleanUid = String(userId || appId || '').slice(-6).toUpperCase();
+  const resellerCode = `RS-${cleanUid}`;
+  const securityKey = targetSecurityKey || generateUniqueSecurityKey(userId || appId);
+
   if (rtdb) {
     try {
       const appRef = dbRef(rtdb, `reseller_applications/${appId}`);
       await rtdbUpdate(appRef, {
         status: newStatus,
+        resellerCode,
+        securityKey,
         updatedAt: new Date().toISOString()
       });
       if (userId && newStatus === 'APPROVED') {
-        const cleanUid = String(userId).slice(-6).toUpperCase();
         const userRef = dbRef(rtdb, `users/${userId}`);
         await rtdbUpdate(userRef, { 
           isReseller: true, 
           role: 'reseller', 
           resellerStatus: 'APPROVED',
-          resellerCode: `RS-${cleanUid}`,
-          securityKey: generateUniqueSecurityKey(userId)
+          resellerCode,
+          securityKey
         });
       }
     } catch (e) {
@@ -578,29 +600,26 @@ export const updateResellerApplicationStatusInFirestore = async (appId, userId, 
 
   if (db) {
     try {
-      // 1. Update reseller_applications collection in Firestore
       if (firestoreId) {
         const docRef = doc(db, 'reseller_applications', firestoreId);
-        await updateDoc(docRef, { status: newStatus, updatedAt: new Date().toISOString() });
+        await updateDoc(docRef, { status: newStatus, resellerCode, securityKey, updatedAt: new Date().toISOString() });
       } else {
         const appsCol = collection(db, 'reseller_applications');
         const q = query(appsCol, where('id', '==', appId));
         const qSnap = await getDocs(q);
         qSnap.forEach(async (d) => {
-          await updateDoc(doc(db, 'reseller_applications', d.id), { status: newStatus, updatedAt: new Date().toISOString() });
+          await updateDoc(doc(db, 'reseller_applications', d.id), { status: newStatus, resellerCode, securityKey, updatedAt: new Date().toISOString() });
         });
       }
 
-      // 2. Update user document in Firestore users collection
       if (userId && newStatus === 'APPROVED') {
-        const cleanUid = String(userId).slice(-6).toUpperCase();
         const userRef = doc(db, 'users', userId);
         await setDoc(userRef, { 
           isReseller: true, 
           role: 'reseller', 
           resellerStatus: 'APPROVED',
-          resellerCode: `RS-${cleanUid}`,
-          securityKey: generateUniqueSecurityKey(userId)
+          resellerCode,
+          securityKey
         }, { merge: true });
       }
     } catch (err) {
