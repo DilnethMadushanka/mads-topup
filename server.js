@@ -77,28 +77,21 @@ app.post('/api/send-otp', async (req, res) => {
 
     // Using top-level imported nodemailer directly
 
-    // Option 1: Try Zoho Mail SMTP (100% Verified Pro SMTP with Guaranteed Recipient Delivery)
+    // Option 1: Try Zoho Mail SMTP (Port 465 SSL -> Port 587 STARTTLS for cloud compatibility)
     const zohoUser = process.env.ZOHO_EMAIL || process.env.VITE_ZOHO_EMAIL || 'info@trivexit.com';
     const zohoPass = process.env.ZOHO_PASSWORD || process.env.VITE_ZOHO_PASSWORD || 'jXi8hF56aCYb';
-    const zohoHost = process.env.ZOHO_SMTP_HOST || 'smtppro.zoho.com';
-    const zohoPort = parseInt(process.env.ZOHO_SMTP_PORT || '465');
 
     if (nodemailer && zohoPass) {
       try {
         const mailTransporter = nodemailer.createTransport({
-          host: zohoHost,
-          port: zohoPort,
+          host: 'smtppro.zoho.com',
+          port: 465,
           secure: true,
-          auth: {
-            user: zohoUser,
-            pass: zohoPass
-          },
-          tls: {
-            rejectUnauthorized: false
-          },
-          connectionTimeout: 15000,
-          greetingTimeout: 15000,
-          socketTimeout: 20000
+          auth: { user: zohoUser, pass: zohoPass },
+          tls: { rejectUnauthorized: false },
+          connectionTimeout: 8000,
+          greetingTimeout: 8000,
+          socketTimeout: 10000
         });
         const info = await mailTransporter.sendMail({
           from: `"MADS TOPUP" <${zohoUser}>`,
@@ -107,10 +100,35 @@ app.post('/api/send-otp', async (req, res) => {
           text: `Your MADS TOPUP verification code is: ${otp}. Valid for 15 minutes.`,
           html: emailHtml
         });
-        console.log(`[Zoho Mail OTP Sent] Successfully sent OTP to ${email}`, info?.messageId);
-        return res.json({ success: true, provider: 'Zoho', messageId: info?.messageId });
-      } catch (zErr) {
-        console.warn('[Zoho SMTP Fallthrough]:', zErr.message);
+        console.log(`[Zoho Mail OTP 465 Sent] Successfully sent to ${email}`, info?.messageId);
+        return res.json({ success: true, provider: 'Zoho Mail (Port 465)', messageId: info?.messageId });
+      } catch (z465Err) {
+        console.warn('[Zoho OTP 465 Note]:', z465Err.message);
+      }
+
+      try {
+        const mailTransporter587 = nodemailer.createTransport({
+          host: 'smtppro.zoho.com',
+          port: 587,
+          secure: false,
+          requireTLS: true,
+          auth: { user: zohoUser, pass: zohoPass },
+          tls: { rejectUnauthorized: false },
+          connectionTimeout: 8000,
+          greetingTimeout: 8000,
+          socketTimeout: 10000
+        });
+        const info587 = await mailTransporter587.sendMail({
+          from: `"MADS TOPUP" <${zohoUser}>`,
+          to: email,
+          subject: `Your Verification Code: ${otp}`,
+          text: `Your MADS TOPUP verification code is: ${otp}. Valid for 15 minutes.`,
+          html: emailHtml
+        });
+        console.log(`[Zoho Mail OTP 587 Sent] Successfully sent to ${email}`, info587?.messageId);
+        return res.json({ success: true, provider: 'Zoho Mail (Port 587)', messageId: info587?.messageId });
+      } catch (z587Err) {
+        console.warn('[Zoho OTP 587 Note]:', z587Err.message);
       }
     }
 
@@ -202,28 +220,23 @@ app.post('/api/send-reseller-approval', async (req, res) => {
       </div>
     `;
 
-    // Option 1: Try Zoho Mail SMTP (100% Verified Pro SMTP with Guaranteed Recipient Delivery)
+    // Option 1: Try Zoho Mail SMTP (Port 465 SSL -> Port 587 STARTTLS for cloud compatibility)
     const zohoUser = process.env.ZOHO_EMAIL || process.env.VITE_ZOHO_EMAIL || 'info@trivexit.com';
     const zohoPass = process.env.ZOHO_PASSWORD || process.env.VITE_ZOHO_PASSWORD || 'jXi8hF56aCYb';
-    const zohoHost = process.env.ZOHO_SMTP_HOST || 'smtppro.zoho.com';
-    const zohoPort = parseInt(process.env.ZOHO_SMTP_PORT || '465');
+    let lastError = null;
 
     if (nodemailer && zohoPass) {
+      // Attempt 1A: Port 465 (SSL Direct)
       try {
         const mailTransporter = nodemailer.createTransport({
-          host: zohoHost,
-          port: zohoPort,
+          host: 'smtppro.zoho.com',
+          port: 465,
           secure: true,
-          auth: {
-            user: zohoUser,
-            pass: zohoPass
-          },
-          tls: {
-            rejectUnauthorized: false
-          },
-          connectionTimeout: 15000,
-          greetingTimeout: 15000,
-          socketTimeout: 20000
+          auth: { user: zohoUser, pass: zohoPass },
+          tls: { rejectUnauthorized: false },
+          connectionTimeout: 8000,
+          greetingTimeout: 8000,
+          socketTimeout: 10000
         });
         const info = await mailTransporter.sendMail({
           from: `"MADS TOPUP" <${zohoUser}>`,
@@ -231,10 +244,37 @@ app.post('/api/send-reseller-approval', async (req, res) => {
           subject: `🎉 Reseller Partner Approved! Your Reseller Code & Security Key`,
           html: emailHtml
         });
-        console.log(`[Zoho Reseller Approval Sent] Successfully sent to ${email}`, info?.messageId);
-        return res.json({ success: true, provider: 'Zoho', messageId: info?.messageId });
-      } catch (zErr) {
-        console.error('[Zoho SMTP Approval Error]:', zErr);
+        console.log(`[Zoho SMTP 465 Approval Sent] Sent to ${email}`, info?.messageId);
+        return res.json({ success: true, provider: 'Zoho Mail (Port 465)', messageId: info?.messageId });
+      } catch (z465Err) {
+        console.warn('[Zoho SMTP 465 Note]:', z465Err.message);
+        lastError = z465Err.message;
+      }
+
+      // Attempt 1B: Port 587 (STARTTLS - Highest Cloud Firewall Compatibility)
+      try {
+        const mailTransporter587 = nodemailer.createTransport({
+          host: 'smtppro.zoho.com',
+          port: 587,
+          secure: false,
+          requireTLS: true,
+          auth: { user: zohoUser, pass: zohoPass },
+          tls: { rejectUnauthorized: false },
+          connectionTimeout: 8000,
+          greetingTimeout: 8000,
+          socketTimeout: 10000
+        });
+        const info587 = await mailTransporter587.sendMail({
+          from: `"MADS TOPUP" <${zohoUser}>`,
+          to: email,
+          subject: `🎉 Reseller Partner Approved! Your Reseller Code & Security Key`,
+          html: emailHtml
+        });
+        console.log(`[Zoho SMTP 587 Approval Sent] Sent to ${email}`, info587?.messageId);
+        return res.json({ success: true, provider: 'Zoho Mail (Port 587)', messageId: info587?.messageId });
+      } catch (z587Err) {
+        console.warn('[Zoho SMTP 587 Note]:', z587Err.message);
+        lastError = z587Err.message;
       }
     }
 
@@ -259,7 +299,7 @@ app.post('/api/send-reseller-approval', async (req, res) => {
       }
     }
 
-    return res.json({ success: true, simulated: true });
+    return res.json({ success: false, simulated: true, error: lastError || 'SMTP connection failed' });
   } catch (err) {
     console.error('Mail Reseller Approval Error:', err);
     return res.status(500).json({ error: err.message });
