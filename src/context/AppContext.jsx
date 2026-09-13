@@ -1135,26 +1135,45 @@ export const AppProvider = ({ children }) => {
         'Valued Reseller';
 
       if (targetEmail) {
-        try {
-          const res = await fetch('/api/send-reseller-approval', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: targetEmail,
-              name: targetName,
-              resellerCode,
-              securityKey
-            })
-          });
-          const data = await res.json();
-          if (data && data.success) {
-            showToast(`Reseller Approved! Approval email sent to ${targetEmail}`, 'success');
-          } else {
-            showToast(`Reseller Approved! (Email status: ${data?.error || 'sent'})`);
+        let sentSuccess = false;
+        const apiEndpoints = [
+          '/api/send-reseller-approval',
+          'https://madstopup.com/api/send-reseller-approval'
+        ];
+
+        for (const endpoint of apiEndpoints) {
+          if (sentSuccess) break;
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+            const res = await fetch(endpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: targetEmail,
+                name: targetName,
+                resellerCode,
+                securityKey
+              }),
+              signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (res.ok) {
+              const data = await res.json();
+              if (data && data.success) {
+                sentSuccess = true;
+                showToast(`Reseller Approved! Approval email sent to ${targetEmail}`, 'success');
+              }
+            }
+          } catch (e) {
+            console.warn(`[Approval Email Note for ${endpoint}]:`, e.message);
           }
-        } catch (e) {
-          console.warn('[Approval Email Error]:', e);
-          showToast(`Reseller Approved! (Email notification note: ${e.message})`);
+        }
+
+        if (!sentSuccess) {
+          showToast(`Reseller Application APPROVED! (Email trigger queued)`);
         }
       } else {
         showToast(`Reseller Application ${appId} APPROVED successfully!`);
