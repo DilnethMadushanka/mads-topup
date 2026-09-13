@@ -97,8 +97,9 @@ function findPackageInGame(game, pkgArg) {
     priceLkr: wholesalePrice,
     retailPriceLkr: selected.priceLkr,
     currencyIcon: game.currencyIcon || '💎',
-    currencyName: game.currencyName || 'Items'
   };
+}
+
 /**
  * Dispatch Live Order to MooGold Reseller API
  */
