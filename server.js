@@ -514,6 +514,17 @@ app.get('/api/player-lookup', async (req, res) => {
   }
 });
 
+// Explicit XML & TXT routes for Googlebot sitemap and robots.txt indexing
+app.get('/sitemap.xml', (req, res) => {
+  res.header('Content-Type', 'application/xml');
+  res.sendFile(path.join(__dirname, 'dist', 'sitemap.xml'));
+});
+
+app.get('/robots.txt', (req, res) => {
+  res.header('Content-Type', 'text/plain');
+  res.sendFile(path.join(__dirname, 'dist', 'robots.txt'));
+});
+
 // Serve built static assets from dist
 app.use(express.static(path.join(__dirname, 'dist')));
 
