@@ -29,7 +29,7 @@ if (isFirebaseConfigured) {
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
     db = getFirestore(app);
-    rtdb = getDatabase(app);
+    rtdb = getDatabase(app, firebaseConfig.databaseURL || "https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app");
     googleProvider = new GoogleAuthProvider();
     googleProvider.setCustomParameters({ prompt: 'select_account' });
   } catch (err) {

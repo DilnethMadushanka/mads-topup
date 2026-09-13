@@ -80,7 +80,38 @@ export const getResellerProfileByKeyAsync = async (keyOrCode) => {
     return activeResellerRegistry.get(cleanKey);
   }
 
-  // 2. Search Realtime Database (RTDB) for matching securityKey, resellerCode, or uid
+  const isMatch = (userObj, uidKey) => {
+    if (!userObj) return false;
+    const userSecKey = String(userObj.securityKey || '').trim().toUpperCase();
+    const userCode = String(userObj.resellerCode || '').trim().toUpperCase();
+    const cleanUid = String(userObj.uid || uidKey || '').trim().toUpperCase();
+    const uidSuffix = cleanUid.replace(/[^A-Z0-9]/g, '').slice(-4);
+
+    if (userSecKey === cleanKey || userCode === cleanKey || cleanUid === cleanKey) {
+      return true;
+    }
+    if (uidSuffix && uidSuffix.length >= 4 && (cleanKey.includes(uidSuffix) || userCode.endsWith(uidSuffix))) {
+      return true;
+    }
+    return false;
+  };
+
+  const createProfile = (userObj, uidKey) => {
+    const cleanUid = String(userObj.uid || uidKey || '').trim().toUpperCase();
+    return {
+      uid: userObj.uid || uidKey,
+      name: userObj.name || userObj.storeName || userObj.fullName || 'Verified Reseller Partner',
+      email: userObj.email || '',
+      phone: userObj.phone || '',
+      resellerCode: userObj.resellerCode || `RS-${cleanUid.slice(-6)}`,
+      securityKey: userObj.securityKey || cleanKey,
+      walletBalance: parseFloat(userObj.walletBalance || 0),
+      walletUsdt: parseFloat((userObj.walletBalance || 0) / 305),
+      isReseller: true
+    };
+  };
+
+  // 2. Search Realtime Database (RTDB) via Firebase SDK
   if (rtdb) {
     try {
       const usersRef = dbRef(rtdb, 'users');
@@ -88,23 +119,8 @@ export const getResellerProfileByKeyAsync = async (keyOrCode) => {
       if (snapshot.exists()) {
         const usersData = snapshot.val();
         for (const [uidKey, userObj] of Object.entries(usersData)) {
-          if (!userObj) continue;
-          const userSecKey = String(userObj.securityKey || '').trim().toUpperCase();
-          const userCode = String(userObj.resellerCode || '').trim().toUpperCase();
-          const cleanUid = String(userObj.uid || uidKey).trim().toUpperCase();
-
-          if (userSecKey === cleanKey || userCode === cleanKey || cleanUid === cleanKey) {
-            const profile = {
-              uid: userObj.uid || uidKey,
-              name: userObj.name || userObj.storeName || userObj.fullName || 'Verified Reseller Partner',
-              email: userObj.email || '',
-              phone: userObj.phone || '',
-              resellerCode: userObj.resellerCode || `RS-${cleanUid.slice(-6)}`,
-              securityKey: userObj.securityKey || cleanKey,
-              walletBalance: parseFloat(userObj.walletBalance || 0),
-              walletUsdt: parseFloat((userObj.walletBalance || 0) / 305),
-              isReseller: true
-            };
+          if (isMatch(userObj, uidKey)) {
+            const profile = createProfile(userObj, uidKey);
             activeResellerRegistry.set(cleanKey, profile);
             if (profile.securityKey) activeResellerRegistry.set(profile.securityKey.toUpperCase(), profile);
             if (profile.resellerCode) activeResellerRegistry.set(profile.resellerCode.toUpperCase(), profile);
@@ -113,11 +129,33 @@ export const getResellerProfileByKeyAsync = async (keyOrCode) => {
         }
       }
     } catch (e) {
-      console.warn('RTDB reseller lookup error:', e);
+      console.warn('RTDB reseller lookup error:', e.message);
     }
   }
 
-  // 3. Search Firestore for matching securityKey or resellerCode
+  // 3. Fallback: Direct HTTPS REST API query to Firebase RTDB asia-southeast1
+  try {
+    const rtdbUrl = 'https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/users.json';
+    const res = await fetch(rtdbUrl);
+    if (res.ok) {
+      const usersData = await res.json();
+      if (usersData) {
+        for (const [uidKey, userObj] of Object.entries(usersData)) {
+          if (isMatch(userObj, uidKey)) {
+            const profile = createProfile(userObj, uidKey);
+            activeResellerRegistry.set(cleanKey, profile);
+            if (profile.securityKey) activeResellerRegistry.set(profile.securityKey.toUpperCase(), profile);
+            if (profile.resellerCode) activeResellerRegistry.set(profile.resellerCode.toUpperCase(), profile);
+            return profile;
+          }
+        }
+      }
+    }
+  } catch (restErr) {
+    console.warn('RTDB REST API lookup note:', restErr.message);
+  }
+
+  // 4. Search Firestore for matching securityKey or resellerCode
   if (db) {
     try {
       const usersCol = collection(db, 'users');
@@ -131,24 +169,14 @@ export const getResellerProfileByKeyAsync = async (keyOrCode) => {
 
       if (!qSnap.empty) {
         const docData = qSnap.docs[0].data();
-        const profile = {
-          uid: docData.uid || qSnap.docs[0].id,
-          name: docData.name || docData.storeName || docData.fullName || 'Verified Reseller Partner',
-          email: docData.email || '',
-          phone: docData.phone || '',
-          resellerCode: docData.resellerCode || cleanKey,
-          securityKey: docData.securityKey || cleanKey,
-          walletBalance: parseFloat(docData.walletBalance || 0),
-          walletUsdt: parseFloat((docData.walletBalance || 0) / 305),
-          isReseller: true
-        };
+        const profile = createProfile(docData, qSnap.docs[0].id);
         activeResellerRegistry.set(cleanKey, profile);
         if (profile.securityKey) activeResellerRegistry.set(profile.securityKey.toUpperCase(), profile);
         if (profile.resellerCode) activeResellerRegistry.set(profile.resellerCode.toUpperCase(), profile);
         return profile;
       }
     } catch (err) {
-      console.warn('Firestore reseller lookup error:', err);
+      console.warn('Firestore reseller lookup error:', err.message);
     }
   }
 
