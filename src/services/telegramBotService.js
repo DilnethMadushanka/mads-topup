@@ -306,7 +306,15 @@ Usage: /auth MADS-SEC-50048A92
           zone = parts[3] || '';
         }
 
-        if (/^\d+$/.test(gameArg) && id) {
+        if (parts.length === 2 && /^\d+$/.test(parts[1])) {
+          id = parts[1];
+          gameArg = 'freefire_sg';
+          zone = '';
+        } else if (parts.length === 3 && /^\d+$/.test(parts[1]) && /^\d+$/.test(parts[2])) {
+          id = parts[1];
+          zone = parts[2];
+          gameArg = 'mobilelegends';
+        } else if (/^\d+$/.test(gameArg) && id) {
           zone = id;
           id = gameArg;
           gameArg = 'mobilelegends';
@@ -315,7 +323,7 @@ Usage: /auth MADS-SEC-50048A92
         const matchedGame = findGameInCatalog(gameArg);
 
         if (!id) {
-          return ctx.reply(`❌ Error: Please enter Player ID.\nUsage: /check ${matchedGame.id} <ID> ${matchedGame.requiresServer ? '<Zone>' : ''}`);
+          return ctx.reply(`❌ Error: Please enter Player ID.\nUsage Examples:\n• /id 248901234 (Free Fire)\n• /id 84218845 2168 (Mobile Legends)\n• /id ml 84218845 2168\n• /id pubg 5123984712`);
         }
 
         await ctx.reply(`⌛ Querying Live API Gateway for ${matchedGame.name}...\n🆔 ID: ${id} ${zone ? `\n🌐 Zone ID: ${zone}` : ''}`);
@@ -354,6 +362,8 @@ ${zone ? `🌐 Zone ID: ${zone}\n` : ''}ℹ️ Status: Could not automatically f
       }
     };
 
+    bot.command('id', handlePlayerCheck);
+    bot.command('ign', handlePlayerCheck);
     bot.command('check', handlePlayerCheck);
     bot.command('ml', handlePlayerCheck);
     bot.command('ff', handlePlayerCheck);
