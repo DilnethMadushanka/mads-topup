@@ -160,7 +160,8 @@ async function sendMoongoldLiveOrder(game, pkg, playerId, zoneId, orderRef) {
         'timestamp': timestamp.toString(),
         'User-Agent': 'Mozilla/5.0'
       },
-      body: payloadStr
+      body: payloadStr,
+      signal: AbortSignal.timeout(8000)
     });
 
     const resText = await res.text();
@@ -189,6 +190,8 @@ async function sendMoongoldLiveOrder(game, pkg, playerId, zoneId, orderRef) {
       error: err.message
     };
   }
+}
+
 /**
  * Check Order Status from MooGold Reseller API
  */
@@ -224,7 +227,8 @@ async function checkMoongoldOrderStatus(orderId) {
         'timestamp': timestamp.toString(),
         'User-Agent': 'Mozilla/5.0'
       },
-      body: payloadStr
+      body: payloadStr,
+      signal: AbortSignal.timeout(4000)
     });
 
     const resText = await res.text();
