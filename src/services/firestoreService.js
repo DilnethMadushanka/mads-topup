@@ -3,6 +3,16 @@ import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, query, 
 import { ref as dbRef, get as rtdbGet, set as rtdbSet, update as rtdbUpdate, onValue as rtdbOnValue } from 'firebase/database';
 
 /**
+ * Helper function to generate a 100% unique Security Key for each user/reseller
+ */
+export const generateUniqueSecurityKey = (seed) => {
+  const cleanSeed = String(seed || Math.random().toString(36).substring(2, 10)).replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+  const part1 = cleanSeed.length >= 4 ? cleanSeed.slice(-4) : Math.random().toString(36).substring(2, 6).toUpperCase();
+  const part2 = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `MADS-SEC-${part1}${part2}`;
+};
+
+/**
  * Ensure unique Reseller Code & Security Key exist for a user profile
  */
 export const ensureResellerCredentials = (user) => {
@@ -13,9 +23,7 @@ export const ensureResellerCredentials = (user) => {
   
   let securityKey = user.securityKey;
   if (!securityKey) {
-    const prefix = cleanUid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase();
-    const randHex = Math.random().toString(36).substring(2, 6).toUpperCase();
-    securityKey = `MADS-SEC-${prefix}${randHex}`;
+    securityKey = generateUniqueSecurityKey(user.uid || cleanUid);
   }
 
   return {
@@ -140,7 +148,7 @@ export const syncUserProfileToFirestore = async (user) => {
       } else {
         const cleanUid = String(user.uid || '').slice(-6).toUpperCase();
         const resellerCode = `RS-${cleanUid}`;
-        const securityKey = `MADS-SEC-${cleanUid.slice(0, 4)}8A92`;
+        const securityKey = generateUniqueSecurityKey(user.uid);
 
         const newUserProfile = {
           uid: user.uid,
@@ -175,7 +183,7 @@ export const syncUserProfileToFirestore = async (user) => {
       } else {
         const cleanUid = String(user.uid || '').slice(-6).toUpperCase();
         const resellerCode = `RS-${cleanUid}`;
-        const securityKey = `MADS-SEC-${cleanUid.slice(0, 4)}8A92`;
+        const securityKey = generateUniqueSecurityKey(user.uid);
 
         const newUserProfile = {
           uid: user.uid,
@@ -509,7 +517,7 @@ export const updateResellerApplicationStatusInFirestore = async (appId, userId, 
           role: 'reseller', 
           resellerStatus: 'APPROVED',
           resellerCode: `RS-${cleanUid}`,
-          securityKey: `MADS-SEC-${cleanUid.slice(0, 4)}8A92`
+          securityKey: generateUniqueSecurityKey(userId)
         });
       }
     } catch (e) {
@@ -541,7 +549,7 @@ export const updateResellerApplicationStatusInFirestore = async (appId, userId, 
           role: 'reseller', 
           resellerStatus: 'APPROVED',
           resellerCode: `RS-${cleanUid}`,
-          securityKey: `MADS-SEC-${cleanUid.slice(0, 4)}8A92`
+          securityKey: generateUniqueSecurityKey(userId)
         }, { merge: true });
       }
     } catch (err) {

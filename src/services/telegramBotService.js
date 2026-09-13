@@ -637,8 +637,8 @@ Send: /auth <SecurityKey>
 👑 MADS TOPUP RESELLER WALLET
 
 💼 Reseller: ${reseller?.name || 'Verified Partner'}
-🏷️ Reseller Code: ${reseller?.resellerCode || 'RS-048A92'}
-🔑 Security Key: ${reseller?.securityKey || 'MADS-SEC-50048A92'}
+🏷️ Reseller Code: ${reseller?.resellerCode || 'N/A'}
+🔑 Security Key: ${reseller?.securityKey || 'N/A'}
 💰 Available LKR Balance: Rs. ${(reseller?.walletBalance || 0).toLocaleString()} LKR
 💵 Available USDT Balance: $${((reseller?.walletBalance || 0) / 305).toFixed(2)} USDT
 ⚡ Wholesale Discount: 5% OFF All Game Packages (${GAMES_DATA.length} Games)
@@ -845,7 +845,7 @@ Please recharge your reseller wallet using /deposit and try again.
 📦 Order Ref ID: ${orderId}
 🔖 MooGold Ref: #${mgResult.moongoldRef}
 👑 Reseller: ${reseller.name} (${reseller.resellerCode})
-🔑 Security Key: ${(reseller.securityKey || 'MADS-SEC-50048A92').slice(0, 10)}****
+🔑 Security Key: ${(reseller.securityKey || 'MADS-SEC-PROTECTED').slice(0, 10)}****
 
 ${matchedGame.currencyIcon} Game: ${matchedGame.name}
 👤 Real IGN Name: ${realIgn}

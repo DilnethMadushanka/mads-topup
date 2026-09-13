@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { GAMES_DATA } from '../data/games';
+import { generateUniqueSecurityKey } from '../services/firestoreService';
 import confetti from 'canvas-confetti';
 import { 
   Crown, Wallet, Zap, Copy, Check, ArrowLeft, Send, ShieldCheck, 
@@ -45,7 +46,7 @@ export const ResellerDashboard = () => {
 
   const cleanUid = String(userProfile?.uid || '882104').slice(-6).toUpperCase();
   const resellerWalletId = userProfile?.resellerCode || `RS-${cleanUid}`;
-  const resellerSecurityKey = userProfile?.securityKey || `MADS-SEC-${cleanUid.slice(0, 4)}8A92`;
+  const resellerSecurityKey = userProfile?.securityKey || generateUniqueSecurityKey(userProfile?.uid);
   const [isCopiedKey, setIsCopiedKey] = useState(false);
 
   const handleCopySecurityKey = () => {

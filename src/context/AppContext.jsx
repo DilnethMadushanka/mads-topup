@@ -8,7 +8,7 @@ import {
   syncUserProfileToFirestore, updateUserProfileInFirestore, subscribeUserProfile, 
   saveOrderToFirestore, subscribeAllUsersFromFirestore, subscribeOrdersFromFirestore, updateOrderStatusInFirestore,
   saveResellerApplicationToFirestore, subscribeResellerApplicationsFromFirestore, updateResellerApplicationStatusInFirestore,
-  saveCustomGamePricesToFirestore, subscribeCustomGamePricesFromFirestore
+  saveCustomGamePricesToFirestore, subscribeCustomGamePricesFromFirestore, generateUniqueSecurityKey
 } from '../services/firestoreService';
 
 
@@ -1194,7 +1194,7 @@ export const AppProvider = ({ children }) => {
       // Generate / retrieve credentials for email dispatch
       const cleanUid = String(userId || targetApp?.userId || Math.random().toString(36).substring(2, 8)).slice(-6).toUpperCase();
       const resellerCode = targetApp?.resellerCode || `RS-${cleanUid}`;
-      const securityKey = targetApp?.securityKey || `MADS-SEC-${cleanUid.slice(0, 4)}8A92`;
+      const securityKey = targetApp?.securityKey || generateUniqueSecurityKey(userId || targetApp?.userId);
       
       const targetEmail = 
         targetApp?.emailAddress || 
