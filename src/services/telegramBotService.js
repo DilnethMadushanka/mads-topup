@@ -618,7 +618,20 @@ ${zone ? `🌐 Zone ID: ${zone}\n` : ''}ℹ️ Status: ID formatting valid. Read
     const handleBalance = (ctx) => {
       try {
         const chatId = ctx.message?.chat?.id || ctx.chat?.id;
-        const reseller = (chatId ? boundChatSessions.get(chatId) : null) || getResellerProfileByKey('MADS-SEC-50048A92');
+        const reseller = (chatId ? boundChatSessions.get(chatId) : null);
+
+        if (!reseller) {
+          const unauthMsg = `
+❌ AUTHENTICATION REQUIRED
+
+Your Telegram chat is not bound to a verified Reseller Account.
+
+🔑 Please link your reseller wallet first:
+Send: /auth <SecurityKey>
+(Example: /auth MADS-SEC-50048A92)
+          `.trim();
+          return ctx.reply(unauthMsg);
+        }
 
         const balanceText = `
 👑 MADS TOPUP RESELLER WALLET
@@ -626,8 +639,8 @@ ${zone ? `🌐 Zone ID: ${zone}\n` : ''}ℹ️ Status: ID formatting valid. Read
 💼 Reseller: ${reseller?.name || 'Verified Partner'}
 🏷️ Reseller Code: ${reseller?.resellerCode || 'RS-048A92'}
 🔑 Security Key: ${reseller?.securityKey || 'MADS-SEC-50048A92'}
-💰 Available LKR Balance: Rs. ${(reseller?.walletBalance || 10000).toLocaleString()} LKR
-💵 Available USDT Balance: $${((reseller?.walletBalance || 10000) / 305).toFixed(2)} USDT
+💰 Available LKR Balance: Rs. ${(reseller?.walletBalance || 0).toLocaleString()} LKR
+💵 Available USDT Balance: $${((reseller?.walletBalance || 0) / 305).toFixed(2)} USDT
 ⚡ Wholesale Discount: 5% OFF All Game Packages (${GAMES_DATA.length} Games)
 
 📥 To Recharge Wallet: Type /deposit
@@ -639,6 +652,7 @@ ${zone ? `🌐 Zone ID: ${zone}\n` : ''}ℹ️ Status: ID formatting valid. Read
         console.error('Balance Error:', e);
       }
     };
+
 
     bot.command('balance', handleBalance);
     bot.command('reseller', handleBalance);
@@ -701,17 +715,31 @@ ${zone ? `🌐 Zone ID: ${zone}\n` : ''}ℹ️ Status: ID formatting valid. Read
         let reseller = (chatId ? boundChatSessions.get(chatId) : null);
 
         let firstArg = parts[1] || '';
-        if (!reseller) {
+        if (!reseller && firstArg) {
           const potentialKeyReseller = getResellerProfileByKey(firstArg);
           if (potentialKeyReseller) {
             reseller = potentialKeyReseller;
+            boundChatSessions.set(chatId, reseller);
             parts.splice(1, 1);
           }
         }
 
         if (!reseller) {
-          reseller = getResellerProfileByKey('MADS-SEC-50048A92');
+          const authRequiredText = `
+🔒 AUTHENTICATION REQUIRED TO EXECUTE TOP-UP
+
+Your Telegram chat is not bound to a verified MADS TOPUP Reseller Account.
+
+🔑 How to Link Your Reseller Account:
+1️⃣ Get your unique Security Key from your MADS TOPUP Reseller Dashboard.
+2️⃣ Send command: /auth <SecurityKey>
+   (Example: /auth MADS-SEC-50048A92)
+
+Once authenticated, your Telegram chat will be linked and authorized for instant top-ups!
+          `.trim();
+          return ctx.reply(authRequiredText);
         }
+
 
         let gameArg = (parts[1] || 'mobilelegends').toLowerCase().replace(/[()[\]]/g, '');
         let idArg = (parts[2] || '').replace(/[()[\]]/g, '');
