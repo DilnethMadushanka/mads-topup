@@ -189,6 +189,57 @@ async function sendMoongoldLiveOrder(game, pkg, playerId, zoneId, orderRef) {
       error: err.message
     };
   }
+/**
+ * Check Order Status from MooGold Reseller API
+ */
+async function checkMoongoldOrderStatus(orderId) {
+  if (!orderId) return null;
+  const partnerId = process.env.MOONGOLD_PARTNER_ID || process.env.VITE_MOONGOLD_PARTNER_ID || 'f27cabc8d2c2122bbedacabce632db68';
+  const secretKey = process.env.MOONGOLD_SECRET_KEY || process.env.VITE_MOONGOLD_SECRET_KEY || 'PM67SGqyed';
+  const baseUrl = 'https://moogold.com/wp-json/v1/api';
+  const apiPath = 'order/order_detail';
+
+  const bodyObj = {
+    path: apiPath,
+    order_id: String(orderId)
+  };
+
+  const timestamp = Math.floor(Date.now() / 1000);
+  const payloadStr = JSON.stringify(bodyObj);
+  const stringToSign = payloadStr + timestamp + apiPath;
+
+  const hmac = crypto.createHmac('sha256', secretKey);
+  hmac.update(stringToSign);
+  const authSignature = hmac.digest('hex');
+  const basicAuth = 'Basic ' + Buffer.from(`${partnerId}:${secretKey}`).toString('base64');
+
+  try {
+    const res = await fetch(`${baseUrl}/${apiPath}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': basicAuth,
+        'auth': authSignature,
+        'timestamp': timestamp.toString(),
+        'User-Agent': 'Mozilla/5.0'
+      },
+      body: payloadStr
+    });
+
+    const resText = await res.text();
+    let resJson = null;
+    try { resJson = JSON.parse(resText); } catch (e) {}
+
+    if (resJson) {
+      const orderStatus = String(resJson.order_status || resJson.status || '').toLowerCase();
+      return {
+        status: orderStatus,
+        data: resJson
+      };
+    }
+  } catch (err) {}
+  return null;
 }
 
 export function initTelegramBot() {
@@ -685,6 +736,40 @@ Please recharge your reseller wallet using /deposit and try again.
         const mgResult = await sendMoongoldLiveOrder(matchedGame, pkgInfo, idArg, zoneArg, orderId);
 
         if (mgResult.success) {
+          // Quick status check to see if MooGold immediately refunded/cancelled order (e.g. First Topup Bonus already claimed)
+          let finalStatus = 'COMPLETED';
+          let cancelReason = '';
+
+          try {
+            await new Promise(r => setTimeout(r, 2500));
+            const detail = await checkMoongoldOrderStatus(mgResult.moongoldRef);
+            if (detail && (detail.status === 'refunded' || detail.status === 'cancelled' || detail.status === 'failed')) {
+              finalStatus = 'CANCELLED';
+              cancelReason = detail.data?.err_message || detail.data?.message || 'Order refunded by MooGold gateway (First Topup Bonus already claimed or item out of stock)';
+            }
+          } catch(e) {}
+
+          if (finalStatus === 'CANCELLED') {
+            const cancelMsg = `
+⚠️ ORDER CANCELLED / REFUNDED BY GATEWAY
+
+📦 Order Ref ID: ${orderId}
+🔖 MooGold Ref: #${mgResult.moongoldRef}
+👑 Reseller: ${reseller.name} (${reseller.resellerCode})
+
+🎮 Game: ${matchedGame.name}
+🆔 Player ID: ${idArg} ${zoneArg ? `\n🌐 Zone ID: ${zoneArg}` : ''}
+📦 Package: ${pkgInfo.name}
+
+ℹ️ Gateway Notice: ${cancelReason}
+
+💰 Reseller Wallet Balance Untouched: Rs. ${currentBalance.toLocaleString()} LKR ($${(currentBalance / 305).toFixed(2)} USDT)
+(No reseller balance was charged for this cancelled order.)
+            `.trim();
+
+            return ctx.reply(cancelMsg);
+          }
+
           await deductResellerWalletBalance(reseller.uid, pkgInfo.priceLkr);
           const newBalance = Math.max(0, currentBalance - pkgInfo.priceLkr);
           reseller.walletBalance = newBalance;
