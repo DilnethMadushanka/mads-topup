@@ -4,6 +4,8 @@ import path from 'path';
 import crypto from 'crypto';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { initTelegramBot } from './src/services/telegramBotService.js';
 import { lookupFreePlayerIgn } from './src/services/playerLookup.js';
 
@@ -73,32 +75,33 @@ app.post('/api/send-otp', async (req, res) => {
       </div>
     `;
 
-    let nodemailer;
-    try {
-      const nmModule = await import('nodemailer');
-      nodemailer = nmModule.default || nmModule;
-    } catch (e) {
-      console.warn('Nodemailer import note:', e.message);
-    }
+    // Using top-level imported nodemailer directly
 
     // Option 1: Try Zoho Mail SMTP (100% Verified Pro SMTP with Guaranteed Recipient Delivery)
+    const zohoUser = process.env.ZOHO_EMAIL || process.env.VITE_ZOHO_EMAIL || 'info@trivexit.com';
     const zohoPass = process.env.ZOHO_PASSWORD || process.env.VITE_ZOHO_PASSWORD || 'jXi8hF56aCYb';
+    const zohoHost = process.env.ZOHO_SMTP_HOST || 'smtppro.zoho.com';
+    const zohoPort = parseInt(process.env.ZOHO_SMTP_PORT || '465');
+
     if (nodemailer && zohoPass) {
       try {
         const mailTransporter = nodemailer.createTransport({
-          host: process.env.ZOHO_SMTP_HOST || 'smtppro.zoho.com',
-          port: parseInt(process.env.ZOHO_SMTP_PORT || '465'),
+          host: zohoHost,
+          port: zohoPort,
           secure: true,
           auth: {
-            user: process.env.ZOHO_EMAIL || 'info@trivexit.com',
+            user: zohoUser,
             pass: zohoPass
           },
-          connectionTimeout: 10000,
-          greetingTimeout: 10000,
-          socketTimeout: 15000
+          tls: {
+            rejectUnauthorized: false
+          },
+          connectionTimeout: 15000,
+          greetingTimeout: 15000,
+          socketTimeout: 20000
         });
         const info = await mailTransporter.sendMail({
-          from: '"MADS TOPUP" <info@trivexit.com>',
+          from: `"MADS TOPUP" <${zohoUser}>`,
           to: email,
           subject: `Your Verification Code: ${otp}`,
           text: `Your MADS TOPUP verification code is: ${otp}. Valid for 15 minutes.`,
@@ -114,27 +117,22 @@ app.post('/api/send-otp', async (req, res) => {
     // Option 2: Try Resend API (Fallback)
     const defaultResendKey = Buffer.from('cmVfaEQzS0x0eDhfR24ydFJUdlRwNkh0aVhKa1pOSFpWQ1h6', 'base64').toString('utf8');
     const resendApiKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY || defaultResendKey;
-    if (resendApiKey) {
+    if (resendApiKey && Resend) {
       try {
-        const resendMod = await import('resend');
-        const ResendCls = resendMod.Resend || resendMod.default?.Resend || resendMod.default;
-        if (ResendCls) {
-          const resend = new ResendCls(resendApiKey);
-          let data;
-          try {
-            data = await resend.emails.send({
-              from: 'MADS TOPUP <onboarding@resend.dev>',
-              to: [email],
-              subject: `Your Verification Code: ${otp}`,
-              html: emailHtml
-            });
-          } catch (dErr) {}
-          if (data?.id && !data?.error) {
-            console.log(`[Resend OTP Sent] Sent to ${email}, id: ${data?.id}`);
-            return res.json({ success: true, provider: 'Resend', messageId: data?.id });
-          }
+        const resend = new Resend(resendApiKey);
+        const data = await resend.emails.send({
+          from: 'MADS TOPUP <onboarding@resend.dev>',
+          to: [email],
+          subject: `Your Verification Code: ${otp}`,
+          html: emailHtml
+        });
+        if (data?.id && !data?.error) {
+          console.log(`[Resend OTP Sent] Sent to ${email}, id: ${data?.id}`);
+          return res.json({ success: true, provider: 'Resend', messageId: data?.id });
         }
-      } catch (rErr) {}
+      } catch (rErr) {
+        console.warn('[Resend OTP Error]:', rErr.message);
+      }
     }
 
     return res.json({ success: true, simulated: true });
@@ -204,30 +202,31 @@ app.post('/api/send-reseller-approval', async (req, res) => {
       </div>
     `;
 
-    let nodemailer;
-    try {
-      const nmModule = await import('nodemailer');
-      nodemailer = nmModule.default || nmModule;
-    } catch (e) {}
-
     // Option 1: Try Zoho Mail SMTP (100% Verified Pro SMTP with Guaranteed Recipient Delivery)
+    const zohoUser = process.env.ZOHO_EMAIL || process.env.VITE_ZOHO_EMAIL || 'info@trivexit.com';
     const zohoPass = process.env.ZOHO_PASSWORD || process.env.VITE_ZOHO_PASSWORD || 'jXi8hF56aCYb';
+    const zohoHost = process.env.ZOHO_SMTP_HOST || 'smtppro.zoho.com';
+    const zohoPort = parseInt(process.env.ZOHO_SMTP_PORT || '465');
+
     if (nodemailer && zohoPass) {
       try {
         const mailTransporter = nodemailer.createTransport({
-          host: process.env.ZOHO_SMTP_HOST || 'smtppro.zoho.com',
-          port: parseInt(process.env.ZOHO_SMTP_PORT || '465'),
+          host: zohoHost,
+          port: zohoPort,
           secure: true,
           auth: {
-            user: process.env.ZOHO_EMAIL || 'info@trivexit.com',
+            user: zohoUser,
             pass: zohoPass
           },
-          connectionTimeout: 10000,
-          greetingTimeout: 10000,
-          socketTimeout: 15000
+          tls: {
+            rejectUnauthorized: false
+          },
+          connectionTimeout: 15000,
+          greetingTimeout: 15000,
+          socketTimeout: 20000
         });
         const info = await mailTransporter.sendMail({
-          from: '"MADS TOPUP" <info@trivexit.com>',
+          from: `"MADS TOPUP" <${zohoUser}>`,
           to: email,
           subject: `🎉 Reseller Partner Approved! Your Reseller Code & Security Key`,
           html: emailHtml
@@ -235,34 +234,29 @@ app.post('/api/send-reseller-approval', async (req, res) => {
         console.log(`[Zoho Reseller Approval Sent] Successfully sent to ${email}`, info?.messageId);
         return res.json({ success: true, provider: 'Zoho', messageId: info?.messageId });
       } catch (zErr) {
-        console.warn('[Zoho SMTP Fallthrough]:', zErr.message);
+        console.error('[Zoho SMTP Approval Error]:', zErr);
       }
     }
 
     // Option 2: Fallback to Resend API
     const defaultResendKey = Buffer.from('cmVfaEQzS0x0eDhfR24ydFJUdlRwNkh0aVhKa1pOSFpWQ1h6', 'base64').toString('utf8');
     const resendApiKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY || defaultResendKey;
-    if (resendApiKey) {
+    if (resendApiKey && Resend) {
       try {
-        const resendMod = await import('resend');
-        const ResendCls = resendMod.Resend || resendMod.default?.Resend || resendMod.default;
-        if (ResendCls) {
-          const resend = new ResendCls(resendApiKey);
-          let data;
-          try {
-            data = await resend.emails.send({
-              from: 'MADS TOPUP <onboarding@resend.dev>',
-              to: [email],
-              subject: `🎉 Reseller Partner Approved! Your Reseller Code & Security Key`,
-              html: emailHtml
-            });
-          } catch (dErr) {}
-          if (data?.id && !data?.error) {
-            console.log(`[Resend Reseller Approval Sent] Sent to ${email}, id: ${data?.id}`);
-            return res.json({ success: true, provider: 'Resend', messageId: data?.id });
-          }
+        const resend = new Resend(resendApiKey);
+        const data = await resend.emails.send({
+          from: 'MADS TOPUP <onboarding@resend.dev>',
+          to: [email],
+          subject: `🎉 Reseller Partner Approved! Your Reseller Code & Security Key`,
+          html: emailHtml
+        });
+        if (data?.id && !data?.error) {
+          console.log(`[Resend Reseller Approval Sent] Sent to ${email}, id: ${data?.id}`);
+          return res.json({ success: true, provider: 'Resend', messageId: data?.id });
         }
-      } catch (rErr) {}
+      } catch (rErr) {
+        console.warn('[Resend Approval Error]:', rErr.message);
+      }
     }
 
     return res.json({ success: true, simulated: true });
