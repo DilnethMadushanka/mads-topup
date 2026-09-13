@@ -121,7 +121,15 @@ export const AppProvider = ({ children }) => {
   const [selectedGame, setSelectedGame] = useState(null);
   const [isTopupModalOpen, setIsTopupModalOpen] = useState(false);
   const [isUserProfileOpen, setIsUserProfileOpen] = useState(false);
-  const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [isAdminOpen, setIsAdminOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      const search = window.location.search.toLowerCase();
+      return path === '/admin' || path.startsWith('/admin/') || hash === '#admin' || search.includes('admin');
+    }
+    return false;
+  });
   const [isGameCatalogOpen, setIsGameCatalogOpen] = useState(false);
   const [isReviewsPageOpen, setIsReviewsPageOpen] = useState(false);
   const [isContactPageOpen, setIsContactPageOpen] = useState(false);

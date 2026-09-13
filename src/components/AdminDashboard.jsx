@@ -8,7 +8,7 @@ import {
   Users, CreditCard, Ticket, Megaphone, Search, Filter, Plus, Trash2, ArrowUpRight, ArrowDownRight,
   TrendingUp, Check, AlertTriangle, ShieldAlert, FileText, Gift, Award, CornerDownRight, ChevronRight, Lock,
   BadgeCheck, UserCheck, UserX, FileCheck, ExternalLink, Image, Menu, Headset,
-  Smartphone, Copy, MessageSquare
+  Smartphone, Copy, MessageSquare, Crown
 } from 'lucide-react';
 
 export const AdminDashboard = () => {
