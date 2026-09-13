@@ -68,8 +68,9 @@ export const ResellerDashboard = () => {
     if (!userProfile) return false;
     const matchUid = userProfile.uid && o.userId === userProfile.uid;
     const matchEmail = userProfile.email && o.userEmail?.toLowerCase() === userProfile.email.toLowerCase();
+    const matchCode = userProfile.resellerCode && (o.resellerCode === userProfile.resellerCode || o.paymentMethod?.includes(userProfile.resellerCode));
     const matchReseller = o.isResellerOrder || o.paymentMethod?.toLowerCase().includes('reseller');
-    return (matchUid || matchEmail) && matchReseller;
+    return (matchUid || matchEmail || matchCode) && matchReseller;
   });
 
   const completedResellerOrders = resellerOrders.filter(o => o.status === 'COMPLETED' || o.status === 'DELIVERED');

@@ -819,7 +819,8 @@ Please recharge your reseller wallet using /deposit and try again.
             const newOrder = {
               id: orderId,
               userId: reseller.uid,
-              userEmail: reseller.email,
+              userEmail: reseller.email || '',
+              resellerCode: reseller.resellerCode,
               gameId: matchedGame.id,
               gameName: matchedGame.name,
               packageName: pkgInfo.name,
@@ -889,11 +890,15 @@ Order placed live on MooGold Reseller Portal & credited instantly!
             const failedOrder = {
               id: orderId,
               userId: reseller.uid,
+              userEmail: reseller.email || '',
+              resellerCode: reseller.resellerCode,
               gameId: matchedGame.id,
               packageName: pkgInfo.name,
               playerId: idArg,
               zoneId: zoneArg,
               priceLkr: pkgInfo.priceLkr,
+              paymentMethod: `Reseller Wallet (${reseller.resellerCode})`,
+              isResellerOrder: true,
               status: 'FAILED',
               error: mgResult.error,
               createdAt: new Date().toISOString()
