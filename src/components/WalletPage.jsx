@@ -36,10 +36,10 @@ export const WalletPage = () => {
   const [bankSlipFileName, setBankSlipFileName] = useState('');
 
   const bankAccountDetails = {
-    bankName: 'Commercial Bank of Ceylon',
-    accountName: 'MADS TOPUP ENTERPRISE',
-    accountNumber: '8019482104',
-    branch: 'Colombo Main Branch'
+    bankName: 'Hatton National Bank (HNB)',
+    accountName: 'DILNETH MADUSHANKA',
+    accountNumber: '011020433679',
+    branch: 'Badulla Branch'
   };
 
   const handleBankFileChange = (e) => {
@@ -463,7 +463,7 @@ export const WalletPage = () => {
             {/* Bank Info Card */}
             <div className="border-2 border-dashed border-sky-300 bg-sky-50/50 rounded-2xl p-6 text-center relative space-y-2">
               <span className="text-xs font-black text-sky-800 uppercase tracking-wider block">
-                COMMERCIAL BANK OF CEYLON
+                HATTON NATIONAL BANK (HNB)
               </span>
               <div className="text-2xl sm:text-4xl font-black text-sky-900 font-mono tracking-wider">
                 {bankAccountDetails.accountNumber}
