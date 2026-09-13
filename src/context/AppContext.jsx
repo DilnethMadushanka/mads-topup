@@ -1085,7 +1085,9 @@ export const AppProvider = ({ children }) => {
     setUserProfileState(prev => ({ ...prev, resellerStatus: 'PENDING' }));
   };
 
-  const updateResellerApplicationStatus = (appId, userId, newStatus) => {
+  const updateResellerApplicationStatus = async (appId, userId, newStatus) => {
+    let targetApp = resellerApplications.find(app => app.id === appId || app.firestoreId === appId);
+    
     setResellerApplications(prev => prev.map(app => {
       if (app.id === appId || app.firestoreId === appId) {
         return { ...app, status: newStatus, updatedAt: new Date().toISOString() };
@@ -1093,10 +1095,42 @@ export const AppProvider = ({ children }) => {
       return app;
     }));
     updateResellerApplicationStatusInFirestore(appId, userId, newStatus);
-    if (newStatus === 'APPROVED' && userId && userProfileState?.uid === userId) {
-      setUserProfileState(prev => ({ ...prev, isReseller: true, role: 'reseller', resellerStatus: 'APPROVED' }));
+    
+    if (newStatus === 'APPROVED') {
+      if (userId && userProfileState?.uid === userId) {
+        setUserProfileState(prev => ({ ...prev, isReseller: true, role: 'reseller', resellerStatus: 'APPROVED' }));
+      }
+
+      // Generate / retrieve credentials for email dispatch
+      const cleanUid = String(userId || targetApp?.userId || Math.random().toString(36).substring(2, 8)).slice(-6).toUpperCase();
+      const resellerCode = targetApp?.resellerCode || `RS-${cleanUid}`;
+      const securityKey = targetApp?.securityKey || `MADS-SEC-${cleanUid.slice(0, 4)}8A92`;
+      const targetEmail = targetApp?.email || targetApp?.userEmail || (userId && userProfileState?.uid === userId ? userProfileState?.email : '');
+      const targetName = targetApp?.fullName || targetApp?.name || targetApp?.userName || 'Valued Reseller';
+
+      if (targetEmail) {
+        try {
+          await fetch('/api/send-reseller-approval', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: targetEmail,
+              name: targetName,
+              resellerCode,
+              securityKey
+            })
+          });
+          showToast(`Reseller Approved! Approval email sent to ${targetEmail}`, 'success');
+        } catch (e) {
+          console.warn('[Approval Email Error]:', e);
+          showToast(`Reseller Approved! (Email notification note: ${e.message})`);
+        }
+      } else {
+        showToast(`Reseller Application ${appId} APPROVED successfully!`);
+      }
+    } else {
+      showToast(`Reseller Application ${appId} set to ${newStatus}`);
     }
-    showToast(`Reseller Application ${appId} set to ${newStatus}`);
   };
 
   return (
