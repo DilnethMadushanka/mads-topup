@@ -358,12 +358,12 @@ export const AdminDashboard = () => {
                 Admin 2FA Security Passcode
               </label>
               <input
-                type="text"
+                type="password"
                 required
                 autoComplete="off"
                 value={adminAuthSecurityCode}
                 onChange={(e) => setAdminAuthSecurityCode(e.target.value)}
-                placeholder="Enter 6-Digit Code (982145)"
+                placeholder="Enter 6-Digit Secret Passcode"
                 className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-amber-400 font-mono text-sm focus:outline-none focus:border-red-500 shadow-xs tracking-wider font-bold"
               />
             </div>
