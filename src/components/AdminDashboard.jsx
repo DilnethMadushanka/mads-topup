@@ -126,6 +126,7 @@ export const AdminDashboard = () => {
   // Payment Verification Filters
   const [paymentSearch, setPaymentSearch] = useState('');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('ALL');
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState('ALL');
   const [selectedPaymentInspect, setSelectedPaymentInspect] = useState(null);
 
   // New Manual Payment Record Form
@@ -426,14 +427,24 @@ export const AdminDashboard = () => {
 
   // Filtered Payments Queue Calculation
   const filteredPayments = safePayments.filter(pay => {
+    const query = (paymentSearch || '').toLowerCase().trim();
     const matchesSearch = 
-      pay.id.toLowerCase().includes(paymentSearch.toLowerCase()) ||
-      pay.userEmail.toLowerCase().includes(paymentSearch.toLowerCase()) ||
-      pay.referenceNumber.toLowerCase().includes(paymentSearch.toLowerCase());
+      !query ||
+      (pay.id && pay.id.toLowerCase().includes(query)) ||
+      (pay.userEmail && pay.userEmail.toLowerCase().includes(query)) ||
+      (pay.userName && pay.userName.toLowerCase().includes(query)) ||
+      (pay.referenceNumber && pay.referenceNumber.toLowerCase().includes(query)) ||
+      (pay.method && pay.method.toLowerCase().includes(query)) ||
+      (pay.amount && String(pay.amount).includes(query));
 
     const matchesStatus = paymentStatusFilter === 'ALL' || pay.status === paymentStatusFilter;
 
-    return matchesSearch && matchesStatus;
+    let matchesMethod = true;
+    if (paymentMethodFilter === 'EZ_CASH') matchesMethod = pay.method && pay.method.toLowerCase().includes('ez');
+    else if (paymentMethodFilter === 'BINANCE') matchesMethod = pay.method && pay.method.toLowerCase().includes('binance');
+    else if (paymentMethodFilter === 'BANK') matchesMethod = pay.method && (pay.method.toLowerCase().includes('bank') || pay.method.toLowerCase().includes('slip'));
+
+    return matchesSearch && matchesStatus && matchesMethod;
   });
 
   // Filtered Support Tickets Calculation
@@ -1308,28 +1319,41 @@ export const AdminDashboard = () => {
                 </div>
 
                 {/* Filters & Search */}
-                <div className="bg-[#111622] p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row gap-4 justify-between items-center text-xs">
+                <div className="bg-[#111622] p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row gap-3 justify-between items-center text-xs">
                   <div className="relative flex-1 w-full">
                     <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
                     <input
                       type="text"
-                      placeholder="Search Transaction RN, Order ID, User Email..."
+                      placeholder="Search Transaction RN, Order ID, User Email, Name, or Amount..."
                       value={paymentSearch}
                       onChange={(e) => setPaymentSearch(e.target.value)}
                       className="w-full pl-9 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-emerald-500"
                     />
                   </div>
 
-                  <select
-                    value={paymentStatusFilter}
-                    onChange={(e) => setPaymentStatusFilter(e.target.value)}
-                    className="px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white font-bold cursor-pointer w-full sm:w-auto"
-                  >
-                    <option value="ALL">All Payment Statuses</option>
-                    <option value="PENDING">Pending Verification</option>
-                    <option value="VERIFIED">Verified & Credited</option>
-                    <option value="REJECTED">Rejected</option>
-                  </select>
+                  <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                    <select
+                      value={paymentMethodFilter}
+                      onChange={(e) => setPaymentMethodFilter(e.target.value)}
+                      className="px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white font-bold cursor-pointer flex-1 sm:flex-none"
+                    >
+                      <option value="ALL">All Payment Methods</option>
+                      <option value="EZ_CASH">💸 EZ Cash Only</option>
+                      <option value="BINANCE">🔶 Binance Pay Only</option>
+                      <option value="BANK">🏦 Bank Deposit Only</option>
+                    </select>
+
+                    <select
+                      value={paymentStatusFilter}
+                      onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                      className="px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white font-bold cursor-pointer flex-1 sm:flex-none"
+                    >
+                      <option value="ALL">All Payment Statuses</option>
+                      <option value="PENDING">Pending Verification</option>
+                      <option value="VERIFIED">Verified & Credited</option>
+                      <option value="REJECTED">Rejected</option>
+                    </select>
+                  </div>
                 </div>
 
                 {/* Payment List Table */}
@@ -1349,75 +1373,170 @@ export const AdminDashboard = () => {
                     <tbody className="divide-y divide-slate-800/60 font-medium">
                       {filteredPayments.length === 0 ? (
                         <tr>
-                          <td colSpan="7" className="p-8 text-center text-slate-500 font-semibold">
-                            No payment verification requests found.
+                          <td colSpan="7" className="p-12 text-center text-slate-500 font-semibold">
+                            No payment verification requests found matching current filters.
                           </td>
                         </tr>
                       ) : (
-                        filteredPayments.map((pay) => (
-                          <tr key={pay.id} className="hover:bg-slate-900/60 transition-colors">
-                            <td className="p-3.5 font-mono text-slate-400">{pay.id}</td>
-                            <td className="p-3.5 font-bold text-white">
-                              {pay.method === 'EZ Cash' ? '💸 EZ Cash' : pay.method === 'Binance Pay' ? '🔶 Binance Pay' : '🏦 Bank Deposit'}
-                            </td>
-                            <td className="p-3.5 font-mono font-bold text-amber-400">
-                              <div>{pay.referenceNumber}</div>
-                              {(pay.slipUrl || pay.receiptUrl) && (
-                                <button
-                                  type="button"
-                                  onClick={() => setSelectedReceiptPay(pay)}
-                                  className="mt-1 text-[10px] font-extrabold text-sky-400 hover:text-sky-300 underline inline-flex items-center gap-1 cursor-pointer"
-                                >
-                                  <Eye className="w-3 h-3" />
-                                  <span>View Receipt Slip</span>
-                                </button>
-                              )}
-                            </td>
-                            <td className="p-3.5 text-slate-300">
-                              <div className="font-bold text-white">{pay.userName}</div>
-                              <div className="text-[10px] text-slate-400 font-mono">{pay.userEmail}</div>
-                            </td>
-                            <td className="p-3.5 font-black text-emerald-400 font-heading">
-                              {pay.amount} {pay.currency}
-                            </td>
-                            <td className="p-3.5">
-                              <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase ${
-                                pay.status === 'VERIFIED' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 
-                                pay.status === 'REJECTED' ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-amber-950 text-amber-400 border border-amber-800'
-                              }`}>
-                                {pay.status}
-                              </span>
-                            </td>
-                            <td className="p-3.5 text-right space-x-1.5 whitespace-nowrap">
-                              {(pay.slipUrl || pay.receiptUrl || pay.method === 'Bank Deposit' || pay.method === 'Bank Slip') && (
-                                <button
-                                  type="button"
-                                  onClick={() => setSelectedReceiptPay(pay)}
-                                  className="px-2.5 py-1 bg-sky-600/30 hover:bg-sky-600 border border-sky-500/50 text-sky-200 hover:text-white font-extrabold text-[10px] rounded-lg cursor-pointer transition-colors inline-flex items-center gap-1"
-                                >
-                                  <Eye className="w-3 h-3" />
-                                  <span>Slip</span>
-                                </button>
-                              )}
-                              {pay.status === 'PENDING' && (
-                                <>
+                        filteredPayments.map((pay) => {
+                          const isEz = pay.method && pay.method.toLowerCase().includes('ez');
+                          const isBinance = pay.method && pay.method.toLowerCase().includes('binance');
+                          const cleanRn = String(pay.referenceNumber || '').trim();
+
+                          // Cross-reference with Dialog EZ Cash SMS Webhook Logs
+                          const matchedSms = isEz ? (ezcashLogs || []).find(l => {
+                            if (!l.rnNumber) return false;
+                            const logRn = String(l.rnNumber).trim();
+                            return logRn === cleanRn || (cleanRn.length >= 10 && logRn.includes(cleanRn));
+                          }) : null;
+
+                          return (
+                            <tr key={pay.id} className="hover:bg-slate-900/60 transition-colors">
+                              <td className="p-3.5 font-mono text-slate-400">
+                                <div>{pay.id}</div>
+                                {pay.createdAt && <div className="text-[9px] text-slate-500">{pay.createdAt}</div>}
+                              </td>
+
+                              <td className="p-3.5 font-bold">
+                                {isEz ? (
+                                  <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold inline-flex items-center gap-1.5">
+                                    <Smartphone className="w-3.5 h-3.5" />
+                                    <span>EZ Cash</span>
+                                  </span>
+                                ) : isBinance ? (
+                                  <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold inline-flex items-center gap-1.5">
+                                    <Zap className="w-3.5 h-3.5" />
+                                    <span>Binance Pay</span>
+                                  </span>
+                                ) : (
+                                  <span className="px-2.5 py-1 rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-400 font-bold inline-flex items-center gap-1.5">
+                                    <Building2 className="w-3.5 h-3.5" />
+                                    <span>Bank Deposit</span>
+                                  </span>
+                                )}
+                              </td>
+
+                              <td className="p-3.5 font-mono font-bold text-amber-400">
+                                <div className="flex items-center gap-1.5">
+                                  <span>{pay.referenceNumber}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(pay.referenceNumber);
+                                      showToast(`Copied: ${pay.referenceNumber}`);
+                                    }}
+                                    className="text-slate-500 hover:text-white p-1 rounded transition-colors"
+                                    title="Copy RN / Order ID"
+                                  >
+                                    <Copy className="w-3 h-3" />
+                                  </button>
+                                </div>
+
+                                {isEz && (
+                                  matchedSms ? (
+                                    <div className="mt-1 text-[10px] text-emerald-400 font-extrabold flex items-center gap-1">
+                                      <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                                      <span>SMS Matched (Rs. {(matchedSms.amountLkr || 0).toLocaleString()})</span>
+                                    </div>
+                                  ) : (
+                                    <div className="mt-1 text-[10px] text-slate-500 font-mono flex items-center gap-1">
+                                      <Clock className="w-3 h-3 text-slate-500" />
+                                      <span>Pending SMS Webhook</span>
+                                    </div>
+                                  )
+                                )}
+
+                                {(pay.slipUrl || pay.receiptUrl) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedReceiptPay(pay)}
+                                    className="mt-1 text-[10px] font-extrabold text-sky-400 hover:text-sky-300 underline inline-flex items-center gap-1 cursor-pointer"
+                                  >
+                                    <Eye className="w-3 h-3" />
+                                    <span>View Receipt Slip</span>
+                                  </button>
+                                )}
+                              </td>
+
+                              <td className="p-3.5 text-slate-300">
+                                <div className="font-bold text-white flex items-center gap-1">
+                                  <span>{pay.userName}</span>
+                                </div>
+                                <div className="text-[10px] text-slate-400 font-mono">{pay.userEmail}</div>
+                                {(pay.userId || pay.resellerCode) && (
+                                  <div className="text-[9px] text-slate-500 font-mono">ID: {pay.userId || pay.resellerCode}</div>
+                                )}
+                              </td>
+
+                              <td className="p-3.5 font-black text-emerald-400 font-heading">
+                                <div>{pay.amount} {pay.currency}</div>
+                                {pay.currency !== 'USDT' && pay.amount >= 5000 && (
+                                  <div className="text-[9px] text-amber-400 font-normal">
+                                    +{pay.amount >= 20000 ? '600' : pay.amount >= 10000 ? '250' : '100'} Bonus
+                                  </div>
+                                )}
+                              </td>
+
+                              <td className="p-3.5">
+                                <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase ${
+                                  pay.status === 'VERIFIED' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 
+                                  pay.status === 'REJECTED' ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-amber-950 text-amber-400 border border-amber-800'
+                                }`}>
+                                  {pay.status === 'VERIFIED' ? '✅ VERIFIED' : pay.status === 'REJECTED' ? '❌ REJECTED' : '⏳ PENDING'}
+                                </span>
+                              </td>
+
+                              <td className="p-3.5 text-right space-x-1.5 whitespace-nowrap">
+                                {(pay.slipUrl || pay.receiptUrl || pay.method === 'Bank Deposit' || pay.method === 'Bank Slip') && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedReceiptPay(pay)}
+                                    className="px-2.5 py-1 bg-sky-600/30 hover:bg-sky-600 border border-sky-500/50 text-sky-200 hover:text-white font-extrabold text-[10px] rounded-lg cursor-pointer transition-colors inline-flex items-center gap-1"
+                                  >
+                                    <Eye className="w-3 h-3" />
+                                    <span>Slip</span>
+                                  </button>
+                                )}
+
+                                {pay.status === 'PENDING' && (
+                                  <>
+                                    <button
+                                      onClick={() => approveManualPayment(pay.id)}
+                                      className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[10px] rounded-lg cursor-pointer shadow-xs"
+                                    >
+                                      Approve & Credit
+                                    </button>
+                                    <button
+                                      onClick={() => rejectManualPayment(pay.id)}
+                                      className="px-3 py-1 bg-red-600/30 hover:bg-red-600 text-white font-extrabold text-[10px] rounded-lg cursor-pointer border border-red-500/40"
+                                    >
+                                      Reject
+                                    </button>
+                                  </>
+                                )}
+
+                                {pay.status === 'REJECTED' && (
                                   <button
                                     onClick={() => approveManualPayment(pay.id)}
-                                    className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[10px] rounded-lg cursor-pointer shadow-xs"
+                                    className="px-2.5 py-1 bg-emerald-700/50 hover:bg-emerald-600 text-emerald-200 hover:text-white font-extrabold text-[10px] rounded-lg cursor-pointer border border-emerald-500/40"
                                   >
-                                    Approve & Credit
+                                    Re-Approve & Credit
                                   </button>
+                                )}
+
+                                {pay.status === 'VERIFIED' && (
                                   <button
                                     onClick={() => rejectManualPayment(pay.id)}
-                                    className="px-3 py-1 bg-red-600/30 hover:bg-red-600 text-white font-extrabold text-[10px] rounded-lg cursor-pointer border border-red-500/40"
+                                    className="px-2 py-1 bg-slate-800 hover:bg-red-900/60 text-slate-400 hover:text-red-300 font-bold text-[9px] rounded-lg cursor-pointer border border-slate-700"
+                                    title="Revoke / Reject"
                                   >
                                     Reject
                                   </button>
-                                </>
-                              )}
-                            </td>
-                          </tr>
-                        ))
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })
                       )}
                     </tbody>
                   </table>

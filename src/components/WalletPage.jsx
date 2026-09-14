@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { auth } from '../services/firebaseAuth';
 import { 
   X, Wallet, Copy, Check, Clipboard, DollarSign, Gift, ArrowLeft, ArrowRight, XCircle, 
   Ban, Key, Clock, RefreshCw, Zap, CheckCircle2, ShieldCheck, HelpCircle, Smartphone, AlertTriangle, Crown, Send, Building2, Upload, Image
@@ -205,11 +206,16 @@ export const WalletPage = () => {
 
   const handleEzCashSubmit = async (e) => {
     e.preventDefault();
-    if (!ezCashRnNumber || ezCashRnNumber.length < 10) {
+    const cleanRn = String(ezCashRnNumber || '').trim();
+    if (!cleanRn || cleanRn.length < 10) {
       showToast('Please enter a valid 14-digit RN Transaction Number!', 'error');
       return;
     }
     const amt = parseFloat(ezCashAmount) || 1000;
+    const userEmail = userProfile?.email || auth?.currentUser?.email || '';
+    const userName = userProfile?.name || auth?.currentUser?.displayName || (userEmail ? userEmail.split('@')[0] : 'Registered Gamer');
+    const userId = userProfile?.uid || auth?.currentUser?.uid || '';
+    const resellerCode = userProfile?.resellerCode || '';
 
     setIsEzCashVerifying(true);
 
@@ -218,9 +224,9 @@ export const WalletPage = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          rnNumber: ezCashRnNumber,
+          rnNumber: cleanRn,
           amount: amt,
-          userEmail: userProfile?.email || 'guest@madstopup.com'
+          userEmail: userEmail
         })
       });
 
@@ -231,10 +237,12 @@ export const WalletPage = () => {
 
         addManualPayment({
           id: 'PAY-' + Math.floor(1000 + Math.random() * 9000),
-          userEmail: userProfile?.email || 'guest@madstopup.com',
-          userName: userProfile?.name || 'Gamer',
+          userId,
+          userEmail,
+          userName,
+          resellerCode,
           method: 'EZ Cash (Automated)',
-          referenceNumber: ezCashRnNumber,
+          referenceNumber: cleanRn,
           amount: amt,
           currency: 'LKR',
           slipUrl: '',
@@ -247,10 +255,12 @@ export const WalletPage = () => {
       } else {
         addManualPayment({
           id: 'PAY-' + Math.floor(1000 + Math.random() * 9000),
-          userEmail: userProfile?.email || 'guest@madstopup.com',
-          userName: userProfile?.name || 'Gamer',
+          userId,
+          userEmail,
+          userName,
+          resellerCode,
           method: 'EZ Cash',
-          referenceNumber: ezCashRnNumber,
+          referenceNumber: cleanRn,
           amount: amt,
           currency: 'LKR',
           slipUrl: '',
@@ -264,10 +274,12 @@ export const WalletPage = () => {
       console.warn('EZ Cash verify note:', err.message);
       addManualPayment({
         id: 'PAY-' + Math.floor(1000 + Math.random() * 9000),
-        userEmail: userProfile?.email || 'guest@madstopup.com',
-        userName: userProfile?.name || 'Gamer',
+        userId,
+        userEmail,
+        userName,
+        resellerCode,
         method: 'EZ Cash',
-        referenceNumber: ezCashRnNumber,
+        referenceNumber: cleanRn,
         amount: amt,
         currency: 'LKR',
         slipUrl: '',

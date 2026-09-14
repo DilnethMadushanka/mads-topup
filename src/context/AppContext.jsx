@@ -909,10 +909,16 @@ export const AppProvider = ({ children }) => {
     showToast('User account status updated.');
   };
 
-  const updateUserBalance = (userEmail, lkrAmount, usdtAmount = 0) => {
-    if (!userEmail) return;
+  const updateUserBalance = (userEmailOrId, lkrAmount, usdtAmount = 0) => {
+    if (!userEmailOrId) return;
+    const cleanId = String(userEmailOrId).toLowerCase().trim();
+
     setUsersList(prev => prev.map(u => {
-      if (u.email && u.email.toLowerCase() === userEmail.toLowerCase()) {
+      const matchEmail = u.email && String(u.email).toLowerCase() === cleanId;
+      const matchUid = u.uid && String(u.uid).toLowerCase() === cleanId;
+      const matchCode = u.resellerCode && String(u.resellerCode).toLowerCase() === cleanId;
+
+      if (matchEmail || matchUid || matchCode) {
         const newLkr = Math.max(0, (u.walletBalance || 0) + lkrAmount);
         const newUsdt = Math.max(0, (u.walletUsdt || 0) + usdtAmount);
         if (u.uid) {
@@ -927,8 +933,14 @@ export const AppProvider = ({ children }) => {
       return u;
     }));
 
-    if (userProfile && userProfile.email && userProfile.email.toLowerCase() === userEmail.toLowerCase()) {
-      creditUserWallet(lkrAmount, usdtAmount);
+    if (userProfile) {
+      const matchSelfEmail = userProfile.email && String(userProfile.email).toLowerCase() === cleanId;
+      const matchSelfUid = userProfile.uid && String(userProfile.uid).toLowerCase() === cleanId;
+      const matchSelfCode = userProfile.resellerCode && String(userProfile.resellerCode).toLowerCase() === cleanId;
+
+      if (matchSelfEmail || matchSelfUid || matchSelfCode) {
+        creditUserWallet(lkrAmount, usdtAmount);
+      }
     }
   };
 
@@ -985,7 +997,7 @@ export const AppProvider = ({ children }) => {
     }
 
     // Update local state / active userProfile
-    updateUserBalance(pay.userEmail || pay.userId, totalLkr, totalUsdt);
+    updateUserBalance(pay.userId || pay.userEmail || pay.resellerCode, totalLkr, totalUsdt);
 
     if (pay.currency === 'USDT') {
       showToast(`Payment ${paymentId} approved! Credited $${pay.amount} USDT to ${pay.userName}`);

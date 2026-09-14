@@ -531,7 +531,25 @@ app.post('/api/ezcash/verify-rn', (req, res) => {
     }
 
     const amtLkr = parseFloat(amount) || 1000;
-    console.log(`[EZ Cash Deposit Submitted for Admin Approval] RN: ${cleanRn}, Amount: Rs. ${amtLkr}, User: ${userEmail}`);
+    console.log(`[EZ Cash Deposit Submitted] RN: ${cleanRn}, Amount: Rs. ${amtLkr}, User: ${userEmail}`);
+
+    // Check if matching SMS was received via Webhook
+    const smsLog = receivedEzCashSmsLog.get(cleanRn);
+    if (smsLog && smsLog.status !== 'REDEEMED' && Math.abs((smsLog.amountLkr || 0) - amtLkr) < 1) {
+      smsLog.status = 'REDEEMED';
+      smsLog.redeemedBy = userEmail || 'Gamer';
+      smsLog.redeemedAt = new Date().toISOString();
+      usedEzCashRnNumbers.add(cleanRn);
+
+      return res.json({
+        verified: true,
+        autoApproved: true,
+        status: 'VERIFIED',
+        amountLkr: amtLkr,
+        rnNumber: cleanRn,
+        message: `⚡ EZ Cash RN ${cleanRn} verified against Dialog SMS Webhook!`
+      });
+    }
 
     // Route directly to Admin Queue for Manual Admin Approval
     return res.json({
@@ -540,6 +558,7 @@ app.post('/api/ezcash/verify-rn', (req, res) => {
       status: 'PENDING_ADMIN_VERIFICATION',
       amountLkr: amtLkr,
       rnNumber: cleanRn,
+      matchedSms: !!smsLog,
       message: 'EZ Cash deposit submitted! Pending 1-click Admin Verification.'
     });
   } catch (err) {

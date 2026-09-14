@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { auth } from '../services/firebaseAuth';
 import { X, Wallet, Copy, Check, Clipboard, DollarSign, Gift, ArrowRight, XCircle, Ban, Key, Clock, RefreshCw, Zap, Building2, Upload, Image } from 'lucide-react';
 
 export const WalletModal = () => {
@@ -23,6 +24,7 @@ export const WalletModal = () => {
   const [voucherCode, setVoucherCode] = useState('');
   const [isCopied, setIsCopied] = useState(false);
   const [isBinanceVerifying, setIsBinanceVerifying] = useState(false);
+  const [isEzCashVerifying, setIsEzCashVerifying] = useState(false);
 
   // Bank Deposit State
   const [bankAmount, setBankAmount] = useState('1000');
@@ -206,28 +208,96 @@ export const WalletModal = () => {
     }
   };
 
-  const handleEzCashSubmit = (e) => {
+  const handleEzCashSubmit = async (e) => {
     e.preventDefault();
-    if (!ezCashRnNumber || ezCashRnNumber.length < 10) {
-      showToast('Please enter a valid RN Transaction Number!', 'error');
+    const cleanRn = String(ezCashRnNumber || '').trim();
+    if (!cleanRn || cleanRn.length < 10) {
+      showToast('Please enter a valid 14-digit RN Transaction Number!', 'error');
       return;
     }
     const amt = parseFloat(ezCashAmount) || 1000;
-    addManualPayment({
-      id: 'PAY-' + Math.floor(1000 + Math.random() * 9000),
-      userEmail: userProfile?.email || 'guest@madstopup.com',
-      userName: userProfile?.name || 'Gamer',
-      method: 'EZ Cash',
-      referenceNumber: ezCashRnNumber,
-      amount: amt,
-      currency: 'LKR',
-      slipUrl: '',
-      status: 'PENDING',
-      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
-    });
-    showToast('EZ Cash deposit request submitted! Admin will verify and credit your wallet.');
-    setEzCashRnNumber('');
-    setIsWalletModalOpen(false);
+    const userEmail = userProfile?.email || auth?.currentUser?.email || '';
+    const userName = userProfile?.name || auth?.currentUser?.displayName || (userEmail ? userEmail.split('@')[0] : 'Registered Gamer');
+    const userId = userProfile?.uid || auth?.currentUser?.uid || '';
+    const resellerCode = userProfile?.resellerCode || '';
+
+    setIsEzCashVerifying(true);
+
+    try {
+      const res = await fetch('/api/ezcash/verify-rn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rnNumber: cleanRn,
+          amount: amt,
+          userEmail: userEmail
+        })
+      });
+
+      const resData = await res.json();
+
+      if (resData.verified && resData.autoApproved) {
+        creditUserWallet(amt, 0);
+
+        addManualPayment({
+          id: 'PAY-' + Math.floor(1000 + Math.random() * 9000),
+          userId,
+          userEmail,
+          userName,
+          resellerCode,
+          method: 'EZ Cash (Automated)',
+          referenceNumber: cleanRn,
+          amount: amt,
+          currency: 'LKR',
+          slipUrl: '',
+          status: 'VERIFIED',
+          createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
+        });
+
+        showToast(`⚡ EZ CASH RN VERIFIED! +Rs. ${amt.toLocaleString()} LKR credited to your wallet instantly!`);
+        setEzCashRnNumber('');
+        setIsWalletModalOpen(false);
+      } else {
+        addManualPayment({
+          id: 'PAY-' + Math.floor(1000 + Math.random() * 9000),
+          userId,
+          userEmail,
+          userName,
+          resellerCode,
+          method: 'EZ Cash',
+          referenceNumber: cleanRn,
+          amount: amt,
+          currency: 'LKR',
+          slipUrl: '',
+          status: 'PENDING',
+          createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
+        });
+        showToast('EZ Cash deposit request submitted! Admin will verify and credit your wallet.');
+        setEzCashRnNumber('');
+        setIsWalletModalOpen(false);
+      }
+    } catch (err) {
+      console.warn('EZ Cash verify note:', err.message);
+      addManualPayment({
+        id: 'PAY-' + Math.floor(1000 + Math.random() * 9000),
+        userId,
+        userEmail,
+        userName,
+        resellerCode,
+        method: 'EZ Cash',
+        referenceNumber: cleanRn,
+        amount: amt,
+        currency: 'LKR',
+        slipUrl: '',
+        status: 'PENDING',
+        createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
+      });
+      showToast('EZ Cash deposit request submitted! Admin will verify and credit your wallet.');
+      setEzCashRnNumber('');
+      setIsWalletModalOpen(false);
+    } finally {
+      setIsEzCashVerifying(false);
+    }
   };
 
   const handleRedeemSubmit = (e) => {
