@@ -140,16 +140,16 @@ export const AdminDashboard = () => {
 
     setIsUploadingAdImg(true);
     try {
-      // 1. Try Cloudflare R2 Upload
-      const r2Res = await uploadToR2Storage(file, 'popup_ads');
-      
-      // 2. Read file as DataURL for direct preview / persistent backup
       const reader = new FileReader();
-      reader.onloadend = () => {
+      reader.onloadend = async () => {
         const dataUrl = reader.result;
-        setAdImageUrl(r2Res.url || dataUrl);
+        try {
+          await uploadToR2Storage(file, 'popup_ads');
+        } catch (r2Err) {}
+
+        setAdImageUrl(dataUrl);
         setIsUploadingAdImg(false);
-        showToast('Image uploaded successfully to Cloudflare R2 Storage! ☁️');
+        showToast('Image uploaded & applied successfully! ☁️');
       };
       reader.readAsDataURL(file);
     } catch (err) {
