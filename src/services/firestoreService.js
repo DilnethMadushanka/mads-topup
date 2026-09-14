@@ -609,9 +609,9 @@ export const creditUserWalletInDatabase = async (identifier, lkrAmount, usdtAmou
           if (matchUid || matchEmail || matchCode || matchSecKey) {
             targetUid = userObj.uid || uidKey;
             const curLkr = parseFloat(userObj.walletBalance || 0);
-            const deltaLkr = lkrAmount + (usdtAmount * 305);
-            const newLkr = Math.max(0, curLkr + deltaLkr);
-            const newUsdt = parseFloat((newLkr / 305).toFixed(2));
+            const curUsdt = parseFloat(userObj.walletUsdt || 0);
+            const newLkr = Math.max(0, curLkr + (lkrAmount || 0));
+            const newUsdt = Math.max(0, curUsdt + (usdtAmount || 0));
 
             const userRtdbRef = dbRef(rtdb, `users/${targetUid}`);
             await rtdbUpdate(userRtdbRef, {
@@ -642,9 +642,9 @@ export const creditUserWalletInDatabase = async (identifier, lkrAmount, usdtAmou
         if (docSnap.exists()) {
           const curData = docSnap.data();
           const curLkr = parseFloat(curData.walletBalance || 0);
-          const deltaLkr = lkrAmount + (usdtAmount * 305);
-          const newLkr = Math.max(0, curLkr + deltaLkr);
-          const newUsdt = parseFloat((newLkr / 305).toFixed(2));
+          const curUsdt = parseFloat(curData.walletUsdt || 0);
+          const newLkr = Math.max(0, curLkr + (lkrAmount || 0));
+          const newUsdt = Math.max(0, curUsdt + (usdtAmount || 0));
           await setDoc(userRef, { walletBalance: newLkr, walletUsdt: newUsdt, updatedAt: new Date().toISOString() }, { merge: true });
         }
       } else {
@@ -654,9 +654,9 @@ export const creditUserWalletInDatabase = async (identifier, lkrAmount, usdtAmou
         qSnap.forEach(async (d) => {
           const curData = d.data();
           const curLkr = parseFloat(curData.walletBalance || 0);
-          const deltaLkr = lkrAmount + (usdtAmount * 305);
-          const newLkr = Math.max(0, curLkr + deltaLkr);
-          const newUsdt = parseFloat((newLkr / 305).toFixed(2));
+          const curUsdt = parseFloat(curData.walletUsdt || 0);
+          const newLkr = Math.max(0, curLkr + (lkrAmount || 0));
+          const newUsdt = Math.max(0, curUsdt + (usdtAmount || 0));
           await setDoc(doc(db, 'users', d.id), { walletBalance: newLkr, walletUsdt: newUsdt, updatedAt: new Date().toISOString() }, { merge: true });
         });
       }

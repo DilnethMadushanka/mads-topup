@@ -658,7 +658,7 @@ Telegram long-polling connection is 100% active 24/7!
 🔑 Security Key: ${reseller.securityKey}
 💼 Wholesale Tier: Verified Reseller Partner (5% Wholesale Discount)
 💰 Available LKR Balance: Rs. ${(reseller.walletBalance || 0).toLocaleString()} LKR
-💵 Available USDT Balance: $${((reseller.walletBalance || 0) / 305).toFixed(2)} USDT
+💵 Available USDT Balance: $${(parseFloat(reseller.walletUsdt !== undefined ? reseller.walletUsdt : 0)).toFixed(2)} USDT
 
 Your Telegram chat is now bound to your Reseller Wallet! You can use /topup for any game on the website.
           `.trim();
@@ -811,7 +811,7 @@ Send: /auth <SecurityKey>
 🏷️ Reseller Code: ${reseller?.resellerCode || 'N/A'}
 🔑 Security Key: ${reseller?.securityKey || 'N/A'}
 💰 Available LKR Balance: Rs. ${(reseller?.walletBalance || 0).toLocaleString()} LKR
-💵 Available USDT Balance: $${((reseller?.walletBalance || 0) / 305).toFixed(2)} USDT
+💵 Available USDT Balance: $${(parseFloat(reseller?.walletUsdt !== undefined ? reseller.walletUsdt : 0)).toFixed(2)} USDT
 ⚡ Wholesale Discount: 5% OFF All Game Packages (${GAMES_DATA.length} Games)
 
 📥 To Recharge Wallet: Type /deposit
@@ -982,7 +982,7 @@ Examples:
 🔑 Security Key: ${freshReseller.securityKey}
 
 💵 Required Package Price: Rs. ${pkgInfo.priceLkr.toLocaleString()} LKR
-💰 Available Wallet Balance: Rs. ${currentBalance.toLocaleString()} LKR ($${(currentBalance / 305).toFixed(2)} USDT)
+💰 Available Wallet Balance: Rs. ${currentBalance.toLocaleString()} LKR ($${(parseFloat(freshReseller.walletUsdt !== undefined ? freshReseller.walletUsdt : 0)).toFixed(2)} USDT)
 ⚠️ Shortfall Amount: Rs. ${shortfall.toLocaleString()} LKR
 
 📥 Please top up your reseller wallet using /deposit or on the web dashboard and try again.
@@ -1051,7 +1051,7 @@ ${matchedGame.currencyIcon} Topup Package: ${pkgInfo.name} (Credited Successfull
 ⚡ Quantity Added: ${pkgInfo.countText || pkgInfo.name}
 
 💵 Wholesale Price Paid: Rs. ${pkgInfo.priceLkr.toLocaleString()} LKR
-💰 Remaining Reseller Balance: Rs. ${newBalance.toLocaleString()} LKR ($${(newBalance / 305).toFixed(2)} USDT)
+💰 Remaining Reseller Balance: Rs. ${newBalance.toLocaleString()} LKR ($${(parseFloat(reseller.walletUsdt !== undefined ? reseller.walletUsdt : 0)).toFixed(2)} USDT)
 
 Order placed live on MooGold Reseller Portal & credited instantly!
             `.trim();
