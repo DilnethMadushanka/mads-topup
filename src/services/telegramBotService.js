@@ -36,8 +36,10 @@ let healthCheckTimer = null;
 export function restartTelegramPolling() {
   if (!botInstance) return false;
   try {
+    if (typeof botInstance.stop === 'function') {
+      try { botInstance.stop(); } catch (e) {}
+    }
     if (typeof botInstance.startPolling === 'function') {
-      try { if (typeof botInstance.stopPolling === 'function') botInstance.stopPolling(); } catch (e) {}
       botInstance.startPolling();
     } else if (typeof longPoll === 'function') {
       longPoll(botInstance);
@@ -674,6 +676,12 @@ Usage: /auth MADS-SEC-50048A92
 
     bot.catch((err) => {
       console.error('[Telegram Bot Engine Catch]:', err.message || err);
+      try {
+        if (botInstance && typeof botInstance.isRunning === 'function' && !botInstance.isRunning()) {
+          console.warn('⚠️ [Telegram Bot Engine] Polling stopped after catch error. Triggering auto-recovery...');
+          restartTelegramPolling();
+        }
+      } catch (e) {}
     });
 
     bot.command('auth', handleAuth);
