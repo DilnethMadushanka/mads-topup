@@ -40,6 +40,8 @@ if (isFirebaseConfigured) {
     db = getFirestore(app);
     rtdb = getDatabase(app, firebaseConfig.databaseURL || "https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app");
     googleProvider = new GoogleAuthProvider();
+    googleProvider.addScope('email');
+    googleProvider.addScope('profile');
     googleProvider.setCustomParameters({ prompt: 'select_account' });
   } catch (err) {
     console.warn('Firebase initialization warning:', err);
