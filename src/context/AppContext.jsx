@@ -833,7 +833,14 @@ export const AppProvider = ({ children }) => {
   const [usersList, setUsersList] = useState(() => {
     const saved = localStorage.getItem('mads_users_list');
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
+      try { 
+        const parsed = JSON.parse(saved); 
+        // Filter out old fake test balances
+        return parsed.map(u => ({
+          ...u,
+          walletUsdt: u.walletUsdt === 49.64 ? 0 : (u.walletUsdt || 0)
+        }));
+      } catch (e) {}
     }
     return [
       {
@@ -841,8 +848,8 @@ export const AppProvider = ({ children }) => {
         name: 'Dilneth Madushanka',
         email: 'madsruzza@gmail.com',
         phone: '+94 77 123 4567',
-        walletBalance: 2500,
-        walletUsdt: 15.00,
+        walletBalance: 0,
+        walletUsdt: 0.00,
         isVerified: true,
         status: 'ACTIVE',
         joinedAt: '2026-09-01',
@@ -854,7 +861,7 @@ export const AppProvider = ({ children }) => {
         name: 'Kasun SLAyer',
         email: 'kasun.gamer@gmail.com',
         phone: '+94 71 889 0123',
-        walletBalance: 500,
+        walletBalance: 0,
         walletUsdt: 0.00,
         isVerified: false,
         status: 'ACTIVE',
