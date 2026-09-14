@@ -2,6 +2,8 @@
 // API Documentation: https://doc.moogold.com
 // Reseller Portal: https://reseller.moogold.com
 
+import { auth } from './firebaseAuth.js';
+
 export const getMoongoldConfig = () => {
   if (typeof localStorage !== 'undefined') {
     const stored = localStorage.getItem('mads_moongold_config');
@@ -279,10 +281,24 @@ export const checkPlayerIGN = async (gameId = '', playerId = '', zoneId = '', pr
  */
 export const dispatchMoongoldOrder = async (orderData) => {
   const config = getMoongoldConfig();
-  const partnerId = config.apiKey || 'f27cabc8d2c2122bbedacabce632db68';
-  const secretKey = config.secretKey || 'PM67SGqyed';
 
-  await new Promise(res => setTimeout(res, 600));
+  // Get current Firebase Auth user ID token for secure backend verification
+  let idToken = null;
+  if (auth && auth.currentUser) {
+    try {
+      idToken = await auth.currentUser.getIdToken(true);
+    } catch (e) {
+      console.warn('Could not retrieve Auth ID Token:', e.message);
+    }
+  }
+
+  if (!idToken) {
+    return {
+      success: false,
+      status: 'FAILED',
+      message: 'Authentication failed! Please log in to your MADS TOPUP account before ordering.'
+    };
+  }
 
   // Generate standard RFC4122 UUID v4 for partnerOrderId as required by MooGold API
   const generateUuid = () => {
@@ -298,7 +314,6 @@ export const dispatchMoongoldOrder = async (orderData) => {
 
   const partnerOrderId = generateUuid();
 
-  // 1. If simulation mode or autoFulfill is enabled for wallet / direct orders
   if (config.simulationMode) {
     return {
       success: true,
@@ -332,21 +347,31 @@ export const dispatchMoongoldOrder = async (orderData) => {
   }
 
   const path = 'order/create_order';
+  const priceLkr = orderData.package?.priceLkr || orderData.priceLkr || 0;
+  const paymentId = orderData.payment?.id || orderData.paymentMethod || 'wallet';
+
   const bodyObj = {
     path,
     data: dataPayload,
-    partnerOrderId
+    partnerOrderId,
+    priceLkr,
+    paymentId
   };
 
-  // 2. Try Express Proxy (/api/moogold) to send order to MooGold API
+  // Dispatch ONLY through secure backend proxy with Bearer Auth Token
   try {
     const proxyRes = await fetch('/api/moogold', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path, bodyObj })
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${idToken}`
+      },
+      body: JSON.stringify({ path, bodyObj, priceLkr, paymentId })
     });
+
+    const data = await proxyRes.json().catch(() => ({}));
+
     if (proxyRes.ok) {
-      const data = await proxyRes.json();
       if (data && (data.status === 'processing' || data.status === 'true' || data.status === true || data.status === 1 || data.order_id)) {
         return {
           success: true,
@@ -355,63 +380,30 @@ export const dispatchMoongoldOrder = async (orderData) => {
           message: data.message || 'Order created successfully!',
           data
         };
-      } else if (data && data.err_message) {
-        console.error('MooGold Order Error:', data.err_message);
+      } else {
         return {
           success: false,
           moongoldRef: partnerOrderId,
           status: 'FAILED',
-          message: data.err_message,
+          message: data.error || data.message || data.err_message || 'Order creation failed at provider',
           data
         };
       }
-    }
-  } catch (err) {
-    console.warn('MooGold proxy note:', err);
-  }
-
-  // 3. Direct browser fetch fallback
-  try {
-    const headers = await getMooGoldHeaders(path, bodyObj, partnerId, secretKey);
-    const baseUrl = config.baseUrl || 'https://moogold.com/wp-json/v1/api';
-
-    const response = await fetch(`${baseUrl}/${path}`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(bodyObj)
-    });
-
-    const data = await response.json();
-    if (data && (data.status === 'true' || data.status === true || data.status === 1 || data.order_id)) {
+    } else {
       return {
-        success: true,
-        moongoldRef: data.order_id || data.account_details?.order_id || partnerOrderId,
-        status: 'COMPLETED',
-        message: data.message || 'Order created successfully!',
-        data
+        success: false,
+        moongoldRef: partnerOrderId,
+        status: 'FAILED',
+        message: data.error || data.message || `Server returned HTTP ${proxyRes.status}`
       };
     }
   } catch (err) {
-    console.warn('MooGold order create_order API call note:', err);
-  }
-
-  // If autoFulfill configuration is enabled (default), return COMPLETED for instant order processing
-  if (config.autoFulfill !== false) {
+    console.error('MooGold secure order error:', err);
     return {
-      success: true,
+      success: false,
       moongoldRef: partnerOrderId,
-      status: 'COMPLETED',
-      message: 'Order processed & credited via MADS Automated Engine!',
-      timestamp: new Date().toISOString()
+      status: 'FAILED',
+      message: 'Network or connection error. Please try again.'
     };
   }
-
-  // Fallback status for pending manual slip verification
-  return {
-    success: true,
-    moongoldRef: partnerOrderId,
-    status: 'PENDING_VERIFICATION',
-    message: 'Order Placed! Payment slip submitted for admin verification.',
-    timestamp: new Date().toISOString()
-  };
 };

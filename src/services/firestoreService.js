@@ -469,6 +469,103 @@ export const updateUserProfileInFirestore = async (uid, updatedData) => {
 };
 
 /**
+ * Credit user or reseller wallet balance in Realtime Database & Firestore by UID, Email, or Reseller Code
+ */
+export const creditUserWalletInDatabase = async (identifier, lkrAmount, usdtAmount = 0) => {
+  if (!identifier || (!lkrAmount && !usdtAmount)) return false;
+  const cleanId = String(identifier).trim();
+  const cleanIdUpper = cleanId.toUpperCase();
+  const cleanIdLower = cleanId.toLowerCase();
+
+  let targetUid = null;
+
+  // 1. Check in-memory registry first
+  for (const [key, profile] of activeResellerRegistry.entries()) {
+    if (!profile) continue;
+    const matchUid = profile.uid && String(profile.uid).toUpperCase() === cleanIdUpper;
+    const matchEmail = profile.email && String(profile.email).toLowerCase() === cleanIdLower;
+    const matchCode = profile.resellerCode && String(profile.resellerCode).toUpperCase() === cleanIdUpper;
+    const matchSecKey = profile.securityKey && String(profile.securityKey).toUpperCase() === cleanIdUpper;
+
+    if (matchUid || matchEmail || matchCode || matchSecKey) {
+      targetUid = profile.uid;
+      break;
+    }
+  }
+
+  // 2. Search & Update Realtime Database (RTDB) users node
+  if (rtdb) {
+    try {
+      const usersRef = dbRef(rtdb, 'users');
+      const snapshot = await rtdbGet(usersRef);
+      if (snapshot.exists()) {
+        const usersData = snapshot.val();
+        for (const [uidKey, userObj] of Object.entries(usersData)) {
+          if (!userObj) continue;
+          const matchUid = uidKey.toUpperCase() === cleanIdUpper || (userObj.uid && String(userObj.uid).toUpperCase() === cleanIdUpper);
+          const matchEmail = userObj.email && String(userObj.email).toLowerCase() === cleanIdLower;
+          const matchCode = userObj.resellerCode && String(userObj.resellerCode).toUpperCase() === cleanIdUpper;
+          const matchSecKey = userObj.securityKey && String(userObj.securityKey).toUpperCase() === cleanIdUpper;
+
+          if (matchUid || matchEmail || matchCode || matchSecKey) {
+            targetUid = userObj.uid || uidKey;
+            const curLkr = parseFloat(userObj.walletBalance || 0);
+            const curUsdt = parseFloat(userObj.walletUsdt || 0);
+            const newLkr = Math.max(0, curLkr + lkrAmount);
+            const newUsdt = Math.max(0, curUsdt + usdtAmount);
+
+            const userRtdbRef = dbRef(rtdb, `users/${targetUid}`);
+            await rtdbUpdate(userRtdbRef, {
+              walletBalance: newLkr,
+              walletUsdt: newUsdt,
+              updatedAt: new Date().toISOString()
+            });
+
+            // Update in-memory userObj & registry
+            userObj.walletBalance = newLkr;
+            userObj.walletUsdt = newUsdt;
+            registerResellerInRegistry(userObj);
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('RTDB wallet credit note:', e.message);
+    }
+  }
+
+  // 3. Search & Update Firestore users collection
+  if (db) {
+    try {
+      if (targetUid) {
+        const userRef = doc(db, 'users', targetUid);
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists()) {
+          const curData = docSnap.data();
+          const newLkr = Math.max(0, parseFloat(curData.walletBalance || 0) + lkrAmount);
+          const newUsdt = Math.max(0, parseFloat(curData.walletUsdt || 0) + usdtAmount);
+          await setDoc(userRef, { walletBalance: newLkr, walletUsdt: newUsdt, updatedAt: new Date().toISOString() }, { merge: true });
+        }
+      } else {
+        const usersCol = collection(db, 'users');
+        const qEmail = query(usersCol, where('email', '==', cleanIdLower));
+        const qSnap = await getDocs(qEmail);
+        qSnap.forEach(async (d) => {
+          const curData = d.data();
+          const newLkr = Math.max(0, parseFloat(curData.walletBalance || 0) + lkrAmount);
+          const newUsdt = Math.max(0, parseFloat(curData.walletUsdt || 0) + usdtAmount);
+          await setDoc(doc(db, 'users', d.id), { walletBalance: newLkr, walletUsdt: newUsdt, updatedAt: new Date().toISOString() }, { merge: true });
+        });
+      }
+    } catch (err) {
+      console.warn('Firestore wallet credit note:', err.message);
+    }
+  }
+
+  return targetUid;
+};
+
+/**
  * Listen to live user profile changes in Realtime Database or Firestore
  */
 export const subscribeUserProfile = (uid, callback) => {

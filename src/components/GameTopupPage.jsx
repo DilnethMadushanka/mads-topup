@@ -225,6 +225,11 @@ export const GameTopupPage = () => {
       };
 
       moongoldResult = await dispatchMoongoldOrder(orderPayload);
+      if (!moongoldResult.success) {
+        setIsSubmitting(false);
+        showToast(moongoldResult.message || 'Order failed to process. Please check your wallet balance.', 'error');
+        return;
+      }
     }
 
     setIsSubmitting(false);

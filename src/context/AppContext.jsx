@@ -9,7 +9,7 @@ import {
   saveOrderToFirestore, subscribeAllUsersFromFirestore, subscribeOrdersFromFirestore, updateOrderStatusInFirestore,
   saveResellerApplicationToFirestore, subscribeResellerApplicationsFromFirestore, updateResellerApplicationStatusInFirestore,
   saveCustomGamePricesToFirestore, subscribeCustomGamePricesFromFirestore, generateUniqueSecurityKey, ensureResellerCredentials,
-  saveManualPaymentToFirestore, updateManualPaymentStatusInFirestore, subscribeManualPaymentsFromFirestore
+  saveManualPaymentToFirestore, updateManualPaymentStatusInFirestore, subscribeManualPaymentsFromFirestore, creditUserWalletInDatabase
 } from '../services/firestoreService';
 
 
@@ -949,20 +949,40 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  const approveManualPayment = (paymentId) => {
+  const approveManualPayment = async (paymentId) => {
     const pay = manualPayments.find(p => p.id === paymentId);
     if (!pay) return;
 
     setManualPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status: 'VERIFIED' } : p));
     updateManualPaymentStatusInFirestore(paymentId, 'VERIFIED');
     
-    if (pay.currency === 'USDT') {
-      updateUserBalance(pay.userEmail, 0, pay.amount);
-    } else {
-      updateUserBalance(pay.userEmail, pay.amount, 0);
+    // 24H Launch Wallet Recharge Bonus Calculation
+    let bonusLkr = 0;
+    const amt = parseFloat(pay.amount) || 0;
+    if (pay.currency !== 'USDT') {
+      if (amt >= 20000) bonusLkr = 600;
+      else if (amt >= 10000) bonusLkr = 250;
+      else if (amt >= 5000) bonusLkr = 100;
     }
 
-    showToast(`Payment ${paymentId} approved! Credited ${pay.amount} ${pay.currency} to ${pay.userName}`);
+    const totalLkr = pay.currency === 'USDT' ? 0 : (amt + bonusLkr);
+    const totalUsdt = pay.currency === 'USDT' ? amt : 0;
+
+    // Credit in Database (RTDB & Firestore) by UID, Email, or Reseller Code
+    const targetIdentifier = pay.userId || pay.userEmail || pay.resellerCode;
+    if (targetIdentifier) {
+      await creditUserWalletInDatabase(targetIdentifier, totalLkr, totalUsdt);
+    }
+
+    // Update local state / active userProfile
+    updateUserBalance(pay.userEmail || pay.userId, totalLkr, totalUsdt);
+
+    if (pay.currency === 'USDT') {
+      showToast(`Payment ${paymentId} approved! Credited $${pay.amount} USDT to ${pay.userName}`);
+    } else {
+      const bonusMsg = bonusLkr > 0 ? ` (+Rs. ${bonusLkr} Launch Bonus)` : '';
+      showToast(`Payment ${paymentId} approved! Credited Rs. ${totalLkr.toLocaleString()} LKR${bonusMsg} to ${pay.userName}`);
+    }
   };
 
   const rejectManualPayment = (paymentId) => {
@@ -975,6 +995,10 @@ export const AppProvider = ({ children }) => {
     const fullPay = {
       ...newPay,
       id: newPay.id || `PAY-${Math.floor(1000 + Math.random() * 9000)}`,
+      userId: newPay.userId || userProfile?.uid || '',
+      userEmail: newPay.userEmail || userProfile?.email || '',
+      userName: newPay.userName || userProfile?.name || 'Gamer',
+      resellerCode: newPay.resellerCode || userProfile?.resellerCode || '',
       createdAt: newPay.createdAt || new Date().toISOString().replace('T', ' ').substring(0, 16)
     };
     setManualPayments(prev => [fullPay, ...prev]);

@@ -6,7 +6,7 @@ import { uploadToR2Storage } from '../services/storageService';
 import confetti from 'canvas-confetti';
 import { 
   X, Check, ShieldCheck, Zap, AlertCircle, RefreshCw, 
-  CreditCard, ChevronRight, BookmarkPlus, CheckCircle2, Copy, UploadCloud, Cloud, Edit3
+  CreditCard, ChevronRight, BookmarkPlus, CheckCircle2, Copy, UploadCloud, Cloud, Edit3, Tag, Sparkles, Gift
 } from 'lucide-react';
 
 export const TopupModal = () => {
@@ -38,6 +38,45 @@ export const TopupModal = () => {
   const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
   const [receiptR2Url, setReceiptR2Url] = useState('');
   const [savedSelection, setSavedSelection] = useState('');
+
+  // 24H Launch Promo Code States
+  const [promoCodeInput, setPromoCodeInput] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState(null);
+  const [promoError, setPromoError] = useState('');
+
+  const handleApplyPromoCode = (e) => {
+    e.preventDefault();
+    const cleanCode = promoCodeInput.trim().toUpperCase();
+    if (!cleanCode) return;
+
+    const originalPrice = selectedPackage?.priceLkr || 0;
+
+    if (cleanCode === 'WELCOME50') {
+      if (originalPrice < 1000) {
+        setPromoError('WELCOME50 requires a minimum order value of Rs. 1,000.');
+        setAppliedPromo(null);
+        return;
+      }
+      setAppliedPromo({ code: 'WELCOME50', discount: 50, desc: 'Rs. 50 OFF Launch Bonus' });
+      setPromoError('');
+      showToast('Promo Code WELCOME50 Applied! Rs. 50 Discount Added.');
+    } else if (cleanCode === 'LAUNCH100') {
+      if (originalPrice < 2500) {
+        setPromoError('LAUNCH100 requires a minimum order value of Rs. 2,500.');
+        setAppliedPromo(null);
+        return;
+      }
+      setAppliedPromo({ code: 'LAUNCH100', discount: 100, desc: 'Rs. 100 OFF Launch Bonus' });
+      setPromoError('');
+      showToast('Promo Code LAUNCH100 Applied! Rs. 100 Discount Added.');
+    } else {
+      setPromoError('Invalid or expired promo code.');
+      setAppliedPromo(null);
+    }
+  };
+
+  const discountAmount = appliedPromo ? appliedPromo.discount : 0;
+  const finalPrice = Math.max(0, (selectedPackage?.priceLkr || 0) - discountAmount);
 
   const handleReceiptUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -116,19 +155,21 @@ export const TopupModal = () => {
   };
 
   const handleCompleteOrder = async () => {
+    const discount = appliedPromo ? appliedPromo.discount : 0;
+    const priceToPay = Math.max(0, selectedPackage.priceLkr - discount);
+
     // 1. Strict Wallet Balance Check if paying via MADS Wallet
     if (selectedPayment.id === 'wallet') {
       const availLkr = userProfile?.walletBalance || 0;
       const availUsdt = userProfile?.walletUsdt || 0;
-      const price = selectedPackage.priceLkr;
 
-      if (availLkr >= price) {
-        creditUserWallet(-price, 0);
-      } else if ((availUsdt * 305) >= price) {
-        const reqUsdt = price / 305;
+      if (availLkr >= priceToPay) {
+        creditUserWallet(-priceToPay, 0);
+      } else if ((availUsdt * 305) >= priceToPay) {
+        const reqUsdt = priceToPay / 305;
         creditUserWallet(0, -reqUsdt);
       } else {
-        showToast(`Insufficient Wallet Balance! Required: Rs. ${price.toFixed(2)}. Available: Rs. ${availLkr.toFixed(2)} LKR / $${availUsdt.toFixed(2)} USDT. Please top up your wallet first!`, 'error');
+        showToast(`Insufficient Wallet Balance! Required: Rs. ${priceToPay.toFixed(2)}. Available: Rs. ${availLkr.toFixed(2)} LKR / $${availUsdt.toFixed(2)} USDT. Please top up your wallet first!`, 'error');
         setIsTopupModalOpen(false);
         setIsWalletModalOpen(true);
         return;
@@ -160,6 +201,11 @@ export const TopupModal = () => {
       };
 
       moongoldResult = await dispatchMoongoldOrder(orderPayload);
+      if (!moongoldResult.success) {
+        setIsSubmitting(false);
+        showToast(moongoldResult.message || 'Order failed to process. Please check your balance or login state.', 'error');
+        return;
+      }
     }
 
     setIsSubmitting(false);
@@ -180,7 +226,7 @@ export const TopupModal = () => {
       zoneId,
       ign: ign || 'Verified Gamer',
       paymentMethod: selectedPayment.name,
-      priceLkr: selectedPackage.priceLkr,
+      priceLkr: priceToPay,
       status: finalStatus,
       moongoldRef: moongoldResult.moongoldRef || (selectedPayment.id === 'wallet' ? ('MG-' + Math.floor(10000000 + Math.random() * 90000000)) : 'PENDING_ADMIN_VERIFICATION'),
       receiptUrl: receiptR2Url || null,
@@ -529,6 +575,54 @@ export const TopupModal = () => {
                       </div>
                     </div>
                   )}
+                  {/* PROMO CODE / COUPON INPUT BOX */}
+                  <div className="p-3.5 bg-[#0F172A] rounded-2xl border border-slate-700 text-xs space-y-2 text-white">
+                    <div className="font-extrabold flex items-center justify-between text-slate-200">
+                      <span className="flex items-center gap-1.5 text-amber-400">
+                        <Tag className="w-4 h-4" />
+                        Have a Promo / Coupon Code?
+                      </span>
+                      <span className="text-[10px] bg-red-600/30 text-red-300 px-2 py-0.5 rounded font-mono font-bold border border-red-500/30">
+                        24H Launch Special
+                      </span>
+                    </div>
+
+                    <form onSubmit={handleApplyPromoCode} className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="e.g. WELCOME50 or LAUNCH100"
+                        value={promoCodeInput}
+                        onChange={(e) => setPromoCodeInput(e.target.value.toUpperCase())}
+                        className="flex-1 px-3 py-2 bg-slate-900 border border-slate-700 focus:border-amber-400 rounded-xl text-xs font-mono font-bold uppercase text-white outline-none"
+                      />
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs rounded-xl cursor-pointer transition-all shadow-xs"
+                      >
+                        Apply
+                      </button>
+                    </form>
+
+                    {appliedPromo && (
+                      <div className="p-2 bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 rounded-xl font-bold text-[11px] flex items-center justify-between font-mono">
+                        <span className="flex items-center gap-1">
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          Code {appliedPromo.code} Applied (-Rs. {appliedPromo.discount})
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => { setAppliedPromo(null); setPromoCodeInput(''); }}
+                          className="text-xs text-red-400 hover:underline cursor-pointer"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+
+                    {promoError && (
+                      <p className="text-[11px] text-red-400 font-semibold">{promoError}</p>
+                    )}
+                  </div>
                 </div>
               )}
             </>
@@ -589,10 +683,17 @@ export const TopupModal = () => {
         {step < 4 && (
           <div className="bg-[#0F172A] p-4 px-6 border-t border-slate-800 flex items-center justify-between">
             <div>
-              <span className="text-[10px] text-slate-400 font-semibold block uppercase">Selected Price</span>
-              <span className="text-xl font-black text-[#cc040a] font-heading">
-                {selectedPackage ? formatPrice(selectedPackage.priceLkr) : 'Rs. 0'}
-              </span>
+              <span className="text-[10px] text-slate-400 font-semibold block uppercase">Total Amount</span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-xl font-black text-[#cc040a] font-heading">
+                  {formatPrice(finalPrice)}
+                </span>
+                {appliedPromo && (
+                  <span className="text-xs text-slate-400 line-through font-mono">
+                    {formatPrice(selectedPackage?.priceLkr || 0)}
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center gap-3">

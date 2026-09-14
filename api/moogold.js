@@ -1,5 +1,106 @@
 import crypto from 'crypto';
 
+async function verifyFirebaseIdToken(idToken) {
+  if (!idToken || typeof idToken !== 'string') return null;
+  const cleanToken = idToken.startsWith('Bearer ') ? idToken.slice(7).trim() : idToken.trim();
+  if (!cleanToken) return null;
+
+  const apiKey = process.env.FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY || "AIzaSyAzgbA7GdTY5Dv2CtgY8cVOswkpfcQpNcE";
+  try {
+    const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken: cleanToken })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.users && data.users[0]) {
+        return {
+          uid: data.users[0].localId,
+          email: data.users[0].email,
+          emailVerified: data.users[0].emailVerified
+        };
+      }
+    }
+  } catch (err) {
+    console.error('[Vercel Auth Token Error]:', err.message);
+  }
+  return null;
+}
+
+const FIREBASE_RTDB_URL = process.env.FIREBASE_DATABASE_URL || process.env.VITE_FIREBASE_DATABASE_URL || "https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app";
+
+async function getUserWalletData(uid) {
+  if (!uid) return { walletBalance: 0, walletUsdt: 0 };
+  try {
+    const res = await fetch(`${FIREBASE_RTDB_URL}/users/${uid}.json`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data) {
+        return {
+          walletBalance: parseFloat(data.walletBalance || 0),
+          walletUsdt: parseFloat(data.walletUsdt || 0)
+        };
+      }
+    }
+  } catch (e) {}
+  return { walletBalance: 0, walletUsdt: 0 };
+}
+
+async function deductUserWallet(uid, priceLkr) {
+  if (!uid || priceLkr <= 0) return { success: false, reason: 'Invalid amount' };
+  try {
+    const current = await getUserWalletData(uid);
+    let newLkr = current.walletBalance;
+    let newUsdt = current.walletUsdt;
+
+    if (newLkr >= priceLkr) {
+      newLkr = newLkr - priceLkr;
+      newUsdt = newLkr / 305;
+    } else if ((newUsdt * 305) >= priceLkr) {
+      const reqUsdt = priceLkr / 305;
+      newUsdt = Math.max(0, newUsdt - reqUsdt);
+      newLkr = newUsdt * 305;
+    } else {
+      return { success: false, reason: `Insufficient wallet balance. Required: Rs. ${priceLkr.toFixed(2)}, Available: Rs. ${newLkr.toFixed(2)}` };
+    }
+
+    const patchRes = await fetch(`${FIREBASE_RTDB_URL}/users/${uid}.json`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        walletBalance: newLkr,
+        walletUsdt: newUsdt,
+        updatedAt: new Date().toISOString()
+      })
+    });
+
+    if (patchRes.ok) {
+      return { success: true, newBalanceLkr: newLkr, newBalanceUsdt: newUsdt };
+    }
+  } catch (e) {}
+  return { success: false, reason: 'Database update failed' };
+}
+
+async function refundUserWallet(uid, priceLkr) {
+  if (!uid || priceLkr <= 0) return;
+  try {
+    const current = await getUserWalletData(uid);
+    const newLkr = current.walletBalance + priceLkr;
+    const newUsdt = newLkr / 305;
+
+    await fetch(`${FIREBASE_RTDB_URL}/users/${uid}.json`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        walletBalance: newLkr,
+        walletUsdt: newUsdt,
+        updatedAt: new Date().toISOString()
+      })
+    });
+  } catch (e) {}
+}
+
 export default async function handler(req, res) {
   try {
     // CORS headers for frontend
@@ -8,7 +109,7 @@ export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
     res.setHeader(
       'Access-Control-Allow-Headers',
-      'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+      'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
     );
 
     if (req.method === 'OPTIONS') {
@@ -30,19 +131,31 @@ export default async function handler(req, res) {
       }
     }
 
-    const { path: apiPath, bodyObj } = body || {};
+    const { path: apiPath, bodyObj, priceLkr, paymentId } = body || {};
 
     if (!apiPath || !bodyObj) {
       res.status(400).json({ error: 'Missing path or bodyObj', received: req.body });
       return;
     }
 
-    // 1. Primary: Forward request through Whitelisted Static VPS IP (198.211.111.194)
+    // 1. HARDENED AUTHENTICATION CHECK
+    const authHeader = req.headers.authorization || req.headers.Authorization || req.headers['authorization'] || '';
+    const authenticatedUser = await verifyFirebaseIdToken(authHeader);
+
+    if (!authenticatedUser) {
+      res.status(401).json({ error: 'Unauthorized! You must be logged in to access top-up services.' });
+      return;
+    }
+
+    // 2. Forward request through Whitelisted VPS IP with Authorization header
     try {
       const vpsRes = await fetch('http://198.211.111.194:3000/api/moogold', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: apiPath, bodyObj })
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': authHeader
+        },
+        body: JSON.stringify({ path: apiPath, bodyObj, priceLkr, paymentId })
       });
       if (vpsRes.ok) {
         const text = await vpsRes.text();
@@ -57,20 +170,35 @@ export default async function handler(req, res) {
       console.warn('VPS proxy note:', vpsErr.message);
     }
 
-    const partnerId = process.env.VITE_MOONGOLD_PARTNER_ID || 'f27cabc8d2c2122bbedacabce632db68';
-    const secretKey = process.env.VITE_MOONGOLD_SECRET_KEY || 'PM67SGqyed';
+    // 3. Fallback Vercel Execution: Check wallet balance if order creation
+    const isOrderCreation = apiPath === 'order/create_order';
+    const numPriceLkr = parseFloat(priceLkr || body?.priceLkr || bodyObj?.priceLkr || 0);
+
+    if (isOrderCreation) {
+      if (numPriceLkr <= 0) {
+        return res.status(400).json({ error: 'Invalid order price specified.' });
+      }
+
+      const deductResult = await deductUserWallet(authenticatedUser.uid, numPriceLkr);
+      if (!deductResult.success) {
+        return res.status(403).json({ error: deductResult.reason || 'Insufficient wallet balance.' });
+      }
+    }
+
+    const partnerId = process.env.MOONGOLD_PARTNER_ID || process.env.VITE_MOONGOLD_PARTNER_ID || 'f27cabc8d2c2122bbedacabce632db68';
+    const secretKey = process.env.MOONGOLD_SECRET_KEY || process.env.VITE_MOONGOLD_SECRET_KEY || 'PM67SGqyed';
     const baseUrl = 'https://moogold.com/wp-json/v1/api';
 
     const timestamp = Math.floor(Date.now() / 1000);
     const payloadStr = JSON.stringify(bodyObj);
-    const stringToSign = payloadStr + timestamp + path;
+    const stringToSign = payloadStr + timestamp + apiPath;
 
     const hmac = crypto.createHmac('sha256', secretKey);
     hmac.update(stringToSign);
     const authSignature = hmac.digest('hex');
     const basicAuth = 'Basic ' + Buffer.from(`${partnerId}:${secretKey}`).toString('base64');
 
-    const apiRes = await fetch(`${baseUrl}/${path}`, {
+    const apiRes = await fetch(`${baseUrl}/${apiPath}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -78,34 +206,28 @@ export default async function handler(req, res) {
         'Authorization': basicAuth,
         'auth': authSignature,
         'timestamp': timestamp.toString(),
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        'Accept-Language': 'en-US,en;q=0.9'
+        'User-Agent': 'Mozilla/5.0'
       },
       body: payloadStr
     });
 
     const text = await apiRes.text();
-    res.status(apiRes.status);
+    let jsonResult = null;
     try {
-      const json = JSON.parse(text);
-      res.json(json);
-    } catch (e) {
-      if (apiRes.status !== 200) {
-        let outgoingIp = 'unknown';
-        try {
-          const ipRes = await fetch('https://api.ipify.org?format=json');
-          const ipData = await ipRes.json();
-          outgoingIp = ipData.ip;
-        } catch (ipErr) {}
+      jsonResult = JSON.parse(text);
+    } catch (e) {}
 
-        res.json({
-          status: apiRes.status,
-          vercel_outgoing_ip: outgoingIp,
-          moogold_raw_response: text.substring(0, 300)
-        });
-      } else {
-        res.send(text);
-      }
+    const isSuccess = apiRes.ok && jsonResult && (jsonResult.status === 'processing' || jsonResult.status === 'true' || jsonResult.status === true || jsonResult.status === 1 || jsonResult.order_id);
+
+    if (isOrderCreation && !isSuccess) {
+      await refundUserWallet(authenticatedUser.uid, numPriceLkr);
+    }
+
+    res.status(apiRes.status);
+    if (jsonResult) {
+      res.json(jsonResult);
+    } else {
+      res.send(text);
     }
   } catch (err) {
     console.error('Serverless function error:', err);
