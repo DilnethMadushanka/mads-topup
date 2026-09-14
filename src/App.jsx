@@ -26,7 +26,6 @@ import { ResellerLoginPage } from './components/ResellerLoginPage';
 import { ResellerDashboard } from './components/ResellerDashboard';
 import { ResellerBannerSection } from './components/ResellerBannerSection';
 import { ToastNotification } from './components/ToastNotification';
-import { LaunchPromoBanner } from './components/LaunchPromoBanner';
 import { Flame } from 'lucide-react';
 
 const MainContent = () => {
@@ -73,7 +72,6 @@ const MainContent = () => {
   return (
     <div className="min-h-screen bg-[#F8FAFF] flex flex-col justify-between pb-0 font-sans text-[#0f172a]">
       <div>
-        <LaunchPromoBanner />
         <Navbar />
         {selectedGame ? (
           <GameTopupPage />

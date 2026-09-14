@@ -577,53 +577,7 @@ export const TopupModal = () => {
                     </div>
                   )}
                   {/* PROMO CODE / COUPON INPUT BOX */}
-                  <div className="p-3.5 bg-[#0F172A] rounded-2xl border border-slate-700 text-xs space-y-2 text-white">
-                    <div className="font-extrabold flex items-center justify-between text-slate-200">
-                      <span className="flex items-center gap-1.5 text-amber-400">
-                        <Tag className="w-4 h-4" />
-                        Have a Promo / Coupon Code?
-                      </span>
-                      <span className="text-[10px] bg-red-600/30 text-red-300 px-2 py-0.5 rounded font-mono font-bold border border-red-500/30">
-                        24H Launch Special
-                      </span>
-                    </div>
 
-                    <form onSubmit={handleApplyPromoCode} className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="e.g. WELCOME50 or LAUNCH100"
-                        value={promoCodeInput}
-                        onChange={(e) => setPromoCodeInput(e.target.value.toUpperCase())}
-                        className="flex-1 px-3 py-2 bg-slate-900 border border-slate-700 focus:border-amber-400 rounded-xl text-xs font-mono font-bold uppercase text-white outline-none"
-                      />
-                      <button
-                        type="submit"
-                        className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs rounded-xl cursor-pointer transition-all shadow-xs"
-                      >
-                        Apply
-                      </button>
-                    </form>
-
-                    {appliedPromo && (
-                      <div className="p-2 bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 rounded-xl font-bold text-[11px] flex items-center justify-between font-mono">
-                        <span className="flex items-center gap-1">
-                          <Check className="w-3.5 h-3.5 text-emerald-400" />
-                          Code {appliedPromo.code} Applied (-Rs. {appliedPromo.discount})
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => { setAppliedPromo(null); setPromoCodeInput(''); }}
-                          className="text-xs text-red-400 hover:underline cursor-pointer"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    )}
-
-                    {promoError && (
-                      <p className="text-[11px] text-red-400 font-semibold">{promoError}</p>
-                    )}
-                  </div>
                 </div>
               )}
             </>
