@@ -1006,21 +1006,35 @@ Examples:
         }
         processingLocks.add(lockKey);
 
-        try {
           const pkgInfo = findPackageInGame(matchedGame, pkgArg);
           const orderId = 'ORD-TG-' + Math.floor(100000 + Math.random() * 900000);
-          const currentBalance = reseller.walletBalance || 10000;
+
+          // Live database check for reseller wallet balance before executing top-up
+          let freshReseller = reseller;
+          const keyToQuery = reseller.securityKey || reseller.resellerCode || reseller.uid;
+          if (keyToQuery) {
+            try {
+              const liveProfile = await getResellerProfileByKeyAsync(keyToQuery);
+              if (liveProfile) freshReseller = liveProfile;
+            } catch (e) {}
+          }
+
+          const currentBalance = parseFloat(freshReseller.walletBalance !== undefined ? freshReseller.walletBalance : 0);
 
           if (currentBalance < pkgInfo.priceLkr) {
+            const shortfall = pkgInfo.priceLkr - currentBalance;
             const failBalanceMsg = `
 ❌ TOP-UP FAILED: INSUFFICIENT RESELLER BALANCE
 
-📦 Order ID: ${orderId}
-👑 Reseller: ${reseller.name} (${reseller.resellerCode})
-💵 Required Wholesale Price: Rs. ${pkgInfo.priceLkr.toLocaleString()} LKR
-💰 Available Wallet Balance: Rs. ${currentBalance.toLocaleString()} LKR
+📦 Order Ref: ${orderId}
+👑 Reseller: ${freshReseller.name} (${freshReseller.resellerCode})
+🔑 Security Key: ${freshReseller.securityKey}
 
-Please recharge your reseller wallet using /deposit and try again.
+💵 Required Package Price: Rs. ${pkgInfo.priceLkr.toLocaleString()} LKR
+💰 Available Wallet Balance: Rs. ${currentBalance.toLocaleString()} LKR ($${(currentBalance / 305).toFixed(2)} USDT)
+⚠️ Shortfall Amount: Rs. ${shortfall.toLocaleString()} LKR
+
+📥 Please top up your reseller wallet using /deposit or on the web dashboard and try again.
             `.trim();
             return ctx.reply(failBalanceMsg);
           }
