@@ -39,8 +39,8 @@ function moogoldApiPlugin() {
               return;
             }
 
-            const partnerId = process.env.VITE_MOONGOLD_PARTNER_ID || 'f27cabc8d2c2122bbedacabce632db68';
-            const secretKey = process.env.VITE_MOONGOLD_SECRET_KEY || 'PM67SGqyed';
+            const partnerId = process.env.VITE_MOONGOLD_PARTNER_ID || process.env.MOONGOLD_PARTNER_ID || '';
+            const secretKey = process.env.VITE_MOONGOLD_SECRET_KEY || process.env.MOONGOLD_SECRET_KEY || '';
             const baseUrl = 'https://moogold.com/wp-json/v1/api';
 
             const timestamp = Math.floor(Date.now() / 1000);
