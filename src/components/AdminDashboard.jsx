@@ -1791,7 +1791,7 @@ export const AdminDashboard = () => {
                               Rs. {(usr.walletBalance || 0).toLocaleString()}
                             </td>
                             <td className="p-3.5 font-mono font-bold text-emerald-400">
-                              ${(usr.walletUsdt || 0).toFixed(2)}
+                              ${((usr.walletBalance || 0) / 305).toFixed(2)}
                             </td>
                             <td className="p-3.5 text-right space-x-1.5">
                               {!usr.isVerified && (
