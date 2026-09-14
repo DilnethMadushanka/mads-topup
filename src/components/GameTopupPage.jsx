@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { PAYMENT_METHODS } from '../data/games';
+import { PAYMENT_METHODS, getVerifiedPackagePriceLkr } from '../data/games';
 import { checkPlayerIGN, dispatchMoongoldOrder } from '../services/moongoldApi';
 import { uploadToR2Storage } from '../services/storageService';
 import confetti from 'canvas-confetti';

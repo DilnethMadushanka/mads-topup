@@ -244,3 +244,27 @@ export const PAYMENT_METHODS = [
   }
 ];
 
+/**
+ * Hardened Anti-Tamper Package Price Verifier
+ * Prevents Chrome DevTools / Inspect Element HTML tampering by recalculating official price directly from catalog
+ */
+export const getVerifiedPackagePriceLkr = (gameId, packageObj) => {
+  if (!packageObj) return 0;
+  
+  const cleanGameId = String(gameId || packageObj.gameId || '').toLowerCase();
+  const game = GAMES_DATA.find(g => g && g.id.toLowerCase() === cleanGameId);
+  
+  if (game && game.packages) {
+    const pkg = game.packages.find(p => 
+      (packageObj.id && p.id === packageObj.id) || 
+      (packageObj.moongoldProductId && p.moongoldProductId === packageObj.moongoldProductId) ||
+      (packageObj.name && p.name.trim().toLowerCase() === packageObj.name.trim().toLowerCase())
+    );
+    if (pkg && pkg.priceLkr > 0) {
+      return pkg.priceLkr;
+    }
+  }
+  
+  return Math.max(0, parseFloat(packageObj.priceLkr || 0));
+};
+

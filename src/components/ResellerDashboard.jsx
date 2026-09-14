@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { GAMES_DATA } from '../data/games';
+import { GAMES_DATA, getVerifiedPackagePriceLkr } from '../data/games';
 import { generateUniqueSecurityKey, ensureResellerCredentials } from '../services/firestoreService';
 import confetti from 'canvas-confetti';
 import { 
@@ -59,10 +59,11 @@ export const ResellerDashboard = () => {
   const currentGame = GAMES_DATA.find(g => g.id === selectedGameId) || GAMES_DATA[0];
   const selectedPackage = currentGame?.packages?.find(p => p.id === selectedPackageId) || currentGame?.packages?.[0];
 
-  // Calculate Reseller Wholesale Price (5% discount)
+  // Calculate Reseller Wholesale Price (5% discount) with Hardened Anti-Tamper Verification
+  const untamperedPackagePrice = getVerifiedPackagePriceLkr(currentGame?.id, selectedPackage);
   const calculateWholesalePrice = (priceLkr) => Math.round(priceLkr * 0.95);
-  const currentWholesalePrice = selectedPackage ? calculateWholesalePrice(selectedPackage.priceLkr) : 0;
-  const currentSavings = selectedPackage ? (selectedPackage.priceLkr - currentWholesalePrice) : 0;
+  const currentWholesalePrice = untamperedPackagePrice ? calculateWholesalePrice(untamperedPackagePrice) : 0;
+  const currentSavings = untamperedPackagePrice ? (untamperedPackagePrice - currentWholesalePrice) : 0;
 
   // Filter orders fulfilled by this reseller
   const resellerOrders = (orders || []).filter(o => {
