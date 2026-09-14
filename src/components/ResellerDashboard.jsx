@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { GAMES_DATA, getVerifiedPackagePriceLkr } from '../data/games';
-import { generateUniqueSecurityKey, ensureResellerCredentials } from '../services/firestoreService';
+import { generateUniqueSecurityKey, ensureResellerCredentials, getResellerProfileByKeyAsync } from '../services/firestoreService';
 import confetti from 'canvas-confetti';
 import { 
   Crown, Wallet, Zap, Copy, Check, ArrowLeft, Send, ShieldCheck, 
@@ -88,7 +88,7 @@ export const ResellerDashboard = () => {
     setTimeout(() => setIsCopiedId(false), 2000);
   };
 
-  const handleFulfillOrder = (e) => {
+  const handleFulfillOrder = async (e) => {
     e.preventDefault();
 
     if (!customerUid.trim()) {
@@ -106,14 +106,28 @@ export const ResellerDashboard = () => {
       return;
     }
 
-    const availBalanceLkr = userProfile?.walletBalance || 0;
+    setIsFulfilling(true);
+
+    // Live Database check for Reseller Wallet Balance before dispatching order
+    let availBalanceLkr = userProfile?.walletBalance || 0;
+    const keyToQuery = userProfile?.securityKey || userProfile?.resellerCode || userProfile?.uid || userProfile?.email;
+    if (keyToQuery) {
+      try {
+        const freshProfile = await getResellerProfileByKeyAsync(keyToQuery);
+        if (freshProfile && freshProfile.walletBalance !== undefined) {
+          availBalanceLkr = freshProfile.walletBalance;
+        }
+      } catch (err) {
+        console.error('[Reseller Web Dispatch] Live Firestore balance query warning:', err);
+      }
+    }
+
     if (availBalanceLkr < currentWholesalePrice) {
+      setIsFulfilling(false);
       showToast(`Insufficient Reseller Wallet Balance! Required: Rs. ${currentWholesalePrice.toLocaleString()} LKR. Available: Rs. ${availBalanceLkr.toLocaleString()} LKR. Please top up your wallet first!`, 'error');
       openWalletModal('ezcash');
       return;
     }
-
-    setIsFulfilling(true);
 
     setTimeout(() => {
       // Deduct Wholesale Price from Reseller Wallet
