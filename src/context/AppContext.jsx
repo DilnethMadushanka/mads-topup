@@ -335,7 +335,7 @@ export const AppProvider = ({ children }) => {
               const newPrice = Number(customPricesMap[pkg.id]);
               if (!isNaN(newPrice) && newPrice > 0) {
                 pkg.priceLkr = newPrice;
-                pkg.priceUsd = Number((newPrice / 305).toFixed(2));
+                pkg.priceUsd = Number((newPrice / 340).toFixed(2));
               }
             }
           });
