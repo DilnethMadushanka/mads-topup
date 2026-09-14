@@ -1,21 +1,39 @@
-# MADS TOPUP — Project Instructions & Architecture Rules
+# 🛡️ MADS TOPUP — Comprehensive Master Memory & Architecture Rules
 
-## 1. System Overview & Credentials
-- **Repository**: `DilnethMadushanka/mads-topup` (Branch: `main`)
-- **Backend / Deployment**: VPS deployment at `/root/mads-topup`
-- **VPS Deployment Command**: `cd /root/mads-topup && git pull origin main && npm run build && pm2 restart all`
-- **Email Delivery**: Zoho Mail SMTP (`info@trivexit.com`) is Primary Option for OTP delivery.
+## 1. Environment Credentials & VPS Deployment
+- **GitHub Repository**: `https://github.com/DilnethMadushanka/mads-topup.git` (Branch: `main`)
+- **Live VPS Production Path**: `/root/mads-topup`
+- **VPS Live Deployment Command**: `cd /root/mads-topup && git pull origin main && npm run build && pm2 restart all`
+- **Email Engine**: Primary Option is **Zoho Mail SMTP (`info@trivexit.com`)** for instant 6-digit OTP delivery directly to user inbox.
+- **Cloud Storage**: Cloudflare R2 Bucket (`mads-topup`). Asset uploads generate embedded DataURL / R2 URLs for 100% cross-device rendering.
 
-## 2. Core Business Rules
-- **Reseller Approval Guard**: Reseller applications remain `PENDING` until Admin approves. Unapproved applications must NEVER be allowed to log in as resellers or receive wholesale discounts (`isReseller: true`, `resellerStatus: 'APPROVED'`).
+## 2. Authentication & Account Security Rules
+- **Strict Admin Reseller Approval Guard**: Reseller applications MUST remain `PENDING` until Admin approves. Unapproved applications must NEVER be allowed to log in as resellers or receive wholesale pricing (`isReseller: true`, `resellerStatus: 'APPROVED'`).
 - **Reseller Security Key**: Unique `MADS-SEC-XXXX` and `RS-XXXXXX` generated per user profile.
-- **Game Top-Up Default**: No package is pre-selected by default when opening a game page (`cartQuantities = {}`).
-- **Password Reset**: OTP send handler (`handleSendPasswordReset`) MUST be wrapped in a `try ... catch ... finally` block so `setIsSendingReset(false)` is guaranteed to execute.
+- **Password Check & Sync**: `verifyUserLoginAsync` verifies real passwords across Firestore and Realtime DB.
+- **Password Reset Handlers**: `handleSendPasswordReset` MUST be wrapped in a `try ... catch ... finally` block so `setIsSendingReset(false)` is guaranteed to execute even if network fetches fail or timeout.
+- **Recipient Name Sanitization**: OTP email templates must format recipient display names (e.g. `Daneeshathathsarani`) so raw email strings (e.g. `daneeshathathsarani@gmail.com`) never appear after "Hello ".
+- **Clean Logout Handler**: `handleLogout` safely catches errors and resets all active modal states (`isUserProfileOpen`, `isResellerDashboardOpen`, `isResellerLoginPageOpen`, `isResellerPageOpen`, `isWalletModalOpen`, `selectedGame`, `isGameCatalogOpen`).
 
-## 3. Storage & Popup Banner Ad Rules
-- **Cloudflare R2 Storage**: Bucket `mads-topup`. File uploads convert to DataURL / public asset URLs for instant cross-device rendering.
-- **Popup Ad Modal (Midasbuy Style)**: Midasbuy card style with gold "GO" button, floating bottom circle close `X` button, no dark blur backdrop, configurable via Admin Dashboard (`adminTab === 'popupAd'`).
+## 3. Game Top-Up Page & Package Rules
+- **No Auto-Selected Package**: On game page load, `cartQuantities` MUST initialize as empty `{}` so no package is pre-selected by default.
+- **Package Selection**: Tapping a package card sets `qty = 1`.
+- **IGN Lookup**: Realtime player IGN verification (`checkPlayerIGN`) before submitting orders.
+- **Dual Currency Toggle**: LKR (Rs) & USDT ($) currency toggle (Exchange Rate: 1 USD = 305 LKR).
+- **Reseller Wholesale Discount**: Approved reseller partners receive an automatic 5% wholesale discount across all packages.
 
-## 4. Safety & Backward Compatibility
-- Never break existing payment methods (eZ Cash 14-digit RN, Binance Pay USDT).
-- Never break Moongold automated API dispatching or game package price synchronization.
+## 4. Payment Gateway Rules
+- **eZ Cash Payment Rules**: 14-digit RN reference number verification (starts with date, e.g. `20260910XXXXXX`). Dialog Genie app transaction lookup integration.
+- **Binance Pay USDT Rules**: Order ID and Binance Pay ID verification.
+- **Receipt Slips**: Slips uploaded directly to Cloudflare R2 bucket.
+
+## 5. Website Popup Banner Ad Rules (Midasbuy Style)
+- **Midasbuy Poster Card Style**: Gold/Yellow accent "GO" / "CLAIM NOW" action button centered at the bottom of the card.
+- **Floating Bottom Close Button**: Circular `X` close button positioned directly below the card.
+- **No Background Blur**: Clear, non-blurred backdrop (`bg-black/25`).
+- **Admin Management Panel**: Configurable from Admin Dashboard (`adminTab === 'popupAd'`). Includes Cloudflare R2 image file upload, DataURL embedding, quick preset buttons, URL fallback, and Realtime Live Preview box.
+
+## 6. Admin Dashboard (v3.5 PRO) Rules
+- Protected by authentication credentials and security code.
+- Includes 14 management tabs: Overview, Resellers, Orders, Deposits, EZ Cash, Users, Credit, Games, Vouchers, Moongold API, R2 Storage, Popup Ad, Ticker Notice, Support Desk.
+- Custom game package price editing saved live to Firestore (`saveCustomGamePricesToFirestore`).
