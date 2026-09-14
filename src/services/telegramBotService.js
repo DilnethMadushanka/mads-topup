@@ -41,11 +41,6 @@ export function restartTelegramPolling() {
     }
     if (typeof botInstance.startPolling === 'function') {
       botInstance.startPolling();
-    } else if (typeof longPoll === 'function') {
-      longPoll(botInstance).catch((err) => {
-        console.warn('⚠️ [Telegram Bot LongPoll Reconnected]:', err?.message || err);
-        setTimeout(restartTelegramPolling, 3000);
-      });
     }
     console.log('🔄 [Telegram Bot Engine] Long-polling re-initialized successfully.');
     return true;
@@ -1187,26 +1182,15 @@ Please check product availability or contact support. No reseller funds were cha
       });
     }
 
-    // Start Polling runner safely with auto-reconnecting error catch
-    const startPollingRunner = () => {
-      try {
-        if (typeof bot.startPolling === 'function') {
-          bot.startPolling();
-        } else if (typeof longPoll === 'function') {
-          longPoll(bot).catch((pollErr) => {
-            console.warn('⚠️ [Telegram Polling Disconnected]:', pollErr?.message || pollErr);
-            setTimeout(() => {
-              console.log('🔄 [Telegram Polling Reconnecting]...');
-              startPollingRunner();
-            }, 3000);
-          });
-        }
-      } catch (pollErr) {
-        console.warn('[Telegram Polling Start Note]:', pollErr.message);
+    // Start Polling runner safely with error catch
+    try {
+      if (typeof bot.startPolling === 'function') {
+        bot.startPolling();
       }
-    };
+    } catch (pollErr) {
+      console.warn('[Telegram Polling Start Note]:', pollErr.message);
+    }
 
-    startPollingRunner();
     console.log('🤖 Telegram Bot polling started successfully for ALL games on website!');
     startBotHealthCheckLoop();
 
