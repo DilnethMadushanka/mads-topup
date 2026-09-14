@@ -1033,15 +1033,41 @@ export const updateResellerApplicationStatusInFirestore = async (appId, userId, 
         securityKey,
         updatedAt: new Date().toISOString()
       });
-      if (userId && newStatus === 'APPROVED') {
-        const userRef = dbRef(rtdb, `users/${userId}`);
-        await rtdbUpdate(userRef, { 
-          isReseller: true, 
-          role: 'reseller', 
-          resellerStatus: 'APPROVED',
-          resellerCode,
-          securityKey
-        });
+      if (newStatus === 'APPROVED') {
+        const targetUids = new Set();
+        if (userId) targetUids.add(userId);
+        
+        // Find matching user by app email in RTDB
+        try {
+          const appSnap = await rtdbGet(appRef);
+          if (appSnap.exists()) {
+            const appVal = appSnap.val();
+            const appEmail = appVal?.emailAddress || appVal?.email || appVal?.userEmail;
+            if (appEmail) {
+              const cleanAppEmail = appEmail.trim().toLowerCase();
+              const usersSnap = await rtdbGet(dbRef(rtdb, 'users'));
+              if (usersSnap.exists()) {
+                const allUsers = usersSnap.val();
+                for (const [uId, uObj] of Object.entries(allUsers)) {
+                  if (uObj?.email && uObj.email.trim().toLowerCase() === cleanAppEmail) {
+                    targetUids.add(uId);
+                  }
+                }
+              }
+            }
+          }
+        } catch (e) {}
+
+        for (const uId of targetUids) {
+          const userRef = dbRef(rtdb, `users/${uId}`);
+          await rtdbUpdate(userRef, { 
+            isReseller: true, 
+            role: 'Reseller Partner', 
+            resellerStatus: 'APPROVED',
+            resellerCode,
+            securityKey
+          });
+        }
       }
     } catch (e) {
       console.warn('RTDB reseller app status update note:', e);
@@ -1066,7 +1092,7 @@ export const updateResellerApplicationStatusInFirestore = async (appId, userId, 
         const userRef = doc(db, 'users', userId);
         await setDoc(userRef, { 
           isReseller: true, 
-          role: 'reseller', 
+          role: 'Reseller Partner', 
           resellerStatus: 'APPROVED',
           resellerCode,
           securityKey
