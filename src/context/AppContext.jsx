@@ -893,7 +893,7 @@ export const AppProvider = ({ children }) => {
         referenceNumber: '20260910982314',
         amount: 1500,
         currency: 'LKR',
-        slipUrl: 'https://mads-topup.r2.cloudflarestorage.com/slips/ezcash_1001.jpg',
+        slipUrl: '',
         status: 'PENDING',
         createdAt: '2026-09-10 14:15'
       },
@@ -905,7 +905,7 @@ export const AppProvider = ({ children }) => {
         referenceNumber: '298102451901',
         amount: 25,
         currency: 'USDT',
-        slipUrl: 'https://mads-topup.r2.cloudflarestorage.com/slips/binance_1002.jpg',
+        slipUrl: '',
         status: 'PENDING',
         createdAt: '2026-09-10 14:30'
       },

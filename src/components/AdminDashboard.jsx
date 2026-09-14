@@ -68,6 +68,7 @@ export const AdminDashboard = () => {
 
   // Selected Bank Deposit Payment Receipt Inspection Modal State
   const [selectedReceiptPay, setSelectedReceiptPay] = useState(null);
+  const [receiptImgError, setReceiptImgError] = useState(false);
   // Options: 'overview' | 'orders' | 'deposits' | 'users' | 'credit' | 'games' | 'vouchers' | 'moongold' | 'r2' | 'announcement' | 'support'
 
   // Price Management State
@@ -2731,16 +2732,20 @@ export const AdminDashboard = () => {
           <div className="bg-[#111622] text-white w-full max-w-2xl rounded-3xl border border-slate-800 p-6 space-y-5 relative shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-sky-400 font-extrabold">
-                  📷
+                <div className="w-9 h-9 rounded-xl bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-sky-400 font-extrabold text-sm">
+                  {selectedReceiptPay.method?.toLowerCase().includes('ez') ? '📱' : selectedReceiptPay.method?.toLowerCase().includes('binance') ? '🔶' : '🏦'}
                 </div>
                 <div>
-                  <h3 className="text-base font-black font-heading text-white">Bank Deposit Payment Receipt</h3>
+                  <h3 className="text-base font-black font-heading text-white">
+                    {selectedReceiptPay.method?.toLowerCase().includes('ez') ? 'EZ Cash Payment Record' :
+                     selectedReceiptPay.method?.toLowerCase().includes('binance') ? 'Binance Pay Payment Record' :
+                     'Bank Deposit Payment Receipt'}
+                  </h3>
                   <p className="text-xs text-slate-400 font-mono">Payment ID: {selectedReceiptPay.id}</p>
                 </div>
               </div>
               <button 
-                onClick={() => setSelectedReceiptPay(null)}
+                onClick={() => { setSelectedReceiptPay(null); setReceiptImgError(false); }}
                 className="p-1.5 rounded-xl bg-slate-900 text-slate-400 hover:text-white transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
@@ -2748,13 +2753,40 @@ export const AdminDashboard = () => {
             </div>
 
             <div className="overflow-y-auto flex-1 space-y-4 pr-1">
-              {/* Slip Image Container */}
-              <div className="bg-slate-950 rounded-2xl border border-slate-800 p-3 flex flex-col items-center justify-center min-h-[220px]">
-                {selectedReceiptPay.slipUrl || selectedReceiptPay.receiptUrl ? (
+              {/* Inspection Container */}
+              <div className="bg-slate-950 rounded-2xl border border-slate-800 p-4 flex flex-col items-center justify-center min-h-[160px]">
+                {selectedReceiptPay.method?.toLowerCase().includes('ez') ? (
+                  <div className="text-center p-4 space-y-2 w-full">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto text-xl font-bold">
+                      <Smartphone className="w-6 h-6" />
+                    </div>
+                    <h4 className="font-extrabold text-white text-sm">EZ Cash 14-Digit Transaction RN</h4>
+                    <p className="font-mono text-base font-black text-amber-400 tracking-wider bg-slate-900 px-4 py-2 rounded-xl inline-block border border-slate-800">
+                      {selectedReceiptPay.referenceNumber}
+                    </p>
+                    <p className="text-[11px] text-slate-400 max-w-md mx-auto pt-1">
+                      💡 Check SMS Webhook Logs tab in Admin Dashboard or your Dialog EZ Cash merchant phone to verify this RN. No image upload required for EZ Cash.
+                    </p>
+                  </div>
+                ) : selectedReceiptPay.method?.toLowerCase().includes('binance') ? (
+                  <div className="text-center p-4 space-y-2 w-full">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto text-xl font-bold">
+                      <Zap className="w-6 h-6" />
+                    </div>
+                    <h4 className="font-extrabold text-white text-sm">Binance Pay Order ID / Transaction Ref</h4>
+                    <p className="font-mono text-base font-black text-amber-400 tracking-wider bg-slate-900 px-4 py-2 rounded-xl inline-block border border-slate-800">
+                      {selectedReceiptPay.referenceNumber}
+                    </p>
+                    <p className="text-[11px] text-slate-400 max-w-md mx-auto pt-1">
+                      💡 Check your Binance Merchant Portal or Binance App history for Pay ID <span className="text-amber-300 font-bold">547785111</span> to verify this USDT transaction.
+                    </p>
+                  </div>
+                ) : (selectedReceiptPay.slipUrl || selectedReceiptPay.receiptUrl) && !receiptImgError ? (
                   <div className="space-y-2 text-center w-full">
                     <img 
                       src={selectedReceiptPay.slipUrl || selectedReceiptPay.receiptUrl} 
                       alt="Bank Receipt Slip" 
+                      onError={() => setReceiptImgError(true)}
                       className="max-h-[380px] w-auto max-w-full rounded-xl object-contain mx-auto border border-slate-800 shadow-md"
                     />
                     <a
@@ -2768,8 +2800,17 @@ export const AdminDashboard = () => {
                     </a>
                   </div>
                 ) : (
-                  <div className="text-center py-10 space-y-2">
-                    <p className="text-slate-500 font-bold text-xs">No receipt image attached to this payment record.</p>
+                  <div className="text-center py-8 space-y-2">
+                    <div className="w-12 h-12 rounded-2xl bg-sky-500/10 border border-sky-500/30 text-sky-400 flex items-center justify-center mx-auto text-xl font-bold">
+                      <Building2 className="w-6 h-6" />
+                    </div>
+                    <h4 className="font-extrabold text-white text-sm">Bank Transfer Reference</h4>
+                    <p className="font-mono text-sm font-bold text-amber-400 bg-slate-900 px-3 py-1.5 rounded-lg inline-block border border-slate-800">
+                      {selectedReceiptPay.referenceNumber}
+                    </p>
+                    <p className="text-slate-400 font-medium text-xs">
+                      {receiptImgError ? '⚠️ Receipt image link expired or image not found on storage server.' : 'No receipt image file attached to this payment record.'}
+                    </p>
                   </div>
                 )}
               </div>
