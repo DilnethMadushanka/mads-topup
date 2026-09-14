@@ -379,7 +379,14 @@ export const AppProvider = ({ children }) => {
   const [userProfile, setUserProfileState] = useState(() => {
     const saved = localStorage.getItem('mads_user_profile');
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
+      try { 
+        const parsed = JSON.parse(saved); 
+        if (parsed && parsed.walletUsdt === 49.64) {
+          parsed.walletUsdt = 0;
+          localStorage.setItem('mads_user_profile', JSON.stringify(parsed));
+        }
+        return parsed; 
+      } catch (e) {}
     }
     return {
       uid: '',
@@ -464,7 +471,9 @@ export const AppProvider = ({ children }) => {
         // Subscribe to live Firestore updates
         const unsubFirestore = subscribeUserProfile(firebaseUser.uid, (liveData) => {
           if (liveData) {
-            setUserProfileState(prev => ({ ...prev, ...liveData }));
+            const cleanData = { ...liveData };
+            if (cleanData.walletUsdt === 49.64) cleanData.walletUsdt = 0;
+            setUserProfileState(prev => ({ ...prev, ...cleanData }));
           }
         });
         return () => unsubFirestore();
