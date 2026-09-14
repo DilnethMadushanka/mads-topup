@@ -51,9 +51,7 @@ export const GameTopupPage = () => {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (selectedGame && selectedGame.packages.length > 0) {
-      // Default to 1 for the first/popular package
-      const defaultPkg = selectedGame.packages.find(p => p.isPopular) || selectedGame.packages[0];
-      setCartQuantities({ [defaultPkg.id]: 1 });
+      setCartQuantities({});
       setPlayerId('');
       setZoneId('');
       setIgn('');
@@ -607,6 +605,9 @@ export const GameTopupPage = () => {
                 return (
                   <div
                     key={pkg.id}
+                    onClick={() => {
+                      if (qty === 0) updateQuantity(pkg.id, 1);
+                    }}
                     className={`bg-white rounded-2xl sm:rounded-3xl border transition-all duration-300 p-5 flex flex-col justify-between items-center text-center relative shadow-xs hover:shadow-md cursor-pointer group hover:-translate-y-1 ${
                       isSelected 
                         ? 'border-[#2563EB] ring-4 ring-blue-500/15 bg-blue-50/20' 
