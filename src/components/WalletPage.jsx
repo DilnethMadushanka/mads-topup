@@ -469,17 +469,6 @@ export const WalletPage = () => {
             <span>Binance Pay</span>
           </button>
 
-          <button
-            onClick={() => setWalletActiveTab('redeem')}
-            className={`flex-1 py-3 px-4 rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 ${
-              walletActiveTab === 'redeem'
-                ? 'bg-[#cc040a] text-white shadow-md'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <span>🎁</span>
-            <span>Voucher</span>
-          </button>
         </div>
 
         {/* TAB: BANK DEPOSIT PANEL */}
@@ -989,56 +978,6 @@ export const WalletPage = () => {
                 </button>
               </form>
 
-            </div>
-          </div>
-        )}
-
-        {/* TAB 3: REDEEM VOUCHER PANEL WITH STEP-BY-STEP INSTRUCTIONS */}
-        {walletActiveTab === 'redeem' && (
-          <div className="space-y-6 animate-in fade-in">
-            
-            {/* INSTRUCTION BOX */}
-            <div className="bg-gradient-to-br from-purple-600/10 via-slate-900 to-slate-950 rounded-3xl p-6 border border-purple-500/30 text-white shadow-xl space-y-2 text-center">
-              <span className="text-3xl block">🎁</span>
-              <h3 className="text-base font-black text-white font-heading">
-                Redeem Gift Card or Promo Code
-              </h3>
-              <p className="text-xs text-slate-300 font-medium max-w-md mx-auto">
-                Enter your official MADS TOPUP voucher or gift code below to credit LKR or USDT to your account instantly!
-              </p>
-            </div>
-
-            {/* FORM CONTAINER */}
-            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-md space-y-6">
-              <form onSubmit={handleRedeemSubmit} className="space-y-4 text-xs">
-                <div>
-                  <label className="font-extrabold text-slate-800 block mb-1.5 text-sm">
-                    Voucher / Gift Card Code
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. WELCOME100"
-                    value={voucherCode}
-                    onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
-                    className="w-full px-4 py-3.5 bg-[#F8FAFC] border border-slate-200 rounded-2xl text-base font-mono font-black text-slate-900 focus:outline-none focus:border-purple-500 shadow-xs uppercase tracking-wider text-center"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isRedeemingVoucher}
-                  className="w-full py-4 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-black text-sm uppercase tracking-wider rounded-2xl transition-all cursor-pointer shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2"
-                >
-                  {isRedeemingVoucher ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>VERIFYING & REDEEMING...</span>
-                    </>
-                  ) : (
-                    <span>REDEEM VOUCHER INSTANTLY</span>
-                  )}
-                </button>
-              </form>
             </div>
           </div>
         )}

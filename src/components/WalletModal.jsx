@@ -395,17 +395,6 @@ export const WalletModal = () => {
               <span>Binance</span>
             </button>
 
-            <button
-              onClick={() => setWalletActiveTab('redeem')}
-              className={`py-2 px-3 sm:px-4 rounded-full transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
-                walletActiveTab === 'redeem'
-                  ? 'bg-slate-100 text-slate-900 border border-slate-200/80 shadow-xs'
-                  : 'text-slate-500 hover:text-slate-900'
-              }`}
-            >
-              <span>🎁</span>
-              <span>Redeem</span>
-            </button>
           </div>
 
           {/* TAB 1: BANK DEPOSIT PANEL */}
@@ -740,51 +729,6 @@ export const WalletModal = () => {
                 </div>
               </div>
 
-            </div>
-          )}
-
-          {/* TAB 3: REDEEM VOUCHER PANEL */}
-          {walletActiveTab === 'redeem' && (
-            <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-md space-y-5 animate-in fade-in">
-              <div className="text-center">
-                <span className="text-3xl block mb-1">🎁</span>
-                <h3 className="text-base font-black text-slate-900 font-heading">
-                  Redeem Gift Card or Promo Code
-                </h3>
-                <p className="text-xs text-slate-500 font-medium">
-                  Enter your voucher code to add funds to your wallet instantly.
-                </p>
-              </div>
-
-              <form onSubmit={handleRedeemSubmit} className="space-y-4 text-xs">
-                <div>
-                  <label className="font-extrabold text-slate-700 block mb-1.5">
-                    Voucher Code
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. MADS-GIFT-98210"
-                    value={voucherCode}
-                    onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
-                    className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-mono font-bold text-slate-900 focus:outline-none focus:border-purple-500 shadow-xs uppercase tracking-wider"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isRedeemingVoucher}
-                  className="w-full py-3.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-colors cursor-pointer shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2"
-                >
-                  {isRedeemingVoucher ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>VERIFYING...</span>
-                    </>
-                  ) : (
-                    <span>REDEEM VOUCHER</span>
-                  )}
-                </button>
-              </form>
             </div>
           )}
 

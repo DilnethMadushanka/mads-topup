@@ -297,8 +297,8 @@ export const ReferralProgramPage = () => {
 
               <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-3">
                 <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 font-black text-sm flex items-center justify-center">2</div>
-                <h4 className="font-extrabold text-slate-900 text-sm">2. Friends Get Rs. 100 OFF</h4>
-                <p className="text-xs text-slate-500 leading-relaxed font-semibold">Your referred friends get a WELCOME100 voucher code for Rs. 100 OFF on orders of Rs. 1,500+.</p>
+                <h4 className="font-extrabold text-slate-900 text-sm">2. Friends Get Bonus Credit</h4>
+                <p className="text-xs text-slate-500 leading-relaxed font-semibold">Your referred friends get Rs. 100 bonus wallet credit on their first order of Rs. 1,500+.</p>
               </div>
 
               <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-3">

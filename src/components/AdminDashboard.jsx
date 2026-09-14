@@ -694,7 +694,6 @@ export const AdminDashboard = () => {
             { id: 'users', label: 'Users', icon: Users },
             { id: 'credit', label: 'Credit', icon: DollarSign },
             { id: 'games', label: 'Games', icon: Award },
-            { id: 'vouchers', label: 'Vouchers', icon: Ticket },
             { id: 'moongold', label: 'API Config', icon: Zap },
             { id: 'r2', label: 'R2 Storage', icon: Cloud },
             { id: 'announcement', label: 'Notice', icon: Megaphone }
@@ -2024,88 +2023,6 @@ export const AdminDashboard = () => {
               </div>
             )}
 
-
-            {/* 7. PROMO VOUCHERS GENERATOR */}
-            {adminTab === 'vouchers' && (
-              <div className="space-y-6 animate-in fade-in">
-                <div className="bg-[#111622] p-6 rounded-3xl border border-slate-800 space-y-4 max-w-2xl">
-                  <h3 className="text-base font-black text-white font-heading flex items-center gap-2">
-                    <Ticket className="w-5 h-5 text-purple-400" />
-                    <span>Create New Promo Voucher Code</span>
-                  </h3>
-
-                  <form onSubmit={handleCreateVoucherSubmit} className="space-y-4 text-xs">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-slate-300 font-extrabold mb-1">Voucher Code</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. MADS-GIFT-1000"
-                          value={newVoucherCode}
-                          onChange={(e) => setNewVoucherCode(e.target.value)}
-                          className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white font-mono font-bold focus:outline-none focus:border-purple-500 uppercase"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-300 font-extrabold mb-1">Value Amount</label>
-                        <input
-                          type="number"
-                          placeholder="e.g. 500"
-                          value={newVoucherValue}
-                          onChange={(e) => setNewVoucherValue(e.target.value)}
-                          className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white font-mono font-bold focus:outline-none focus:border-purple-500"
-                        />
-                      </div>
-                    </div>
-
-                    <button
-                      type="submit"
-                      className="px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-purple-600/30 cursor-pointer"
-                    >
-                      Generate Voucher Code
-                    </button>
-                  </form>
-                </div>
-
-                {/* Vouchers List */}
-                <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-[#111622]">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-[#0d121c] text-slate-400 uppercase font-mono text-[10px]">
-                      <tr>
-                        <th className="p-3.5">Code</th>
-                        <th className="p-3.5">Value</th>
-                        <th className="p-3.5">Uses Count</th>
-                        <th className="p-3.5">Status</th>
-                        <th className="p-3.5 text-right">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/60">
-                      {(vouchers || []).map((v) => (
-                        <tr key={v.code}>
-                          <td className="p-3.5 font-mono font-black text-purple-400">{v.code}</td>
-                          <td className="p-3.5 font-black text-white">{v.value} {v.currency}</td>
-                          <td className="p-3.5 text-slate-400 font-mono">{v.usedCount} / {v.maxUses}</td>
-                          <td className="p-3.5">
-                            <span className="px-2 py-0.5 bg-emerald-950 text-emerald-400 border border-emerald-800 rounded text-[9px] font-bold">
-                              ACTIVE
-                            </span>
-                          </td>
-                          <td className="p-3.5 text-right">
-                            <button
-                              onClick={() => deleteVoucher(v.code)}
-                              className="text-red-400 hover:text-red-300 font-bold cursor-pointer"
-                            >
-                              Delete
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
 
             {/* 8. TICKER NOTICE ANNOUNCEMENT */}
             {adminTab === 'announcement' && (
