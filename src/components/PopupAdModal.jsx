@@ -53,7 +53,10 @@ export const PopupAdModal = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in zoom-in-95 duration-300">
+    <div 
+      onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
+      className="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200"
+    >
       
       {/* MODAL CARD */}
       <div className="bg-slate-900 border border-red-500/30 text-white w-full max-w-lg rounded-3xl shadow-2xl shadow-red-600/20 overflow-hidden relative flex flex-col transform transition-all">
