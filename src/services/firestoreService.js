@@ -601,6 +601,106 @@ export const updateOrderStatusInFirestore = async (orderId, newStatus, moongoldR
 };
 
 /**
+ * Save manual payment record (EZ Cash, Binance Pay, Bank Slip) to Database
+ */
+export const saveManualPaymentToFirestore = async (payment) => {
+  if (!payment) return;
+  const payId = payment.id || `PAY-${Math.floor(1000 + Math.random() * 9000)}`;
+  const payload = {
+    ...payment,
+    id: payId,
+    timestamp: new Date().toISOString()
+  };
+
+  if (rtdb) {
+    try {
+      const payRef = dbRef(rtdb, `manual_payments/${payId}`);
+      await rtdbSet(payRef, payload);
+    } catch (e) {
+      console.warn('RTDB manual payment save note:', e);
+    }
+  }
+
+  if (db) {
+    try {
+      const payCol = collection(db, 'manual_payments');
+      await addDoc(payCol, payload);
+    } catch (err) {
+      console.warn('Firestore manual payment save note:', err);
+    }
+  }
+};
+
+/**
+ * Update manual payment status in Database
+ */
+export const updateManualPaymentStatusInFirestore = async (paymentId, newStatus) => {
+  if (!paymentId) return;
+
+  if (rtdb) {
+    try {
+      const payRef = dbRef(rtdb, `manual_payments/${paymentId}`);
+      await rtdbUpdate(payRef, { status: newStatus, updatedAt: new Date().toISOString() });
+    } catch (e) {
+      console.warn('RTDB manual payment status update note:', e);
+    }
+  }
+
+  if (db) {
+    try {
+      const payCol = collection(db, 'manual_payments');
+      const q = query(payCol, where('id', '==', paymentId));
+      const qSnap = await getDocs(q);
+      qSnap.forEach(async (docSnap) => {
+        await updateDoc(doc(db, 'manual_payments', docSnap.id), { status: newStatus, updatedAt: new Date().toISOString() });
+      });
+    } catch (err) {
+      console.warn('Firestore manual payment status update note:', err);
+    }
+  }
+};
+
+/**
+ * Subscribe to manual payments in Realtime Database or Firestore
+ */
+export const subscribeManualPaymentsFromFirestore = (callback) => {
+  let unsubRtdb = null;
+  let unsubFirestore = null;
+
+  if (rtdb) {
+    try {
+      const payRef = dbRef(rtdb, 'manual_payments');
+      unsubRtdb = rtdbOnValue(payRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const list = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+          if (list.length > 0) callback(list);
+        }
+      });
+    } catch (e) {
+      console.warn('RTDB manual payments listener note:', e);
+    }
+  }
+
+  if (db) {
+    try {
+      const payCol = collection(db, 'manual_payments');
+      unsubFirestore = onSnapshot(payCol, (snapshot) => {
+        const list = snapshot.docs.map(docSnap => ({ firestoreId: docSnap.id, ...docSnap.data() }));
+        if (list.length > 0) callback(list);
+      });
+    } catch (err) {
+      console.warn('Firestore manual payments listener note:', err);
+    }
+  }
+
+  return () => {
+    if (typeof unsubRtdb === 'function') unsubRtdb();
+    if (typeof unsubFirestore === 'function') unsubFirestore();
+  };
+};
+
+/**
  * Subscribe to all registered users in Firestore or Realtime Database
  */
 export const subscribeAllUsersFromFirestore = (callback) => {

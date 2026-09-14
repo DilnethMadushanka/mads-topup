@@ -8,7 +8,8 @@ import {
   syncUserProfileToFirestore, updateUserProfileInFirestore, subscribeUserProfile, 
   saveOrderToFirestore, subscribeAllUsersFromFirestore, subscribeOrdersFromFirestore, updateOrderStatusInFirestore,
   saveResellerApplicationToFirestore, subscribeResellerApplicationsFromFirestore, updateResellerApplicationStatusInFirestore,
-  saveCustomGamePricesToFirestore, subscribeCustomGamePricesFromFirestore, generateUniqueSecurityKey, ensureResellerCredentials
+  saveCustomGamePricesToFirestore, subscribeCustomGamePricesFromFirestore, generateUniqueSecurityKey, ensureResellerCredentials,
+  saveManualPaymentToFirestore, updateManualPaymentStatusInFirestore, subscribeManualPaymentsFromFirestore
 } from '../services/firestoreService';
 
 
@@ -870,6 +871,24 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem('mads_manual_payments', JSON.stringify(manualPayments));
   }, [manualPayments]);
 
+  useEffect(() => {
+    const unsub = subscribeManualPaymentsFromFirestore((liveList) => {
+      if (liveList && Array.isArray(liveList) && liveList.length > 0) {
+        setManualPayments(prev => {
+          const map = new Map();
+          (prev || []).forEach(item => {
+            if (item && item.id) map.set(item.id, item);
+          });
+          liveList.forEach(item => {
+            if (item && item.id) map.set(item.id, { ...map.get(item.id), ...item });
+          });
+          return Array.from(map.values());
+        });
+      }
+    });
+    return () => unsub();
+  }, []);
+
   const verifyUserAccount = (uid) => {
     setUsersList(prev => prev.map(u => u.uid === uid ? { ...u, isVerified: true } : u));
     showToast('User account verified & badge granted!');
@@ -935,6 +954,7 @@ export const AppProvider = ({ children }) => {
     if (!pay) return;
 
     setManualPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status: 'VERIFIED' } : p));
+    updateManualPaymentStatusInFirestore(paymentId, 'VERIFIED');
     
     if (pay.currency === 'USDT') {
       updateUserBalance(pay.userEmail, 0, pay.amount);
@@ -947,11 +967,18 @@ export const AppProvider = ({ children }) => {
 
   const rejectManualPayment = (paymentId) => {
     setManualPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status: 'REJECTED' } : p));
+    updateManualPaymentStatusInFirestore(paymentId, 'REJECTED');
     showToast(`Payment ${paymentId} rejected.`, 'error');
   };
 
   const addManualPayment = (newPay) => {
-    setManualPayments(prev => [newPay, ...prev]);
+    const fullPay = {
+      ...newPay,
+      id: newPay.id || `PAY-${Math.floor(1000 + Math.random() * 9000)}`,
+      createdAt: newPay.createdAt || new Date().toISOString().replace('T', ' ').substring(0, 16)
+    };
+    setManualPayments(prev => [fullPay, ...prev]);
+    saveManualPaymentToFirestore(fullPay);
     showToast(`Manual payment record created!`);
   };
 

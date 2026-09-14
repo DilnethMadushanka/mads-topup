@@ -245,7 +245,20 @@ export const WalletPage = () => {
         showToast(`⚡ EZ CASH RN VERIFIED! +Rs. ${amt.toLocaleString()} LKR credited to your wallet instantly!`);
         setEzCashRnNumber('');
       } else {
-        showToast(resData.error || 'Verification failed. Submitted for admin review.', 'error');
+        addManualPayment({
+          id: 'PAY-' + Math.floor(1000 + Math.random() * 9000),
+          userEmail: userProfile?.email || 'guest@madstopup.com',
+          userName: userProfile?.name || 'Gamer',
+          method: 'EZ Cash',
+          referenceNumber: ezCashRnNumber,
+          amount: amt,
+          currency: 'LKR',
+          slipUrl: '',
+          status: 'PENDING',
+          createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
+        });
+        showToast('EZ Cash deposit submitted for admin verification.');
+        setEzCashRnNumber('');
       }
     } catch (err) {
       console.warn('EZ Cash verify note:', err.message);
