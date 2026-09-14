@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { X, Sparkles, ExternalLink, Zap, ArrowRight, ShieldCheck, Flame } from 'lucide-react';
+import { X, Sparkles, Flame, ArrowRight } from 'lucide-react';
 
 export const PopupAdModal = () => {
   const { popupAdConfig, openCatalog, setIsWalletModalOpen } = useApp();
@@ -13,7 +13,6 @@ export const PopupAdModal = () => {
       return;
     }
 
-    // Check session storage if showOncePerSession is enabled
     if (popupAdConfig.showOncePerSession) {
       const closedInSession = sessionStorage.getItem('mads_popup_ad_dismissed');
       if (closedInSession === 'true') {
@@ -22,10 +21,9 @@ export const PopupAdModal = () => {
       }
     }
 
-    // Small delay for smooth entry animation after site load
     const timer = setTimeout(() => {
       setIsOpen(true);
-    }, 600);
+    }, 400);
 
     return () => clearTimeout(timer);
   }, [popupAdConfig]);
@@ -55,91 +53,73 @@ export const PopupAdModal = () => {
   return (
     <div 
       onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
-      className="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200"
+      className="fixed inset-0 z-[9999] bg-black/25 backdrop-blur-[2px] flex flex-col items-center justify-center p-4 animate-in fade-in duration-300 select-none"
     >
-      
-      {/* MODAL CARD */}
-      <div className="bg-slate-900 border border-red-500/30 text-white w-full max-w-lg rounded-3xl shadow-2xl shadow-red-600/20 overflow-hidden relative flex flex-col transform transition-all">
+      {/* MIDASBUY STYLE FLOATING POPUP WRAPPER */}
+      <div className="flex flex-col items-center max-w-sm sm:max-w-md w-full animate-in zoom-in-95 duration-300">
         
-        {/* CLOSE BUTTON (X Icon at top right) */}
-        <button
-          onClick={handleClose}
-          aria-label="Close Announcement"
-          className="absolute top-4 right-4 z-20 w-9 h-9 rounded-full bg-slate-950/70 text-slate-300 hover:text-white hover:bg-red-600/90 flex items-center justify-center transition-all duration-200 border border-slate-700/60 shadow-lg cursor-pointer group"
-        >
-          <X className="w-5 h-5 group-hover:scale-110 transition-transform" />
-        </button>
-
-        {/* IMAGE BANNER HEADER */}
-        {popupAdConfig.imageUrl && !imgError ? (
-          <div className="relative w-full h-48 sm:h-56 overflow-hidden bg-slate-950 group">
-            <img 
-              src={popupAdConfig.imageUrl} 
-              alt={popupAdConfig.title || 'Special Announcement'} 
-              onError={() => setImgError(true)}
-              className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-700"
-            />
-            {/* Dark overlay gradients */}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/30 to-transparent"></div>
-            <div className="absolute inset-0 bg-gradient-to-b from-slate-950/60 via-transparent to-transparent"></div>
-
-            {/* BADGE ON IMAGE */}
-            {popupAdConfig.badge && (
-              <div className="absolute top-4 left-4 z-10">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#cc040a] to-[#990207] text-white font-extrabold text-[11px] uppercase tracking-wider shadow-lg shadow-red-600/30 border border-red-400/40 animate-pulse">
-                  <Flame className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
-                  {popupAdConfig.badge}
-                </span>
-              </div>
-            )}
-          </div>
-        ) : (
-          /* FALLBACK BANNER IF NO IMAGE */
-          <div className="relative w-full h-36 bg-gradient-to-br from-red-950 via-slate-900 to-slate-950 p-6 flex flex-col justify-end border-b border-red-500/20">
-            <div className="absolute top-4 left-4">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-600/30 text-red-300 font-extrabold text-xs uppercase tracking-wider border border-red-500/40">
-                <Sparkles className="w-3.5 h-3.5" />
-                {popupAdConfig.badge || 'ANNOUNCEMENT'}
+        {/* CARD CONTENT POSTER */}
+        <div className="bg-slate-900 border-2 border-amber-400/40 text-white w-full rounded-3xl shadow-2xl shadow-amber-500/10 overflow-hidden relative flex flex-col items-center">
+          
+          {/* TOP BADGE */}
+          {popupAdConfig.badge && (
+            <div className="absolute top-3 left-3 z-20">
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-slate-950/80 backdrop-blur-md text-amber-300 border border-amber-400/50 font-black text-[10px] uppercase tracking-wider shadow-md">
+                <Flame className="w-3 h-3 text-amber-400 fill-amber-400" />
+                {popupAdConfig.badge}
               </span>
             </div>
-          </div>
-        )}
-
-        {/* CONTENT BODY */}
-        <div className="p-6 sm:p-7 space-y-4 text-center">
-          {popupAdConfig.title && (
-            <h3 className="text-xl sm:text-2xl font-black text-white font-heading tracking-tight leading-snug">
-              {popupAdConfig.title}
-            </h3>
           )}
 
-          {popupAdConfig.description && (
-            <p className="text-xs sm:text-sm font-medium text-slate-300 leading-relaxed max-w-md mx-auto">
-              {popupAdConfig.description}
-            </p>
-          )}
+          {/* MAIN BANNER POSTER IMAGE */}
+          {popupAdConfig.imageUrl && !imgError ? (
+            <div className="relative w-full min-h-[200px] max-h-[340px] bg-slate-950 overflow-hidden flex items-center justify-center">
+              <img 
+                src={popupAdConfig.imageUrl} 
+                alt={popupAdConfig.title || 'Promo Offer'} 
+                onError={() => setImgError(true)}
+                className="w-full h-full object-cover object-center"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
+            </div>
+          ) : null}
 
-          {/* ACTION BUTTON & DISMISS OPTIONS */}
-          <div className="pt-3 space-y-3">
-            <button
-              onClick={handleButtonClick}
-              className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#cc040a] via-red-600 to-[#990207] hover:from-[#990207] hover:to-[#cc040a] text-white font-black text-sm sm:text-base tracking-wide rounded-2xl shadow-xl shadow-red-600/30 hover:shadow-red-600/50 flex items-center justify-center gap-2.5 transition-all duration-300 transform hover:-translate-y-0.5 cursor-pointer active:translate-y-0"
-            >
-              <span>{popupAdConfig.buttonText || 'Explore Deals'}</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+          {/* TEXT OVERLAY / DETAILS */}
+          <div className="p-5 sm:p-6 text-center space-y-3 w-full bg-gradient-to-b from-slate-950/90 to-slate-950">
+            {popupAdConfig.title && (
+              <h3 className="text-lg sm:text-xl font-black text-white font-heading tracking-tight leading-snug">
+                {popupAdConfig.title}
+              </h3>
+            )}
 
-            <button
-              onClick={handleClose}
-              className="text-xs font-bold text-slate-400 hover:text-slate-200 transition-colors py-1 px-4 cursor-pointer inline-block"
-            >
-              Close Announcement
-            </button>
+            {popupAdConfig.description && (
+              <p className="text-xs font-medium text-slate-300 leading-relaxed max-w-xs mx-auto">
+                {popupAdConfig.description}
+              </p>
+            )}
+
+            {/* MIDASBUY STYLE GOLD/YELLOW CENTERING "GO" BUTTON */}
+            <div className="pt-2 flex justify-center">
+              <button
+                onClick={handleButtonClick}
+                className="w-full sm:w-auto px-10 py-3 rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 font-black text-sm tracking-wider uppercase shadow-xl shadow-amber-500/25 hover:shadow-amber-500/40 flex items-center justify-center gap-2 transform hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
+              >
+                <span>{popupAdConfig.buttonText || 'GO'}</span>
+                <ArrowRight className="w-4 h-4 text-slate-950" />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* BOTTOM ACCENT BAR */}
-        <div className="h-1.5 w-full bg-gradient-to-r from-red-600 via-amber-500 to-red-600"></div>
+        {/* MIDASBUY FLOATING CIRCULAR CLOSE BUTTON BELOW THE CARD */}
+        <button
+          onClick={handleClose}
+          aria-label="Close Announcement"
+          className="mt-4 w-10 h-10 rounded-full bg-slate-950/90 hover:bg-red-600 text-white flex items-center justify-center border border-slate-700/80 shadow-2xl transition-all hover:scale-110 active:scale-95 cursor-pointer group"
+        >
+          <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
+        </button>
+
       </div>
     </div>
   );

@@ -2717,54 +2717,47 @@ export const AdminDashboard = () => {
                         <span className="text-[10px] text-emerald-400 font-mono">Real-time</span>
                       </h4>
 
-                      {/* Mock Modal Card Preview */}
-                      <div className="bg-slate-950 border border-red-500/30 text-white rounded-3xl shadow-2xl overflow-hidden relative flex flex-col transform">
-                        {/* Mock Close Button */}
-                        <div className="absolute top-3 right-3 z-20 w-7 h-7 rounded-full bg-slate-950/70 text-slate-300 flex items-center justify-center border border-slate-700/60 shadow">
+                      {/* Mock Midasbuy Style Preview */}
+                      <div className="flex flex-col items-center w-full">
+                        <div className="bg-slate-950 border-2 border-amber-400/40 text-white rounded-3xl shadow-2xl overflow-hidden relative flex flex-col items-center w-full">
+                          {/* Badge */}
+                          {adBadge && (
+                            <div className="absolute top-3 left-3 z-10">
+                              <span className="px-2.5 py-0.5 rounded-full bg-slate-950/80 text-amber-300 border border-amber-400/40 font-black text-[9px] uppercase">
+                                🔥 {adBadge}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Image Poster */}
+                          {adImageUrl ? (
+                            <div className="relative w-full h-36 bg-slate-900 overflow-hidden">
+                              <img src={adImageUrl} alt="Preview Banner" className="w-full h-full object-cover" />
+                              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
+                            </div>
+                          ) : null}
+
+                          {/* Details & Gold GO Button */}
+                          <div className="p-4 text-center space-y-2.5 w-full bg-slate-950">
+                            <h5 className="text-base font-black text-white font-heading">
+                              {adTitle || 'Popup Title Here'}
+                            </h5>
+                            <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
+                              {adDescription || 'Your ad description will appear here...'}
+                            </p>
+                            <div className="pt-2 flex justify-center">
+                              <div className="px-8 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow flex items-center gap-1.5 cursor-pointer">
+                                <span>{adButtonText || 'GO'}</span>
+                                <ArrowRight className="w-3.5 h-3.5 text-slate-950" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Floating Bottom X Button */}
+                        <div className="mt-3 w-8 h-8 rounded-full bg-slate-950 text-white border border-slate-700 flex items-center justify-center shadow">
                           <X className="w-4 h-4" />
                         </div>
-
-                        {/* Mock Image Banner */}
-                        {adImageUrl ? (
-                          <div className="relative w-full h-36 bg-slate-900 overflow-hidden">
-                            <img src={adImageUrl} alt="Preview Banner" className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent"></div>
-                            {adBadge && (
-                              <div className="absolute top-3 left-3 z-10">
-                                <span className="px-2.5 py-1 rounded-full bg-red-600 text-white font-black text-[9px] uppercase tracking-wider">
-                                  🔥 {adBadge}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="w-full h-24 bg-gradient-to-r from-red-950 to-slate-900 p-3 flex items-start">
-                            <span className="px-2 py-0.5 rounded-full bg-red-600/30 text-red-300 font-black text-[9px] uppercase">
-                              {adBadge || 'ANNOUNCEMENT'}
-                            </span>
-                          </div>
-                        )}
-
-                        {/* Content Body */}
-                        <div className="p-4 space-y-2.5 text-center">
-                          <h5 className="text-base font-black text-white font-heading">
-                            {adTitle || 'Popup Title Here'}
-                          </h5>
-                          <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
-                            {adDescription || 'Your ad description will appear here...'}
-                          </p>
-                          <div className="pt-2 space-y-2">
-                            <div className="w-full py-2.5 px-4 bg-[#cc040a] text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow">
-                              <span>{adButtonText || 'Explore Deals'}</span>
-                              <ArrowRight className="w-3.5 h-3.5" />
-                            </div>
-                            <span className="text-[10px] text-slate-500 font-bold block cursor-pointer">
-                              Close Announcement
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="h-1 w-full bg-gradient-to-r from-red-600 via-amber-500 to-red-600"></div>
                       </div>
                     </div>
                   </div>
