@@ -154,10 +154,12 @@ export const checkMoongoldBalance = async () => {
   }
 
   // Fallback to configured merchant balance
+  const savedUsd = parseFloat(config.merchantBalanceUsd !== undefined ? config.merchantBalanceUsd : 480.00);
+  const savedLkr = parseFloat(config.merchantBalanceLkr !== undefined ? config.merchantBalanceLkr : (savedUsd * 305));
   return {
     success: true,
-    balanceUsd: config.merchantBalanceUsd || 480.00,
-    balanceLkr: config.merchantBalanceLkr || 145800.00,
+    balanceUsd: savedUsd,
+    balanceLkr: savedLkr,
     currency: 'USD',
     isRealtime: false
   };

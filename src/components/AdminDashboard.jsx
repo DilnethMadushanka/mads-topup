@@ -209,7 +209,8 @@ export const AdminDashboard = () => {
         balanceUsd: result.balanceUsd,
         balanceLkr: result.balanceLkr,
         isLoading: false,
-        lastFetched: new Date().toLocaleTimeString()
+        lastFetched: new Date().toLocaleTimeString(),
+        isRealtime: Boolean(result.isRealtime)
       });
     } else {
       setLiveMoongoldBalance(prev => ({ ...prev, isLoading: false }));
@@ -978,15 +979,30 @@ export const AdminDashboard = () => {
 
                   <div className="bg-[#111622] p-5 rounded-2xl border border-slate-800/90 shadow-md">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">MOONGOLD LIVE BALANCE</span>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
+                        {liveMoongoldBalance.isRealtime ? 'MOONGOLD LIVE BALANCE' : 'TOTAL SYSTEM WALLET BALANCE'}
+                      </span>
                       <button onClick={fetchLiveBalance} className="text-slate-400 hover:text-white" title="Refresh Live Balance">
                         <RefreshCw className={`w-3 h-3 ${liveMoongoldBalance.isLoading ? 'animate-spin text-amber-400' : ''}`} />
                       </button>
                     </div>
-                    <h4 className="text-2xl font-black text-sky-400 font-heading mt-1">Rs. {liveMoongoldBalance.balanceLkr.toLocaleString()}</h4>
-                    <span className="text-[10px] text-sky-500 font-bold mt-1 inline-block">
-                      ${liveMoongoldBalance.balanceUsd} USDT {liveMoongoldBalance.lastFetched ? `• Updated ${liveMoongoldBalance.lastFetched}` : '• Auto-Synced'}
-                    </span>
+                    {liveMoongoldBalance.isRealtime ? (
+                      <>
+                        <h4 className="text-2xl font-black text-sky-400 font-heading mt-1">Rs. {liveMoongoldBalance.balanceLkr.toLocaleString()}</h4>
+                        <span className="text-[10px] text-sky-500 font-bold mt-1 inline-block">
+                          ${liveMoongoldBalance.balanceUsd} USDT {liveMoongoldBalance.lastFetched ? `• Updated ${liveMoongoldBalance.lastFetched}` : '• Auto-Synced'}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <h4 className="text-2xl font-black text-sky-400 font-heading mt-1">
+                          Rs. {safeUsers.reduce((sum, u) => sum + (parseFloat(u.walletBalance) || 0), 0).toLocaleString()}
+                        </h4>
+                        <span className="text-[10px] text-sky-500 font-bold mt-1 inline-block">
+                          ${(safeUsers.reduce((sum, u) => sum + (parseFloat(u.walletBalance) || 0), 0) / 305).toFixed(2)} USDT • Total All Users in Database
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
 
