@@ -38,22 +38,65 @@ try {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Security Hardening Headers
+// Security Hardening Headers & CORS Controls
 app.disable('x-powered-by');
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   next();
 });
 
-app.use(cors());
-app.use(express.json({ limit: '2mb' }));
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
+app.use(express.json({ limit: '1mb' }));
 
-// Direct OTP Email sending API endpoint with multi-provider fallbacks (Resend API -> Gmail SMTP -> Zoho Mail SMTP)
-app.post('/api/send-otp', async (req, res) => {
+// Input Sanitization Helper against NoSQL & String Injection Attacks
+function sanitizeString(input, maxLength = 150) {
+  if (typeof input !== 'string') return '';
+  return input
+    .replace(/[\$\{\}<>]/g, '')
+    .trim()
+    .substring(0, maxLength);
+}
+
+// In-Memory Rate Limiting Protection Middleware against Brute-Force & Spam Request Attacks
+const rateLimitStore = new Map();
+function rateLimiter(maxRequests = 30, windowMs = 60000) {
+  return (req, res, next) => {
+    const clientIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
+    const now = Date.now();
+    const record = rateLimitStore.get(clientIp) || { count: 0, resetTime: now + windowMs };
+
+    if (now > record.resetTime) {
+      record.count = 1;
+      record.resetTime = now + windowMs;
+    } else {
+      record.count += 1;
+    }
+
+    rateLimitStore.set(clientIp, record);
+
+    if (record.count > maxRequests) {
+      return res.status(429).json({ error: 'Too many network requests. Please try again in 1 minute.' });
+    }
+    next();
+  };
+}
+
+// Direct OTP Email sending API endpoint with rate limiter & sanitization
+app.post('/api/send-otp', rateLimiter(10, 60000), async (req, res) => {
   try {
-    const { email, otp, name } = req.body || {};
+    const rawEmail = req.body?.email;
+    const rawOtp = req.body?.otp;
+    const rawName = req.body?.name;
+
+    const email = sanitizeString(rawEmail, 100);
+    const otp = sanitizeString(rawOtp, 10);
+    const name = sanitizeString(rawName, 50);
     if (!email || !otp) {
       return res.status(400).json({ error: 'Missing email or otp' });
     }
@@ -365,7 +408,7 @@ async function refundUserWallet(uid, priceLkr) {
 }
 
 // MooGold Reseller API Secure Proxy Endpoint (Server-Side Authentication & Balance Enforcement)
-app.post('/api/moogold', async (req, res) => {
+app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
   try {
     const { path: apiPath, bodyObj, priceLkr, paymentId } = req.body || {};
     if (!apiPath || !bodyObj) {
@@ -518,10 +561,11 @@ const receivedEzCashSmsLog = new Map();
 const usedEzCashRnNumbers = new Set();
 
 // Automated EZ Cash RN Deposit Verification Endpoint (Admin Approval Mode)
-app.post('/api/ezcash/verify-rn', (req, res) => {
+app.post('/api/ezcash/verify-rn', rateLimiter(15, 60000), (req, res) => {
   try {
     const { rnNumber, amount, userEmail } = req.body || {};
-    const cleanRn = String(rnNumber || '').trim();
+    const cleanRn = sanitizeString(String(rnNumber || ''), 20);
+    const cleanEmail = sanitizeString(String(userEmail || ''), 100);
 
     if (!cleanRn || cleanRn.length < 10) {
       return res.status(400).json({

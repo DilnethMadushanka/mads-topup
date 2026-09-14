@@ -116,8 +116,8 @@ function findPackageInGame(game, pkgArg) {
  * Dispatch Live Order to MooGold Reseller API
  */
 async function sendMoongoldLiveOrder(game, pkg, playerId, zoneId, orderRef) {
-  const partnerId = process.env.MOONGOLD_PARTNER_ID || process.env.VITE_MOONGOLD_PARTNER_ID || 'f27cabc8d2c2122bbedacabce632db68';
-  const secretKey = process.env.MOONGOLD_SECRET_KEY || process.env.VITE_MOONGOLD_SECRET_KEY || 'PM67SGqyed';
+  const partnerId = process.env.MOONGOLD_PARTNER_ID || process.env.VITE_MOONGOLD_PARTNER_ID || '';
+  const secretKey = process.env.MOONGOLD_SECRET_KEY || process.env.VITE_MOONGOLD_SECRET_KEY || '';
   const baseUrl = 'https://moogold.com/wp-json/v1/api';
   const apiPath = 'order/create_order';
 
@@ -210,8 +210,8 @@ async function sendMoongoldLiveOrder(game, pkg, playerId, zoneId, orderRef) {
  */
 async function checkMoongoldOrderStatus(orderId) {
   if (!orderId) return null;
-  const partnerId = process.env.MOONGOLD_PARTNER_ID || process.env.VITE_MOONGOLD_PARTNER_ID || 'f27cabc8d2c2122bbedacabce632db68';
-  const secretKey = process.env.MOONGOLD_SECRET_KEY || process.env.VITE_MOONGOLD_SECRET_KEY || 'PM67SGqyed';
+  const partnerId = process.env.MOONGOLD_PARTNER_ID || process.env.VITE_MOONGOLD_PARTNER_ID || '';
+  const secretKey = process.env.MOONGOLD_SECRET_KEY || process.env.VITE_MOONGOLD_SECRET_KEY || '';
   const baseUrl = 'https://moogold.com/wp-json/v1/api';
   const apiPath = 'order/order_detail';
 
@@ -262,7 +262,8 @@ async function checkMoongoldOrderStatus(orderId) {
 export function initTelegramBot() {
   if (botInstance) return botInstance;
 
-  const token = (typeof process !== 'undefined' && process.env.TELEGRAM_BOT_TOKEN) || '8721752035:AAHT3qzLWgytmhk8ApCEAEHVrTfD3iujgr0';
+  const token = (typeof process !== 'undefined' && process.env.TELEGRAM_BOT_TOKEN) || '';
+  if (!token) return null;
 
   try {
     const bot = new Bot(token);

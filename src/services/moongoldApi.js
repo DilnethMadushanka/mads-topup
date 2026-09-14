@@ -91,8 +91,8 @@ async function getMooGoldHeaders(path, bodyObj, partnerId, secretKey) {
  */
 export const checkMoongoldBalance = async () => {
   const config = getMoongoldConfig();
-  const partnerId = config.apiKey || 'f27cabc8d2c2122bbedacabce632db68';
-  const secretKey = config.secretKey || 'PM67SGqyed';
+  const partnerId = config.apiKey || '';
+  const secretKey = config.secretKey || '';
 
   const path = 'user/balance';
   const bodyObj = { path };
@@ -122,33 +122,35 @@ export const checkMoongoldBalance = async () => {
     console.warn('MooGold balance proxy note:', err);
   }
 
-  // 2. Secondary: Direct browser HMAC fetch
-  try {
-    const headers = await getMooGoldHeaders(path, bodyObj, partnerId, secretKey);
-    const baseUrl = config.baseUrl || 'https://moogold.com/wp-json/v1/api';
+  // 2. Secondary: Direct browser HMAC fetch (if secret key configured in admin settings)
+  if (partnerId && secretKey && secretKey !== '••••••••••••') {
+    try {
+      const headers = await getMooGoldHeaders(path, bodyObj, partnerId, secretKey);
+      const baseUrl = config.baseUrl || 'https://moogold.com/wp-json/v1/api';
 
-    const response = await fetch(`${baseUrl}/${path}`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(bodyObj)
-    });
+      const response = await fetch(`${baseUrl}/${path}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(bodyObj)
+      });
 
-    if (response.ok) {
-      const data = await response.json();
-      if (data && (data.balance !== undefined || data.usd !== undefined || data.data?.balance !== undefined)) {
-        const usdBal = parseFloat(data.balance || data.usd || data.amount || data.data?.balance || 0);
-        return {
-          success: true,
-          balanceUsd: usdBal,
-          balanceLkr: usdBal * 305,
-          currency: 'USD',
-          data,
-          isRealtime: true
-        };
+      if (response.ok) {
+        const data = await response.json();
+        if (data && (data.balance !== undefined || data.usd !== undefined || data.data?.balance !== undefined)) {
+          const usdBal = parseFloat(data.balance || data.usd || data.amount || data.data?.balance || 0);
+          return {
+            success: true,
+            balanceUsd: usdBal,
+            balanceLkr: usdBal * 305,
+            currency: 'USD',
+            data,
+            isRealtime: true
+          };
+        }
       }
+    } catch (err) {
+      console.warn('MooGold live balance fetch warning:', err);
     }
-  } catch (err) {
-    console.warn('MooGold live balance fetch warning:', err);
   }
 
   // Fallback to configured merchant balance
@@ -169,8 +171,8 @@ import { lookupFreePlayerIgn, saveCachedIgn } from './playerLookup.js';
  */
 export const checkPlayerIGN = async (gameId = '', playerId = '', zoneId = '', productId = '215570') => {
   const config = getMoongoldConfig();
-  const partnerId = config.apiKey || 'f27cabc8d2c2122bbedacabce632db68';
-  const secretKey = config.secretKey || 'PM67SGqyed';
+  const partnerId = config.apiKey || '';
+  const secretKey = config.secretKey || '';
   const baseUrl = config.baseUrl || 'https://moogold.com/wp-json/v1/api';
   
   await new Promise(res => setTimeout(res, 300));
