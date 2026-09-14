@@ -5,7 +5,7 @@ import { lookupFreePlayerIgn } from './playerLookup.js';
 import { getResellerProfileByKey, getResellerProfileByKeyAsync, deductResellerWalletBalance, saveOrderToFirestore } from './firestoreService.js';
 
 const require = createRequire(import.meta.url);
-const { Bot, longPoll } = require('node-telegram-bot-api');
+const { Bot } = require('node-telegram-bot-api');
 
 let botInstance = null;
 
@@ -15,7 +15,7 @@ const boundChatSessions = new Map();
 // Security Rate Limiter: chatId -> { failedAttempts, lockoutUntil }
 const authRateLimiter = new Map();
 
-// Concurrent Order Lock: chatId -> boolean
+// Concurrent Order Lock: lockKey -> boolean
 const processingLocks = new Set();
 
 // Message Deduplication & Stale Message Filtering
@@ -29,6 +29,25 @@ let nextHealthCheckTime = null;
 let autoRecoveryCount = 0;
 let lastLatencyMs = 0;
 let healthCheckTimer = null;
+
+/**
+ * Safe Telegram Reply Helper
+ */
+async function safeReply(ctx, text) {
+  try {
+    if (typeof ctx.reply === 'function') {
+      return await ctx.reply(text);
+    }
+    const chatId = ctx.message?.chat?.id || ctx.chat?.id || ctx.chatId;
+    if (chatId && botInstance && typeof botInstance.sendMessage === 'function') {
+      return await botInstance.sendMessage(chatId, text);
+    } else if (chatId && botInstance && botInstance.api && typeof botInstance.api.sendMessage === 'function') {
+      return await botInstance.api.sendMessage(chatId, text);
+    }
+  } catch (err) {
+    console.error('[Telegram safeReply Error]:', err.message);
+  }
+}
 
 /**
  * Restart Telegram Bot long-polling safely on connection drops
@@ -220,7 +239,7 @@ function findPackageInGame(game, pkgArg) {
   // 1. Direct match by exact package ID (e.g. 'ml-78', 'ff-100', 'pubg-60')
   let match = game.packages.find(p => p.id.toLowerCase() === rawStr || p.id.toLowerCase().replace(/[^a-z0-9]/g, '') === pClean);
 
-  // 2. Exact match by package total amount (e.g. 86 diamonds for 78+8, 172 for 156+16, 257 for 234+23, 706 for 625+81)
+  // 2. Exact match by package total amount
   if (!match) {
     const num = parseInt(pClean);
     if (!isNaN(num)) {
@@ -228,7 +247,7 @@ function findPackageInGame(game, pkgArg) {
     }
   }
 
-  // 3. Match by ID suffix or prefix number (e.g. '78' matches 'ml-78', '100' matches 'ff-100')
+  // 3. Match by ID suffix or prefix number
   if (!match) {
     const num = parseInt(pClean);
     if (!isNaN(num)) {
@@ -456,8 +475,8 @@ export function initTelegramBot() {
       })
     }).catch(() => {});
 
-    // Command: /start
-    bot.command('start', (ctx) => {
+    // Handlers
+    const handleStart = (ctx) => {
       const welcomeText = `
 👑 Welcome to MADS TOPUP All-Game Reseller Bot!
 
@@ -488,11 +507,10 @@ Support for ALL games on website: Mobile Legends, Free Fire, PUBG Mobile, Blood 
 • /games - List All Supported Games
 • /help - Command Guide
       `.trim();
-      return ctx.reply(welcomeText);
-    });
+      return safeReply(ctx, welcomeText);
+    };
 
-    // Command: /help
-    bot.command('help', (ctx) => {
+    const handleHelp = (ctx) => {
       const helpText = `
 ℹ️ MADS TOPUP BOT COMMAND GUIDE (ALL GAMES)
 
@@ -518,10 +536,9 @@ Support for ALL games on website: Mobile Legends, Free Fire, PUBG Mobile, Blood 
 • /balance - View Balance & Security Key
 • /deposit - Recharge Wallet Info
       `.trim();
-      return ctx.reply(helpText);
-    });
+      return safeReply(ctx, helpText);
+    };
 
-    // Command: /games & /packages [game]
     const handlePackages = (ctx) => {
       try {
         const text = ctx.message?.text || ctx.msg?.text || '';
@@ -541,10 +558,9 @@ Support for ALL games on website: Mobile Legends, Free Fire, PUBG Mobile, Blood 
 
           const gAlias = matchedGame.id === 'mobilelegends' ? 'ml' : matchedGame.id === 'freefire_sg' ? 'ff' : matchedGame.id;
           replyText += `⚡ How to Order:\n• /topup ${gAlias} <player_id> ${matchedGame.requiresServer ? '<zone_id> ' : ''}<code_or_amount>`;
-          return ctx.reply(replyText);
+          return safeReply(ctx, replyText);
         }
 
-        // Summary of all website games & diamond packages
         let summaryText = `📦 MADS TOPUP GAME PACKAGES & WHOLESALE PRICE LIST\n\n`;
         summaryText += `💡 Type /packages <game> (e.g. /packages ml or /packages ff) to view ALL packages for a specific game!\n\n`;
 
@@ -560,19 +576,13 @@ Support for ALL games on website: Mobile Legends, Free Fire, PUBG Mobile, Blood 
         });
 
         summaryText += `⚡ Reseller Wholesale Advantage: 5% OFF All Retail Prices Instant Deduct from Reseller Balance!`;
-        return ctx.reply(summaryText);
+        return safeReply(ctx, summaryText);
       } catch (e) {
         console.error('Packages Error:', e);
       }
     };
 
-    bot.command('games', handlePackages);
-    bot.command('packages', handlePackages);
-    bot.command('packs', handlePackages);
-    bot.command('prices', handlePackages);
-
-    // Command: /status - Live 24/7 Bot Health & Refresh Metrics
-    bot.command('status', (ctx) => {
+    const handleStatus = (ctx) => {
       const health = getTelegramBotHealthStatus();
       const statusText = `
 🟢 MADS TOPUP TELEGRAM BOT 24/7 ENGINE STATUS
@@ -587,13 +597,12 @@ Support for ALL games on website: Mobile Legends, Free Fire, PUBG Mobile, Blood 
 🎮 Games Supported: ${health.gamesSupported || GAMES_DATA.length} Games (${GAMES_DATA.map(g => g.name).join(', ')})
 💰 Reseller Payment Gateways: Online (EZ Cash, Binance Pay, Bank)
       `.trim();
-      return ctx.reply(statusText);
-    });
+      return safeReply(ctx, statusText);
+    };
 
-    // Command: /refresh - Force Instant Telegram Engine Ping & Connection Health Test
-    bot.command('refresh', async (ctx) => {
+    const handleRefresh = async (ctx) => {
       try {
-        await ctx.reply('🔄 Refreshing Telegram Bot engine connection & verifying Telegram API health...');
+        await safeReply(ctx, '🔄 Refreshing Telegram Bot engine connection & verifying Telegram API health...');
         const health = await forceTelegramBotRefresh();
 
         const refreshMsg = `
@@ -608,13 +617,12 @@ Support for ALL games on website: Mobile Legends, Free Fire, PUBG Mobile, Blood 
 
 Telegram long-polling connection is 100% active 24/7!
         `.trim();
-        return ctx.reply(refreshMsg);
+        return safeReply(ctx, refreshMsg);
       } catch (e) {
-        return ctx.reply(`❌ Refresh Error: ${e.message}`);
+        return safeReply(ctx, `❌ Refresh Error: ${e.message}`);
       }
-    });
+    };
 
-    // Command: /auth [SecurityKey]  or  /link [SecurityKey]
     const handleAuth = async (ctx) => {
       try {
         const chatId = ctx.message?.chat?.id || ctx.chat?.id;
@@ -625,16 +633,15 @@ Telegram long-polling connection is 100% active 24/7!
 
         if (!chatId) return;
 
-        // Anti-Brute-Force Rate Limiting Check
         const now = Date.now();
         const rateData = authRateLimiter.get(chatId) || { failedAttempts: 0, lockoutUntil: 0 };
         if (rateData.lockoutUntil > now) {
           const waitMins = Math.ceil((rateData.lockoutUntil - now) / 60000);
-          return ctx.reply(`🛡️ SECURITY LOCKOUT ACTIVATED\n\nToo many failed auth attempts. Chat locked for ${waitMins} minute(s) to prevent key brute-forcing.`);
+          return safeReply(ctx, `🛡️ SECURITY LOCKOUT ACTIVATED\n\nToo many failed auth attempts. Chat locked for ${waitMins} minute(s) to prevent key brute-forcing.`);
         }
 
         if (!keyArg || keyArg.startsWith('/')) {
-          return ctx.reply('❌ Error: Please specify your unique Security Key or Reseller Code.\nUsage: /auth MADS-SEC-50048A92');
+          return safeReply(ctx, '❌ Error: Please specify your unique Security Key or Reseller Code.\nUsage: /auth MADS-SEC-50048A92');
         }
 
         const reseller = await getResellerProfileByKeyAsync(keyArg);
@@ -655,13 +662,13 @@ Telegram long-polling connection is 100% active 24/7!
 
 Your Telegram chat is now bound to your Reseller Wallet! You can use /topup for any game on the website.
           `.trim();
-          return ctx.reply(successText);
+          return safeReply(ctx, successText);
         } else {
           rateData.failedAttempts += 1;
           if (rateData.failedAttempts >= 5) {
-            rateData.lockoutUntil = now + (15 * 60 * 1000); // 15 mins lock
+            rateData.lockoutUntil = now + (15 * 60 * 1000);
             authRateLimiter.set(chatId, rateData);
-            return ctx.reply('🛡️ SECURITY LOCKOUT ACTIVATED: 5 consecutive failed authentication attempts. Chat locked for 15 minutes to prevent key brute-forcing.');
+            return safeReply(ctx, '🛡️ SECURITY LOCKOUT ACTIVATED: 5 consecutive failed authentication attempts. Chat locked for 15 minutes to prevent key brute-forcing.');
           }
           authRateLimiter.set(chatId, rateData);
 
@@ -673,31 +680,16 @@ Please copy your unique Security Key from your MADS TOPUP Reseller Dashboard and
 
 Usage: /auth MADS-SEC-50048A92
           `.trim();
-          return ctx.reply(failText);
+          return safeReply(ctx, failText);
         }
       } catch (err) {
         console.error('[Telegram Auth Error]:', err);
         try {
-          return ctx.reply(`❌ Auth Error: ${err.message}`);
+          return safeReply(ctx, `❌ Auth Error: ${err.message}`);
         } catch (e) {}
       }
     };
 
-    bot.catch((err) => {
-      console.error('[Telegram Bot Engine Catch]:', err.message || err);
-      try {
-        if (botInstance && typeof botInstance.isRunning === 'function' && !botInstance.isRunning()) {
-          console.warn('⚠️ [Telegram Bot Engine] Polling stopped after catch error. Triggering auto-recovery...');
-          restartTelegramPolling();
-        }
-      } catch (e) {}
-    });
-
-    bot.command('auth', handleAuth);
-    bot.command('link', handleAuth);
-    bot.command('key', handleAuth);
-
-    // Live Player IGN Lookup Handler (All Games)
     const handlePlayerCheck = async (ctx) => {
       try {
         const text = ctx.message?.text || ctx.msg?.text || '';
@@ -709,28 +701,20 @@ Usage: /auth MADS-SEC-50048A92
         let zone = '';
 
         if (!rawCmd || rawCmd === 'id' || rawCmd === 'ign' || rawCmd === 'check' || rawCmd === 'lookup' || rawCmd === 'verify') {
-          // Format 1: /id ff 1017871735 (Game in the middle!)
-          // Format 2: /id ml 84218845 2168 (Game in the middle with Zone!)
-          // Format 3: /id 1017871735 ff (Game at the end!)
-          // Format 4: /id 1017871735 (No game specified -> auto-detect Free Fire)
-          // Format 5: /id 84218845 2168 (No game specified -> auto-detect Mobile Legends)
           const args = parts.slice(1);
           if (args.length === 0) {
-            return ctx.reply(`❌ Error: Please enter Player ID.\nUsage Examples:\n• /id ff 1017871735 (Free Fire)\n• /id ml 84218845 2168 (Mobile Legends)\n• /id pubg 5123984712 (PUBG)\n• /ff 1017871735\n• /ml 84218845 2168`);
+            return safeReply(ctx, `❌ Error: Please enter Player ID.\nUsage Examples:\n• /id ff 1017871735 (Free Fire)\n• /id ml 84218845 2168 (Mobile Legends)\n• /id pubg 5123984712 (PUBG)\n• /ff 1017871735\n• /ml 84218845 2168`);
           }
 
           if (isNaN(args[0])) {
-            // First argument is game code (e.g., ff, ml, pubg, bs, df, gs)
             gameArg = args[0];
             id = args[1] || '';
             zone = args[2] || '';
           } else if (args.length >= 2 && isNaN(args[args.length - 1])) {
-            // Last argument is game code (e.g., 1017871735 ff)
             gameArg = args[args.length - 1];
             id = args[0] || '';
             zone = args[1] !== gameArg ? args[1] : '';
           } else {
-            // All args are numeric
             if (args.length === 1) {
               id = args[0];
               gameArg = 'freefire_sg';
@@ -742,7 +726,6 @@ Usage: /auth MADS-SEC-50048A92
             }
           }
         } else {
-          // Direct game shortcut command: /ff 1017871735, /ml 84218845 2168, etc.
           gameArg = rawCmd;
           id = parts[1] || '';
           zone = parts[2] || '';
@@ -751,10 +734,10 @@ Usage: /auth MADS-SEC-50048A92
         const matchedGame = findGameInCatalog(gameArg);
 
         if (!id) {
-          return ctx.reply(`❌ Error: Please enter Player ID.\nUsage Examples:\n• /id ff 1017871735\n• /id ml 84218845 2168\n• /ff 1017871735\n• /ml 84218845 2168`);
+          return safeReply(ctx, `❌ Error: Please enter Player ID.\nUsage Examples:\n• /id ff 1017871735\n• /id ml 84218845 2168\n• /ff 1017871735\n• /ml 84218845 2168`);
         }
 
-        await ctx.reply(`⌛ Checking Player IGN for ${matchedGame.name}...\n🎮 Game: ${matchedGame.name}\n🆔 Player ID: ${id}${zone ? `\n🌐 Zone ID: ${zone}` : ''}`);
+        await safeReply(ctx, `⌛ Checking Player IGN for ${matchedGame.name}...\n🎮 Game: ${matchedGame.name}\n🆔 Player ID: ${id}${zone ? `\n🌐 Zone ID: ${zone}` : ''}`);
 
         try {
           const result = await lookupFreePlayerIgn(matchedGame.id, id, zone);
@@ -770,7 +753,7 @@ ${zone ? `🌐 Zone ID: ${zone}\n` : ''}⚡ Status: Verified Active Player
 
 Ready for instant wholesale top-up!
             `.trim();
-            return ctx.reply(successMsg);
+            return safeReply(ctx, successMsg);
           } else {
             const notFoundMsg = `
 ⚠️ PLAYER LOOKUP NOTICE
@@ -779,29 +762,16 @@ Ready for instant wholesale top-up!
 🆔 Player ID: ${id}
 ${zone ? `🌐 Zone ID: ${zone}\n` : ''}ℹ️ Status: ID formatting valid. Ready for top-up!
             `.trim();
-            return ctx.reply(notFoundMsg);
+            return safeReply(ctx, notFoundMsg);
           }
         } catch (err) {
-          return ctx.reply(`❌ Lookup Error: ${err.message}`);
+          return safeReply(ctx, `❌ Lookup Error: ${err.message}`);
         }
       } catch (e) {
         console.error('PlayerCheck Error:', e);
       }
     };
 
-    bot.command('id', handlePlayerCheck);
-    bot.command('ign', handlePlayerCheck);
-    bot.command('check', handlePlayerCheck);
-    bot.command('ml', handlePlayerCheck);
-    bot.command('ff', handlePlayerCheck);
-    bot.command('pubg', handlePlayerCheck);
-    bot.command('bs', handlePlayerCheck);
-    bot.command('df', handlePlayerCheck);
-    bot.command('gs', handlePlayerCheck);
-    bot.command('lookup', handlePlayerCheck);
-    bot.command('verify', handlePlayerCheck);
-
-    // Command: /balance, /reseller, /wallet
     const handleBalance = async (ctx) => {
       try {
         const chatId = ctx.message?.chat?.id || ctx.chat?.id;
@@ -817,7 +787,7 @@ Your Telegram chat is not bound to a verified Reseller Account.
 Send: /auth <SecurityKey>
 (Example: /auth MADS-SEC-50048A92)
           `.trim();
-          return ctx.reply(unauthMsg);
+          return safeReply(ctx, unauthMsg);
         }
 
         // Always query database live for latest reseller balance
@@ -848,21 +818,15 @@ Send: /auth <SecurityKey>
 🎮 To Check Supported Games: Type /games
 ⚡ To Execute Top-up: Type /topup <game> <id> [zone] <package>
         `.trim();
-        return ctx.reply(balanceText);
+        return safeReply(ctx, balanceText);
       } catch (e) {
         console.error('Balance Error:', e);
         try {
-          ctx.reply('⚠️ Error retrieving wallet balance. Please try again.');
+          safeReply(ctx, '⚠️ Error retrieving wallet balance. Please try again.');
         } catch (e2) {}
       }
     };
 
-
-    bot.command('balance', handleBalance);
-    bot.command('reseller', handleBalance);
-    bot.command('wallet', handleBalance);
-
-    // Command: /deposit, /recharge
     const handleDeposit = (ctx) => {
       try {
         const depositText = `
@@ -880,21 +844,17 @@ Send: /auth <SecurityKey>
 • Commercial Bank: 8009124810 (MADS ENGINE)
 • Send slip to @mads_support for instant credit.
         `.trim();
-        return ctx.reply(depositText);
+        return safeReply(ctx, depositText);
       } catch (e) {
         console.error('Deposit Error:', e);
       }
     };
 
-    bot.command('deposit', handleDeposit);
-    bot.command('recharge', handleDeposit);
-
-    // Command: /topup [game] [player_id] [zone_id] [package]
-    bot.command('topup', async (ctx) => {
+    const handleTopup = async (ctx) => {
       try {
         const msgDate = ctx.message?.date || 0;
         if (msgDate && msgDate < botStartTime - 5) {
-          console.log(`[Telegram Bot] Ignored stale topup command sent before server startup (msgDate: ${msgDate}, bootTime: ${botStartTime})`);
+          console.log(`[Telegram Bot] Ignored stale topup command sent before server startup`);
           return;
         }
 
@@ -950,26 +910,20 @@ Your Telegram chat is not bound to a verified MADS TOPUP Reseller Account.
 
 Once authenticated, your Telegram chat will be linked and authorized for instant top-ups!
           `.trim();
-          return ctx.reply(authRequiredText);
+          return safeReply(ctx, authRequiredText);
         }
-
 
         let gameArg = (parts[1] || 'mobilelegends').toLowerCase().replace(/[()[\]]/g, '');
         let idArg = (parts[2] || '').replace(/[()[\]]/g, '');
         let zoneArg = (parts[3] || '').replace(/[()[\]]/g, '');
         let pkgArg = (parts[4] || '').replace(/[()[\]]/g, '');
 
-        // Smart Parsing for MLBB & All Games:
-        // Format A: /topup ml 84218845 2168 86
-        // Format B: /topup ml 84218845(2168) 86
-        // Format C: /topup 84218845 2168 86 (Omitted 'ml')
         const matchZoneInParts2 = (parts[2] || '').match(/^(\d+)[^0-9]+(\d+)$/);
         if (matchZoneInParts2) {
           idArg = matchZoneInParts2[1];
           zoneArg = matchZoneInParts2[2];
           pkgArg = (parts[3] || parts[4] || '').replace(/[()[\]]/g, '');
         } else if (!isNaN(parts[1])) {
-          // First parameter is numeric -> user omitted game code (e.g. /topup 84218845 2168 86)
           gameArg = 'mobilelegends';
           idArg = (parts[1] || '').replace(/[()[\]]/g, '');
           zoneArg = (parts[2] || '').replace(/[()[\]]/g, '');
@@ -994,20 +948,19 @@ Examples:
 • /topup ff 248901234 100 (Free Fire 100 Diamonds)
 • /topup pubg 5123984712 60 (PUBG 60 UC)
           `.trim();
-          return ctx.reply(usageMsg);
+          return safeReply(ctx, usageMsg);
         }
 
         const lockKey = `${chatId}_${matchedGame.id}_${idArg}_${pkgArg}`;
         if (processingLocks.has(lockKey)) {
-          console.log(`[Telegram Bot] Ignored concurrent topup command for lock key: ${lockKey}`);
-          return ctx.reply(`⚠️ TOP-UP IN PROGRESS: An order for Player ID ${idArg} is already being processed. Please wait...`);
+          return safeReply(ctx, `⚠️ TOP-UP IN PROGRESS: An order for Player ID ${idArg} is already being processed. Please wait...`);
         }
         processingLocks.add(lockKey);
 
+        try {
           const pkgInfo = findPackageInGame(matchedGame, pkgArg);
           const orderId = 'ORD-TG-' + Math.floor(100000 + Math.random() * 900000);
 
-          // Live database check for reseller wallet balance before executing top-up
           let freshReseller = reseller;
           const keyToQuery = reseller.securityKey || reseller.resellerCode || reseller.uid;
           if (keyToQuery) {
@@ -1034,10 +987,10 @@ Examples:
 
 📥 Please top up your reseller wallet using /deposit or on the web dashboard and try again.
             `.trim();
-            return ctx.reply(failBalanceMsg);
+            return safeReply(ctx, failBalanceMsg);
           }
 
-          await ctx.reply(`⌛ Processing Top-up Order #${orderId}...\n\n${matchedGame.currencyIcon} Game: ${matchedGame.name}\n🆔 Player ID: ${idArg} ${zoneArg ? `\n🌐 Zone ID: ${zoneArg}` : ''}\n📦 Package: ${pkgInfo.name}\n\nDispatching order to MooGold API & verifying IGN...`);
+          await safeReply(ctx, `⌛ Processing Top-up Order #${orderId}...\n\n${matchedGame.currencyIcon} Game: ${matchedGame.name}\n🆔 Player ID: ${idArg} ${zoneArg ? `\n🌐 Zone ID: ${zoneArg}` : ''}\n📦 Package: ${pkgInfo.name}\n\nDispatching order to MooGold API & verifying IGN...`);
 
           let realIgn = `Player ${idArg}`;
           try {
@@ -1047,7 +1000,6 @@ Examples:
             }
           } catch (e) {}
 
-          // Dispatch live order to MooGold API
           const mgResult = await sendMoongoldLiveOrder(matchedGame, pkgInfo, idArg, zoneArg, orderId);
 
           if (mgResult.success) {
@@ -1102,9 +1054,8 @@ ${matchedGame.currencyIcon} Topup Package: ${pkgInfo.name} (Credited Successfull
 Order placed live on MooGold Reseller Portal & credited instantly!
             `.trim();
 
-            await ctx.reply(successMsg);
+            await safeReply(ctx, successMsg);
 
-            // Background status check for automatic refund notice if MooGold refunds later
             setTimeout(async () => {
               try {
                 const detail = await checkMoongoldOrderStatus(mgResult.moongoldRef);
@@ -1120,15 +1071,13 @@ Order placed live on MooGold Reseller Portal & credited instantly!
 
 💰 Reseller Wallet Balance Refunded: Rs. ${pkgInfo.priceLkr.toLocaleString()} LKR
                   `.trim();
-                  ctx.reply(cancelMsg).catch(() => {});
+                  safeReply(ctx, cancelMsg).catch(() => {});
                 }
               } catch (e) {}
             }, 3000);
 
             return;
           } else {
-            // MooGold order failed (e.g. invalid product ID, IP whitelist needed, or insufficient supplier balance)
-            // Save failed order record without deducting reseller wallet balance
             const failedOrder = {
               id: orderId,
               userId: reseller.uid,
@@ -1161,7 +1110,7 @@ Order placed live on MooGold Reseller Portal & credited instantly!
 Please check product availability or contact support. No reseller funds were charged.
             `.trim();
 
-            return ctx.reply(failMsg);
+            return safeReply(ctx, failMsg);
           }
         } finally {
           processingLocks.delete(lockKey);
@@ -1169,20 +1118,105 @@ Please check product availability or contact support. No reseller funds were cha
       } catch (err) {
         console.error('Topup Error:', err);
         try {
-          return ctx.reply(`❌ Topup Error: ${err.message}`);
+          return safeReply(ctx, `❌ Topup Error: ${err.message}`);
         } catch (e) {}
+      }
+    };
+
+    // Register built-in commands
+    bot.command('start', handleStart);
+    bot.command('help', handleHelp);
+    bot.command('games', handlePackages);
+    bot.command('packages', handlePackages);
+    bot.command('packs', handlePackages);
+    bot.command('prices', handlePackages);
+    bot.command('status', handleStatus);
+    bot.command('refresh', handleRefresh);
+    bot.command('auth', handleAuth);
+    bot.command('link', handleAuth);
+    bot.command('key', handleAuth);
+    bot.command('id', handlePlayerCheck);
+    bot.command('ign', handlePlayerCheck);
+    bot.command('check', handlePlayerCheck);
+    bot.command('ml', handlePlayerCheck);
+    bot.command('ff', handlePlayerCheck);
+    bot.command('pubg', handlePlayerCheck);
+    bot.command('bs', handlePlayerCheck);
+    bot.command('df', handlePlayerCheck);
+    bot.command('gs', handlePlayerCheck);
+    bot.command('lookup', handlePlayerCheck);
+    bot.command('verify', handlePlayerCheck);
+    bot.command('balance', handleBalance);
+    bot.command('reseller', handleBalance);
+    bot.command('wallet', handleBalance);
+    bot.command('deposit', handleDeposit);
+    bot.command('recharge', handleDeposit);
+    bot.command('topup', handleTopup);
+
+    // MASTER MESSAGE ROUTER - Guarantees 100% execution for commands starting with '/'
+    bot.on('message', async (ctx) => {
+      try {
+        const text = ctx.message?.text || ctx.msg?.text || ctx.text || '';
+        if (!text || !text.startsWith('/')) return;
+
+        const parts = text.trim().split(/\s+/).filter(Boolean);
+        const rawCmd = (parts[0] || '').toLowerCase().replace(/^\//, '').split('@')[0];
+
+        console.log(`🤖 [Telegram Master Router] Executing command: /${rawCmd}`);
+
+        switch (rawCmd) {
+          case 'start':
+            return handleStart(ctx);
+          case 'help':
+            return handleHelp(ctx);
+          case 'auth':
+          case 'link':
+          case 'key':
+            return handleAuth(ctx);
+          case 'balance':
+          case 'reseller':
+          case 'wallet':
+            return handleBalance(ctx);
+          case 'id':
+          case 'ign':
+          case 'check':
+          case 'lookup':
+          case 'verify':
+          case 'ml':
+          case 'ff':
+          case 'pubg':
+          case 'bs':
+          case 'df':
+          case 'gs':
+            return handlePlayerCheck(ctx);
+          case 'topup':
+            return handleTopup(ctx);
+          case 'deposit':
+          case 'recharge':
+            return handleDeposit(ctx);
+          case 'games':
+          case 'packages':
+          case 'packs':
+          case 'prices':
+            return handlePackages(ctx);
+          case 'status':
+            return handleStatus(ctx);
+          case 'refresh':
+            return handleRefresh(ctx);
+          default:
+            return;
+        }
+      } catch (err) {
+        console.error('⚠️ [Telegram Master Router Error]:', err);
       }
     });
 
-
-    // Global bot error catch to prevent process termination
     if (typeof bot.catch === 'function') {
       bot.catch((err) => {
         console.warn('⚠️ [Telegram Bot Global Error Catch]:', err?.error?.description || err?.message || err);
       });
     }
 
-    // Start Polling runner safely with error catch
     try {
       if (typeof bot.startPolling === 'function') {
         bot.startPolling();
@@ -1191,7 +1225,7 @@ Please check product availability or contact support. No reseller funds were cha
       console.warn('[Telegram Polling Start Note]:', pollErr.message);
     }
 
-    console.log('🤖 Telegram Bot polling started successfully for ALL games on website!');
+    console.log('🤖 Telegram Bot polling started successfully with Master Message Router!');
     startBotHealthCheckLoop();
 
   } catch (err) {
