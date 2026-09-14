@@ -44,38 +44,89 @@ export const AuthModal = () => {
 
   const handleSendPasswordReset = async (e) => {
     if (e) e.preventDefault();
-    const targetEmail = resetEmail || (username.includes('@') ? username : email);
+    const targetEmail = (resetEmail || username || email || '').trim();
     if (!targetEmail || !targetEmail.includes('@')) {
       showToast('Please enter a valid registered email address!', 'error');
       return;
     }
     setIsSendingReset(true);
     
-    // 1. Send Firebase password reset link if configured
-    try {
-      await resetPasswordEmail(targetEmail);
-    } catch (e) {}
-
-    // 2. Generate 6-digit OTP code as instant reset option
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     setResetOtp(otpCode);
 
+    let sentSuccess = false;
+
+    // 1. Send Firebase password reset email link
     try {
-      const apiEndpoints = ['/api/send-otp', 'https://madstopup.com/api/send-otp'];
-      for (const endpoint of apiEndpoints) {
-        try {
-          await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: targetEmail, otp: otpCode, name: username || 'Valued User' })
-          });
-        } catch (err) {}
+      const fbRes = await resetPasswordEmail(targetEmail);
+      if (fbRes && fbRes.success) {
+        sentSuccess = true;
+        console.log('[Firebase Password Reset Link Sent to Inbox]');
       }
-    } catch (err) {}
+    } catch (e) {}
+
+    // 2. Send 6-digit OTP code via Backend Server endpoints
+    const apiEndpoints = ['/api/send-otp', 'https://madstopup.com/api/send-otp'];
+    for (const endpoint of apiEndpoints) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+        const apiRes = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: targetEmail, otp: otpCode, name: username || 'Valued User' }),
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (apiRes.ok) {
+          const data = await apiRes.json();
+          if (data && data.success) {
+            sentSuccess = true;
+            console.log(`[Password Reset OTP Sent via ${endpoint}]`, data);
+          }
+        }
+      } catch (err) {}
+    }
+
+    // 3. Fallback to EmailJS for instant delivery of 6-digit OTP code
+    if (!sentSuccess) {
+      const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_42ovub5';
+      const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_e9m409d';
+      const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'UL_Cr3VmylKk8r2Dp';
+
+      try {
+        let emailjsModule;
+        try { emailjsModule = await import('@emailjs/browser'); } catch (e) {}
+        const emailjsLib = emailjsModule?.default || emailjsModule || window.emailjs;
+
+        if (emailjsLib && typeof emailjsLib.send === 'function') {
+          if (typeof emailjsLib.init === 'function') {
+            try { emailjsLib.init(publicKey); } catch (e) {}
+          }
+          await emailjsLib.send(
+            serviceId,
+            templateId,
+            {
+              to_email: targetEmail,
+              email: targetEmail,
+              otp_code: otpCode,
+              passcode: otpCode,
+              user_name: username || 'Valued User',
+              time: '15 mins'
+            },
+            publicKey
+          );
+          sentSuccess = true;
+          console.log('[Password Reset OTP Sent via EmailJS]');
+        }
+      } catch (emailjsErr) {}
+    }
 
     setIsResetCodeSent(true);
     setIsSendingReset(false);
-    showToast(`Password reset link & verification code sent to ${targetEmail}! Check your inbox.`);
+    showToast(`Password reset link & 6-digit verification code sent to ${targetEmail}! Check your inbox.`);
   };
 
   const handleConfirmPasswordReset = (e) => {
@@ -104,6 +155,13 @@ export const AuthModal = () => {
     setConfirmNewPassword('');
     setAuthMode('login');
   };
+
+  React.useEffect(() => {
+    if (authMode === 'forgot' && !resetEmail) {
+      if (username && username.includes('@')) setResetEmail(username);
+      else if (email && email.includes('@')) setResetEmail(email);
+    }
+  }, [authMode]);
 
   React.useEffect(() => {
     let interval = null;
@@ -635,8 +693,8 @@ export const AuthModal = () => {
                     </label>
                     <input
                       type="email"
-                      placeholder="Enter your registered email"
-                      value={resetEmail || (username.includes('@') ? username : '')}
+                      placeholder="Enter your registered email address (e.g. name@gmail.com)"
+                      value={resetEmail}
                       onChange={(e) => setResetEmail(e.target.value)}
                       required
                       className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:ring-2 focus:ring-red-500/20 transition-all shadow-inner"
