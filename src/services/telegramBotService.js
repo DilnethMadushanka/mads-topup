@@ -935,13 +935,28 @@ Once authenticated, your Telegram chat will be linked and authorized for instant
         let zoneArg = (parts[3] || '').replace(/[()[\]]/g, '');
         let pkgArg = (parts[4] || '').replace(/[()[\]]/g, '');
 
+        // Smart Parsing for MLBB & All Games:
+        // Format A: /topup ml 84218845 2168 86
+        // Format B: /topup ml 84218845(2168) 86
+        // Format C: /topup 84218845 2168 86 (Omitted 'ml')
+        const matchZoneInParts2 = (parts[2] || '').match(/^(\d+)[^0-9]+(\d+)$/);
+        if (matchZoneInParts2) {
+          idArg = matchZoneInParts2[1];
+          zoneArg = matchZoneInParts2[2];
+          pkgArg = (parts[3] || parts[4] || '').replace(/[()[\]]/g, '');
+        } else if (!isNaN(parts[1])) {
+          // First parameter is numeric -> user omitted game code (e.g. /topup 84218845 2168 86)
+          gameArg = 'mobilelegends';
+          idArg = (parts[1] || '').replace(/[()[\]]/g, '');
+          zoneArg = (parts[2] || '').replace(/[()[\]]/g, '');
+          pkgArg = (parts[3] || '').replace(/[()[\]]/g, '');
+        }
+
         const matchedGame = findGameInCatalog(gameArg);
 
-        if (!matchedGame.requiresServer && parts.length === 4) {
+        if (!matchedGame.requiresServer && parts.length === 4 && !matchZoneInParts2) {
           pkgArg = (parts[3] || '').replace(/[()[\]]/g, '');
           zoneArg = '';
-        } else if (matchedGame.requiresServer && parts.length === 4 && !pkgArg) {
-          pkgArg = (parts[3] || '').replace(/[()[\]]/g, '');
         }
 
         if (!idArg || !pkgArg) {
