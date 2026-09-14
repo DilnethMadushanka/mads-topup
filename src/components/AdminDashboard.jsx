@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { GAMES_DATA } from '../data/games';
 import { dispatchMoongoldOrder, checkMoongoldBalance } from '../services/moongoldApi';
+import { uploadToR2Storage } from '../services/storageService';
 import { 
   X, ShieldCheck, DollarSign, Activity, Settings, RefreshCw, 
   CheckCircle2, Clock, XCircle, Zap, Key, Server, Database, Save, Eye, EyeOff, Cloud, UploadCloud,
@@ -113,6 +114,7 @@ export const AdminDashboard = () => {
   const [adBadge, setAdBadge] = useState(popupAdConfig?.badge || 'LIMITED TIME DEAL');
   const [adShowOncePerSession, setAdShowOncePerSession] = useState(popupAdConfig?.showOncePerSession ?? false);
   const [isSavingAd, setIsSavingAd] = useState(false);
+  const [isUploadingAdImg, setIsUploadingAdImg] = useState(false);
 
   useEffect(() => {
     if (popupAdConfig) {
@@ -126,6 +128,36 @@ export const AdminDashboard = () => {
       setAdShowOncePerSession(popupAdConfig.showOncePerSession ?? false);
     }
   }, [popupAdConfig]);
+
+  const handleAdImageFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file (PNG, JPG, WEBP)!', 'error');
+      return;
+    }
+
+    setIsUploadingAdImg(true);
+    try {
+      // 1. Try Cloudflare R2 Upload
+      const r2Res = await uploadToR2Storage(file, 'popup_ads');
+      
+      // 2. Read file as DataURL for direct preview / persistent backup
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result;
+        setAdImageUrl(r2Res.url || dataUrl);
+        setIsUploadingAdImg(false);
+        showToast('Image uploaded successfully to Cloudflare R2 Storage! ☁️');
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Image upload error:', err);
+      setIsUploadingAdImg(false);
+      showToast('Failed to upload image file.', 'error');
+    }
+  };
 
   const handleSavePopupAd = async (e) => {
     if (e) e.preventDefault();
@@ -2622,15 +2654,45 @@ export const AdminDashboard = () => {
                       />
                     </div>
 
-                    {/* Image URL */}
+                    {/* Image File Upload & URL */}
                     <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-xs font-bold text-slate-300">Banner Image URL</label>
-                        <span className="text-[10px] text-slate-500 font-mono">Direct image link (Unsplash, R2, Imgur, etc.)</span>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-bold text-slate-300">Banner Image File Upload (Cloudflare R2 Bucket)</label>
+                        <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
+                          <Cloud className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>R2 Bucket Connected</span>
+                        </span>
                       </div>
+
+                      {/* Direct File Uploader Button */}
+                      <div className="mb-2">
+                        <label className="w-full bg-slate-950 border-2 border-dashed border-red-500/50 hover:border-red-500 p-3.5 rounded-2xl flex items-center justify-center gap-2.5 cursor-pointer transition-colors group text-xs text-slate-300 shadow-inner">
+                          {isUploadingAdImg ? (
+                            <>
+                              <Loader2 className="w-5 h-5 text-red-500 animate-spin" />
+                              <span className="font-extrabold text-red-400">Uploading file to Cloudflare R2...</span>
+                            </>
+                          ) : (
+                            <>
+                              <UploadCloud className="w-5 h-5 text-red-500 group-hover:scale-110 transition-transform" />
+                              <span className="font-extrabold text-white">Upload Image File from Device 📤</span>
+                              <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">(PNG, JPG, WEBP, GIF)</span>
+                            </>
+                          )}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            disabled={isUploadingAdImg}
+                            onChange={handleAdImageFileUpload}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+
+                      {/* Fallback Direct URL Input */}
                       <input
-                        type="url"
-                        placeholder="https://images.unsplash.com/photo-..."
+                        type="text"
+                        placeholder="Or paste direct image URL (https://...)"
                         value={adImageUrl}
                         onChange={(e) => setAdImageUrl(e.target.value)}
                         className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-red-500 font-mono"
