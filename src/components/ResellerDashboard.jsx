@@ -6,7 +6,8 @@ import confetti from 'canvas-confetti';
 import { 
   Crown, Wallet, Zap, Copy, Check, ArrowLeft, Send, ShieldCheck, 
   TrendingUp, ShoppingBag, DollarSign, Clock, RefreshCw, CheckCircle2, 
-  Search, Filter, Smartphone, Ticket, Award, Store, Edit3, Settings, HelpCircle, ArrowRight
+  Search, Filter, Smartphone, Ticket, Award, Store, Edit3, Settings, HelpCircle, ArrowRight,
+  Globe, Bot
 } from 'lucide-react';
 
 export const ResellerDashboard = () => {
@@ -37,6 +38,7 @@ export const ResellerDashboard = () => {
   // Search & Filter States
   const [orderSearch, setOrderSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('ALL');
+  const [orderChannelFilter, setOrderChannelFilter] = useState('ALL'); // 'ALL' | 'TELEGRAM' | 'WEB'
   const [isCopiedId, setIsCopiedId] = useState(false);
 
   // Store Settings Form State
@@ -547,16 +549,28 @@ export const ResellerDashboard = () => {
                 <p className="text-xs text-slate-400">Complete log of customer orders fulfilled via your Reseller Wallet & Telegram Bot</p>
               </div>
 
-              {/* Search Bar */}
-              <div className="relative w-full sm:w-72">
-                <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search order ID or Player UID..."
-                  value={orderSearch}
-                  onChange={(e) => setOrderSearch(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs font-semibold focus:outline-none focus:border-red-500"
-                />
+              {/* Search & Channel Filter Bar */}
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                <select
+                  value={orderChannelFilter}
+                  onChange={(e) => setOrderChannelFilter(e.target.value)}
+                  className="px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs font-bold cursor-pointer"
+                >
+                  <option value="ALL">All Channels</option>
+                  <option value="TELEGRAM">🤖 Telegram Bot Orders</option>
+                  <option value="WEB">🌐 Web Dispatch Orders</option>
+                </select>
+
+                <div className="relative flex-1 sm:w-64">
+                  <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search order ID or Player UID..."
+                    value={orderSearch}
+                    onChange={(e) => setOrderSearch(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs font-semibold focus:outline-none focus:border-red-500"
+                  />
+                </div>
               </div>
             </div>
 
@@ -564,41 +578,67 @@ export const ResellerDashboard = () => {
             <div className="space-y-3">
               {resellerOrders
                 .filter(o => {
-                  return (
+                  const isTelegramOrder = Boolean(o.viaTelegramBot || (o.id && o.id.startsWith('ORD-TG-')) || o.channel === 'Telegram Bot' || (o.paymentMethod && o.paymentMethod.toLowerCase().includes('telegram')));
+                  
+                  const matchesSearch = 
                     o.id.toLowerCase().includes(orderSearch.toLowerCase()) ||
                     o.playerId.toLowerCase().includes(orderSearch.toLowerCase()) ||
-                    o.gameName.toLowerCase().includes(orderSearch.toLowerCase())
-                  );
+                    o.gameName.toLowerCase().includes(orderSearch.toLowerCase());
+
+                  const matchesChannel = orderChannelFilter === 'ALL' ||
+                    (orderChannelFilter === 'TELEGRAM' && isTelegramOrder) ||
+                    (orderChannelFilter === 'WEB' && !isTelegramOrder);
+
+                  return matchesSearch && matchesChannel;
                 })
-                .map((ord) => (
-                  <div key={ord.id} className="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-extrabold shrink-0">
-                        <Zap className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-black text-white">{ord.gameName} - {ord.packageName}</h4>
-                          <span className="text-[10px] font-mono text-slate-400">({ord.id})</span>
+                .map((ord) => {
+                  const isTelegramOrder = Boolean(ord.viaTelegramBot || (ord.id && ord.id.startsWith('ORD-TG-')) || ord.channel === 'Telegram Bot' || (ord.paymentMethod && ord.paymentMethod.toLowerCase().includes('telegram')));
+
+                  return (
+                    <div key={ord.id} className="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs hover:border-slate-700 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-extrabold shrink-0 border ${
+                          isTelegramOrder ? 'bg-sky-500/20 text-sky-400 border-sky-500/30' : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                        }`}>
+                          {isTelegramOrder ? <Send className="w-5 h-5" /> : <Zap className="w-5 h-5" />}
                         </div>
-                        <p className="text-slate-400 text-[11px]">
-                          Customer UID: <span className="text-slate-200 font-mono font-bold">{ord.playerId}</span> {ord.zoneId ? `(Zone: ${ord.zoneId})` : ''}
-                        </p>
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h4 className="font-black text-white">{ord.gameName} - {ord.packageName}</h4>
+                            <span className="text-[10px] font-mono text-slate-400">({ord.id})</span>
+                            {isTelegramOrder ? (
+                              <span className="px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-400 border border-sky-500/30 text-[9px] font-black font-mono inline-flex items-center gap-1">
+                                <Send className="w-2.5 h-2.5" />
+                                <span>🤖 Telegram Bot</span>
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/30 text-[9px] font-black font-mono inline-flex items-center gap-1">
+                                <Globe className="w-2.5 h-2.5" />
+                                <span>🌐 Web Dispatch</span>
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-slate-400 text-[11px] mt-0.5">
+                            Customer UID: <span className="text-slate-200 font-mono font-bold">{ord.playerId}</span> {ord.zoneId ? `(Zone: ${ord.zoneId})` : ''} {ord.ign && ord.ign !== 'Reseller Customer' ? `• IGN: ${ord.ign}` : ''}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between sm:justify-end gap-6">
+                        <div className="text-right">
+                          <span className="font-black text-emerald-400 text-sm block">Rs. {ord.priceLkr.toLocaleString()}</span>
+                          <span className="text-[10px] text-slate-500 font-mono">{new Date(ord.createdAt).toLocaleString()}</span>
+                        </div>
+
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-black font-mono uppercase border ${
+                          ord.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                        }`}>
+                          {ord.status || 'COMPLETED'}
+                        </span>
                       </div>
                     </div>
-
-                    <div className="flex items-center justify-between sm:justify-end gap-6">
-                      <div className="text-right">
-                        <span className="font-black text-emerald-400 text-sm block">Rs. {ord.priceLkr.toLocaleString()}</span>
-                        <span className="text-[10px] text-slate-500 font-mono">{new Date(ord.createdAt).toLocaleString()}</span>
-                      </div>
-
-                      <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full text-[10px] font-black font-mono uppercase">
-                        COMPLETED
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
             </div>
           </div>
         )}

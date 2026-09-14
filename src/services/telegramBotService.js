@@ -1024,6 +1024,8 @@ Examples:
               priceLkr: pkgInfo.priceLkr,
               paymentMethod: `Reseller Wallet (${reseller.resellerCode})`,
               isResellerOrder: true,
+              viaTelegramBot: true,
+              channel: 'Telegram Bot',
               status: 'COMPLETED',
               moongoldRef: mgResult.moongoldRef,
               createdAt: new Date().toISOString()
@@ -1090,6 +1092,8 @@ Order placed live on MooGold Reseller Portal & credited instantly!
               priceLkr: pkgInfo.priceLkr,
               paymentMethod: `Reseller Wallet (${reseller.resellerCode})`,
               isResellerOrder: true,
+              viaTelegramBot: true,
+              channel: 'Telegram Bot',
               status: 'FAILED',
               error: mgResult.error,
               createdAt: new Date().toISOString()

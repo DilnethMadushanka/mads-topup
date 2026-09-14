@@ -405,8 +405,11 @@ export const AdminDashboard = () => {
       ord.gameName.toLowerCase().includes(orderSearch.toLowerCase()) ||
       (ord.ign && ord.ign.toLowerCase().includes(orderSearch.toLowerCase()));
 
+    const isTelegramOrder = Boolean(ord.viaTelegramBot || (ord.id && ord.id.startsWith('ORD-TG-')) || ord.channel === 'Telegram Bot' || (ord.paymentMethod && ord.paymentMethod.toLowerCase().includes('telegram')));
+
     const matchesStatus = statusFilter === 'ALL' || ord.status === statusFilter;
-    const matchesPayment = paymentFilter === 'ALL' || ord.paymentMethod.toLowerCase().includes(paymentFilter.toLowerCase());
+    const matchesPayment = paymentFilter === 'ALL' || 
+      (paymentFilter === 'TELEGRAM' ? isTelegramOrder : ord.paymentMethod.toLowerCase().includes(paymentFilter.toLowerCase()));
 
     return matchesSearch && matchesStatus && matchesPayment;
   });
@@ -1217,6 +1220,7 @@ export const AdminDashboard = () => {
                       className="px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white font-bold cursor-pointer"
                     >
                       <option value="ALL">All Payment Methods</option>
+                      <option value="TELEGRAM">🤖 Telegram Bot Orders</option>
                       <option value="EZ Cash">EZ Cash</option>
                       <option value="Binance">Binance Pay</option>
                       <option value="Bank">Bank Transfer</option>
@@ -1233,7 +1237,7 @@ export const AdminDashboard = () => {
                         <th className="p-3.5">User Account</th>
                         <th className="p-3.5">Game / Package</th>
                         <th className="p-3.5">Player Credentials</th>
-                        <th className="p-3.5">Payment</th>
+                        <th className="p-3.5">Payment / Channel</th>
                         <th className="p-3.5">Price</th>
                         <th className="p-3.5">Status</th>
                         <th className="p-3.5 text-right">Actions</th>
@@ -1247,7 +1251,10 @@ export const AdminDashboard = () => {
                           </td>
                         </tr>
                       ) : (
-                        filteredOrders.map((ord) => (
+                        filteredOrders.map((ord) => {
+                          const isTg = Boolean(ord.viaTelegramBot || (ord.id && ord.id.startsWith('ORD-TG-')) || ord.channel === 'Telegram Bot' || (ord.paymentMethod && ord.paymentMethod.toLowerCase().includes('telegram')));
+
+                          return (
                           <tr key={ord.id} className="hover:bg-slate-900/60 transition-colors">
                             <td className="p-3.5 font-mono font-bold text-red-400">{ord.id}</td>
                             <td className="p-3.5">
@@ -1265,7 +1272,14 @@ export const AdminDashboard = () => {
                               <div>{ord.playerId} {ord.zoneId && `(${ord.zoneId})`}</div>
                               <div className="text-[10px] text-slate-400 font-sans">{ord.ign}</div>
                             </td>
-                            <td className="p-3.5 text-slate-300 font-semibold">{ord.paymentMethod}</td>
+                            <td className="p-3.5">
+                              <div className="text-slate-300 font-semibold">{ord.paymentMethod}</div>
+                              {isTg && (
+                                <span className="px-2 py-0.5 mt-1 rounded bg-sky-500/10 border border-sky-500/30 text-sky-400 font-mono text-[9px] font-black inline-flex items-center gap-1">
+                                  <span>🤖 Telegram Bot</span>
+                                </span>
+                              )}
+                            </td>
                             <td className="p-3.5 font-black text-white font-heading">{formatPrice(ord.priceLkr)}</td>
                             <td className="p-3.5">
                               <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase ${
@@ -1298,7 +1312,8 @@ export const AdminDashboard = () => {
                               </button>
                             </td>
                           </tr>
-                        ))
+                        );
+                      })
                       )}
                     </tbody>
                   </table>
