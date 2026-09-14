@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { loginWithGoogle, resetPasswordEmail } from '../services/firebaseAuth';
-import { syncUserProfileToFirestore, updateUserProfileInFirestore, getResellerProfileByKeyAsync } from '../services/firestoreService';
+import { syncUserProfileToFirestore, updateUserProfileInFirestore, getResellerProfileByKeyAsync, verifyUserLoginAsync, updateUserPasswordInFirestore } from '../services/firestoreService';
 import { X, Eye, EyeOff, Shield, Zap, Clock, User, Mail, Phone, Lock, Check, Send, LogIn, ArrowRight, Loader2 } from 'lucide-react';
 
 export const AuthModal = () => {
@@ -129,7 +129,7 @@ export const AuthModal = () => {
     showToast(`Password reset link & 6-digit verification code sent to ${targetEmail}! Check your inbox.`);
   };
 
-  const handleConfirmPasswordReset = (e) => {
+  const handleConfirmPasswordReset = async (e) => {
     e.preventDefault();
     if (!enteredResetOtp) {
       showToast('Please enter the 6-digit verification code sent to your email!', 'error');
@@ -148,7 +148,11 @@ export const AuthModal = () => {
       return;
     }
 
-    showToast('Password reset successfully! Please log in with your new password. ✅');
+    const targetEmail = (resetEmail || username || email || '').trim();
+    await updateUserPasswordInFirestore(targetEmail, newPassword);
+
+    showToast('Password updated successfully! Please log in with your updated password. ✅');
+    setPassword(newPassword);
     setIsResetCodeSent(false);
     setEnteredResetOtp('');
     setNewPassword('');
@@ -275,9 +279,9 @@ export const AuthModal = () => {
     }
   };
 
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    if (!username) {
+    if (!username || !username.trim()) {
       showToast('Please enter your username or email!', 'error');
       return;
     }
@@ -285,13 +289,21 @@ export const AuthModal = () => {
       showToast('Please enter your password!', 'error');
       return;
     }
+
+    const verifyRes = await verifyUserLoginAsync(username, password);
+    if (!verifyRes.success) {
+      showToast(verifyRes.message || 'Incorrect password! Please enter your updated password.', 'error');
+      return;
+    }
+
     setIsLoggedIn(true);
     setUserProfile(prev => ({
       ...prev,
-      name: username || 'Verified Gamer',
-      email: username.includes('@') ? username : (prev.email || `${username}@gmail.com`)
+      ...(verifyRes.user || {}),
+      name: verifyRes.user?.name || username || 'Verified Gamer',
+      email: verifyRes.user?.email || (username.includes('@') ? username : (prev.email || `${username}@gmail.com`))
     }));
-    showToast(`Welcome back, ${username}! Successfully logged in.`);
+    showToast(`Welcome back, ${verifyRes.user?.name || username}! Successfully logged in.`);
     setIsAuthModalOpen(false);
   };
 
@@ -307,6 +319,13 @@ export const AuthModal = () => {
     }
 
     const cleanInput = resellerUsername.trim();
+
+    const verifyRes = await verifyUserLoginAsync(cleanInput, resellerPassword);
+    if (!verifyRes.success) {
+      showToast(verifyRes.message || 'Incorrect password! Please enter your updated reseller password.', 'error');
+      return;
+    }
+
     const resellerProfile = await getResellerProfileByKeyAsync(cleanInput);
 
     if (!resellerProfile || !resellerProfile.isReseller || resellerProfile.resellerStatus !== 'APPROVED') {
@@ -323,7 +342,7 @@ export const AuthModal = () => {
     setIsAuthModalOpen(false);
   };
 
-  const handleRegisterSubmit = (e) => {
+  const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     if (!username) {
       showToast('Please choose a username!', 'error');

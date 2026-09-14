@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { ensureResellerCredentials, getResellerProfileByKeyAsync } from '../services/firestoreService';
+import { ensureResellerCredentials, getResellerProfileByKeyAsync, verifyUserLoginAsync } from '../services/firestoreService';
 import { Eye, EyeOff, User, Lock, ArrowLeft, LogIn, Crown } from 'lucide-react';
 
 export const ResellerLoginPage = () => {
@@ -23,6 +23,13 @@ export const ResellerLoginPage = () => {
     }
 
     const cleanInput = username.trim();
+
+    const verifyRes = await verifyUserLoginAsync(cleanInput, password);
+    if (!verifyRes.success) {
+      showToast(verifyRes.message || 'Incorrect password! Please enter your updated password.', 'error');
+      return;
+    }
+
     const resellerProfile = await getResellerProfileByKeyAsync(cleanInput);
 
     if (!resellerProfile || !resellerProfile.isReseller || resellerProfile.resellerStatus !== 'APPROVED') {

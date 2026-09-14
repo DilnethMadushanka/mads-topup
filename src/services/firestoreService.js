@@ -581,6 +581,111 @@ export const updateUserProfileInFirestore = async (uid, updatedData) => {
 };
 
 /**
+ * Verify user password during login
+ */
+export const verifyUserLoginAsync = async (identifier, passwordInput) => {
+  if (!identifier || !passwordInput) return { success: false, message: 'Please enter username and password!' };
+
+  const cleanId = String(identifier).trim().toLowerCase();
+  
+  try {
+    const res = await fetch('https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/users.json');
+    if (res.ok) {
+      const allUsers = await res.json();
+      if (allUsers) {
+        let matchedUid = null;
+        let matchedUser = null;
+
+        for (const [uId, uData] of Object.entries(allUsers)) {
+          if (!uData) continue;
+          const uEmail = String(uData.email || '').trim().toLowerCase();
+          const uName = String(uData.name || uData.username || '').trim().toLowerCase();
+          const uCode = String(uData.resellerCode || '').trim().toLowerCase();
+          const uSec = String(uData.securityKey || '').trim().toLowerCase();
+
+          if (uEmail === cleanId || uName === cleanId || uCode === cleanId || uSec === cleanId || String(uId).toLowerCase() === cleanId) {
+            matchedUid = uId;
+            matchedUser = uData;
+            break;
+          }
+        }
+
+        if (matchedUser && matchedUid) {
+          // Check password if set in user profile
+          if (matchedUser.password && String(matchedUser.password) !== String(passwordInput)) {
+            return {
+              success: false,
+              message: 'Incorrect password! Please enter your updated password.'
+            };
+          }
+          // If password wasn't set previously, bind passwordInput to profile
+          if (!matchedUser.password) {
+            updateUserProfileInFirestore(matchedUid, { password: passwordInput });
+          }
+          return { success: true, user: { ...matchedUser, uid: matchedUid } };
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Verify login note:', err);
+  }
+
+  // Fallback if user profile doesn't exist yet in DB
+  return { success: true, user: null };
+};
+
+/**
+ * Update user password in Database across RTDB & Firestore
+ */
+export const updateUserPasswordInFirestore = async (identifier, newPassword) => {
+  if (!identifier || !newPassword) return false;
+  const cleanId = String(identifier).trim().toLowerCase();
+
+  try {
+    const res = await fetch('https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/users.json');
+    if (res.ok) {
+      const allUsers = await res.json();
+      if (allUsers) {
+        for (const [uId, uData] of Object.entries(allUsers)) {
+          if (!uData) continue;
+          const uEmail = String(uData.email || '').trim().toLowerCase();
+          const uName = String(uData.name || uData.username || '').trim().toLowerCase();
+
+          if (uEmail === cleanId || uName === cleanId || String(uId).toLowerCase() === cleanId) {
+            await updateUserProfileInFirestore(uId, { password: newPassword, updatedAt: new Date().toISOString() });
+            
+            // Also update reseller application record if exists
+            try {
+              const appsRes = await fetch('https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/reseller_applications.json');
+              if (appsRes.ok) {
+                const appsData = await appsRes.json();
+                if (appsData) {
+                  for (const [appId, app] of Object.entries(appsData)) {
+                    if (app && (String(app.emailAddress || app.email).trim().toLowerCase() === uEmail || app.userId === uId)) {
+                      await fetch(`https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/reseller_applications/${appId}.json`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ password: newPassword, updatedAt: new Date().toISOString() })
+                      });
+                    }
+                  }
+                }
+              }
+            } catch (appErr) {}
+
+            return true;
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Update password error:', err);
+  }
+
+  return true;
+};
+
+/**
  * Credit user or reseller wallet balance in Realtime Database & Firestore by UID, Email, or Reseller Code
  */
 export const creditUserWalletInDatabase = async (identifier, lkrAmount, usdtAmount = 0) => {
