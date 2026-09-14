@@ -1,5 +1,14 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, getAdditionalUserInfo } from 'firebase/auth';
+import { 
+  getAuth, 
+  GoogleAuthProvider, 
+  signInWithPopup, 
+  signInWithRedirect, 
+  getRedirectResult, 
+  signOut, 
+  onAuthStateChanged, 
+  getAdditionalUserInfo 
+} from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getDatabase } from 'firebase/database';
 
@@ -37,10 +46,10 @@ if (isFirebaseConfigured) {
   }
 }
 
-export { auth, db, rtdb, onAuthStateChanged };
+export { auth, db, rtdb, onAuthStateChanged, getRedirectResult };
 
 /**
- * Sign in with Google using Firebase Auth or Fallback Popup
+ * Sign in with Google using Firebase Auth (with Popup & Redirect fallback)
  */
 export const loginWithGoogle = async () => {
   if (isFirebaseConfigured && auth && googleProvider) {
@@ -61,6 +70,21 @@ export const loginWithGoogle = async () => {
       };
     } catch (error) {
       console.error('Firebase Google Auth error:', error);
+
+      if (error.code === 'auth/unauthorized-domain') {
+        throw new Error('Domain (madstopup.com) is not authorized in Firebase Console! Please add madstopup.com under Firebase -> Auth -> Settings -> Authorized Domains.');
+      }
+
+      if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
+        try {
+          console.log('Popup blocked or closed, falling back to signInWithRedirect...');
+          await signInWithRedirect(auth, googleProvider);
+          return { success: false, redirecting: true };
+        } catch (redirectErr) {
+          throw new Error('Google sign-in popup was blocked by browser. Please allow popups or open in Chrome/Safari.');
+        }
+      }
+
       throw new Error(error.message || 'Google sign-in failed');
     }
   }
