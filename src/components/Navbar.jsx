@@ -37,13 +37,23 @@ export const Navbar = () => {
     }
   };
 
-  const getInitials = (name) => {
-    if (!name) return 'DM';
-    const parts = name.trim().split(' ');
+  const getCleanName = (name, email) => {
+    if (name && !/^\+?\d+$/.test(String(name).trim())) return name;
+    if (email && email.includes('@')) {
+      const uname = email.split('@')[0];
+      return uname.charAt(0).toUpperCase() + uname.slice(1);
+    }
+    return name || 'Gamer';
+  };
+
+  const getInitials = (name, email) => {
+    const displayName = getCleanName(name, email);
+    if (!displayName) return 'DM';
+    const parts = displayName.trim().split(' ');
     if (parts.length >= 2) {
       return (parts[0][0] + parts[1][0]).toUpperCase();
     }
-    return name.slice(0, 2).toUpperCase();
+    return displayName.slice(0, 2).toUpperCase();
   };
 
   const handleNavClick = (sectionId) => {
@@ -191,11 +201,11 @@ export const Navbar = () => {
                   {userProfile.avatar ? (
                     <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
-                    getInitials(userProfile.name)
+                    getInitials(userProfile.name, userProfile.email)
                   )}
                 </div>
                 <span className="text-slate-800 font-extrabold text-xs group-hover:text-[#cc040a] transition-colors max-w-[110px] xl:max-w-[140px] truncate">
-                  {userProfile.name || 'Gamer'}
+                  {getCleanName(userProfile.name, userProfile.email)}
                 </span>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-500 group-hover:translate-y-0.5 transition-transform shrink-0" />
               </div>
