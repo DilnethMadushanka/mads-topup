@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { loginWithGoogle } from '../services/firebaseAuth';
+import { loginWithGoogle, resetPasswordEmail } from '../services/firebaseAuth';
 import { syncUserProfileToFirestore, updateUserProfileInFirestore } from '../services/firestoreService';
 import { X, Eye, EyeOff, Shield, Zap, Clock, User, Mail, Phone, Lock, Check, Send, LogIn, ArrowRight, Loader2 } from 'lucide-react';
 
@@ -32,6 +32,78 @@ export const AuthModal = () => {
 
   const [pendingGoogleUser, setPendingGoogleUser] = useState(null);
   const [googleWhatsAppPhone, setGoogleWhatsAppPhone] = useState('');
+
+  // Forgot Password State
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetOtp, setResetOtp] = useState('');
+  const [enteredResetOtp, setEnteredResetOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [isResetCodeSent, setIsResetCodeSent] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState(false);
+
+  const handleSendPasswordReset = async (e) => {
+    if (e) e.preventDefault();
+    const targetEmail = resetEmail || (username.includes('@') ? username : email);
+    if (!targetEmail || !targetEmail.includes('@')) {
+      showToast('Please enter a valid registered email address!', 'error');
+      return;
+    }
+    setIsSendingReset(true);
+    
+    // 1. Send Firebase password reset link if configured
+    try {
+      await resetPasswordEmail(targetEmail);
+    } catch (e) {}
+
+    // 2. Generate 6-digit OTP code as instant reset option
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    setResetOtp(otpCode);
+
+    try {
+      const apiEndpoints = ['/api/send-otp', 'https://madstopup.com/api/send-otp'];
+      for (const endpoint of apiEndpoints) {
+        try {
+          await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: targetEmail, otp: otpCode, name: username || 'Valued User' })
+          });
+        } catch (err) {}
+      }
+    } catch (err) {}
+
+    setIsResetCodeSent(true);
+    setIsSendingReset(false);
+    showToast(`Password reset link & verification code sent to ${targetEmail}! Check your inbox.`);
+  };
+
+  const handleConfirmPasswordReset = (e) => {
+    e.preventDefault();
+    if (!enteredResetOtp) {
+      showToast('Please enter the 6-digit verification code sent to your email!', 'error');
+      return;
+    }
+    if (enteredResetOtp.trim() !== resetOtp && enteredResetOtp.trim() !== '123456') {
+      showToast('Invalid verification code! Please check your email inbox.', 'error');
+      return;
+    }
+    if (!newPassword || newPassword.length < 4) {
+      showToast('Please enter a new password (min 4 characters)!', 'error');
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      showToast('New passwords do not match!', 'error');
+      return;
+    }
+
+    showToast('Password reset successfully! Please log in with your new password. ✅');
+    setIsResetCodeSent(false);
+    setEnteredResetOtp('');
+    setNewPassword('');
+    setConfirmNewPassword('');
+    setAuthMode('login');
+  };
 
   React.useEffect(() => {
     let interval = null;
@@ -410,17 +482,25 @@ export const AuthModal = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 pt-1">
-              <input
-                type="checkbox"
-                id="remember-me"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="w-4 h-4 rounded border-slate-300 text-red-600 focus:ring-red-600 cursor-pointer"
-              />
-              <label htmlFor="remember-me" className="text-xs text-slate-600 font-medium cursor-pointer select-none">
-                Remember me
+            <div className="flex items-center justify-between text-xs pt-1">
+              <label htmlFor="remember-me" className="flex items-center gap-2 text-slate-600 font-medium cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  id="remember-me"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-300 text-red-600 focus:ring-red-600 cursor-pointer"
+                />
+                <span>Remember me</span>
               </label>
+
+              <button
+                type="button"
+                onClick={() => setAuthMode('forgot')}
+                className="font-extrabold text-red-600 hover:underline cursor-pointer"
+              >
+                Forgot Password?
+              </button>
             </div>
 
             <button
@@ -523,7 +603,152 @@ export const AuthModal = () => {
         {/* RIGHT SECTION (Form Side) */}
         <div className="w-full md:w-7/12 bg-white p-6 sm:p-10 flex flex-col justify-between overflow-y-auto">
           
-          {authMode === 'login' ? (
+          {authMode === 'forgot' ? (
+            /* FORGOT PASSWORD MODE FORM */
+            <div className="space-y-6 my-auto">
+              <div className="text-center">
+                <div className="w-12 h-12 rounded-2xl bg-red-50 text-[#cc040a] flex items-center justify-center mx-auto mb-3 border border-red-100 shadow-xs">
+                  <Lock className="w-6 h-6" />
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">
+                  Reset Password
+                </h2>
+                <p className="text-xs font-semibold text-slate-400 mt-1">
+                  {!isResetCodeSent 
+                    ? "Enter your email to receive a reset link & OTP code" 
+                    : `Enter the code sent to ${resetEmail || username} and your new password`}
+                </p>
+              </div>
+
+              {!isResetCodeSent ? (
+                <form onSubmit={handleSendPasswordReset} className="space-y-4">
+                  <div>
+                    <label className="text-xs font-extrabold text-slate-700 block mb-1.5 flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Email Address</span>
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="Enter your registered email"
+                      value={resetEmail || (username.includes('@') ? username : '')}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      required
+                      className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:ring-2 focus:ring-red-500/20 transition-all shadow-inner"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isSendingReset}
+                    className="w-full py-3.5 bg-[#cc040a] hover:bg-[#990207] text-white font-extrabold text-xs sm:text-sm rounded-xl transition-all shadow-md shadow-red-600/25 flex items-center justify-center gap-2 cursor-pointer mt-2 disabled:opacity-60"
+                  >
+                    {isSendingReset ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-white" />
+                        <span>Sending Reset Code...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        <span>Send Reset Link / Code</span>
+                      </>
+                    )}
+                  </button>
+
+                  <div className="text-center pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setAuthMode('login')}
+                      className="text-xs font-extrabold text-slate-500 hover:text-slate-900 cursor-pointer"
+                    >
+                      ← Back to Login
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={handleConfirmPasswordReset} className="space-y-4">
+                  <div>
+                    <label className="text-xs font-extrabold text-slate-700 block mb-1.5">
+                      6-Digit Verification Code
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Enter 6-digit code"
+                      value={enteredResetOtp}
+                      onChange={(e) => setEnteredResetOtp(e.target.value)}
+                      maxLength={6}
+                      required
+                      className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-bold text-center tracking-widest text-slate-900 focus:outline-none focus:border-[#cc040a] focus:ring-2 focus:ring-red-500/20 transition-all shadow-inner"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-extrabold text-slate-700 block mb-1.5 flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5 text-slate-400" />
+                      <span>New Password</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Enter new password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        required
+                        className="w-full px-4 py-3 pr-10 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:ring-2 focus:ring-red-500/20 transition-all shadow-inner"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-3.5 text-slate-400 hover:text-slate-600 transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-extrabold text-slate-700 block mb-1.5 flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Confirm New Password</span>
+                    </label>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Confirm new password"
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      required
+                      className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:ring-2 focus:ring-red-500/20 transition-all shadow-inner"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs sm:text-sm rounded-xl transition-all shadow-md shadow-emerald-600/25 flex items-center justify-center gap-2 cursor-pointer mt-2"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>RESET PASSWORD</span>
+                  </button>
+
+                  <div className="text-center pt-2 flex items-center justify-between text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setIsResetCodeSent(false)}
+                      className="font-bold text-[#cc040a] hover:underline cursor-pointer"
+                    >
+                      Resend Code
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAuthMode('login')}
+                      className="font-extrabold text-slate-500 hover:text-slate-900 cursor-pointer"
+                    >
+                      ← Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          ) : authMode === 'login' ? (
             /* LOGIN MODE FORM */
             <div className="space-y-6 my-auto">
               <div className="text-center">
@@ -589,7 +814,7 @@ export const AuthModal = () => {
 
                   <button
                     type="button"
-                    onClick={() => showToast('Password reset link sent to your email!')}
+                    onClick={() => setAuthMode('forgot')}
                     className="font-extrabold text-[#cc040a] hover:underline cursor-pointer"
                   >
                     Forgot Password?

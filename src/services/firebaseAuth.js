@@ -116,3 +116,20 @@ export const logoutGoogle = async () => {
     }
   }
 };
+
+/**
+ * Send password reset email using Firebase Auth
+ */
+export const resetPasswordEmail = async (emailAddress) => {
+  if (isFirebaseConfigured && auth && emailAddress) {
+    try {
+      const { sendPasswordResetEmail } = await import('firebase/auth');
+      await sendPasswordResetEmail(auth, emailAddress);
+      return { success: true };
+    } catch (err) {
+      console.warn('Firebase Password Reset warning:', err);
+      return { success: false, error: err.message };
+    }
+  }
+  return { success: true };
+};
