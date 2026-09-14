@@ -6,7 +6,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
-import { initTelegramBot } from './src/services/telegramBotService.js';
+import { initTelegramBot, getTelegramBotHealthStatus, forceTelegramBotRefresh } from './src/services/telegramBotService.js';
 import { lookupFreePlayerIgn } from './src/services/playerLookup.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -673,6 +673,35 @@ app.get('/api/player-lookup', async (req, res) => {
       return res.json({ success: true, ...result });
     }
     return res.json({ success: false, message: 'Player ID or Zone not found', ign: `Player ${id}` });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Process-level unhandled rejection protection against Telegram API network timeouts & socket drops
+process.on('unhandledRejection', (reason, promise) => {
+  if (reason && (reason.code === 'ETIMEDOUT' || reason.code === 'ECONNRESET' || reason.code === 'EAI_AGAIN' || String(reason).includes('telegram'))) {
+    console.warn('[Network/Telegram Rejection Suppressed]:', reason.message || reason);
+  } else {
+    console.error('[Unhandled Rejection]:', reason);
+  }
+});
+
+// Express endpoint for Telegram Bot 24/7 Health Status
+app.get('/api/telegram/status', (req, res) => {
+  try {
+    const health = getTelegramBotHealthStatus();
+    res.json({ success: true, ...health });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Express endpoint to trigger Manual Telegram Bot Refresh & Health Check
+app.all('/api/telegram/refresh', async (req, res) => {
+  try {
+    const health = await forceTelegramBotRefresh();
+    res.json({ success: true, ...health });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
