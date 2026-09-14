@@ -381,7 +381,7 @@ export const AppProvider = ({ children }) => {
     if (saved) {
       try { 
         const parsed = JSON.parse(saved); 
-        if (parsed && parsed.walletUsdt === 49.64) {
+        if (parsed && (parsed.walletUsdt === 49.64 || (parsed.walletUsdt > 49.6 && parsed.walletUsdt < 49.7))) {
           parsed.walletUsdt = 0;
           localStorage.setItem('mads_user_profile', JSON.stringify(parsed));
         }
@@ -472,7 +472,7 @@ export const AppProvider = ({ children }) => {
         const unsubFirestore = subscribeUserProfile(firebaseUser.uid, (liveData) => {
           if (liveData) {
             const cleanData = { ...liveData };
-            if (cleanData.walletUsdt === 49.64) cleanData.walletUsdt = 0;
+            if (cleanData.walletUsdt === 49.64 || (cleanData.walletUsdt > 49.6 && cleanData.walletUsdt < 49.7)) cleanData.walletUsdt = 0;
             setUserProfileState(prev => ({ ...prev, ...cleanData }));
           }
         });
@@ -847,7 +847,7 @@ export const AppProvider = ({ children }) => {
         // Filter out old fake test balances
         return parsed.map(u => ({
           ...u,
-          walletUsdt: u.walletUsdt === 49.64 ? 0 : (u.walletUsdt || 0)
+          walletUsdt: (u.walletUsdt === 49.64 || (u.walletUsdt > 49.6 && u.walletUsdt < 49.7)) ? 0 : (u.walletUsdt || 0)
         }));
       } catch (e) {}
     }

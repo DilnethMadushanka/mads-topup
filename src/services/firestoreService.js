@@ -148,7 +148,9 @@ export const getResellerProfileByKeyAsync = async (keyOrCode) => {
             if (docSnap.exists() && docSnap.data().walletBalance !== undefined) {
               const freshLkr = parseFloat(docSnap.data().walletBalance || 0);
               cachedProfile.walletBalance = freshLkr;
-              cachedProfile.walletUsdt = freshLkr / 305;
+              if (docSnap.data().walletUsdt !== undefined) {
+                cachedProfile.walletUsdt = parseFloat(docSnap.data().walletUsdt || 0);
+              }
               updated = true;
             }
           } catch (e) {}
@@ -160,7 +162,9 @@ export const getResellerProfileByKeyAsync = async (keyOrCode) => {
             if (snap.exists() && snap.val().walletBalance !== undefined) {
               const freshLkr = parseFloat(snap.val().walletBalance || 0);
               cachedProfile.walletBalance = freshLkr;
-              cachedProfile.walletUsdt = freshLkr / 305;
+              if (snap.val().walletUsdt !== undefined) {
+                cachedProfile.walletUsdt = parseFloat(snap.val().walletUsdt || 0);
+              }
               updated = true;
             }
           } catch (e) {}
@@ -174,7 +178,9 @@ export const getResellerProfileByKeyAsync = async (keyOrCode) => {
               if (uData && uData.walletBalance !== undefined) {
                 const freshLkr = parseFloat(uData.walletBalance || 0);
                 cachedProfile.walletBalance = freshLkr;
-                cachedProfile.walletUsdt = freshLkr / 305;
+                if (uData.walletUsdt !== undefined) {
+                  cachedProfile.walletUsdt = parseFloat(uData.walletUsdt || 0);
+                }
               }
             }
           } catch (e) {}
@@ -275,7 +281,7 @@ export const getResellerProfileByKeyAsync = async (keyOrCode) => {
       resellerCode: rawCreds.resellerCode,
       securityKey: rawCreds.securityKey,
       walletBalance,
-      walletUsdt: walletBalance / 305,
+      walletUsdt: parseFloat(userObj?.walletUsdt || appInfo?.walletUsdt || 0),
       isReseller: true
     };
   };
@@ -398,7 +404,6 @@ export const deductResellerWalletBalance = async (uid, amountLkr) => {
   for (const [key, profile] of activeResellerRegistry.entries()) {
     if (profile.uid === uid) {
       profile.walletBalance = Math.max(0, (profile.walletBalance || 0) - amountLkr);
-      profile.walletUsdt = profile.walletBalance / 305;
     }
   }
 
@@ -412,7 +417,6 @@ export const deductResellerWalletBalance = async (uid, amountLkr) => {
         const newBal = Math.max(0, curBal - amountLkr);
         await rtdbUpdate(userRef, {
           walletBalance: newBal,
-          walletUsdt: newBal / 305,
           updatedAt: new Date().toISOString()
         });
       }
@@ -428,7 +432,6 @@ export const deductResellerWalletBalance = async (uid, amountLkr) => {
         const newBal = Math.max(0, curBal - amountLkr);
         await setDoc(userRef, {
           walletBalance: newBal,
-          walletUsdt: newBal / 305,
           updatedAt: new Date().toISOString()
         }, { merge: true });
       }
