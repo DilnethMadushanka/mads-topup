@@ -228,12 +228,39 @@ export const getResellerProfileByKeyAsync = async (keyOrCode) => {
   const createProfile = async (userObj, uidKey) => {
     const appInfo = await findAppInfo(userObj?.uid || uidKey);
 
-    const name = userObj?.name || userObj?.storeName || userObj?.fullName || appInfo?.realName || appInfo?.fullName || appInfo?.storeName || appInfo?.name || 'Verified Reseller Partner';
-    const email = userObj?.email || appInfo?.emailAddress || appInfo?.email || appInfo?.userEmail || '';
-    const phone = userObj?.phone || userObj?.whatsapp || appInfo?.phone || appInfo?.whatsapp || '';
+    let name = userObj?.name || userObj?.storeName || userObj?.fullName || appInfo?.realName || appInfo?.fullName || appInfo?.storeName || appInfo?.name || 'Verified Reseller Partner';
+    let email = userObj?.email || appInfo?.emailAddress || appInfo?.email || appInfo?.userEmail || '';
+    let phone = userObj?.phone || userObj?.whatsapp || appInfo?.phone || appInfo?.whatsapp || '';
+    let walletBalance = parseFloat(userObj?.walletBalance || 0);
+    let finalUid = userObj?.uid || uidKey;
+
+    // Check if there is a main registered user with the same email in RTDB / Firestore who has the actual wallet balance
+    if (email) {
+      const cleanEmail = email.trim().toLowerCase();
+      try {
+        const usersUrl = 'https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/users.json';
+        const res = await fetch(usersUrl);
+        if (res.ok) {
+          const allUsers = await res.json();
+          if (allUsers) {
+            for (const [uId, uData] of Object.entries(allUsers)) {
+              if (uData && uData.email && uData.email.trim().toLowerCase() === cleanEmail) {
+                if (uData.walletBalance !== undefined && parseFloat(uData.walletBalance || 0) >= walletBalance) {
+                  walletBalance = parseFloat(uData.walletBalance || 0);
+                  finalUid = uData.uid || uId;
+                  if (uData.name) name = uData.name;
+                  if (uData.phone) phone = uData.phone;
+                  break;
+                }
+              }
+            }
+          }
+        }
+      } catch (e) {}
+    }
 
     const rawCreds = ensureResellerCredentials({
-      uid: userObj?.uid || uidKey,
+      uid: finalUid,
       email,
       name,
       resellerCode: userObj?.resellerCode || appInfo?.resellerCode,
@@ -241,14 +268,14 @@ export const getResellerProfileByKeyAsync = async (keyOrCode) => {
     });
 
     return {
-      uid: userObj?.uid || uidKey,
+      uid: finalUid,
       name,
       email,
       phone,
       resellerCode: rawCreds.resellerCode,
       securityKey: rawCreds.securityKey,
-      walletBalance: parseFloat(userObj?.walletBalance || 0),
-      walletUsdt: parseFloat((userObj?.walletBalance || 0) / 305),
+      walletBalance,
+      walletUsdt: walletBalance / 305,
       isReseller: true
     };
   };
@@ -260,14 +287,20 @@ export const getResellerProfileByKeyAsync = async (keyOrCode) => {
       const snapshot = await rtdbGet(usersRef);
       if (snapshot.exists()) {
         const usersData = snapshot.val();
+        const matches = [];
         for (const [uidKey, userObj] of Object.entries(usersData)) {
           if (isMatch(userObj, uidKey)) {
-            const profile = await createProfile(userObj, uidKey);
-            activeResellerRegistry.set(cleanKey, profile);
-            if (profile.securityKey) activeResellerRegistry.set(profile.securityKey.toUpperCase(), profile);
-            if (profile.resellerCode) activeResellerRegistry.set(profile.resellerCode.toUpperCase(), profile);
-            return profile;
+            matches.push({ uidKey, userObj });
           }
+        }
+        if (matches.length > 0) {
+          matches.sort((a, b) => parseFloat(b.userObj?.walletBalance || 0) - parseFloat(a.userObj?.walletBalance || 0));
+          const topMatch = matches[0];
+          const profile = await createProfile(topMatch.userObj, topMatch.uidKey);
+          activeResellerRegistry.set(cleanKey, profile);
+          if (profile.securityKey) activeResellerRegistry.set(profile.securityKey.toUpperCase(), profile);
+          if (profile.resellerCode) activeResellerRegistry.set(profile.resellerCode.toUpperCase(), profile);
+          return profile;
         }
       }
     } catch (e) {
@@ -282,14 +315,20 @@ export const getResellerProfileByKeyAsync = async (keyOrCode) => {
     if (res.ok) {
       const usersData = await res.json();
       if (usersData) {
+        const matches = [];
         for (const [uidKey, userObj] of Object.entries(usersData)) {
           if (isMatch(userObj, uidKey)) {
-            const profile = await createProfile(userObj, uidKey);
-            activeResellerRegistry.set(cleanKey, profile);
-            if (profile.securityKey) activeResellerRegistry.set(profile.securityKey.toUpperCase(), profile);
-            if (profile.resellerCode) activeResellerRegistry.set(profile.resellerCode.toUpperCase(), profile);
-            return profile;
+            matches.push({ uidKey, userObj });
           }
+        }
+        if (matches.length > 0) {
+          matches.sort((a, b) => parseFloat(b.userObj?.walletBalance || 0) - parseFloat(a.userObj?.walletBalance || 0));
+          const topMatch = matches[0];
+          const profile = await createProfile(topMatch.userObj, topMatch.uidKey);
+          activeResellerRegistry.set(cleanKey, profile);
+          if (profile.securityKey) activeResellerRegistry.set(profile.securityKey.toUpperCase(), profile);
+          if (profile.resellerCode) activeResellerRegistry.set(profile.resellerCode.toUpperCase(), profile);
+          return profile;
         }
       }
     }
