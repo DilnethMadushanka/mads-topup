@@ -57,7 +57,8 @@ export function restartTelegramPolling() {
  * Runs automatically every 2 hours
  */
 export async function checkBotHealthAndRefresh(isManual = false) {
-  const token = (typeof process !== 'undefined' && process.env.TELEGRAM_BOT_TOKEN) || '';
+  const defaultToken = '8721752035:AAHT3qzLWgytmhk8ApCEAEHVrTfD3iujgr0';
+  const token = (typeof process !== 'undefined' && process.env.TELEGRAM_BOT_TOKEN) || defaultToken;
   if (!token) {
     botStatus = 'OFFLINE';
     return { success: false, status: botStatus, error: 'TELEGRAM_BOT_TOKEN missing' };
@@ -116,7 +117,7 @@ export async function checkBotHealthAndRefresh(isManual = false) {
 }
 
 /**
- * Start recurring 2-hour automated refresh and health-check loop
+ * Start recurring 2-hour automated refresh and health-check loop + 30s Watchdog
  */
 export function startBotHealthCheckLoop(intervalMs = 2 * 60 * 60 * 1000) {
   if (healthCheckTimer) clearInterval(healthCheckTimer);
@@ -126,12 +127,21 @@ export function startBotHealthCheckLoop(intervalMs = 2 * 60 * 60 * 1000) {
     checkBotHealthAndRefresh(false).catch(() => {});
   }, 10000);
 
+  // 30-Second Active Watchdog to guarantee continuous polling
+  setInterval(() => {
+    if (botInstance && typeof botInstance.isRunning === 'function' && !botInstance.isRunning()) {
+      console.warn('⚠️ [Telegram Bot 30s Watchdog]: Polling stopped. Auto-restarting polling engine...');
+      autoRecoveryCount++;
+      restartTelegramPolling();
+    }
+  }, 30000);
+
   // Recurring interval check every 2 hours
   healthCheckTimer = setInterval(() => {
     checkBotHealthAndRefresh(false).catch(() => {});
   }, intervalMs);
 
-  console.log('⏰ Telegram Bot 24/7 Health Engine active (Automated refresh every 2 hours).');
+  console.log('⏰ Telegram Bot 24/7 Health Engine active (Automated refresh every 2 hours + 30s Watchdog).');
 }
 
 /**
@@ -403,7 +413,8 @@ async function checkMoongoldOrderStatus(orderId) {
 export function initTelegramBot() {
   if (botInstance) return botInstance;
 
-  const token = (typeof process !== 'undefined' && process.env.TELEGRAM_BOT_TOKEN) || '';
+  const defaultToken = '8721752035:AAHT3qzLWgytmhk8ApCEAEHVrTfD3iujgr0';
+  const token = (typeof process !== 'undefined' && process.env.TELEGRAM_BOT_TOKEN) || defaultToken;
   if (!token) return null;
 
   try {
