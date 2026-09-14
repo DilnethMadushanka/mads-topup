@@ -65,6 +65,19 @@ export const AuthModal = () => {
       }
     } catch (e) {}
 
+    let recipientName = 'Gamer';
+    try {
+      const userProfileObj = await getResellerProfileByKeyAsync(targetEmail);
+      if (userProfileObj && userProfileObj.name && !userProfileObj.name.includes('@')) {
+        recipientName = userProfileObj.name;
+      } else if (username && !username.includes('@')) {
+        recipientName = username;
+      } else if (targetEmail.includes('@')) {
+        const uPart = targetEmail.split('@')[0];
+        recipientName = uPart.charAt(0).toUpperCase() + uPart.slice(1);
+      }
+    } catch (e) {}
+
     // 2. Send 6-digit OTP code via Backend Server endpoints
     const apiEndpoints = ['/api/send-otp', 'https://madstopup.com/api/send-otp'];
     for (const endpoint of apiEndpoints) {
@@ -75,7 +88,7 @@ export const AuthModal = () => {
         const apiRes = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: targetEmail, otp: otpCode, name: username || 'Valued User' }),
+          body: JSON.stringify({ email: targetEmail, otp: otpCode, name: recipientName }),
           signal: controller.signal
         });
         clearTimeout(timeoutId);
@@ -113,7 +126,7 @@ export const AuthModal = () => {
               email: targetEmail,
               otp_code: otpCode,
               passcode: otpCode,
-              user_name: username || 'Valued User',
+              user_name: recipientName,
               time: '15 mins'
             },
             publicKey

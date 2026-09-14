@@ -98,9 +98,20 @@ app.post('/api/send-otp', rateLimiter(10, 60000), async (req, res) => {
 
     const email = sanitizeString(rawEmail, 100);
     const otp = sanitizeString(rawOtp, 10);
-    const name = sanitizeString(rawName, 50);
+    const rawSanitName = sanitizeString(rawName, 50);
+
     if (!email || !otp) {
       return res.status(400).json({ error: 'Missing email or otp' });
+    }
+
+    let displayName = rawSanitName || '';
+    if (!displayName || displayName.includes('@')) {
+      if (email.includes('@')) {
+        const uPart = email.split('@')[0];
+        displayName = uPart.charAt(0).toUpperCase() + uPart.slice(1);
+      } else {
+        displayName = 'Gamer';
+      }
     }
 
     const emailHtml = `
@@ -109,7 +120,7 @@ app.post('/api/send-otp', rateLimiter(10, 60000), async (req, res) => {
           <h2 style="color: #ef4444; font-size: 24px; font-weight: 900; margin: 0;">MADS TOPUP</h2>
           <p style="color: #94a3b8; font-size: 12px; margin-top: 4px;">Email Verification Code</p>
         </div>
-        <p style="font-size: 14px; color: #e2e8f0;">Hello ${name || 'Gamer'},</p>
+        <p style="font-size: 14px; color: #e2e8f0;">Hello ${displayName},</p>
         <p style="font-size: 14px; color: #cbd5e1;">Please use the following 6-digit verification code to complete your account setup:</p>
         <div style="background-color: #1e293b; border: 2px dashed #ef4444; border-radius: 12px; padding: 16px; text-align: center; margin: 20px 0;">
           <span style="font-size: 32px; font-weight: 900; letter-spacing: 8px; color: #f87171; font-family: monospace;">${otp}</span>
