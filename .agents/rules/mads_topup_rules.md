@@ -3,6 +3,8 @@
 ## 1. Environment Credentials & VPS Deployment
 - **GitHub Repository**: `https://github.com/DilnethMadushanka/mads-topup.git` (Branch: `main`)
 - **Mandatory Git Push Rule**: Every single change, fix, feature, or update made to the workspace MUST automatically be verified with `npm run build`, committed to git, and pushed via `git push origin main` so GitHub is always 100% up to date for deployment.
+- **Strict Real Database Data Integration**: Every function created or modified MUST operate using real live database records from Firebase Firestore and Realtime Database (RTDB). Never use dummy, mock, or fallback hardcoded data for production operations.
+- **Strict API Key Protection**: Under NO circumstances should any API keys, credentials, secret tokens, or environment keys (Moongold API, Firebase config, Zoho Mail SMTP, Cloudflare R2 credentials, EmailJS keys) ever be changed, altered, or overwritten.
 - **Live VPS Production Path**: `/root/mads-topup`
 - **VPS Live Deployment Command**: `cd /root/mads-topup && git pull origin main && npm run build && pm2 restart all`
 - **Email Engine**: Primary Option is **Zoho Mail SMTP (`info@trivexit.com`)** for instant 6-digit OTP delivery directly to user inbox.
