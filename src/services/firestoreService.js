@@ -140,22 +140,44 @@ export const getResellerProfileByKeyAsync = async (keyOrCode) => {
     const cachedProfile = activeResellerRegistry.get(cleanKey);
     if (cachedProfile && cachedProfile.uid) {
       try {
+        let updated = false;
         if (db) {
-          const userDocRef = doc(db, 'users', cachedProfile.uid);
-          const docSnap = await getDoc(userDocRef);
-          if (docSnap.exists() && docSnap.data().walletBalance !== undefined) {
-            const freshLkr = parseFloat(docSnap.data().walletBalance || 0);
-            cachedProfile.walletBalance = freshLkr;
-            cachedProfile.walletUsdt = freshLkr / 305;
-          }
-        } else if (rtdb) {
-          const userRef = dbRef(rtdb, `users/${cachedProfile.uid}`);
-          const snap = await rtdbGet(userRef);
-          if (snap.exists() && snap.val().walletBalance !== undefined) {
-            const freshLkr = parseFloat(snap.val().walletBalance || 0);
-            cachedProfile.walletBalance = freshLkr;
-            cachedProfile.walletUsdt = freshLkr / 305;
-          }
+          try {
+            const userDocRef = doc(db, 'users', cachedProfile.uid);
+            const docSnap = await getDoc(userDocRef);
+            if (docSnap.exists() && docSnap.data().walletBalance !== undefined) {
+              const freshLkr = parseFloat(docSnap.data().walletBalance || 0);
+              cachedProfile.walletBalance = freshLkr;
+              cachedProfile.walletUsdt = freshLkr / 305;
+              updated = true;
+            }
+          } catch (e) {}
+        }
+        if (!updated && rtdb) {
+          try {
+            const userRef = dbRef(rtdb, `users/${cachedProfile.uid}`);
+            const snap = await rtdbGet(userRef);
+            if (snap.exists() && snap.val().walletBalance !== undefined) {
+              const freshLkr = parseFloat(snap.val().walletBalance || 0);
+              cachedProfile.walletBalance = freshLkr;
+              cachedProfile.walletUsdt = freshLkr / 305;
+              updated = true;
+            }
+          } catch (e) {}
+        }
+        if (!updated) {
+          // Direct HTTPS REST API query fallback to Realtime Database
+          try {
+            const res = await fetch(`https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/users/${cachedProfile.uid}.json`);
+            if (res.ok) {
+              const uData = await res.json();
+              if (uData && uData.walletBalance !== undefined) {
+                const freshLkr = parseFloat(uData.walletBalance || 0);
+                cachedProfile.walletBalance = freshLkr;
+                cachedProfile.walletUsdt = freshLkr / 305;
+              }
+            }
+          } catch (e) {}
         }
       } catch (e) {}
     }

@@ -804,10 +804,10 @@ ${zone ? `🌐 Zone ID: ${zone}\n` : ''}ℹ️ Status: ID formatting valid. Read
     bot.command('verify', handlePlayerCheck);
 
     // Command: /balance, /reseller, /wallet
-    const handleBalance = (ctx) => {
+    const handleBalance = async (ctx) => {
       try {
         const chatId = ctx.message?.chat?.id || ctx.chat?.id;
-        const reseller = (chatId ? boundChatSessions.get(chatId) : null);
+        let reseller = (chatId ? boundChatSessions.get(chatId) : null);
 
         if (!reseller) {
           const unauthMsg = `
@@ -820,6 +820,16 @@ Send: /auth <SecurityKey>
 (Example: /auth MADS-SEC-50048A92)
           `.trim();
           return ctx.reply(unauthMsg);
+        }
+
+        // Always query database live for latest reseller balance
+        const keyToQuery = reseller.securityKey || reseller.resellerCode || reseller.uid;
+        if (keyToQuery) {
+          const freshReseller = await getResellerProfileByKeyAsync(keyToQuery);
+          if (freshReseller) {
+            reseller = freshReseller;
+            boundChatSessions.set(chatId, reseller);
+          }
         }
 
         const balanceText = `
@@ -910,6 +920,15 @@ Send: /auth <SecurityKey>
             reseller = potentialKeyReseller;
             boundChatSessions.set(chatId, reseller);
             parts.splice(1, 1);
+          }
+        } else if (reseller) {
+          const keyToQuery = reseller.securityKey || reseller.resellerCode || reseller.uid;
+          if (keyToQuery) {
+            const freshReseller = await getResellerProfileByKeyAsync(keyToQuery);
+            if (freshReseller) {
+              reseller = freshReseller;
+              boundChatSessions.set(chatId, reseller);
+            }
           }
         }
 
