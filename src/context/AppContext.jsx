@@ -168,6 +168,11 @@ export const AppProvider = ({ children }) => {
   };
 
   const openCatalog = () => {
+    if (!isLoggedIn && (!auth || !auth.currentUser)) {
+      openAuth('login');
+      showToast('🔒 Please log in or register an account to access the game catalog!', 'error');
+      return;
+    }
     setIsGameCatalogOpen(true);
     setIsUserProfileOpen(false);
     setIsContactPageOpen(false);
@@ -662,6 +667,11 @@ export const AppProvider = ({ children }) => {
   };
 
   const openTopup = (game) => {
+    if (!isLoggedIn && (!auth || !auth.currentUser)) {
+      openAuth('login');
+      showToast('🔒 Please log in or register an account to view game top-ups!', 'error');
+      return;
+    }
     setSelectedGame(game);
     setIsTopupModalOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });

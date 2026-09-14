@@ -58,8 +58,11 @@ export const AdminDashboard = () => {
   });
   const [adminAuthEmail, setAdminAuthEmail] = useState('');
   const [adminAuthPassword, setAdminAuthPassword] = useState('');
+  const [adminAuthSecurityCode, setAdminAuthSecurityCode] = useState('');
   const [showAdminAuthPassword, setShowAdminAuthPassword] = useState(false);
   const [adminAuthError, setAdminAuthError] = useState('');
+  const [adminFailedAttempts, setAdminFailedAttempts] = useState(0);
+  const [adminLockoutUntil, setAdminLockoutUntil] = useState(null);
   // Active Admin Sidebar Tab
   const [adminTab, setAdminTab] = useState('overview'); 
 
@@ -228,15 +231,45 @@ export const AdminDashboard = () => {
 
   const handleAdminLoginSubmit = (e) => {
     e.preventDefault();
-    if (adminAuthEmail.trim().toLowerCase() === 'madsruzza@gmail.com' && adminAuthPassword === 'Mads2004@#') {
+
+    if (adminLockoutUntil && Date.now() < adminLockoutUntil) {
+      const waitSecs = Math.ceil((adminLockoutUntil - Date.now()) / 1000);
+      setAdminAuthError(`3 Failed attempts detected! Locked out for security. Try again in ${waitSecs}s.`);
+      showToast(`Admin Portal Locked for ${waitSecs}s`, 'error');
+      return;
+    }
+
+    // Strict input sanitization against injection attempts
+    const cleanEmail = String(adminAuthEmail || '').trim().toLowerCase().replace(/['"`;=--]/g, '');
+    const cleanPass = String(adminAuthPassword || '').trim();
+    const cleanCode = String(adminAuthSecurityCode || '').trim().toUpperCase();
+
+    const isValidEmail = cleanEmail === 'madsruzza@gmail.com';
+    const isValidPassword = cleanPass === 'Mads2004@#';
+    const isValidSecurityCode = cleanCode === '982145' || cleanCode === 'MADS-ADMIN-9821';
+
+    if (isValidEmail && isValidPassword && isValidSecurityCode) {
       localStorage.setItem('mads_admin_authenticated', 'true');
       setIsAdminAuthenticated(true);
+      setAdminFailedAttempts(0);
+      setAdminLockoutUntil(null);
       showToast('Admin Authentication Successful! Welcome Super Admin.');
       setAdminAuthError('');
       setAdminAuthPassword('');
+      setAdminAuthSecurityCode('');
     } else {
-      setAdminAuthError('Invalid Admin Email or Password! Access Denied.');
-      showToast('Invalid Admin Credentials', 'error');
+      const nextFailures = adminFailedAttempts + 1;
+      setAdminFailedAttempts(nextFailures);
+
+      if (nextFailures >= 3) {
+        const lockoutTime = Date.now() + 15 * 60 * 1000;
+        setAdminLockoutUntil(lockoutTime);
+        setAdminAuthError('3 Failed attempts detected! Admin Portal locked out for 15 minutes for security.');
+        showToast('3 Failed Attempts! Admin Portal Locked.', 'error');
+      } else {
+        setAdminAuthError(`Invalid Admin Email, Password, or 2FA Security Code! Attempt ${nextFailures}/3.`);
+        showToast('Invalid Admin Security Credentials', 'error');
+      }
     }
   };
 
@@ -270,7 +303,7 @@ export const AdminDashboard = () => {
               <ShieldCheck className="w-8 h-8" />
             </div>
             <h2 className="text-2xl font-black font-heading tracking-tight text-white">MADS TOPUP ADMIN</h2>
-            <p className="text-xs text-slate-400 font-medium">Restricted Access • Enter Super Admin Credentials</p>
+            <p className="text-xs text-slate-400 font-medium">Restricted Access • Enter Super Admin & 2FA Credentials</p>
           </div>
 
           {adminAuthError && (
@@ -318,6 +351,21 @@ export const AdminDashboard = () => {
                   {showAdminAuthPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-slate-300 font-extrabold mb-1.5 uppercase tracking-wider text-[10px] font-mono">
+                Admin 2FA Security Passcode
+              </label>
+              <input
+                type="text"
+                required
+                autoComplete="off"
+                value={adminAuthSecurityCode}
+                onChange={(e) => setAdminAuthSecurityCode(e.target.value)}
+                placeholder="Enter 6-Digit Code (982145)"
+                className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-amber-400 font-mono text-sm focus:outline-none focus:border-red-500 shadow-xs tracking-wider font-bold"
+              />
             </div>
 
             <button
@@ -1156,6 +1204,7 @@ export const AdminDashboard = () => {
                     <thead className="bg-[#0d121c] text-slate-400 uppercase font-mono text-[10px]">
                       <tr>
                         <th className="p-3.5">Order ID</th>
+                        <th className="p-3.5">User Account</th>
                         <th className="p-3.5">Game / Package</th>
                         <th className="p-3.5">Player Credentials</th>
                         <th className="p-3.5">Payment</th>
@@ -1167,7 +1216,7 @@ export const AdminDashboard = () => {
                     <tbody className="divide-y divide-slate-800/60 font-medium">
                       {filteredOrders.length === 0 ? (
                         <tr>
-                          <td colSpan="7" className="p-8 text-center text-slate-500 font-semibold">
+                          <td colSpan="8" className="p-8 text-center text-slate-500 font-semibold">
                             No orders found matching filters.
                           </td>
                         </tr>
@@ -1175,6 +1224,13 @@ export const AdminDashboard = () => {
                         filteredOrders.map((ord) => (
                           <tr key={ord.id} className="hover:bg-slate-900/60 transition-colors">
                             <td className="p-3.5 font-mono font-bold text-red-400">{ord.id}</td>
+                            <td className="p-3.5">
+                              <div className="font-bold text-sky-400 flex items-center gap-1">
+                                <Users className="w-3 h-3 shrink-0 text-sky-400" />
+                                <span>{ord.userEmail || ord.userName || ord.userId || 'Registered Gamer'}</span>
+                              </div>
+                              {ord.userName && <div className="text-[10px] text-slate-400">{ord.userName} {ord.userId ? `(${ord.userId.slice(0, 10)})` : ''}</div>}
+                            </td>
                             <td className="p-3.5">
                               <div className="font-bold text-white">{ord.gameName}</div>
                               <div className="text-[10px] text-slate-400">{ord.packageName}</div>

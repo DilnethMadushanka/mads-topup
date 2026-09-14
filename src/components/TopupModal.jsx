@@ -216,8 +216,9 @@ export const TopupModal = () => {
 
     const newOrder = {
       id: 'ORD-' + Math.floor(10000 + Math.random() * 90000),
-      userId: userProfile?.uid || '',
-      userEmail: userProfile?.email || '',
+      userId: userProfile?.uid || auth?.currentUser?.uid || '',
+      userEmail: userProfile?.email || auth?.currentUser?.email || '',
+      userName: userProfile?.name || auth?.currentUser?.displayName || 'Registered Gamer',
       gameId: selectedGame.id,
       gameName: selectedGame.name,
       packageName: selectedPackage.name,
