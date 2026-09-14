@@ -635,7 +635,10 @@ export const AppProvider = ({ children }) => {
           if (!prev) return prev;
           const match = remoteUsersList.find(ru => 
             (ru.uid && prev.uid && ru.uid === prev.uid) || 
-            (ru.email && prev.email && ru.email.toLowerCase() === prev.email.toLowerCase())
+            (ru.email && prev.email && ru.email.toLowerCase() === prev.email.toLowerCase()) ||
+            (ru.securityKey && prev.securityKey && ru.securityKey.trim() === prev.securityKey.trim()) ||
+            (ru.resellerCode && prev.resellerCode && ru.resellerCode.trim() === prev.resellerCode.trim()) ||
+            (ru.key && prev.key && ru.key.trim() === prev.key.trim())
           );
           if (match && (match.walletBalance !== prev.walletBalance || match.walletUsdt !== prev.walletUsdt)) {
             return {

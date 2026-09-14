@@ -135,9 +135,31 @@ export const getResellerProfileByKeyAsync = async (keyOrCode) => {
   if (!keyOrCode) return null;
   const cleanKey = String(keyOrCode).trim().toUpperCase();
 
-  // 1. Check in-memory registry first
+  // 1. Check in-memory registry first and perform a live DB wallet balance refresh
   if (activeResellerRegistry.has(cleanKey)) {
-    return activeResellerRegistry.get(cleanKey);
+    const cachedProfile = activeResellerRegistry.get(cleanKey);
+    if (cachedProfile && cachedProfile.uid) {
+      try {
+        if (db) {
+          const userDocRef = doc(db, 'users', cachedProfile.uid);
+          const docSnap = await getDoc(userDocRef);
+          if (docSnap.exists() && docSnap.data().walletBalance !== undefined) {
+            const freshLkr = parseFloat(docSnap.data().walletBalance || 0);
+            cachedProfile.walletBalance = freshLkr;
+            cachedProfile.walletUsdt = freshLkr / 305;
+          }
+        } else if (rtdb) {
+          const userRef = dbRef(rtdb, `users/${cachedProfile.uid}`);
+          const snap = await rtdbGet(userRef);
+          if (snap.exists() && snap.val().walletBalance !== undefined) {
+            const freshLkr = parseFloat(snap.val().walletBalance || 0);
+            cachedProfile.walletBalance = freshLkr;
+            cachedProfile.walletUsdt = freshLkr / 305;
+          }
+        }
+      } catch (e) {}
+    }
+    return cachedProfile;
   }
 
   let cachedApps = null;
@@ -325,13 +347,29 @@ export const deductResellerWalletBalance = async (uid, amountLkr) => {
       const userRef = dbRef(rtdb, `users/${uid}`);
       const snap = await rtdbGet(userRef);
       if (snap.exists()) {
-        const curBal = snap.val().walletBalance || 0;
+        const curBal = parseFloat(snap.val().walletBalance || 0);
         const newBal = Math.max(0, curBal - amountLkr);
         await rtdbUpdate(userRef, {
           walletBalance: newBal,
           walletUsdt: newBal / 305,
           updatedAt: new Date().toISOString()
         });
+      }
+    } catch (e) {}
+  }
+
+  if (db) {
+    try {
+      const userRef = doc(db, 'users', uid);
+      const docSnap = await getDoc(userRef);
+      if (docSnap.exists()) {
+        const curBal = parseFloat(docSnap.data().walletBalance || 0);
+        const newBal = Math.max(0, curBal - amountLkr);
+        await setDoc(userRef, {
+          walletBalance: newBal,
+          walletUsdt: newBal / 305,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
       }
     } catch (e) {}
   }
