@@ -482,11 +482,13 @@ export const GameTopupPage = () => {
               </div>
             </div>
 
-            {/* Helper Guide Hint Banner showing exact format for selected game */}
-            <div className="mt-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-950 text-xs font-bold flex items-start sm:items-center gap-2.5 shadow-xs">
-              <HelpCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5 sm:mt-0" />
-              <span className="leading-snug">{selectedGame.idGuideHint || (selectedGame.requiresServer ? "💡 Enter User ID (e.g. 84218845) and Zone ID (e.g. 2168 inside brackets in MLBB profile)" : "💡 Enter Player ID (UID) from your game profile (e.g. 1017871735)")}</span>
-            </div>
+            {/* Helper Guide Hint Banner ONLY for Mobile Legends */}
+            {selectedGame?.id === 'mobilelegends' && (
+              <div className="mt-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-950 text-xs font-bold flex items-start sm:items-center gap-2.5 shadow-xs">
+                <HelpCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5 sm:mt-0" />
+                <span className="leading-snug">💡 MLBB User ID (e.g. 84218845) සහ Zone ID (e.g. 2168 - Profile එකේ වරහන් ඇතුළත ඇති අංකය) ඇතුළත් කරන්න.</span>
+              </div>
+            )}
 
             {/* Saved IDs & Verified IGN Badge */}
             {(userProfile?.savedIds || []).filter(s => s.gameId === selectedGame.id).length > 0 && (
