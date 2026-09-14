@@ -16,6 +16,7 @@ export const WalletPage = () => {
     addManualPayment,
     vouchers,
     creditUserWallet,
+    redeemVoucher,
     setSelectedGame,
     closeCatalog,
     manualPayments
@@ -293,23 +294,22 @@ export const WalletPage = () => {
     }
   };
 
-  const handleRedeemSubmit = (e) => {
+  const [isRedeemingVoucher, setIsRedeemingVoucher] = useState(false);
+
+  const handleRedeemSubmit = async (e) => {
     e.preventDefault();
-    if (!voucherCode) {
+    if (!voucherCode.trim()) {
       showToast('Please enter a valid voucher code!', 'error');
       return;
     }
-    const foundVoucher = (vouchers || []).find(v => v.code.toUpperCase() === voucherCode.trim().toUpperCase() && v.active);
-    if (foundVoucher) {
-      if (foundVoucher.currency === 'USDT') {
-        creditUserWallet(0, foundVoucher.value);
-      } else {
-        creditUserWallet(foundVoucher.value, 0);
+    setIsRedeemingVoucher(true);
+    try {
+      const result = await redeemVoucher(voucherCode.trim());
+      if (result && result.success) {
+        setVoucherCode('');
       }
-      showToast(`Voucher ${foundVoucher.code} redeemed! Credited ${foundVoucher.value} ${foundVoucher.currency}.`);
-      setVoucherCode('');
-    } else {
-      showToast('Invalid or expired voucher code!', 'error');
+    } finally {
+      setIsRedeemingVoucher(false);
     }
   };
 
@@ -1026,9 +1026,17 @@ export const WalletPage = () => {
 
                 <button
                   type="submit"
-                  className="w-full py-4 bg-purple-600 hover:bg-purple-700 text-white font-black text-sm uppercase tracking-wider rounded-2xl transition-all cursor-pointer shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2"
+                  disabled={isRedeemingVoucher}
+                  className="w-full py-4 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-black text-sm uppercase tracking-wider rounded-2xl transition-all cursor-pointer shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2"
                 >
-                  <span>REDEEM VOUCHER INSTANTLY</span>
+                  {isRedeemingVoucher ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>VERIFYING & REDEEMING...</span>
+                    </>
+                  ) : (
+                    <span>REDEEM VOUCHER INSTANTLY</span>
+                  )}
                 </button>
               </form>
             </div>

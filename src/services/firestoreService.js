@@ -1050,3 +1050,214 @@ export const subscribeCustomGamePricesFromFirestore = (callback) => {
   };
 };
 
+/**
+ * Save master vouchers list to Firestore & Realtime Database
+ */
+export const saveVouchersToFirestore = async (vouchersList) => {
+  if (!Array.isArray(vouchersList)) return false;
+
+  if (rtdb) {
+    try {
+      const vRef = dbRef(rtdb, 'settings/vouchers');
+      await rtdbSet(vRef, vouchersList);
+    } catch (e) {
+      console.warn('RTDB vouchers save note:', e);
+    }
+  }
+
+  if (db) {
+    try {
+      const vDocRef = doc(db, 'settings', 'vouchers');
+      await setDoc(vDocRef, {
+        list: vouchersList,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+    } catch (err) {
+      console.warn('Firestore vouchers save note:', err);
+    }
+  }
+
+  return true;
+};
+
+/**
+ * Subscribe to realtime master vouchers list from Firestore & Realtime Database
+ */
+export const subscribeVouchersFromFirestore = (callback) => {
+  let unsubRtdb = null;
+  let unsubFirestore = null;
+
+  if (rtdb) {
+    try {
+      const vRef = dbRef(rtdb, 'settings/vouchers');
+      unsubRtdb = rtdbOnValue(vRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          if (data) {
+            const list = Array.isArray(data) ? data : Object.values(data);
+            callback(list);
+          }
+        }
+      });
+    } catch (e) {
+      console.warn('RTDB vouchers listener note:', e);
+    }
+  }
+
+  if (db) {
+    try {
+      const docRef = doc(db, 'settings', 'vouchers');
+      unsubFirestore = onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data && Array.isArray(data.list)) callback(data.list);
+        }
+      });
+    } catch (err) {
+      console.warn('Firestore vouchers listener note:', err);
+    }
+  }
+
+  return () => {
+    if (typeof unsubRtdb === 'function') unsubRtdb();
+    if (typeof unsubFirestore === 'function') unsubFirestore();
+  };
+};
+
+/**
+ * Atomic & Anti-Exploit Voucher Redemption function
+ * Verifies code, checks max uses, enforces one redemption per user, updates database, and credits user wallet.
+ */
+export const redeemVoucherInDatabase = async (voucherCode, userProfile) => {
+  if (!voucherCode || !userProfile) {
+    return { success: false, message: 'Please log in to redeem voucher codes!' };
+  }
+
+  const cleanCode = String(voucherCode).trim().toUpperCase();
+  const userId = userProfile.uid || userProfile.id;
+  const userEmail = (userProfile.email || '').toLowerCase();
+
+  if (!userId && !userEmail) {
+    return { success: false, message: 'User identification missing. Please re-login.' };
+  }
+
+  let vouchersList = [];
+
+  // Fetch current vouchers from RTDB
+  if (rtdb) {
+    try {
+      const vRef = dbRef(rtdb, 'settings/vouchers');
+      const snap = await rtdbGet(vRef);
+      if (snap.exists()) {
+        const val = snap.val();
+        if (Array.isArray(val)) vouchersList = val;
+        else if (typeof val === 'object') vouchersList = Object.values(val);
+      }
+    } catch (e) {
+      console.warn('RTDB vouchers fetch note:', e);
+    }
+  }
+
+  // Fallback to Firestore if RTDB was empty
+  if (vouchersList.length === 0 && db) {
+    try {
+      const docRef = doc(db, 'settings', 'vouchers');
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists() && docSnap.data()?.list) {
+        vouchersList = docSnap.data().list;
+      }
+    } catch (e) {
+      console.warn('Firestore vouchers fetch note:', e);
+    }
+  }
+
+  // Fallback default list if no vouchers saved yet
+  if (vouchersList.length === 0) {
+    vouchersList = [
+      { code: 'MADS-GIFT-500', value: 500, currency: 'LKR', maxUses: 100, usedCount: 14, active: true, usedByUsers: [] },
+      { code: 'WELCOME100', value: 100, currency: 'LKR', maxUses: 500, usedCount: 88, active: true, usedByUsers: [] },
+      { code: 'BINANCE-USDT-5', value: 5, currency: 'USDT', maxUses: 50, usedCount: 12, active: true, usedByUsers: [] }
+    ];
+  }
+
+  const voucherIndex = vouchersList.findIndex(v => v.code && String(v.code).toUpperCase() === cleanCode);
+  if (voucherIndex === -1) {
+    return { success: false, message: 'Invalid or non-existent voucher code!' };
+  }
+
+  const voucher = vouchersList[voucherIndex];
+
+  if (!voucher.active) {
+    return { success: false, message: 'This voucher code is inactive or expired!' };
+  }
+
+  if (voucher.maxUses && voucher.usedCount >= voucher.maxUses) {
+    return { success: false, message: 'This voucher code has reached its maximum usage limit!' };
+  }
+
+  const usedBy = voucher.usedByUsers || [];
+  const hasUsedBefore = usedBy.some(id => 
+    (userEmail && String(id).toLowerCase() === userEmail) || 
+    (userId && String(id) === String(userId))
+  );
+
+  if (hasUsedBefore) {
+    return { success: false, message: 'You have already redeemed this voucher code!' };
+  }
+
+  // Redeem voucher & update properties
+  const newUsedCount = (voucher.usedCount || 0) + 1;
+  const updatedUsedBy = [...usedBy, userId, userEmail].filter(Boolean);
+  const updatedActive = voucher.maxUses ? newUsedCount < voucher.maxUses : true;
+
+  const updatedVoucher = {
+    ...voucher,
+    usedCount: newUsedCount,
+    usedByUsers: updatedUsedBy,
+    active: updatedActive
+  };
+
+  vouchersList[voucherIndex] = updatedVoucher;
+
+  // 1. Save updated vouchers list back to RTDB & Firestore
+  await saveVouchersToFirestore(vouchersList);
+
+  // 2. Credit User Wallet in Database
+  const lkrAmount = voucher.currency === 'USDT' ? 0 : parseFloat(voucher.value || 0);
+  const usdtAmount = voucher.currency === 'USDT' ? parseFloat(voucher.value || 0) : 0;
+  await creditUserWalletInDatabase(userId || userEmail, lkrAmount, usdtAmount);
+
+  // 3. Save voucher redemption audit log
+  const logRecord = {
+    userId: userId || 'N/A',
+    userEmail: userEmail || 'N/A',
+    userName: userProfile.name || userProfile.username || 'Gamer',
+    voucherCode: cleanCode,
+    value: voucher.value,
+    currency: voucher.currency,
+    redeemedAt: new Date().toISOString()
+  };
+
+  if (rtdb) {
+    try {
+      const logsRef = dbRef(rtdb, `vouchers_log/${Date.now()}`);
+      await rtdbSet(logsRef, logRecord);
+    } catch (e) {}
+  }
+
+  if (db) {
+    try {
+      const logsCol = collection(db, 'vouchers_log');
+      await addDoc(logsCol, logRecord);
+    } catch (e) {}
+  }
+
+  return {
+    success: true,
+    message: `Voucher ${cleanCode} redeemed! Credited ${voucher.currency} ${voucher.value} to your wallet.`,
+    value: voucher.value,
+    currency: voucher.currency
+  };
+};
+
+

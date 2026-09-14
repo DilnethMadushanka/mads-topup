@@ -9,7 +9,8 @@ import {
   saveOrderToFirestore, subscribeAllUsersFromFirestore, subscribeOrdersFromFirestore, updateOrderStatusInFirestore,
   saveResellerApplicationToFirestore, subscribeResellerApplicationsFromFirestore, updateResellerApplicationStatusInFirestore,
   saveCustomGamePricesToFirestore, subscribeCustomGamePricesFromFirestore, generateUniqueSecurityKey, ensureResellerCredentials,
-  saveManualPaymentToFirestore, updateManualPaymentStatusInFirestore, subscribeManualPaymentsFromFirestore, creditUserWalletInDatabase
+  saveManualPaymentToFirestore, updateManualPaymentStatusInFirestore, subscribeManualPaymentsFromFirestore, creditUserWalletInDatabase,
+  saveVouchersToFirestore, subscribeVouchersFromFirestore, redeemVoucherInDatabase
 } from '../services/firestoreService';
 
 
@@ -742,18 +743,22 @@ export const AppProvider = ({ children }) => {
     showToast('Game ID saved to profile for fast top-up!');
   };
 
-  // Vouchers state
-  const [vouchers, setVouchers] = useState(() => {
-    const saved = localStorage.getItem('mads_vouchers');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-    return [
-      { code: 'MADS-GIFT-500', value: 500, currency: 'LKR', maxUses: 100, usedCount: 14, active: true },
-      { code: 'WELCOME100', value: 100, currency: 'LKR', maxUses: 500, usedCount: 88, active: true },
-      { code: 'BINANCE-USDT-5', value: 5, currency: 'USDT', maxUses: 50, usedCount: 12, active: true }
-    ];
-  });
+  // Vouchers state synced with Realtime Database & Firestore
+  const [vouchers, setVouchers] = useState(() => [
+    { code: 'MADS-GIFT-500', value: 500, currency: 'LKR', maxUses: 100, usedCount: 14, active: true, usedByUsers: [] },
+    { code: 'WELCOME100', value: 100, currency: 'LKR', maxUses: 500, usedCount: 88, active: true, usedByUsers: [] },
+    { code: 'BINANCE-USDT-5', value: 5, currency: 'USDT', maxUses: 50, usedCount: 12, active: true, usedByUsers: [] }
+  ]);
+
+  // Subscribe to real-time vouchers from Database
+  useEffect(() => {
+    const unsub = subscribeVouchersFromFirestore((realtimeVouchers) => {
+      if (Array.isArray(realtimeVouchers) && realtimeVouchers.length > 0) {
+        setVouchers(realtimeVouchers);
+      }
+    });
+    return () => unsub();
+  }, []);
 
   // Ticker message state
   const [tickerNotice, setTickerNotice] = useState(() => {
@@ -761,21 +766,41 @@ export const AppProvider = ({ children }) => {
   });
 
   useEffect(() => {
-    localStorage.setItem('mads_vouchers', JSON.stringify(vouchers));
-  }, [vouchers]);
-
-  useEffect(() => {
     localStorage.setItem('mads_ticker_notice', tickerNotice);
   }, [tickerNotice]);
 
-  const addVoucher = (newVoucher) => {
-    setVouchers(prev => [newVoucher, ...prev]);
+  const addVoucher = async (newVoucher) => {
+    const updated = [newVoucher, ...(vouchers || [])];
+    setVouchers(updated);
+    await saveVouchersToFirestore(updated);
     showToast(`Voucher code ${newVoucher.code} created successfully!`);
   };
 
-  const deleteVoucher = (code) => {
-    setVouchers(prev => prev.filter(v => v.code !== code));
+  const deleteVoucher = async (code) => {
+    const updated = (vouchers || []).filter(v => v.code !== code);
+    setVouchers(updated);
+    await saveVouchersToFirestore(updated);
     showToast(`Voucher code ${code} deleted.`);
+  };
+
+  const redeemVoucher = async (code) => {
+    if (!userProfile || (!userProfile.uid && !userProfile.email)) {
+      showToast('Please log in to redeem voucher codes!', 'error');
+      return { success: false, message: 'Please log in to redeem voucher codes!' };
+    }
+    const result = await redeemVoucherInDatabase(code, userProfile);
+    if (result.success) {
+      showToast(result.message, 'success');
+      // Credit local user profile state immediately
+      if (result.currency === 'USDT') {
+        creditUserWallet(0, result.value);
+      } else {
+        creditUserWallet(result.value, 0);
+      }
+    } else {
+      showToast(result.message, 'error');
+    }
+    return result;
   };
 
   const creditUserWallet = (amountLkr, amountUsdt = 0) => {
@@ -1489,6 +1514,7 @@ export const AppProvider = ({ children }) => {
       vouchers,
       addVoucher,
       deleteVoucher,
+      redeemVoucher,
       tickerNotice,
       setTickerNotice,
       creditUserWallet,

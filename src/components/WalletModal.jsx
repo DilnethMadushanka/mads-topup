@@ -13,7 +13,8 @@ export const WalletModal = () => {
     showToast,
     addManualPayment,
     vouchers,
-    creditUserWallet
+    creditUserWallet,
+    redeemVoucher
   } = useApp();
 
   const [binanceOrderId, setBinanceOrderId] = useState('');
@@ -300,24 +301,23 @@ export const WalletModal = () => {
     }
   };
 
-  const handleRedeemSubmit = (e) => {
+  const [isRedeemingVoucher, setIsRedeemingVoucher] = useState(false);
+
+  const handleRedeemSubmit = async (e) => {
     e.preventDefault();
-    if (!voucherCode) {
+    if (!voucherCode.trim()) {
       showToast('Please enter a valid voucher code!', 'error');
       return;
     }
-    const foundVoucher = (vouchers || []).find(v => v.code.toUpperCase() === voucherCode.trim().toUpperCase() && v.active);
-    if (foundVoucher) {
-      if (foundVoucher.currency === 'USDT') {
-        creditUserWallet(0, foundVoucher.value);
-      } else {
-        creditUserWallet(foundVoucher.value, 0);
+    setIsRedeemingVoucher(true);
+    try {
+      const result = await redeemVoucher(voucherCode.trim());
+      if (result && result.success) {
+        setVoucherCode('');
+        setIsWalletModalOpen(false);
       }
-      showToast(`Voucher ${foundVoucher.code} redeemed! Credited ${foundVoucher.value} ${foundVoucher.currency}.`);
-      setVoucherCode('');
-      setIsWalletModalOpen(false);
-    } else {
-      showToast('Invalid or expired voucher code!', 'error');
+    } finally {
+      setIsRedeemingVoucher(false);
     }
   };
 
@@ -772,9 +772,17 @@ export const WalletModal = () => {
 
                 <button
                   type="submit"
-                  className="w-full py-3.5 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-colors cursor-pointer shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2"
+                  disabled={isRedeemingVoucher}
+                  className="w-full py-3.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-colors cursor-pointer shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2"
                 >
-                  <span>REDEEM VOUCHER</span>
+                  {isRedeemingVoucher ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>VERIFYING...</span>
+                    </>
+                  ) : (
+                    <span>REDEEM VOUCHER</span>
+                  )}
                 </button>
               </form>
             </div>
