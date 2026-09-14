@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { GAMES_DATA } from '../data/games';
 import { getMoongoldConfig, saveMoongoldConfig } from '../services/moongoldApi';
 import { getR2Config, saveR2Config } from '../services/storageService';
-import { auth, onAuthStateChanged, logoutGoogle } from '../services/firebaseAuth';
+import { auth, onAuthStateChanged, logoutGoogle, getRedirectResult } from '../services/firebaseAuth';
 import { 
   syncUserProfileToFirestore, updateUserProfileInFirestore, subscribeUserProfile, 
   saveOrderToFirestore, subscribeAllUsersFromFirestore, subscribeOrdersFromFirestore, updateOrderStatusInFirestore,
@@ -424,6 +424,29 @@ export const AppProvider = ({ children }) => {
   // Sync Firebase Auth & Firestore live profile/wallet data
   useEffect(() => {
     if (!auth) return;
+
+    // Process Google redirect result if mobile redirect login occurred
+    if (typeof getRedirectResult === 'function') {
+      getRedirectResult(auth).then(async (result) => {
+        if (result && result.user) {
+          const user = result.user;
+          setIsLoggedIn(true);
+          const profile = await syncUserProfileToFirestore({
+            uid: user.uid,
+            name: user.displayName || user.email?.split('@')[0] || 'Verified Gamer',
+            email: user.email || '',
+            photoURL: user.photoURL || ''
+          });
+          if (profile) {
+            setUserProfileState(profile);
+          }
+          showToast(`Welcome back, ${user.displayName || 'Gamer'}!`);
+        }
+      }).catch((err) => {
+        console.warn('Redirect auth result note:', err);
+      });
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         setIsLoggedIn(true);
