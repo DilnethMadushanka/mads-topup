@@ -3,16 +3,39 @@ import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, query, 
 import { ref as dbRef, get as rtdbGet, set as rtdbSet, update as rtdbUpdate, onValue as rtdbOnValue } from 'firebase/database';
 
 /**
- * Helper function to generate a 100% unique Security Key for each user/reseller
+ * Helper function to generate a 100% unique & stable Security Key for each user/reseller.
+ * Uses object properties (uid, email, username) or seed string and persists fallback in localStorage.
  */
-export const generateUniqueSecurityKey = (seedStr, existingKey = null) => {
+export const generateUniqueSecurityKey = (seedInput, existingKey = null) => {
   if (existingKey && String(existingKey).startsWith('MADS-SEC-')) {
-    return existingKey;
+    return String(existingKey).toUpperCase();
   }
-  const cleanSeed = String(seedStr || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-  if (!cleanSeed) {
-    return `MADS-SEC-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+
+  let seedStr = seedInput;
+  if (typeof seedInput === 'object' && seedInput !== null) {
+    if (seedInput.securityKey && String(seedInput.securityKey).startsWith('MADS-SEC-')) {
+      return String(seedInput.securityKey).toUpperCase();
+    }
+    seedStr = seedInput.uid || seedInput.email || seedInput.username || seedInput.phone || seedInput.name || seedInput.id || seedInput.appId;
   }
+
+  if (typeof seedStr === 'string' && seedStr.startsWith('MADS-SEC-')) {
+    return seedStr.toUpperCase();
+  }
+
+  // Persistent browser fallback seed to prevent changing key across re-renders when profile is loading
+  let fallbackSeed = '';
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      fallbackSeed = localStorage.getItem('mads_device_reseller_seed');
+      if (!fallbackSeed) {
+        fallbackSeed = 'SEED-' + Math.random().toString(36).substring(2, 12).toUpperCase();
+        localStorage.setItem('mads_device_reseller_seed', fallbackSeed);
+      }
+    } catch (e) {}
+  }
+
+  const cleanSeed = String(seedStr || fallbackSeed || 'DEFAULT-RESELLER-SEED').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
 
   let hash1 = 5381;
   let hash2 = 0;
@@ -30,18 +53,55 @@ export const generateUniqueSecurityKey = (seedStr, existingKey = null) => {
 };
 
 /**
- * Ensure unique Reseller Code & Security Key exist for a user profile
+ * Helper function to generate a 100% unique & stable Reseller Code (RS-XXXXXX)
+ */
+export const generateUniqueResellerCode = (seedInput, existingCode = null) => {
+  if (existingCode && String(existingCode).startsWith('RS-')) {
+    return String(existingCode).toUpperCase();
+  }
+
+  let seedStr = seedInput;
+  if (typeof seedInput === 'object' && seedInput !== null) {
+    if (seedInput.resellerCode && String(seedInput.resellerCode).startsWith('RS-')) {
+      return String(seedInput.resellerCode).toUpperCase();
+    }
+    seedStr = seedInput.uid || seedInput.email || seedInput.username || seedInput.phone || seedInput.name || seedInput.id || seedInput.appId;
+  }
+
+  if (typeof seedStr === 'string' && seedStr.startsWith('RS-')) {
+    return seedStr.toUpperCase();
+  }
+
+  let fallbackSeed = '';
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      fallbackSeed = localStorage.getItem('mads_device_reseller_seed');
+      if (!fallbackSeed) {
+        fallbackSeed = 'SEED-' + Math.random().toString(36).substring(2, 12).toUpperCase();
+        localStorage.setItem('mads_device_reseller_seed', fallbackSeed);
+      }
+    } catch (e) {}
+  }
+
+  const cleanSeed = String(seedStr || fallbackSeed || 'DEFAULT-RESELLER-SEED').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+
+  let hash = 0;
+  for (let i = 0; i < cleanSeed.length; i++) {
+    hash = (hash << 5) - hash + cleanSeed.charCodeAt(i);
+    hash |= 0;
+  }
+
+  const codeHex = Math.abs(hash).toString(36).toUpperCase().padStart(6, '0').slice(-6);
+  return `RS-${codeHex}`;
+};
+
+/**
+ * Ensure unique Reseller Code & Security Key exist deterministically for a user profile
  */
 export const ensureResellerCredentials = (user) => {
   if (!user) return null;
-  const cleanUid = String(user.uid || Math.random().toString(36).substring(2, 8));
-  
-  const resellerCode = user.resellerCode || `RS-${cleanUid.slice(-6).toUpperCase()}`;
-  
-  let securityKey = user.securityKey;
-  if (!securityKey) {
-    securityKey = generateUniqueSecurityKey(user.uid || cleanUid);
-  }
+  const resellerCode = generateUniqueResellerCode(user, user.resellerCode);
+  const securityKey = generateUniqueSecurityKey(user, user.securityKey);
 
   return {
     ...user,
@@ -122,20 +182,27 @@ export const getResellerProfileByKeyAsync = async (keyOrCode) => {
   };
 
   const createProfile = async (userObj, uidKey) => {
-    const cleanUid = String(userObj?.uid || uidKey || '').trim().toUpperCase();
     const appInfo = await findAppInfo(userObj?.uid || uidKey);
 
     const name = userObj?.name || userObj?.storeName || userObj?.fullName || appInfo?.realName || appInfo?.fullName || appInfo?.storeName || appInfo?.name || 'Verified Reseller Partner';
     const email = userObj?.email || appInfo?.emailAddress || appInfo?.email || appInfo?.userEmail || '';
     const phone = userObj?.phone || userObj?.whatsapp || appInfo?.phone || appInfo?.whatsapp || '';
 
+    const rawCreds = ensureResellerCredentials({
+      uid: userObj?.uid || uidKey,
+      email,
+      name,
+      resellerCode: userObj?.resellerCode || appInfo?.resellerCode,
+      securityKey: userObj?.securityKey || appInfo?.securityKey
+    });
+
     return {
       uid: userObj?.uid || uidKey,
       name,
       email,
       phone,
-      resellerCode: userObj?.resellerCode || appInfo?.resellerCode || `RS-${cleanUid.slice(-6)}`,
-      securityKey: userObj?.securityKey || appInfo?.securityKey || cleanKey,
+      resellerCode: rawCreds.resellerCode,
+      securityKey: rawCreds.securityKey,
       walletBalance: parseFloat(userObj?.walletBalance || 0),
       walletUsdt: parseFloat((userObj?.walletBalance || 0) / 305),
       isReseller: true
@@ -286,11 +353,16 @@ export const syncUserProfileToFirestore = async (user) => {
       const snapshot = await rtdbGet(userRtdbRef);
       if (snapshot.exists()) {
         profileData = snapshot.val();
+        if (!profileData.securityKey || !profileData.resellerCode) {
+          const creds = ensureResellerCredentials(profileData);
+          profileData = { ...profileData, ...creds };
+          await rtdbUpdate(userRtdbRef, {
+            securityKey: creds.securityKey,
+            resellerCode: creds.resellerCode
+          });
+        }
       } else {
-        const cleanUid = String(user.uid || '').slice(-6).toUpperCase();
-        const resellerCode = `RS-${cleanUid}`;
-        const securityKey = generateUniqueSecurityKey(user.uid);
-
+        const creds = ensureResellerCredentials(user);
         const newUserProfile = {
           uid: user.uid,
           name: user.name || 'Verified Gamer',
@@ -298,8 +370,8 @@ export const syncUserProfileToFirestore = async (user) => {
           phone: '',
           walletBalance: 0,
           walletUsdt: 0,
-          resellerCode,
-          securityKey,
+          resellerCode: creds.resellerCode,
+          securityKey: creds.securityKey,
           isReseller: false,
           avatar: user.photoURL || '',
           savedIds: [],
@@ -321,11 +393,16 @@ export const syncUserProfileToFirestore = async (user) => {
 
       if (docSnap.exists()) {
         profileData = docSnap.data();
+        if (!profileData.securityKey || !profileData.resellerCode) {
+          const creds = ensureResellerCredentials(profileData);
+          profileData = { ...profileData, ...creds };
+          await setDoc(userRef, {
+            securityKey: creds.securityKey,
+            resellerCode: creds.resellerCode
+          }, { merge: true });
+        }
       } else {
-        const cleanUid = String(user.uid || '').slice(-6).toUpperCase();
-        const resellerCode = `RS-${cleanUid}`;
-        const securityKey = generateUniqueSecurityKey(user.uid);
-
+        const creds = ensureResellerCredentials(user);
         const newUserProfile = {
           uid: user.uid,
           name: user.name || 'Verified Gamer',
@@ -333,8 +410,8 @@ export const syncUserProfileToFirestore = async (user) => {
           phone: '',
           walletBalance: 0,
           walletUsdt: 0,
-          resellerCode,
-          securityKey,
+          resellerCode: creds.resellerCode,
+          securityKey: creds.securityKey,
           isReseller: false,
           avatar: user.photoURL || '',
           savedIds: [],
@@ -642,10 +719,14 @@ export const subscribeResellerApplicationsFromFirestore = (callback) => {
 /**
  * Update reseller application status and sync user reseller role
  */
-export const updateResellerApplicationStatusInFirestore = async (appId, userId, newStatus, firestoreId = null, targetSecurityKey = null) => {
-  const cleanUid = String(userId || appId || '').slice(-6).toUpperCase();
-  const resellerCode = `RS-${cleanUid}`;
-  const securityKey = targetSecurityKey || generateUniqueSecurityKey(userId || appId);
+export const updateResellerApplicationStatusInFirestore = async (appId, userId, newStatus, firestoreId = null, targetSecurityKey = null, targetResellerCode = null) => {
+  const creds = ensureResellerCredentials({
+    uid: userId || appId,
+    securityKey: targetSecurityKey,
+    resellerCode: targetResellerCode
+  });
+  const securityKey = creds.securityKey;
+  const resellerCode = creds.resellerCode;
 
   if (rtdb) {
     try {

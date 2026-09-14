@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { GAMES_DATA } from '../data/games';
-import { generateUniqueSecurityKey } from '../services/firestoreService';
+import { generateUniqueSecurityKey, ensureResellerCredentials } from '../services/firestoreService';
 import confetti from 'canvas-confetti';
 import { 
   Crown, Wallet, Zap, Copy, Check, ArrowLeft, Send, ShieldCheck, 
@@ -44,9 +44,9 @@ export const ResellerDashboard = () => {
   const [whatsappContact, setWhatsappContact] = useState(userProfile?.phone || '');
   const [storeEmail, setStoreEmail] = useState(userProfile?.email || '');
 
-  const cleanUid = String(userProfile?.uid || '882104').slice(-6).toUpperCase();
-  const resellerWalletId = userProfile?.resellerCode || `RS-${cleanUid}`;
-  const resellerSecurityKey = userProfile?.securityKey || generateUniqueSecurityKey(userProfile?.uid);
+  const profileWithCreds = ensureResellerCredentials(userProfile) || {};
+  const resellerWalletId = profileWithCreds.resellerCode || userProfile?.resellerCode || 'RS-OFFICIAL';
+  const resellerSecurityKey = profileWithCreds.securityKey || userProfile?.securityKey || 'MADS-SEC-OFFICIAL';
   const [isCopiedKey, setIsCopiedKey] = useState(false);
 
   const handleCopySecurityKey = () => {

@@ -8,7 +8,7 @@ import {
   syncUserProfileToFirestore, updateUserProfileInFirestore, subscribeUserProfile, 
   saveOrderToFirestore, subscribeAllUsersFromFirestore, subscribeOrdersFromFirestore, updateOrderStatusInFirestore,
   saveResellerApplicationToFirestore, subscribeResellerApplicationsFromFirestore, updateResellerApplicationStatusInFirestore,
-  saveCustomGamePricesToFirestore, subscribeCustomGamePricesFromFirestore, generateUniqueSecurityKey
+  saveCustomGamePricesToFirestore, subscribeCustomGamePricesFromFirestore, generateUniqueSecurityKey, ensureResellerCredentials
 } from '../services/firestoreService';
 
 
@@ -1184,12 +1184,19 @@ export const AppProvider = ({ children }) => {
     });
 
     // Generate / retrieve credentials for email dispatch and database save
-    const cleanUid = String(userId || targetApp?.userId || Math.random().toString(36).substring(2, 8)).slice(-6).toUpperCase();
-    const resellerCode = targetApp?.resellerCode || `RS-${cleanUid}`;
-    const securityKey = targetApp?.securityKey || generateUniqueSecurityKey(userId || targetApp?.userId);
+    const creds = ensureResellerCredentials({
+      uid: targetUserId,
+      email: targetApp?.emailAddress || targetApp?.email,
+      name: targetApp?.realName || targetApp?.name,
+      resellerCode: targetApp?.resellerCode,
+      securityKey: targetApp?.securityKey
+    });
+
+    const resellerCode = creds.resellerCode;
+    const securityKey = creds.securityKey;
 
     const targetFirestoreId = targetApp?.firestoreId || (targetId && targetId !== targetUserId ? targetId : null);
-    updateResellerApplicationStatusInFirestore(targetId || targetUserId, targetUserId, newStatus, targetFirestoreId, securityKey);
+    updateResellerApplicationStatusInFirestore(targetId || targetUserId, targetUserId, newStatus, targetFirestoreId, securityKey, resellerCode);
     
     if (newStatus === 'APPROVED') {
       if (userId && userProfile?.uid === userId) {

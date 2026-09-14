@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { ensureResellerCredentials } from '../services/firestoreService';
 import { Eye, EyeOff, User, Lock, ArrowLeft, LogIn, Crown } from 'lucide-react';
 
 export const ResellerLoginPage = () => {
@@ -21,15 +22,24 @@ export const ResellerLoginPage = () => {
       return;
     }
 
+    const cleanName = username.trim();
+    const derivedUid = `reseller_${cleanName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}`;
+    const email = cleanName.includes('@') ? cleanName : `${cleanName.toLowerCase()}@madstopup.com`;
+
     setIsLoggedIn(true);
-    setUserProfile(prev => ({
-      ...prev,
-      name: username.trim(),
-      role: 'Reseller Partner',
-      isReseller: true,
-      email: username.includes('@') ? username : `${username}@madstopup.com`
-    }));
-    showToast(`Welcome back, Reseller ${username}! Logged into Reseller Dashboard.`);
+    setUserProfile(prev => {
+      const baseObj = {
+        ...prev,
+        uid: prev?.uid || derivedUid,
+        name: cleanName,
+        email: prev?.email || email,
+        role: 'Reseller Partner',
+        isReseller: true,
+        resellerStatus: 'APPROVED'
+      };
+      return ensureResellerCredentials(baseObj);
+    });
+    showToast(`Welcome back, Reseller ${cleanName}! Logged into Reseller Dashboard.`);
     openResellerDashboard();
   };
 
