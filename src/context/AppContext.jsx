@@ -121,7 +121,7 @@ const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
   const [currency, setCurrency] = useState('LKR'); // 'LKR' | 'USD'
-  const [exchangeRate] = useState(305); // 1 USD = 305 LKR
+  const [exchangeRate] = useState(340); // 1 USD = 340 LKR
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGame, setSelectedGame] = useState(null);
   const [isTopupModalOpen, setIsTopupModalOpen] = useState(false);
