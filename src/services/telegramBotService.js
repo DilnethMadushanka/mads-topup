@@ -825,10 +825,14 @@ Send: /auth <SecurityKey>
         // Always query database live for latest reseller balance
         const keyToQuery = reseller.securityKey || reseller.resellerCode || reseller.uid;
         if (keyToQuery) {
-          const freshReseller = await getResellerProfileByKeyAsync(keyToQuery);
-          if (freshReseller) {
-            reseller = freshReseller;
-            boundChatSessions.set(chatId, reseller);
+          try {
+            const freshReseller = await getResellerProfileByKeyAsync(keyToQuery);
+            if (freshReseller) {
+              reseller = freshReseller;
+              boundChatSessions.set(chatId, reseller);
+            }
+          } catch (e) {
+            console.error('Error fetching live reseller profile in handleBalance:', e);
           }
         }
 
@@ -849,6 +853,9 @@ Send: /auth <SecurityKey>
         return ctx.reply(balanceText);
       } catch (e) {
         console.error('Balance Error:', e);
+        try {
+          ctx.reply('⚠️ Error retrieving wallet balance. Please try again.');
+        } catch (e2) {}
       }
     };
 
