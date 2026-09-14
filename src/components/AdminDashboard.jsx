@@ -240,7 +240,7 @@ export const AdminDashboard = () => {
     }
 
     // Strict input sanitization against injection attempts
-    const cleanEmail = String(adminAuthEmail || '').trim().toLowerCase().replace(/['"`;=--]/g, '');
+    const cleanEmail = String(adminAuthEmail || '').trim().toLowerCase().replace(/['"`;=\-]/g, '');
     const cleanPass = String(adminAuthPassword || '').trim();
     const cleanCode = String(adminAuthSecurityCode || '').trim().toUpperCase();
 
