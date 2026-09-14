@@ -510,7 +510,12 @@ export const AppProvider = ({ children }) => {
   }, []);
 
   const handleLogout = async () => {
-    await logoutGoogle();
+    try {
+      await logoutGoogle();
+    } catch (e) {
+      console.warn('[Logout Note]:', e);
+    }
+
     setIsLoggedIn(false);
     setUserProfileState({
       uid: '',
@@ -522,8 +527,26 @@ export const AppProvider = ({ children }) => {
       avatar: '',
       savedIds: []
     });
-    localStorage.removeItem('mads_user_profile');
+
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('mads_user_profile');
+        sessionStorage.clear();
+      } catch (e) {}
+    }
+
     setIsUserProfileOpen(false);
+    setIsResellerDashboardOpen(false);
+    setIsResellerLoginPageOpen(false);
+    setIsResellerPageOpen(false);
+    setIsWalletModalOpen(false);
+    setSelectedGame(null);
+    setIsGameCatalogOpen(false);
+
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
     showToast('Logged out successfully!');
   };
 
