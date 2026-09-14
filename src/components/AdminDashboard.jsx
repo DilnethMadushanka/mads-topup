@@ -46,7 +46,9 @@ export const AdminDashboard = () => {
     resellerApplications,
     updateResellerApplicationStatus,
     gamesCatalog,
-    updateGamePrices
+    updateGamePrices,
+    popupAdConfig,
+    updatePopupAdConfig
   } = useApp();
 
   // Admin Authentication State (Persisted in localStorage across page refreshes)
@@ -98,6 +100,51 @@ export const AdminDashboard = () => {
     setIsSavingPrices(false);
     if (success) {
       showToast('⚡ ALL PACKAGE PRICES SAVED & PUBLISHED LIVE TO DATABASE!');
+    }
+  };
+
+  // Popup Ad Management Form State
+  const [adEnabled, setAdEnabled] = useState(popupAdConfig?.enabled ?? true);
+  const [adTitle, setAdTitle] = useState(popupAdConfig?.title || '');
+  const [adDescription, setAdDescription] = useState(popupAdConfig?.description || '');
+  const [adImageUrl, setAdImageUrl] = useState(popupAdConfig?.imageUrl || '');
+  const [adButtonText, setAdButtonText] = useState(popupAdConfig?.buttonText || '');
+  const [adButtonLink, setAdButtonLink] = useState(popupAdConfig?.buttonLink || '#catalog');
+  const [adBadge, setAdBadge] = useState(popupAdConfig?.badge || 'LIMITED TIME DEAL');
+  const [adShowOncePerSession, setAdShowOncePerSession] = useState(popupAdConfig?.showOncePerSession ?? false);
+  const [isSavingAd, setIsSavingAd] = useState(false);
+
+  useEffect(() => {
+    if (popupAdConfig) {
+      setAdEnabled(popupAdConfig.enabled ?? true);
+      setAdTitle(popupAdConfig.title || '');
+      setAdDescription(popupAdConfig.description || '');
+      setAdImageUrl(popupAdConfig.imageUrl || '');
+      setAdButtonText(popupAdConfig.buttonText || '');
+      setAdButtonLink(popupAdConfig.buttonLink || '#catalog');
+      setAdBadge(popupAdConfig.badge || 'LIMITED TIME DEAL');
+      setAdShowOncePerSession(popupAdConfig.showOncePerSession ?? false);
+    }
+  }, [popupAdConfig]);
+
+  const handleSavePopupAd = async (e) => {
+    if (e) e.preventDefault();
+    setIsSavingAd(true);
+    const success = await updatePopupAdConfig({
+      enabled: adEnabled,
+      title: adTitle,
+      description: adDescription,
+      imageUrl: adImageUrl,
+      buttonText: adButtonText,
+      buttonLink: adButtonLink,
+      badge: adBadge,
+      showOncePerSession: adShowOncePerSession
+    });
+    setIsSavingAd(false);
+    if (success) {
+      showToast('🎉 POPUP BANNER AD UPDATED & PUBLISHED LIVE TO WEBSITE!');
+    } else {
+      showToast('Failed to save Popup Ad configuration.', 'error');
     }
   };
 
@@ -701,6 +748,7 @@ export const AdminDashboard = () => {
             { id: 'games', label: 'Games', icon: Award },
             { id: 'moongold', label: 'API Config', icon: Zap },
             { id: 'r2', label: 'R2 Storage', icon: Cloud },
+            { id: 'popupAd', label: 'Popup Ad', icon: Sparkles },
             { id: 'announcement', label: 'Notice', icon: Megaphone }
           ].map((item) => {
             const Icon = item.icon;
@@ -910,6 +958,23 @@ export const AdminDashboard = () => {
                 <Megaphone className="w-4 h-4 text-pink-400" />
                 <span>Ticker Notice Banner</span>
               </div>
+            </button>
+
+            <button
+              onClick={() => handleTabSelect('popupAd')}
+              className={`w-full px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition-all cursor-pointer ${
+                adminTab === 'popupAd' ? 'bg-[#cc040a] text-white shadow-lg shadow-red-600/30' : 'text-slate-400 hover:bg-slate-900 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Sparkles className="w-4 h-4 text-emerald-400" />
+                <span>Popup Banner Ad</span>
+              </div>
+              {adEnabled && (
+                <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[9px] font-bold">
+                  ACTIVE
+                </span>
+              )}
             </button>
 
             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-3 block pt-4 mb-2 font-mono">
@@ -2440,6 +2505,268 @@ export const AdminDashboard = () => {
                         Select a support ticket from the list to inspect & respond.
                       </div>
                     )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 12: POPUP BANNER AD MANAGER */}
+            {adminTab === 'popupAd' && (
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-3xl">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-xl font-black font-heading text-white">📢 Website Popup Banner Ad Manager</h3>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black font-mono border ${
+                        adEnabled 
+                          ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' 
+                          : 'bg-slate-800 text-slate-400 border-slate-700'
+                      }`}>
+                        {adEnabled ? '● LIVE ON WEB' : '○ DISABLED'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Configure the popup advertisement banner that appears to all visitors when opening the website.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={handleSavePopupAd}
+                    disabled={isSavingAd}
+                    className="px-6 py-3 bg-[#cc040a] hover:bg-red-700 disabled:opacity-60 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-red-600/30 transition-all cursor-pointer flex items-center gap-2 shrink-0"
+                  >
+                    {isSavingAd ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    <span>Save & Publish Live</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  {/* CONFIG FORM PANEL */}
+                  <form onSubmit={handleSavePopupAd} className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-5">
+                    <h4 className="text-sm font-black text-white font-heading uppercase tracking-wider flex items-center gap-2 border-b border-slate-800 pb-3">
+                      <Settings className="w-4 h-4 text-red-500" />
+                      <span>Ad Configuration Settings</span>
+                    </h4>
+
+                    {/* Enable Toggle Switch */}
+                    <div className="flex items-center justify-between bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                      <div>
+                        <span className="text-xs font-black text-white block">Enable Popup Banner Ad</span>
+                        <span className="text-[11px] text-slate-400">Show this advertisement popup when users load the web app</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setAdEnabled(!adEnabled)}
+                        className={`w-12 h-6 rounded-full transition-colors relative p-1 cursor-pointer ${
+                          adEnabled ? 'bg-red-600' : 'bg-slate-800'
+                        }`}
+                      >
+                        <div className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                          adEnabled ? 'translate-x-6' : 'translate-x-0'
+                        }`} />
+                      </button>
+                    </div>
+
+                    {/* Show Once Per Session */}
+                    <div className="flex items-center justify-between bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                      <div>
+                        <span className="text-xs font-black text-white block">Show Once Per Session</span>
+                        <span className="text-[11px] text-slate-400">If enabled, the popup won't re-appear on page refresh after user closes it</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setAdShowOncePerSession(!adShowOncePerSession)}
+                        className={`w-12 h-6 rounded-full transition-colors relative p-1 cursor-pointer ${
+                          adShowOncePerSession ? 'bg-red-600' : 'bg-slate-800'
+                        }`}
+                      >
+                        <div className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                          adShowOncePerSession ? 'translate-x-6' : 'translate-x-0'
+                        }`} />
+                      </button>
+                    </div>
+
+                    {/* Badge Label */}
+                    <div>
+                      <label className="text-xs font-bold text-slate-300 block mb-1">Badge Text</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. SPECIAL OFFER, LIMITED TIME DEAL, HOT PROMO"
+                        value={adBadge}
+                        onChange={(e) => setAdBadge(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-red-500"
+                      />
+                    </div>
+
+                    {/* Headline Title */}
+                    <div>
+                      <label className="text-xs font-bold text-slate-300 block mb-1">Popup Title / Headline</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 🔥 SPECIAL PROMO OFFER!"
+                        value={adTitle}
+                        onChange={(e) => setAdTitle(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-red-500"
+                      />
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                      <label className="text-xs font-bold text-slate-300 block mb-1">Description / Offer Details</label>
+                      <textarea
+                        rows={3}
+                        placeholder="e.g. Get up to 20% Extra Bonus Diamonds on all Free Fire top-ups today! Instant automated delivery."
+                        value={adDescription}
+                        onChange={(e) => setAdDescription(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-red-500 resize-none"
+                      />
+                    </div>
+
+                    {/* Image URL */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-bold text-slate-300">Banner Image URL</label>
+                        <span className="text-[10px] text-slate-500 font-mono">Direct image link (Unsplash, R2, Imgur, etc.)</span>
+                      </div>
+                      <input
+                        type="url"
+                        placeholder="https://images.unsplash.com/photo-..."
+                        value={adImageUrl}
+                        onChange={(e) => setAdImageUrl(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-red-500 font-mono"
+                      />
+
+                      {/* Quick Presets */}
+                      <div className="flex flex-wrap gap-1.5 pt-2">
+                        <span className="text-[10px] text-slate-500 font-mono self-center mr-1">Quick Presets:</span>
+                        <button
+                          type="button"
+                          onClick={() => setAdImageUrl('https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop')}
+                          className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] rounded-lg font-mono transition-colors cursor-pointer"
+                        >
+                          🎮 Gaming Offer
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAdImageUrl('https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=1000&auto=format&fit=crop')}
+                          className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] rounded-lg font-mono transition-colors cursor-pointer"
+                        >
+                          🔥 Cyber Red
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAdImageUrl('https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=1000&auto=format&fit=crop')}
+                          className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] rounded-lg font-mono transition-colors cursor-pointer"
+                        >
+                          💎 Diamonds Deal
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAdImageUrl('')}
+                          className="px-2 py-1 bg-red-950/60 hover:bg-red-900 text-red-300 text-[10px] rounded-lg font-mono transition-colors cursor-pointer"
+                        >
+                          ❌ Clear Image
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Button Text & Link */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-bold text-slate-300 block mb-1">Button Action Text</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Top Up Now 🚀"
+                          value={adButtonText}
+                          onChange={(e) => setAdButtonText(e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-red-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-300 block mb-1">Target Action Link</label>
+                        <select
+                          value={adButtonLink}
+                          onChange={(e) => setAdButtonLink(e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-red-500"
+                        >
+                          <option value="#catalog">Open Game Catalog (#catalog)</option>
+                          <option value="#wallet">Open Deposit Wallet (#wallet)</option>
+                          <option value="https://wa.me/94740436276">Open Support WhatsApp (wa.me)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Submit Button */}
+                    <div className="pt-2">
+                      <button
+                        type="submit"
+                        disabled={isSavingAd}
+                        className="w-full py-3 bg-[#cc040a] hover:bg-red-700 text-white font-extrabold text-xs rounded-xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
+                      >
+                        {isSavingAd ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                        <span>Save & Publish Live</span>
+                      </button>
+                    </div>
+                  </form>
+
+                  {/* REALTIME LIVE PREVIEW PANEL */}
+                  <div className="lg:col-span-5 space-y-4">
+                    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5">
+                      <h4 className="text-xs font-black text-slate-300 font-heading uppercase tracking-wider mb-4 flex items-center justify-between">
+                        <span>Live Popup Preview</span>
+                        <span className="text-[10px] text-emerald-400 font-mono">Real-time</span>
+                      </h4>
+
+                      {/* Mock Modal Card Preview */}
+                      <div className="bg-slate-950 border border-red-500/30 text-white rounded-3xl shadow-2xl overflow-hidden relative flex flex-col transform">
+                        {/* Mock Close Button */}
+                        <div className="absolute top-3 right-3 z-20 w-7 h-7 rounded-full bg-slate-950/70 text-slate-300 flex items-center justify-center border border-slate-700/60 shadow">
+                          <X className="w-4 h-4" />
+                        </div>
+
+                        {/* Mock Image Banner */}
+                        {adImageUrl ? (
+                          <div className="relative w-full h-36 bg-slate-900 overflow-hidden">
+                            <img src={adImageUrl} alt="Preview Banner" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent"></div>
+                            {adBadge && (
+                              <div className="absolute top-3 left-3 z-10">
+                                <span className="px-2.5 py-1 rounded-full bg-red-600 text-white font-black text-[9px] uppercase tracking-wider">
+                                  🔥 {adBadge}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="w-full h-24 bg-gradient-to-r from-red-950 to-slate-900 p-3 flex items-start">
+                            <span className="px-2 py-0.5 rounded-full bg-red-600/30 text-red-300 font-black text-[9px] uppercase">
+                              {adBadge || 'ANNOUNCEMENT'}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Content Body */}
+                        <div className="p-4 space-y-2.5 text-center">
+                          <h5 className="text-base font-black text-white font-heading">
+                            {adTitle || 'Popup Title Here'}
+                          </h5>
+                          <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
+                            {adDescription || 'Your ad description will appear here...'}
+                          </p>
+                          <div className="pt-2 space-y-2">
+                            <div className="w-full py-2.5 px-4 bg-[#cc040a] text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow">
+                              <span>{adButtonText || 'Explore Deals'}</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </div>
+                            <span className="text-[10px] text-slate-500 font-bold block cursor-pointer">
+                              Close Announcement
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="h-1 w-full bg-gradient-to-r from-red-600 via-amber-500 to-red-600"></div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -24,7 +24,7 @@ import { ReferralProgramPage } from './components/ReferralProgramPage';
 import { ResellerProgramPage } from './components/ResellerProgramPage';
 import { ResellerLoginPage } from './components/ResellerLoginPage';
 import { ResellerDashboard } from './components/ResellerDashboard';
-import { ResellerBannerSection } from './components/ResellerBannerSection';
+import { PopupAdModal } from './components/PopupAdModal';
 import { ToastNotification } from './components/ToastNotification';
 import { Flame } from 'lucide-react';
 
@@ -159,6 +159,7 @@ const MainContent = () => {
       </footer>
 
       {/* Modals & Popups */}
+      <PopupAdModal />
       <AuthModal />
       <AdminDashboard />
       <ImportantNoticeModal />

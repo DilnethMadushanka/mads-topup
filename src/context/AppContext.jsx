@@ -10,7 +10,8 @@ import {
   saveResellerApplicationToFirestore, subscribeResellerApplicationsFromFirestore, updateResellerApplicationStatusInFirestore,
   saveCustomGamePricesToFirestore, subscribeCustomGamePricesFromFirestore, generateUniqueSecurityKey, ensureResellerCredentials,
   saveManualPaymentToFirestore, updateManualPaymentStatusInFirestore, subscribeManualPaymentsFromFirestore, creditUserWalletInDatabase,
-  saveVouchersToFirestore, subscribeVouchersFromFirestore, redeemVoucherInDatabase
+  saveVouchersToFirestore, subscribeVouchersFromFirestore, redeemVoucherInDatabase,
+  savePopupAdConfigToFirestore, subscribePopupAdConfigFromFirestore, DEFAULT_POPUP_AD_CONFIG
 } from '../services/firestoreService';
 
 
@@ -353,6 +354,29 @@ export const AppProvider = ({ children }) => {
       return true;
     } catch (err) {
       console.error('[AppContext] Save Prices Error:', err);
+      return false;
+    }
+  };
+
+  // Popup Ad State & Subscription
+  const [popupAdConfig, setPopupAdConfig] = useState(DEFAULT_POPUP_AD_CONFIG);
+
+  useEffect(() => {
+    const unsub = subscribePopupAdConfigFromFirestore((config) => {
+      if (config) {
+        setPopupAdConfig(config);
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  const updatePopupAdConfig = async (newConfig) => {
+    try {
+      setPopupAdConfig(newConfig);
+      await savePopupAdConfigToFirestore(newConfig);
+      return true;
+    } catch (e) {
+      console.error('[AppContext] Save Popup Ad Error:', e);
       return false;
     }
   };
@@ -1573,7 +1597,9 @@ export const AppProvider = ({ children }) => {
       createSupportTicket,
       sendTicketMessage,
       updateTicketStatus,
-      updateTicketPriority
+      updateTicketPriority,
+      popupAdConfig,
+      updatePopupAdConfig
     }}>
       {children}
     </AppContext.Provider>

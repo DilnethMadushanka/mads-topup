@@ -1507,4 +1507,94 @@ export const redeemVoucherInDatabase = async (voucherCode, userProfile) => {
   };
 };
 
+/**
+ * Popup Ad Configuration Management & Realtime Sync
+ */
+export const DEFAULT_POPUP_AD_CONFIG = {
+  enabled: true,
+  title: '🔥 SPECIAL PROMO OFFER!',
+  description: 'Get up to 20% Extra Bonus Diamonds on all Free Fire & Mobile Legends top-ups today! Fast & Instant automated delivery.',
+  imageUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1000&auto=format&fit=crop',
+  buttonText: 'Top Up Now 🚀',
+  buttonLink: '#catalog',
+  badge: 'LIMITED TIME DEAL',
+  showOncePerSession: false
+};
+
+export const savePopupAdConfigToFirestore = async (config) => {
+  if (!config) return false;
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try { localStorage.setItem('mads_popup_ad_config', JSON.stringify(config)); } catch (e) {}
+  }
+  if (rtdb) {
+    try {
+      const adRef = dbRef(rtdb, 'siteConfig/popupAd');
+      await rtdbSet(adRef, config);
+    } catch (e) {}
+  }
+  if (db) {
+    try {
+      const adDocRef = doc(db, 'siteConfig', 'popupAd');
+      await setDoc(adDocRef, config, { merge: true });
+    } catch (e) {}
+  }
+  return true;
+};
+
+export const subscribePopupAdConfigFromFirestore = (callback) => {
+  if (typeof callback !== 'function') return () => {};
+
+  let localSaved = null;
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const item = localStorage.getItem('mads_popup_ad_config');
+      if (item) localSaved = JSON.parse(item);
+    } catch (e) {}
+  }
+  if (localSaved) {
+    callback(localSaved);
+  } else {
+    callback(DEFAULT_POPUP_AD_CONFIG);
+  }
+
+  let unsubDb = null;
+  let unsubRtdb = null;
+
+  if (rtdb) {
+    try {
+      const adRef = dbRef(rtdb, 'siteConfig/popupAd');
+      unsubRtdb = rtdbOnValue(adRef, (snap) => {
+        if (snap.exists() && snap.val()) {
+          const data = snap.val();
+          if (typeof window !== 'undefined' && window.localStorage) {
+            try { localStorage.setItem('mads_popup_ad_config', JSON.stringify(data)); } catch (e) {}
+          }
+          callback(data);
+        }
+      });
+    } catch (e) {}
+  }
+
+  if (db) {
+    try {
+      const adDocRef = doc(db, 'siteConfig', 'popupAd');
+      unsubDb = onSnapshot(adDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (typeof window !== 'undefined' && window.localStorage) {
+            try { localStorage.setItem('mads_popup_ad_config', JSON.stringify(data)); } catch (e) {}
+          }
+          callback(data);
+        }
+      });
+    } catch (e) {}
+  }
+
+  return () => {
+    if (typeof unsubDb === 'function') unsubDb();
+    if (typeof unsubRtdb === 'function') unsubRtdb();
+  };
+};
+
+
 
