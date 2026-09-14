@@ -6,7 +6,7 @@ import { uploadToR2Storage } from '../services/storageService';
 import confetti from 'canvas-confetti';
 import { 
   X, Check, ShieldCheck, Zap, AlertCircle, RefreshCw, 
-  CreditCard, ChevronRight, BookmarkPlus, CheckCircle2, Copy, UploadCloud, Cloud, Edit3, Tag, Sparkles, Gift
+  CreditCard, ChevronRight, BookmarkPlus, CheckCircle2, Copy, UploadCloud, Cloud, Edit3, Tag, Sparkles, Gift, HelpCircle
 } from 'lucide-react';
 
 export const TopupModal = () => {
@@ -372,6 +372,12 @@ export const TopupModal = () => {
                       <span>{isVerifyingIgn ? 'Checking Moongold...' : 'Check IGN'}</span>
                     </button>
                   </div>
+                </div>
+
+                {/* Helper Guide Hint Banner inside Modal */}
+                <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-900 text-xs font-semibold flex items-start gap-2">
+                  <HelpCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <span className="leading-snug">{selectedGame.idGuideHint || (selectedGame.requiresServer ? "💡 Enter User ID (e.g. 84218845) & Zone ID (e.g. 2168 inside brackets in MLBB profile)" : "💡 Enter Player ID (UID) from game profile (e.g. 1017871735)")}</span>
                 </div>
 
                 {/* IGN Result Box */}

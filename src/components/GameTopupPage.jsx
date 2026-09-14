@@ -448,7 +448,7 @@ export const GameTopupPage = () => {
                 <div className="w-full sm:w-48">
                   <input
                     type="text"
-                    placeholder="Server / Zone ID"
+                    placeholder={selectedGame.serverPlaceholder || "Server / Zone ID"}
                     value={zoneId}
                     onChange={(e) => setZoneId(e.target.value)}
                     className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 font-semibold focus:outline-none"
@@ -480,6 +480,12 @@ export const GameTopupPage = () => {
                   <span>{isVerifyingIgn ? 'Checking...' : 'Verify'}</span>
                 </button>
               </div>
+            </div>
+
+            {/* Helper Guide Hint Banner showing exact format for selected game */}
+            <div className="mt-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-950 text-xs font-bold flex items-start sm:items-center gap-2.5 shadow-xs">
+              <HelpCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5 sm:mt-0" />
+              <span className="leading-snug">{selectedGame.idGuideHint || (selectedGame.requiresServer ? "💡 Enter User ID (e.g. 84218845) and Zone ID (e.g. 2168 inside brackets in MLBB profile)" : "💡 Enter Player ID (UID) from your game profile (e.g. 1017871735)")}</span>
             </div>
 
             {/* Saved IDs & Verified IGN Badge */}
