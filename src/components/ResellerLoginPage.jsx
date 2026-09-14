@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { ensureResellerCredentials } from '../services/firestoreService';
+import { ensureResellerCredentials, getResellerProfileByKeyAsync } from '../services/firestoreService';
 import { Eye, EyeOff, User, Lock, ArrowLeft, LogIn, Crown } from 'lucide-react';
 
 export const ResellerLoginPage = () => {
@@ -11,10 +11,10 @@ export const ResellerLoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!username || !username.trim()) {
-      showToast('Please enter your reseller username!', 'error');
+      showToast('Please enter your reseller username, email or security key!', 'error');
       return;
     }
     if (!password) {
@@ -22,24 +22,20 @@ export const ResellerLoginPage = () => {
       return;
     }
 
-    const cleanName = username.trim();
-    const derivedUid = `reseller_${cleanName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}`;
-    const email = cleanName.includes('@') ? cleanName : `${cleanName.toLowerCase()}@madstopup.com`;
+    const cleanInput = username.trim();
+    const resellerProfile = await getResellerProfileByKeyAsync(cleanInput);
+
+    if (!resellerProfile || !resellerProfile.isReseller || resellerProfile.resellerStatus !== 'APPROVED') {
+      showToast('Reseller account not found or pending Admin approval! Please submit a reseller application or wait for Admin approval.', 'error');
+      return;
+    }
 
     setIsLoggedIn(true);
-    setUserProfile(prev => {
-      const baseObj = {
-        ...prev,
-        uid: prev?.uid || derivedUid,
-        name: cleanName,
-        email: prev?.email || email,
-        role: 'Reseller Partner',
-        isReseller: true,
-        resellerStatus: 'APPROVED'
-      };
-      return ensureResellerCredentials(baseObj);
-    });
-    showToast(`Welcome back, Reseller ${cleanName}! Logged into Reseller Dashboard.`);
+    setUserProfile(prev => ({
+      ...prev,
+      ...resellerProfile
+    }));
+    showToast(`Welcome back, Reseller ${resellerProfile.name}! Logged into Reseller Dashboard.`);
     openResellerDashboard();
   };
 

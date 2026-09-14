@@ -273,6 +273,14 @@ export const getResellerProfileByKeyAsync = async (keyOrCode) => {
       securityKey: userObj?.securityKey || appInfo?.securityKey
     });
 
+    const isApproved = Boolean(
+      userObj?.isReseller === true || 
+      userObj?.resellerStatus === 'APPROVED' || 
+      userObj?.role === 'Reseller Partner' || 
+      userObj?.role === 'reseller' ||
+      appInfo?.status === 'APPROVED'
+    );
+
     return {
       uid: finalUid,
       name,
@@ -282,7 +290,8 @@ export const getResellerProfileByKeyAsync = async (keyOrCode) => {
       securityKey: rawCreds.securityKey,
       walletBalance,
       walletUsdt: parseFloat(userObj?.walletUsdt || appInfo?.walletUsdt || 0),
-      isReseller: true
+      isReseller: isApproved,
+      resellerStatus: isApproved ? 'APPROVED' : (appInfo?.status || userObj?.resellerStatus || 'PENDING')
     };
   };
 
@@ -347,6 +356,7 @@ export const getResellerProfileByKeyAsync = async (keyOrCode) => {
     const apps = await fetchAppsData();
     for (const [appId, app] of Object.entries(apps)) {
       if (isMatch(app, appId)) {
+        if (app.status !== 'APPROVED') continue;
         const profile = await createProfile(app, appId);
         activeResellerRegistry.set(cleanKey, profile);
         if (profile.securityKey) activeResellerRegistry.set(profile.securityKey.toUpperCase(), profile);

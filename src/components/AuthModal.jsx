@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { loginWithGoogle, resetPasswordEmail } from '../services/firebaseAuth';
-import { syncUserProfileToFirestore, updateUserProfileInFirestore } from '../services/firestoreService';
+import { syncUserProfileToFirestore, updateUserProfileInFirestore, getResellerProfileByKeyAsync } from '../services/firestoreService';
 import { X, Eye, EyeOff, Shield, Zap, Clock, User, Mail, Phone, Lock, Check, Send, LogIn, ArrowRight, Loader2 } from 'lucide-react';
 
 export const AuthModal = () => {
@@ -237,25 +237,31 @@ export const AuthModal = () => {
     setIsAuthModalOpen(false);
   };
 
-  const handleResellerLoginSubmit = (e) => {
+  const handleResellerLoginSubmit = async (e) => {
     e.preventDefault();
-    if (!resellerUsername) {
-      showToast('Please enter your reseller username!', 'error');
+    if (!resellerUsername || !resellerUsername.trim()) {
+      showToast('Please enter your reseller username, email or security key!', 'error');
       return;
     }
     if (!resellerPassword) {
       showToast('Please enter your password!', 'error');
       return;
     }
+
+    const cleanInput = resellerUsername.trim();
+    const resellerProfile = await getResellerProfileByKeyAsync(cleanInput);
+
+    if (!resellerProfile || !resellerProfile.isReseller || resellerProfile.resellerStatus !== 'APPROVED') {
+      showToast('Reseller account not found or pending Admin approval! Please submit a reseller application or wait for Admin approval.', 'error');
+      return;
+    }
+
     setIsLoggedIn(true);
     setUserProfile(prev => ({
       ...prev,
-      name: resellerUsername,
-      role: 'Reseller Partner',
-      isReseller: true,
-      email: resellerUsername.includes('@') ? resellerUsername : `${resellerUsername}@madstopup.com`
+      ...resellerProfile
     }));
-    showToast(`Welcome back, Reseller ${resellerUsername}! Logged into Reseller Portal.`);
+    showToast(`Welcome back, Reseller ${resellerProfile.name}! Logged into Reseller Portal.`);
     setIsAuthModalOpen(false);
   };
 
