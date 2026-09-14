@@ -950,14 +950,33 @@ export const AppProvider = ({ children }) => {
     return () => unsub();
   }, []);
 
-  const verifyUserAccount = (uid) => {
+  const verifyUserAccount = async (uid) => {
     setUsersList(prev => prev.map(u => u.uid === uid ? { ...u, isVerified: true } : u));
+    try {
+      const { db } = await import('../services/firebaseAuth');
+      const { doc, setDoc } = await import('firebase/firestore');
+      await setDoc(doc(db, 'users', uid), { isVerified: true }, { merge: true });
+      await setDoc(doc(db, 'resellerApplications', uid), { isVerified: true }, { merge: true });
+    } catch (e) {}
     showToast('User account verified & badge granted!');
   };
 
-  const toggleBlockUser = (uid) => {
-    setUsersList(prev => prev.map(u => u.uid === uid ? { ...u, status: u.status === 'BLOCKED' ? 'ACTIVE' : 'BLOCKED' } : u));
-    showToast('User account status updated.');
+  const toggleBlockUser = async (uid) => {
+    let newStatus = 'ACTIVE';
+    setUsersList(prev => prev.map(u => {
+      if (u.uid === uid) {
+        newStatus = u.status === 'BLOCKED' ? 'ACTIVE' : 'BLOCKED';
+        return { ...u, status: newStatus };
+      }
+      return u;
+    }));
+    try {
+      const { db } = await import('../services/firebaseAuth');
+      const { doc, setDoc } = await import('firebase/firestore');
+      await setDoc(doc(db, 'users', uid), { status: newStatus }, { merge: true });
+      await setDoc(doc(db, 'resellerApplications', uid), { status: newStatus }, { merge: true });
+    } catch (e) {}
+    showToast(`User account status updated to ${newStatus}.`);
   };
 
   const updateUserBalance = (userEmailOrId, lkrAmount, usdtAmount = 0) => {
