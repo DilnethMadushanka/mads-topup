@@ -50,96 +50,106 @@ export const AuthModal = () => {
       return;
     }
     setIsSendingReset(true);
-    
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    setResetOtp(otpCode);
 
-    let sentSuccess = false;
-
-    // 1. Send Firebase password reset email link
     try {
-      const fbRes = await resetPasswordEmail(targetEmail);
-      if (fbRes && fbRes.success) {
-        sentSuccess = true;
-        console.log('[Firebase Password Reset Link Sent to Inbox]');
-      }
-    } catch (e) {}
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      setResetOtp(otpCode);
 
-    let recipientName = 'Gamer';
-    try {
-      const userProfileObj = await getResellerProfileByKeyAsync(targetEmail);
-      if (userProfileObj && userProfileObj.name && !userProfileObj.name.includes('@')) {
-        recipientName = userProfileObj.name;
-      } else if (username && !username.includes('@')) {
-        recipientName = username;
-      } else if (targetEmail.includes('@')) {
-        const uPart = targetEmail.split('@')[0];
-        recipientName = uPart.charAt(0).toUpperCase() + uPart.slice(1);
-      }
-    } catch (e) {}
+      let sentSuccess = false;
 
-    // 2. Send 6-digit OTP code via Backend Server endpoints
-    const apiEndpoints = ['/api/send-otp', 'https://madstopup.com/api/send-otp'];
-    for (const endpoint of apiEndpoints) {
+      // 1. Send Firebase password reset email link
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-        const apiRes = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: targetEmail, otp: otpCode, name: recipientName }),
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-
-        if (apiRes.ok) {
-          const data = await apiRes.json();
-          if (data && data.success) {
-            sentSuccess = true;
-            console.log(`[Password Reset OTP Sent via ${endpoint}]`, data);
-          }
-        }
-      } catch (err) {}
-    }
-
-    // 3. Fallback to EmailJS for instant delivery of 6-digit OTP code
-    if (!sentSuccess) {
-      const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_42ovub5';
-      const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_e9m409d';
-      const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'UL_Cr3VmylKk8r2Dp';
-
-      try {
-        let emailjsModule;
-        try { emailjsModule = await import('@emailjs/browser'); } catch (e) {}
-        const emailjsLib = emailjsModule?.default || emailjsModule || window.emailjs;
-
-        if (emailjsLib && typeof emailjsLib.send === 'function') {
-          if (typeof emailjsLib.init === 'function') {
-            try { emailjsLib.init(publicKey); } catch (e) {}
-          }
-          await emailjsLib.send(
-            serviceId,
-            templateId,
-            {
-              to_email: targetEmail,
-              email: targetEmail,
-              otp_code: otpCode,
-              passcode: otpCode,
-              user_name: recipientName,
-              time: '15 mins'
-            },
-            publicKey
-          );
+        const fbRes = await resetPasswordEmail(targetEmail);
+        if (fbRes && fbRes.success) {
           sentSuccess = true;
-          console.log('[Password Reset OTP Sent via EmailJS]');
+          console.log('[Firebase Password Reset Link Sent to Inbox]');
         }
-      } catch (emailjsErr) {}
-    }
+      } catch (e) {}
 
-    setIsResetCodeSent(true);
-    setIsSendingReset(false);
-    showToast(`Password reset link & 6-digit verification code sent to ${targetEmail}! Check your inbox.`);
+      let recipientName = 'Gamer';
+      try {
+        const userProfileObj = await Promise.race([
+          getResellerProfileByKeyAsync(targetEmail),
+          new Promise((resolve) => setTimeout(() => resolve(null), 3000))
+        ]);
+        if (userProfileObj && userProfileObj.name && !userProfileObj.name.includes('@')) {
+          recipientName = userProfileObj.name;
+        } else if (username && !username.includes('@')) {
+          recipientName = username;
+        } else if (targetEmail.includes('@')) {
+          const uPart = targetEmail.split('@')[0];
+          recipientName = uPart.charAt(0).toUpperCase() + uPart.slice(1);
+        }
+      } catch (e) {}
+
+      // 2. Send 6-digit OTP code via Backend Server endpoints
+      const apiEndpoints = ['/api/send-otp', 'https://madstopup.com/api/send-otp'];
+      for (const endpoint of apiEndpoints) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+          const apiRes = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: targetEmail, otp: otpCode, name: recipientName }),
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+
+          if (apiRes.ok) {
+            const data = await apiRes.json();
+            if (data && data.success) {
+              sentSuccess = true;
+              console.log(`[Password Reset OTP Sent via ${endpoint}]`, data);
+              break;
+            }
+          }
+        } catch (err) {}
+      }
+
+      // 3. Fallback to EmailJS for instant delivery of 6-digit OTP code
+      if (!sentSuccess) {
+        const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_42ovub5';
+        const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_e9m409d';
+        const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'UL_Cr3VmylKk8r2Dp';
+
+        try {
+          let emailjsModule;
+          try { emailjsModule = await import('@emailjs/browser'); } catch (e) {}
+          const emailjsLib = emailjsModule?.default || emailjsModule || window.emailjs;
+
+          if (emailjsLib && typeof emailjsLib.send === 'function') {
+            if (typeof emailjsLib.init === 'function') {
+              try { emailjsLib.init(publicKey); } catch (e) {}
+            }
+            await emailjsLib.send(
+              serviceId,
+              templateId,
+              {
+                to_email: targetEmail,
+                email: targetEmail,
+                otp_code: otpCode,
+                passcode: otpCode,
+                user_name: recipientName,
+                time: '15 mins'
+              },
+              publicKey
+            );
+            sentSuccess = true;
+            console.log('[Password Reset OTP Sent via EmailJS]');
+          }
+        } catch (emailjsErr) {}
+      }
+
+      setIsResetCodeSent(true);
+      showToast(`Password reset link & 6-digit verification code sent to ${targetEmail}! Check your inbox.`);
+    } catch (error) {
+      console.error('Password reset handler error:', error);
+      showToast('Error sending reset code. Please try again.', 'error');
+    } finally {
+      setIsSendingReset(false);
+    }
   };
 
   const handleConfirmPasswordReset = async (e) => {
