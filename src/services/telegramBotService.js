@@ -5,7 +5,7 @@ import { lookupFreePlayerIgn } from './playerLookup.js';
 import { getResellerProfileByKey, getResellerProfileByKeyAsync, deductResellerWalletBalance, saveOrderToFirestore } from './firestoreService.js';
 
 const require = createRequire(import.meta.url);
-const { Bot } = require('node-telegram-bot-api');
+const TelegramBot = require('node-telegram-bot-api');
 
 let botInstance = null;
 
@@ -35,17 +35,28 @@ let healthCheckTimer = null;
  */
 async function safeReply(ctx, text) {
   try {
+    const chatId = ctx.message?.chat?.id || ctx.chat?.id || ctx.chatId || (typeof ctx === 'number' || typeof ctx === 'string' ? ctx : null);
+    if (!chatId || !botInstance) return;
+
     if (typeof ctx.reply === 'function') {
-      return await ctx.reply(text);
+      try {
+        return await ctx.reply(text);
+      } catch (err) {
+        console.warn('[safeReply ctx.reply note]:', err.message);
+      }
     }
-    const chatId = ctx.message?.chat?.id || ctx.chat?.id || ctx.chatId;
+
     if (chatId && botInstance && typeof botInstance.sendMessage === 'function') {
-      return await botInstance.sendMessage(chatId, text);
-    } else if (chatId && botInstance && botInstance.api && typeof botInstance.api.sendMessage === 'function') {
-      return await botInstance.api.sendMessage(chatId, text);
+      try {
+        return await botInstance.sendMessage(chatId, text);
+      } catch (sendErr) {
+        console.warn('[safeReply sendMessage fallback triggered]:', sendErr.message);
+        const plainText = String(text || '').replace(/[*_`[\]()#]/g, '');
+        return await botInstance.sendMessage(chatId, plainText).catch(() => {});
+      }
     }
   } catch (err) {
-    console.error('[Telegram safeReply Error]:', err.message);
+    console.error('[Telegram safeReply Critical Error]:', err.message);
   }
 }
 
@@ -435,7 +446,8 @@ export function initTelegramBot() {
   if (!token) return null;
 
   try {
-    const bot = new Bot(token);
+    const BotConstructor = typeof TelegramBot === 'function' ? TelegramBot : (TelegramBot.default || TelegramBot.TelegramBot);
+    const bot = new BotConstructor(token, { polling: true });
     botInstance = bot;
 
     console.log('🤖 MADS TOPUP Telegram Bot (@mads_shell_topup_bot) Initializing...');
@@ -1127,35 +1139,18 @@ Please check product availability or contact support. No reseller funds were cha
       }
     };
 
-    // Register built-in commands
-    bot.command('start', handleStart);
-    bot.command('help', handleHelp);
-    bot.command('games', handlePackages);
-    bot.command('packages', handlePackages);
-    bot.command('packs', handlePackages);
-    bot.command('prices', handlePackages);
-    bot.command('status', handleStatus);
-    bot.command('refresh', handleRefresh);
-    bot.command('auth', handleAuth);
-    bot.command('link', handleAuth);
-    bot.command('key', handleAuth);
-    bot.command('id', handlePlayerCheck);
-    bot.command('ign', handlePlayerCheck);
-    bot.command('check', handlePlayerCheck);
-    bot.command('ml', handlePlayerCheck);
-    bot.command('ff', handlePlayerCheck);
-    bot.command('pubg', handlePlayerCheck);
-    bot.command('bs', handlePlayerCheck);
-    bot.command('df', handlePlayerCheck);
-    bot.command('gs', handlePlayerCheck);
-    bot.command('lookup', handlePlayerCheck);
-    bot.command('verify', handlePlayerCheck);
-    bot.command('balance', handleBalance);
-    bot.command('reseller', handleBalance);
-    bot.command('wallet', handleBalance);
-    bot.command('deposit', handleDeposit);
-    bot.command('recharge', handleDeposit);
-    bot.command('topup', handleTopup);
+    // Register polling error & event handlers to prevent engine crashes
+    if (typeof bot.on === 'function') {
+      bot.on('polling_error', (error) => {
+        console.warn('⚠️ [Telegram Bot Polling Error Intercepted]:', error?.message || error);
+        botStatus = 'RECOVERING';
+        autoRecoveryCount++;
+      });
+
+      bot.on('error', (error) => {
+        console.warn('⚠️ [Telegram Bot Engine Error Intercepted]:', error?.message || error);
+      });
+    }
 
     // MASTER MESSAGE ROUTER - Guarantees 100% execution for commands starting with '/'
     bot.on('message', async (ctx) => {
