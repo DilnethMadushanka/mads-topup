@@ -792,11 +792,8 @@ export const AppProvider = ({ children }) => {
   };
 
   const formatPrice = (priceLkr) => {
-    if (currency === 'USD') {
-      const usdVal = priceLkr / exchangeRate;
-      return `$${usdVal.toFixed(2)}`;
-    }
-    return `Rs. ${priceLkr.toLocaleString('en-US')}`;
+    if (priceLkr === null || priceLkr === undefined || isNaN(priceLkr)) return 'Rs. 0';
+    return `Rs. ${Number(priceLkr).toLocaleString('en-US')}`;
   };
 
   const savePlayerId = (gameId, gameName, playerId, nickName) => {
