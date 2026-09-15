@@ -41,6 +41,7 @@ export const AuthModal = () => {
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [isResetCodeSent, setIsResetCodeSent] = useState(false);
   const [isSendingReset, setIsSendingReset] = useState(false);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   const handleSendPasswordReset = async (e) => {
     if (e) e.preventDefault();
@@ -54,6 +55,10 @@ export const AuthModal = () => {
     try {
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
       setResetOtp(otpCode);
+      try {
+        sessionStorage.setItem('mads_reset_otp', otpCode);
+        sessionStorage.setItem('mads_reset_email', targetEmail);
+      } catch (e) {}
 
       let sentSuccess = false;
 
@@ -153,34 +158,63 @@ export const AuthModal = () => {
   };
 
   const handleConfirmPasswordReset = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+
+    const storedOtp = resetOtp || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('mads_reset_otp') : '');
+    const targetEmail = (resetEmail || username || email || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('mads_reset_email') : '') || '').trim();
+
     if (!enteredResetOtp) {
       showToast('Please enter the 6-digit verification code sent to your email!', 'error');
       return;
     }
-    if (enteredResetOtp.trim() !== resetOtp && enteredResetOtp.trim() !== '123456') {
+
+    const cleanEntered = (enteredResetOtp || '').toString().trim();
+    if (cleanEntered !== storedOtp && cleanEntered !== '123456') {
       showToast('Invalid verification code! Please check your email inbox.', 'error');
       return;
     }
+
     if (!newPassword || newPassword.length < 4) {
       showToast('Please enter a new password (min 4 characters)!', 'error');
       return;
     }
+
     if (newPassword !== confirmNewPassword) {
       showToast('New passwords do not match!', 'error');
       return;
     }
 
-    const targetEmail = (resetEmail || username || email || '').trim();
-    await updateUserPasswordInFirestore(targetEmail, newPassword);
+    if (!targetEmail || !targetEmail.includes('@')) {
+      showToast('Could not identify target email address. Please re-enter your email address.', 'error');
+      setIsResetCodeSent(false);
+      return;
+    }
 
-    showToast('Password updated successfully! Please log in with your updated password. ✅');
-    setPassword(newPassword);
-    setIsResetCodeSent(false);
-    setEnteredResetOtp('');
-    setNewPassword('');
-    setConfirmNewPassword('');
-    setAuthMode('login');
+    setIsUpdatingPassword(true);
+
+    try {
+      const success = await updateUserPasswordInFirestore(targetEmail, newPassword);
+      if (success) {
+        showToast('Password updated successfully! Please log in with your updated password. ✅');
+        setPassword(newPassword);
+        setIsResetCodeSent(false);
+        setEnteredResetOtp('');
+        setNewPassword('');
+        setConfirmNewPassword('');
+        try {
+          sessionStorage.removeItem('mads_reset_otp');
+          sessionStorage.removeItem('mads_reset_email');
+        } catch (e) {}
+        setAuthMode('login');
+      } else {
+        showToast('Account not found for email: ' + targetEmail + '. Please check your email address.', 'error');
+      }
+    } catch (err) {
+      console.error('Password update error:', err);
+      showToast('Failed to update password. Please try again.', 'error');
+    } finally {
+      setIsUpdatingPassword(false);
+    }
   };
 
   React.useEffect(() => {
@@ -829,10 +863,20 @@ export const AuthModal = () => {
 
                   <button
                     type="submit"
-                    className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs sm:text-sm rounded-xl transition-all shadow-md shadow-emerald-600/25 flex items-center justify-center gap-2 cursor-pointer mt-2"
+                    disabled={isUpdatingPassword}
+                    className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs sm:text-sm rounded-xl transition-all shadow-md shadow-emerald-600/25 flex items-center justify-center gap-2 cursor-pointer mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    <Check className="w-4 h-4" />
-                    <span>RESET PASSWORD</span>
+                    {isUpdatingPassword ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-white" />
+                        <span>Updating Password...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>RESET PASSWORD</span>
+                      </>
+                    )}
                   </button>
 
                   <div className="text-center pt-2 flex items-center justify-between text-xs">
