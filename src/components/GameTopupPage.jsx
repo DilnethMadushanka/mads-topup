@@ -214,29 +214,53 @@ export const GameTopupPage = () => {
 
     // 3. Dispatch via Moongold API ONLY IF paid via MADS Wallet
     if (selectedPayment.id === 'wallet') {
-      const orderPayload = {
-        game: selectedGame,
-        gameId: selectedGame.id,
-        playerId,
-        zoneId,
-        package: selectedItems[0],
-        payment: selectedPayment,
-        priceLkr: totalLkr,
-        ign: ign || (`Player ${playerId}`),
-        userId: userProfile?.uid || auth?.currentUser?.uid || '',
-        userEmail: userProfile?.email || auth?.currentUser?.email || '',
-        userProfile
-      };
+      let allSuccess = true;
+      let lastRef = null;
+      let lastErrMsg = '';
 
-      try {
-        moongoldResult = await dispatchMoongoldOrder(orderPayload);
-      } catch (err) {
-        moongoldResult = {
-          success: false,
-          status: 'FAILED',
-          message: err.message || 'Gateway connection error'
+      // Loop through all selected packages in cart to process each item/quantity
+      for (const item of selectedItems) {
+        const qty = cartQuantities[item.id] || 1;
+        const effectiveUnitPrice = isApprovedReseller ? Math.round(item.priceLkr * 0.95) : item.priceLkr;
+        const itemTotalPrice = effectiveUnitPrice * qty;
+
+        const orderPayload = {
+          game: selectedGame,
+          gameId: selectedGame.id,
+          playerId,
+          zoneId,
+          package: item,
+          quantity: qty,
+          payment: selectedPayment,
+          priceLkr: itemTotalPrice,
+          ign: ign || (`Player ${playerId}`),
+          userId: userProfile?.uid || auth?.currentUser?.uid || '',
+          userEmail: userProfile?.email || auth?.currentUser?.email || '',
+          userProfile
         };
+
+        try {
+          const res = await dispatchMoongoldOrder(orderPayload);
+          if (res.success) {
+            lastRef = res.moongoldRef;
+          } else {
+            allSuccess = false;
+            lastErrMsg = res.message || 'Provider dispatch failed';
+            break;
+          }
+        } catch (err) {
+          allSuccess = false;
+          lastErrMsg = err.message || 'Gateway connection error';
+          break;
+        }
       }
+
+      moongoldResult = {
+        success: allSuccess,
+        status: allSuccess ? 'COMPLETED' : 'FAILED',
+        moongoldRef: lastRef,
+        message: lastErrMsg
+      };
 
       if (!moongoldResult.success) {
         setIsSubmitting(false);
