@@ -158,16 +158,18 @@ export const TopupModal = () => {
     const discount = appliedPromo ? appliedPromo.discount : 0;
     const priceToPay = Math.max(0, selectedPackage.priceLkr - discount);
 
+    let deductedLkr = 0;
+    let deductedUsdt = 0;
+
     // 1. Strict Wallet Balance Check if paying via MADS Wallet
     if (selectedPayment.id === 'wallet') {
       const availLkr = userProfile?.walletBalance || 0;
       const availUsdt = userProfile?.walletUsdt || 0;
 
       if (availLkr >= priceToPay) {
-        creditUserWallet(-priceToPay, 0);
+        deductedLkr = priceToPay;
       } else if ((availUsdt * 305) >= priceToPay) {
-        const reqUsdt = priceToPay / 305;
-        creditUserWallet(0, -reqUsdt);
+        deductedUsdt = priceToPay / 305;
       } else {
         showToast(`Insufficient Wallet Balance! Required: Rs. ${priceToPay.toFixed(2)}. Available: Rs. ${availLkr.toFixed(2)} LKR / $${availUsdt.toFixed(2)} USDT. Please top up your wallet first!`, 'error');
         setIsTopupModalOpen(false);
@@ -185,6 +187,10 @@ export const TopupModal = () => {
     }
 
     setIsSubmitting(true);
+
+    if (selectedPayment.id === 'wallet') {
+      creditUserWallet(-deductedLkr, -deductedUsdt);
+    }
     
     let moongoldResult = { success: true, status: 'PENDING_VERIFICATION', moongoldRef: null };
 
@@ -197,13 +203,48 @@ export const TopupModal = () => {
         zoneId,
         package: selectedPackage,
         payment: selectedPayment,
+        priceLkr: priceToPay,
         ign: ign || 'Verified Gamer'
       };
 
-      moongoldResult = await dispatchMoongoldOrder(orderPayload);
+      try {
+        moongoldResult = await dispatchMoongoldOrder(orderPayload);
+      } catch (err) {
+        moongoldResult = {
+          success: false,
+          status: 'FAILED',
+          message: err.message || 'Gateway connection error'
+        };
+      }
+
       if (!moongoldResult.success) {
+        // AUTOMATIC REFUND: Restore user wallet balance immediately
+        creditUserWallet(deductedLkr, deductedUsdt);
         setIsSubmitting(false);
-        showToast(moongoldResult.message || 'Order failed to process. Please check your balance or login state.', 'error');
+
+        // Record failed order in Firestore & State for transparency
+        const failedOrder = {
+          id: 'ORD-' + Math.floor(10000 + Math.random() * 90000),
+          userId: userProfile?.uid || auth?.currentUser?.uid || '',
+          userEmail: userProfile?.email || auth?.currentUser?.email || '',
+          userName: userProfile?.name || auth?.currentUser?.displayName || 'Registered Gamer',
+          gameId: selectedGame.id,
+          gameName: selectedGame.name,
+          packageName: selectedPackage.name,
+          amount: selectedPackage.amount,
+          playerId,
+          zoneId,
+          ign: ign || 'Verified Gamer',
+          paymentMethod: selectedPayment.name,
+          priceLkr: priceToPay,
+          status: 'FAILED',
+          moongoldRef: moongoldResult.moongoldRef || 'GATEWAY_FAILED',
+          failureReason: moongoldResult.message || 'Provider dispatch failed',
+          createdAt: new Date().toISOString()
+        };
+
+        addOrder(failedOrder);
+        showToast(`❌ Topup Failed: ${moongoldResult.message || 'Provider error'}. Your wallet balance of Rs. ${priceToPay.toLocaleString()} LKR has been 100% refunded!`, 'error');
         return;
       }
     }
