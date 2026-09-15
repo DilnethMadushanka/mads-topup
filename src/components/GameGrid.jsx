@@ -10,9 +10,13 @@ export const GameGrid = () => {
   const categories = ['ALL', 'POPULAR', 'Battle Royale', 'MOBA', 'FPS'];
 
   const filteredGames = GAMES_DATA.filter(game => {
-    const matchesSearch = game.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          game.publisher.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          game.currencyName.toLowerCase().includes(searchQuery.toLowerCase());
+    if (!game) return false;
+    const q = (searchQuery || '').toLowerCase();
+    const gName = String(game.name || '').toLowerCase();
+    const gPub = String(game.publisher || '').toLowerCase();
+    const gCur = String(game.currencyName || '').toLowerCase();
+
+    const matchesSearch = !q || gName.includes(q) || gPub.includes(q) || gCur.includes(q);
     
     if (!matchesSearch) return false;
 

@@ -479,27 +479,41 @@ export const AdminDashboard = () => {
 
   // Filtered Orders Calculation
   const filteredOrders = safeOrders.filter(ord => {
-    const matchesSearch = 
-      ord.id.toLowerCase().includes(orderSearch.toLowerCase()) ||
-      ord.playerId.toLowerCase().includes(orderSearch.toLowerCase()) ||
-      ord.gameName.toLowerCase().includes(orderSearch.toLowerCase()) ||
-      (ord.ign && ord.ign.toLowerCase().includes(orderSearch.toLowerCase()));
+    if (!ord) return false;
+    const search = (orderSearch || '').toLowerCase();
+    const ordId = String(ord.id || '').toLowerCase();
+    const ordPlayerId = String(ord.playerId || '').toLowerCase();
+    const ordGameName = String(ord.gameName || '').toLowerCase();
+    const ordIgn = String(ord.ign || '').toLowerCase();
+    const ordPayMethod = String(ord.paymentMethod || '').toLowerCase();
 
-    const isTelegramOrder = Boolean(ord.viaTelegramBot || (ord.id && ord.id.startsWith('ORD-TG-')) || ord.channel === 'Telegram Bot' || (ord.paymentMethod && ord.paymentMethod.toLowerCase().includes('telegram')));
+    const matchesSearch = 
+      ordId.includes(search) ||
+      ordPlayerId.includes(search) ||
+      ordGameName.includes(search) ||
+      ordIgn.includes(search);
+
+    const isTelegramOrder = Boolean(ord.viaTelegramBot || (ord.id && String(ord.id).startsWith('ORD-TG-')) || ord.channel === 'Telegram Bot' || ordPayMethod.includes('telegram'));
 
     const matchesStatus = statusFilter === 'ALL' || ord.status === statusFilter;
     const matchesPayment = paymentFilter === 'ALL' || 
-      (paymentFilter === 'TELEGRAM' ? isTelegramOrder : ord.paymentMethod.toLowerCase().includes(paymentFilter.toLowerCase()));
+      (paymentFilter === 'TELEGRAM' ? isTelegramOrder : ordPayMethod.includes((paymentFilter || '').toLowerCase()));
 
     return matchesSearch && matchesStatus && matchesPayment;
   });
 
   // Filtered Users Calculation
   const filteredUsers = safeUsers.filter(usr => {
+    if (!usr) return false;
+    const search = (userSearch || '').toLowerCase();
+    const usrName = String(usr.name || usr.username || usr.displayName || '').toLowerCase();
+    const usrEmail = String(usr.email || '').toLowerCase();
+    const usrPhone = String(usr.phone || '');
+
     const matchesSearch = 
-      usr.name.toLowerCase().includes(userSearch.toLowerCase()) ||
-      usr.email.toLowerCase().includes(userSearch.toLowerCase()) ||
-      (usr.phone && usr.phone.includes(userSearch));
+      usrName.includes(search) ||
+      usrEmail.includes(search) ||
+      (usrPhone && usrPhone.includes(userSearch));
 
     const matchesStatus = userStatusFilter === 'ALL' || 
       (userStatusFilter === 'VERIFIED' && usr.isVerified) ||
@@ -511,37 +525,53 @@ export const AdminDashboard = () => {
 
   // Filtered Payments Queue Calculation
   const filteredPayments = safePayments.filter(pay => {
+    if (!pay) return false;
     const query = (paymentSearch || '').toLowerCase().trim();
+    const payId = String(pay.id || '').toLowerCase();
+    const payEmail = String(pay.userEmail || '').toLowerCase();
+    const payName = String(pay.userName || '').toLowerCase();
+    const payRef = String(pay.referenceNumber || '').toLowerCase();
+    const payMethod = String(pay.method || '').toLowerCase();
+    const payAmount = String(pay.amount || '');
+
     const matchesSearch = 
       !query ||
-      (pay.id && pay.id.toLowerCase().includes(query)) ||
-      (pay.userEmail && pay.userEmail.toLowerCase().includes(query)) ||
-      (pay.userName && pay.userName.toLowerCase().includes(query)) ||
-      (pay.referenceNumber && pay.referenceNumber.toLowerCase().includes(query)) ||
-      (pay.method && pay.method.toLowerCase().includes(query)) ||
-      (pay.amount && String(pay.amount).includes(query));
+      payId.includes(query) ||
+      payEmail.includes(query) ||
+      payName.includes(query) ||
+      payRef.includes(query) ||
+      payMethod.includes(query) ||
+      payAmount.includes(query);
 
     const matchesStatus = paymentStatusFilter === 'ALL' || pay.status === paymentStatusFilter;
 
     let matchesMethod = true;
-    if (paymentMethodFilter === 'EZ_CASH') matchesMethod = pay.method && pay.method.toLowerCase().includes('ez');
-    else if (paymentMethodFilter === 'BINANCE') matchesMethod = pay.method && pay.method.toLowerCase().includes('binance');
-    else if (paymentMethodFilter === 'BANK') matchesMethod = pay.method && (pay.method.toLowerCase().includes('bank') || pay.method.toLowerCase().includes('slip'));
+    if (paymentMethodFilter === 'EZ_CASH') matchesMethod = payMethod.includes('ez');
+    else if (paymentMethodFilter === 'BINANCE') matchesMethod = payMethod.includes('binance');
+    else if (paymentMethodFilter === 'BANK') matchesMethod = payMethod.includes('bank') || payMethod.includes('slip');
 
     return matchesSearch && matchesStatus && matchesMethod;
   });
 
   // Filtered Support Tickets Calculation
   const safeTickets = supportTickets || [];
-  const openTicketsCount = safeTickets.filter(t => t.status === 'OPEN').length;
+  const openTicketsCount = safeTickets.filter(t => t && t.status === 'OPEN').length;
 
   const filteredSupportTickets = safeTickets.filter(tck => {
+    if (!tck) return false;
+    const search = (supportSearch || '').toLowerCase();
+    const tckId = String(tck.id || '').toLowerCase();
+    const tckEmail = String(tck.userEmail || tck.email || '').toLowerCase();
+    const tckName = String(tck.userName || tck.name || '').toLowerCase();
+    const tckSubject = String(tck.subject || '').toLowerCase();
+    const tckOrderId = String(tck.orderId || '').toLowerCase();
+
     const matchesSearch = 
-      tck.id.toLowerCase().includes(supportSearch.toLowerCase()) ||
-      tck.userEmail.toLowerCase().includes(supportSearch.toLowerCase()) ||
-      tck.userName.toLowerCase().includes(supportSearch.toLowerCase()) ||
-      tck.subject.toLowerCase().includes(supportSearch.toLowerCase()) ||
-      (tck.orderId && tck.orderId.toLowerCase().includes(supportSearch.toLowerCase()));
+      tckId.includes(search) ||
+      tckEmail.includes(search) ||
+      tckName.includes(search) ||
+      tckSubject.includes(search) ||
+      tckOrderId.includes(search);
 
     const matchesStatus = supportStatusFilter === 'ALL' || tck.status === supportStatusFilter;
 
@@ -552,11 +582,16 @@ export const AdminDashboard = () => {
 
   // Filtered EZ Cash Webhook Logs Calculation
   const filteredEzcashLogs = (ezcashLogs || []).filter(item => {
-    const query = ezcashSearch.toLowerCase().trim();
+    if (!item) return false;
+    const query = (ezcashSearch || '').toLowerCase().trim();
+    const rn = String(item.rnNumber || '').toLowerCase();
+    const rawSms = String(item.rawSms || '').toLowerCase();
+    const redeemedBy = String(item.redeemedBy || '').toLowerCase();
+
     const matchesSearch = !query || 
-      item.rnNumber.toLowerCase().includes(query) ||
-      (item.rawSms && item.rawSms.toLowerCase().includes(query)) ||
-      (item.redeemedBy && item.redeemedBy.toLowerCase().includes(query));
+      rn.includes(query) ||
+      rawSms.includes(query) ||
+      redeemedBy.includes(query);
 
     const matchesStatus = ezcashStatusFilter === 'ALL' || item.status === ezcashStatusFilter;
 
@@ -1185,11 +1220,18 @@ export const AdminDashboard = () => {
                 <div className="space-y-4">
                   {safeResellerApps
                     .filter(app => {
+                      if (!app) return false;
+                      const search = (resellerSearch || '').toLowerCase();
+                      const realName = String(app.realName || '').toLowerCase();
+                      const storeName = String(app.storeName || '').toLowerCase();
+                      const whatsapp = String(app.whatsappNumber || '');
+                      const email = String(app.emailAddress || '').toLowerCase();
+
                       const matchSearch = 
-                        (app.realName && app.realName.toLowerCase().includes(resellerSearch.toLowerCase())) ||
-                        (app.storeName && app.storeName.toLowerCase().includes(resellerSearch.toLowerCase())) ||
-                        (app.whatsappNumber && app.whatsappNumber.includes(resellerSearch)) ||
-                        (app.emailAddress && app.emailAddress.toLowerCase().includes(resellerSearch.toLowerCase()));
+                        realName.includes(search) ||
+                        storeName.includes(search) ||
+                        whatsapp.includes(resellerSearch) ||
+                        email.includes(search);
                       const matchStatus = resellerStatusFilter === 'ALL' || app.status === resellerStatusFilter;
                       return matchSearch && matchStatus;
                     })
@@ -2043,11 +2085,13 @@ export const AdminDashboard = () => {
                   {(gamesCatalog || [])
                     .filter(g => selectedGameCatalogId === 'ALL' || g.id === selectedGameCatalogId)
                     .map((game) => {
-                      const matchingPackages = (game.packages || []).filter(pkg => 
-                        !catalogSearch || 
-                        pkg.name.toLowerCase().includes(catalogSearch.toLowerCase()) || 
-                        game.name.toLowerCase().includes(catalogSearch.toLowerCase())
-                      );
+                      const matchingPackages = (game.packages || []).filter(pkg => {
+                        if (!pkg) return false;
+                        const q = (catalogSearch || '').toLowerCase();
+                        const pkgName = String(pkg.name || '').toLowerCase();
+                        const gName = String(game.name || '').toLowerCase();
+                        return !q || pkgName.includes(q) || gName.includes(q);
+                      });
 
                       if (matchingPackages.length === 0) return null;
 

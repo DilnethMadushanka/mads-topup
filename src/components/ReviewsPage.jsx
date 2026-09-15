@@ -60,11 +60,17 @@ export const ReviewsPage = () => {
 
   // Filter Reviews
   const filteredReviews = (userReviews || []).filter(rev => {
+    if (!rev) return false;
     const matchesFilter = selectedFilter === 'ALL' || rev.rating === selectedFilter;
-    const matchesSearch = !searchQuery.trim() || 
-      rev.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      rev.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      rev.location.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = (searchQuery || '').toLowerCase().trim();
+    const rName = String(rev.name || '').toLowerCase();
+    const rText = String(rev.text || '').toLowerCase();
+    const rLoc = String(rev.location || '').toLowerCase();
+
+    const matchesSearch = !q || 
+      rName.includes(q) || 
+      rText.includes(q) ||
+      rLoc.includes(q);
     return matchesFilter && matchesSearch;
   });
 

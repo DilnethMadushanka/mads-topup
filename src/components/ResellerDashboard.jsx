@@ -592,12 +592,18 @@ export const ResellerDashboard = () => {
             <div className="space-y-3">
               {resellerOrders
                 .filter(o => {
-                  const isTelegramOrder = Boolean(o.viaTelegramBot || (o.id && o.id.startsWith('ORD-TG-')) || o.channel === 'Telegram Bot' || (o.paymentMethod && o.paymentMethod.toLowerCase().includes('telegram')));
+                  if (!o) return false;
+                  const isTelegramOrder = Boolean(o.viaTelegramBot || (o.id && String(o.id).startsWith('ORD-TG-')) || o.channel === 'Telegram Bot' || (o.paymentMethod && String(o.paymentMethod).toLowerCase().includes('telegram')));
                   
+                  const search = (orderSearch || '').toLowerCase();
+                  const oId = String(o.id || '').toLowerCase();
+                  const oPlayerId = String(o.playerId || '').toLowerCase();
+                  const oGameName = String(o.gameName || '').toLowerCase();
+
                   const matchesSearch = 
-                    o.id.toLowerCase().includes(orderSearch.toLowerCase()) ||
-                    o.playerId.toLowerCase().includes(orderSearch.toLowerCase()) ||
-                    o.gameName.toLowerCase().includes(orderSearch.toLowerCase());
+                    oId.includes(search) ||
+                    oPlayerId.includes(search) ||
+                    oGameName.includes(search);
 
                   const matchesChannel = orderChannelFilter === 'ALL' ||
                     (orderChannelFilter === 'TELEGRAM' && isTelegramOrder) ||
