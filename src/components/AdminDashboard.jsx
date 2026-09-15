@@ -3014,8 +3014,8 @@ export const AdminDashboard = () => {
                     onClick={() => {
                       if (editLkrVal !== '' || editUsdtVal !== '') {
                         const lkr = editLkrVal !== '' ? parseFloat(editLkrVal) : (selectedInspectUser.walletBalance || 0);
-                        const usdt = editUsdtVal !== '' ? parseFloat(editUsdtVal) : (selectedInspectUser.walletUsdt || 0);
-                        setUserExactBalance(selectedInspectUser.email, lkr, usdt);
+                        const targetId = selectedInspectUser.uid || selectedInspectUser.email || selectedInspectUser.resellerCode || selectedInspectUser.securityKey;
+                        setUserExactBalance(targetId, lkr, usdt);
                         showToast(`Set ${selectedInspectUser.name}'s balance to Rs. ${lkr} LKR / $${usdt} USDT`);
                         setEditLkrVal('');
                         setEditUsdtVal('');
@@ -3035,7 +3035,8 @@ export const AdminDashboard = () => {
                       if (editLkrVal !== '' || editUsdtVal !== '') {
                         const lkr = parseFloat(editLkrVal) || 0;
                         const usdt = parseFloat(editUsdtVal) || 0;
-                        updateUserBalance(selectedInspectUser.email, lkr, usdt);
+                        const targetId = selectedInspectUser.uid || selectedInspectUser.email || selectedInspectUser.resellerCode || selectedInspectUser.securityKey;
+                        updateUserBalance(targetId, lkr, usdt);
                         showToast(`Added +${lkr} LKR / +${usdt} USDT to ${selectedInspectUser.name}`);
                         setEditLkrVal('');
                         setEditUsdtVal('');

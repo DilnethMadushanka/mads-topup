@@ -9,7 +9,7 @@ import {
   saveOrderToFirestore, subscribeAllUsersFromFirestore, subscribeOrdersFromFirestore, updateOrderStatusInFirestore,
   saveResellerApplicationToFirestore, subscribeResellerApplicationsFromFirestore, updateResellerApplicationStatusInFirestore,
   saveCustomGamePricesToFirestore, subscribeCustomGamePricesFromFirestore, generateUniqueSecurityKey, ensureResellerCredentials,
-  saveManualPaymentToFirestore, updateManualPaymentStatusInFirestore, subscribeManualPaymentsFromFirestore, creditUserWalletInDatabase,
+  saveManualPaymentToFirestore, updateManualPaymentStatusInFirestore, subscribeManualPaymentsFromFirestore, creditUserWalletInDatabase, setUserExactBalanceInDatabase,
   saveVouchersToFirestore, subscribeVouchersFromFirestore, redeemVoucherInDatabase,
   savePopupAdConfigToFirestore, subscribePopupAdConfigFromFirestore, DEFAULT_POPUP_AD_CONFIG
 } from '../services/firestoreService';
@@ -439,12 +439,16 @@ export const AppProvider = ({ children }) => {
   // Custom setter for userProfile that syncs with Firestore
   const setUserProfile = (updater) => {
     setUserProfileState(prev => {
-      const next = typeof updater === 'function' ? updater(prev) : updater;
-      if (next && (next.uid || next.name || next.email)) {
-        setIsLoggedIn(true);
-        if (next.uid) {
-          updateUserProfileInFirestore(next.uid, next);
+      let next = typeof updater === 'function' ? updater(prev) : updater;
+      if (next && (next.name || next.email || next.uid)) {
+        if (!next.uid && prev?.uid) {
+          next.uid = prev.uid;
+        } else if (!next.uid) {
+          next.uid = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
         }
+        setIsLoggedIn(true);
+        updateUserProfileInFirestore(next.uid, next);
+        syncUserProfileToFirestore(next);
       }
       return next;
     });
@@ -1051,21 +1055,23 @@ export const AppProvider = ({ children }) => {
     showToast(`User account status updated to ${newStatus}.`);
   };
 
-  const updateUserBalance = (userEmailOrId, lkrAmount, usdtAmount = 0) => {
+  const updateUserBalance = async (userEmailOrId, lkrAmount, usdtAmount = 0) => {
     if (!userEmailOrId) return;
-    const cleanId = String(userEmailOrId).toLowerCase().trim();
+    const cleanId = String(userEmailOrId).trim();
+    const cleanIdLower = cleanId.toLowerCase();
 
+    // 1. Write balance adjustment to DB (RTDB & Firestore) across UID, Email, Reseller Code, or Security Key
+    await creditUserWalletInDatabase(cleanId, lkrAmount, usdtAmount);
+
+    // 2. Update local usersList state
     setUsersList(prev => prev.map(u => {
-      const matchEmail = u.email && String(u.email).toLowerCase() === cleanId;
-      const matchUid = u.uid && String(u.uid).toLowerCase() === cleanId;
-      const matchCode = u.resellerCode && String(u.resellerCode).toLowerCase() === cleanId;
+      const matchEmail = u.email && String(u.email).toLowerCase() === cleanIdLower;
+      const matchUid = u.uid && String(u.uid).toLowerCase() === cleanIdLower;
+      const matchCode = u.resellerCode && String(u.resellerCode).toLowerCase() === cleanIdLower;
 
       if (matchEmail || matchUid || matchCode) {
         const newLkr = Math.max(0, (u.walletBalance || 0) + lkrAmount);
         const newUsdt = Math.max(0, (u.walletUsdt || 0) + usdtAmount);
-        if (u.uid) {
-          updateUserProfileInFirestore(u.uid, { walletBalance: newLkr, walletUsdt: newUsdt });
-        }
         return {
           ...u,
           walletBalance: newLkr,
@@ -1075,10 +1081,11 @@ export const AppProvider = ({ children }) => {
       return u;
     }));
 
+    // 3. Update self userProfile if applicable
     if (userProfile) {
-      const matchSelfEmail = userProfile.email && String(userProfile.email).toLowerCase() === cleanId;
-      const matchSelfUid = userProfile.uid && String(userProfile.uid).toLowerCase() === cleanId;
-      const matchSelfCode = userProfile.resellerCode && String(userProfile.resellerCode).toLowerCase() === cleanId;
+      const matchSelfEmail = userProfile.email && String(userProfile.email).toLowerCase() === cleanIdLower;
+      const matchSelfUid = userProfile.uid && String(userProfile.uid).toLowerCase() === cleanIdLower;
+      const matchSelfCode = userProfile.resellerCode && String(userProfile.resellerCode).toLowerCase() === cleanIdLower;
 
       if (matchSelfEmail || matchSelfUid || matchSelfCode) {
         creditUserWallet(lkrAmount, usdtAmount);
@@ -1086,15 +1093,23 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  const setUserExactBalance = (userEmail, exactLkr, exactUsdt) => {
-    if (!userEmail) return;
+  const setUserExactBalance = async (userEmailOrId, exactLkr, exactUsdt) => {
+    if (!userEmailOrId) return;
+    const cleanId = String(userEmailOrId).trim();
+    const cleanIdLower = cleanId.toLowerCase();
+    const newLkr = Math.max(0, parseFloat(exactLkr) || 0);
+    const newUsdt = Math.max(0, parseFloat(exactUsdt) || 0);
+
+    // 1. Write exact balance to DB (RTDB & Firestore)
+    await setUserExactBalanceInDatabase(cleanId, newLkr, newUsdt);
+
+    // 2. Update local usersList state
     setUsersList(prev => prev.map(u => {
-      if (u.email && u.email.toLowerCase() === userEmail.toLowerCase()) {
-        const newLkr = Math.max(0, parseFloat(exactLkr) || 0);
-        const newUsdt = Math.max(0, parseFloat(exactUsdt) || 0);
-        if (u.uid) {
-          updateUserProfileInFirestore(u.uid, { walletBalance: newLkr, walletUsdt: newUsdt });
-        }
+      const matchEmail = u.email && String(u.email).toLowerCase() === cleanIdLower;
+      const matchUid = u.uid && String(u.uid).toLowerCase() === cleanIdLower;
+      const matchCode = u.resellerCode && String(u.resellerCode).toLowerCase() === cleanIdLower;
+
+      if (matchEmail || matchUid || matchCode) {
         return {
           ...u,
           walletBalance: newLkr,
@@ -1104,12 +1119,19 @@ export const AppProvider = ({ children }) => {
       return u;
     }));
 
-    if (userProfile && userProfile.email && userProfile.email.toLowerCase() === userEmail.toLowerCase()) {
-      setUserProfile(prev => ({
-        ...prev,
-        walletBalance: Math.max(0, parseFloat(exactLkr) || 0),
-        walletUsdt: Math.max(0, parseFloat(exactUsdt) || 0)
-      }));
+    // 3. Update self userProfile if applicable
+    if (userProfile) {
+      const matchSelfEmail = userProfile.email && String(userProfile.email).toLowerCase() === cleanIdLower;
+      const matchSelfUid = userProfile.uid && String(userProfile.uid).toLowerCase() === cleanIdLower;
+      const matchSelfCode = userProfile.resellerCode && String(userProfile.resellerCode).toLowerCase() === cleanIdLower;
+
+      if (matchSelfEmail || matchSelfUid || matchSelfCode) {
+        setUserProfile(prev => ({
+          ...prev,
+          walletBalance: newLkr,
+          walletUsdt: newUsdt
+        }));
+      }
     }
   };
 

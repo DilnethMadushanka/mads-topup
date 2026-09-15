@@ -417,13 +417,27 @@ export const AuthModal = () => {
       showToast('Passwords do not match!', 'error');
       return;
     }
+
+    const newUid = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const newAccountData = {
+      uid: newUid,
+      name: username.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone ? `+94 ${phone.trim()}` : '',
+      password: password,
+      walletBalance: 0,
+      walletUsdt: 0,
+      isReseller: false,
+      createdAt: new Date().toISOString()
+    };
+
     setIsLoggedIn(true);
+    const savedProfile = await syncUserProfileToFirestore(newAccountData);
     setUserProfile(prev => ({
       ...prev,
-      name: username,
-      email: email,
-      phone: phone ? `+94 ${phone}` : prev.phone
+      ...(savedProfile || newAccountData)
     }));
+
     showToast(`Account created successfully! Welcome ${username}.`);
     setIsAuthModalOpen(false);
   };
