@@ -641,8 +641,39 @@ export const updateUserPasswordInFirestore = async (identifier, newPassword) => 
   if (!identifier || !newPassword) return false;
   const cleanId = String(identifier).trim().toLowerCase();
 
+  let updated = false;
+
+  // 1. Direct Firestore collection query by email
+  if (db) {
+    try {
+      const q = query(collection(db, 'users'), where('email', '==', cleanId));
+      const snap = await Promise.race([
+        getDocs(q),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Firestore query timeout')), 3000))
+      ]);
+
+      if (snap && !snap.empty) {
+        for (const userDoc of snap.docs) {
+          const uId = userDoc.id;
+          await updateUserProfileInFirestore(uId, { password: newPassword, updatedAt: new Date().toISOString() });
+          updated = true;
+        }
+      }
+    } catch (e) {
+      console.warn('Firestore password update note:', e.message);
+    }
+  }
+
+  // 2. Query Realtime DB with AbortController timeout safeguard
   try {
-    const res = await fetch('https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/users.json');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+    const res = await fetch('https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/users.json', {
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
     if (res.ok) {
       const allUsers = await res.json();
       if (allUsers) {
@@ -653,33 +684,36 @@ export const updateUserPasswordInFirestore = async (identifier, newPassword) => 
 
           if (uEmail === cleanId || uName === cleanId || String(uId).toLowerCase() === cleanId) {
             await updateUserProfileInFirestore(uId, { password: newPassword, updatedAt: new Date().toISOString() });
-            
-            // Also update reseller application record if exists
-            try {
-              const appsRes = await fetch('https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/reseller_applications.json');
-              if (appsRes.ok) {
-                const appsData = await appsRes.json();
-                if (appsData) {
-                  for (const [appId, app] of Object.entries(appsData)) {
-                    if (app && (String(app.emailAddress || app.email).trim().toLowerCase() === uEmail || app.userId === uId)) {
-                      await fetch(`https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/reseller_applications/${appId}.json`, {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ password: newPassword, updatedAt: new Date().toISOString() })
-                      });
+            updated = true;
+
+            // Non-blocking background update for reseller applications
+            setTimeout(async () => {
+              try {
+                const appsRes = await fetch('https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/reseller_applications.json');
+                if (appsRes.ok) {
+                  const appsData = await appsRes.json();
+                  if (appsData) {
+                    for (const [appId, app] of Object.entries(appsData)) {
+                      if (app && (String(app.emailAddress || app.email).trim().toLowerCase() === uEmail || app.userId === uId)) {
+                        await fetch(`https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/reseller_applications/${appId}.json`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ password: newPassword, updatedAt: new Date().toISOString() })
+                        });
+                      }
                     }
                   }
                 }
-              }
-            } catch (appErr) {}
+              } catch (e) {}
+            }, 0);
 
-            return true;
+            break;
           }
         }
       }
     }
   } catch (err) {
-    console.warn('Update password error:', err);
+    console.warn('RTDB password update note:', err.message);
   }
 
   return true;
