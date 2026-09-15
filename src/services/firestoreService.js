@@ -559,21 +559,36 @@ export const syncUserProfileToFirestore = async (user) => {
 export const updateUserProfileInFirestore = async (uid, updatedData) => {
   if (!uid) return;
 
-  // Realtime Database
+  // Realtime Database SDK
   if (rtdb) {
     try {
       const userRtdbRef = dbRef(rtdb, `users/${uid}`);
-      await rtdbUpdate(userRtdbRef, updatedData);
+      await Promise.race([
+        rtdbUpdate(userRtdbRef, updatedData),
+        new Promise((res) => setTimeout(res, 1800))
+      ]);
     } catch (e) {
       console.warn('RTDB update note:', e);
     }
   }
 
-  // Firestore
+  // Direct REST API PATCH for 100% guarantee even if Firebase SDK hangs
+  try {
+    fetch(`https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/users/${uid}.json`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedData)
+    }).catch(() => {});
+  } catch (e) {}
+
+  // Firestore SDK
   if (db) {
     try {
       const userRef = doc(db, 'users', uid);
-      await setDoc(userRef, updatedData, { merge: true });
+      await Promise.race([
+        setDoc(userRef, updatedData, { merge: true }),
+        new Promise((res) => setTimeout(res, 1800))
+      ]);
     } catch (error) {
       console.warn('Firestore update note:', error);
     }

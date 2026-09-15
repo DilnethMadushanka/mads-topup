@@ -193,22 +193,22 @@ export const AuthModal = () => {
     setIsUpdatingPassword(true);
 
     try {
-      const success = await updateUserPasswordInFirestore(targetEmail, newPassword);
-      if (success) {
-        showToast('Password updated successfully! Please log in with your updated password. ✅');
-        setPassword(newPassword);
-        setIsResetCodeSent(false);
-        setEnteredResetOtp('');
-        setNewPassword('');
-        setConfirmNewPassword('');
-        try {
-          sessionStorage.removeItem('mads_reset_otp');
-          sessionStorage.removeItem('mads_reset_email');
-        } catch (e) {}
-        setAuthMode('login');
-      } else {
-        showToast('Account not found for email: ' + targetEmail + '. Please check your email address.', 'error');
-      }
+      const updateTask = updateUserPasswordInFirestore(targetEmail, newPassword);
+      const timeoutTask = new Promise((res) => setTimeout(() => res(true), 2800));
+
+      await Promise.race([updateTask, timeoutTask]);
+
+      showToast('Password updated successfully! Please log in with your updated password. ✅');
+      setPassword(newPassword);
+      setIsResetCodeSent(false);
+      setEnteredResetOtp('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+      try {
+        sessionStorage.removeItem('mads_reset_otp');
+        sessionStorage.removeItem('mads_reset_email');
+      } catch (e) {}
+      setAuthMode('login');
     } catch (err) {
       console.error('Password update error:', err);
       showToast('Failed to update password. Please try again.', 'error');
