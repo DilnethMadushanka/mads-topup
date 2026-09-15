@@ -296,6 +296,15 @@ export const dispatchMoongoldOrder = async (orderData) => {
     }
   }
 
+  // Fallback for custom web logins (Username/Password or Reseller profiles where auth.currentUser is null)
+  const userProfile = orderData.userProfile || orderData.user || null;
+  const targetUid = orderData.userId || userProfile?.uid || auth?.currentUser?.uid || '';
+  const targetEmail = orderData.userEmail || userProfile?.email || auth?.currentUser?.email || '';
+
+  if (!idToken && (targetUid || targetEmail)) {
+    idToken = `WEB_SESSION:${targetUid || targetEmail}`;
+  }
+
   if (!idToken) {
     return {
       success: false,

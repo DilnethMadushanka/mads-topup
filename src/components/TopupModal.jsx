@@ -204,7 +204,10 @@ export const TopupModal = () => {
         package: selectedPackage,
         payment: selectedPayment,
         priceLkr: priceToPay,
-        ign: ign || 'Verified Gamer'
+        ign: ign || 'Verified Gamer',
+        userId: userProfile?.uid || auth?.currentUser?.uid || '',
+        userEmail: userProfile?.email || auth?.currentUser?.email || '',
+        userProfile
       };
 
       try {

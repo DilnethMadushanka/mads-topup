@@ -227,7 +227,10 @@ export const GameTopupPage = () => {
         package: selectedItems[0],
         payment: selectedPayment,
         priceLkr: totalLkr,
-        ign: ign || (`Player ${playerId}`)
+        ign: ign || (`Player ${playerId}`),
+        userId: userProfile?.uid || auth?.currentUser?.uid || '',
+        userEmail: userProfile?.email || auth?.currentUser?.email || '',
+        userProfile
       };
 
       try {
