@@ -210,11 +210,6 @@ export const GameTopupPage = () => {
       .map(item => `${cartQuantities[item.id]}x ${item.name}`)
       .join(', ');
 
-    // Deduct wallet balance for payment
-    if (selectedPayment.id === 'wallet') {
-      creditUserWallet(-deductedLkr, -deductedUsdt);
-    }
-
     let moongoldResult = { success: true, status: 'PENDING_VERIFICATION', moongoldRef: null };
 
     // 3. Dispatch via Moongold API ONLY IF paid via MADS Wallet
@@ -244,8 +239,6 @@ export const GameTopupPage = () => {
       }
 
       if (!moongoldResult.success) {
-        // AUTOMATIC REFUND: Restore user wallet balance immediately
-        creditUserWallet(deductedLkr, deductedUsdt);
         setIsSubmitting(false);
 
         // Record failed order in Firestore & State for transparency
@@ -270,9 +263,12 @@ export const GameTopupPage = () => {
         };
 
         addOrder(failedOrder);
-        showToast(`❌ Topup Failed: ${moongoldResult.message || 'Provider error'}. Your wallet balance of Rs. ${totalLkr.toLocaleString()} LKR has been 100% refunded to your account!`, 'error');
+        showToast(`❌ Topup Failed: ${moongoldResult.message || 'Provider error'}.`, 'error');
         return;
       }
+
+      // Deduct local wallet state upon successful order dispatch
+      creditUserWallet(-deductedLkr, -deductedUsdt);
     }
 
     setIsSubmitting(false);

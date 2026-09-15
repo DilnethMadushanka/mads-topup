@@ -360,7 +360,9 @@ export const dispatchMoongoldOrder = async (orderData) => {
   }
 
   const path = 'order/create_order';
-  const priceLkr = orderData.package?.priceLkr || orderData.priceLkr || 0;
+  const priceLkr = (orderData.priceLkr !== undefined && orderData.priceLkr !== null && orderData.priceLkr > 0)
+    ? orderData.priceLkr
+    : (orderData.package?.priceLkr || 0);
   const paymentId = orderData.payment?.id || orderData.paymentMethod || 'wallet';
 
   const bodyObj = {

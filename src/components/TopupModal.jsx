@@ -188,10 +188,6 @@ export const TopupModal = () => {
 
     setIsSubmitting(true);
 
-    if (selectedPayment.id === 'wallet') {
-      creditUserWallet(-deductedLkr, -deductedUsdt);
-    }
-    
     let moongoldResult = { success: true, status: 'PENDING_VERIFICATION', moongoldRef: null };
 
     // 3. Dispatch via Moongold API ONLY IF paid via MADS Wallet
@@ -221,8 +217,6 @@ export const TopupModal = () => {
       }
 
       if (!moongoldResult.success) {
-        // AUTOMATIC REFUND: Restore user wallet balance immediately
-        creditUserWallet(deductedLkr, deductedUsdt);
         setIsSubmitting(false);
 
         // Record failed order in Firestore & State for transparency
@@ -247,9 +241,12 @@ export const TopupModal = () => {
         };
 
         addOrder(failedOrder);
-        showToast(`❌ Topup Failed: ${moongoldResult.message || 'Provider error'}. Your wallet balance of Rs. ${priceToPay.toLocaleString()} LKR has been 100% refunded!`, 'error');
+        showToast(`❌ Topup Failed: ${moongoldResult.message || 'Provider error'}.`, 'error');
         return;
       }
+
+      // Deduct local wallet state upon successful order dispatch
+      creditUserWallet(-deductedLkr, -deductedUsdt);
     }
 
     setIsSubmitting(false);
