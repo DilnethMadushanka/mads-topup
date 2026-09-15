@@ -230,8 +230,26 @@ export const Navbar = () => {
           )}
         </div>
 
-        {/* Mobile View: Hamburger Menu Button Top-Right */}
+        {/* Mobile View: Hamburger Menu Button & Quick Profile Top-Right */}
         <div className="lg:hidden flex items-center gap-2">
+          {isUserLoggedIn && (
+            <div 
+              onClick={openUserProfilePage}
+              className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200/90 px-2.5 py-1 rounded-full cursor-pointer shrink-0 transition-colors"
+            >
+              <div className="w-6 h-6 rounded-full bg-[#cc040a] text-white font-black text-[10px] flex items-center justify-center overflow-hidden shrink-0">
+                {userProfile.avatar ? (
+                  <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  getInitials(userProfile.name, userProfile.email)
+                )}
+              </div>
+              <span className="text-slate-900 font-extrabold text-[11px] max-w-[75px] sm:max-w-[100px] truncate">
+                {getCleanName(userProfile.name, userProfile.email)}
+              </span>
+            </div>
+          )}
+
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label="Toggle Navigation Menu"
@@ -395,10 +413,10 @@ export const Navbar = () => {
                     {userProfile.avatar ? (
                       <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
                     ) : (
-                      getInitials(userProfile.name)
+                      getInitials(userProfile.name, userProfile.email)
                     )}
                   </div>
-                  <span className="truncate max-w-[140px] text-slate-200 font-bold">{userProfile.name || 'Gaming Mads'}</span>
+                  <span className="truncate max-w-[140px] text-slate-200 font-bold">{getCleanName(userProfile.name, userProfile.email)}</span>
                   <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
                 </button>
               </>
