@@ -7,7 +7,7 @@ import {
 import { useApp } from '../context/AppContext';
 
 export const ContactPage = () => {
-  const { closeContactPage, setIsSupportOpen, showToast } = useApp();
+  const { closeContactPage, setIsSupportOpen, showToast, openPolicyModal } = useApp();
 
   return (
     <div className="min-h-screen bg-[#F8FAFF] py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
@@ -299,7 +299,7 @@ export const ContactPage = () => {
                 </button>
 
                 <button 
-                  onClick={() => showToast('Refund Policy: 100% money back guarantee on unprocessed top-ups!')}
+                  onClick={() => openPolicyModal('refund')}
                   className="w-full p-3 rounded-2xl bg-slate-50 hover:bg-slate-100 text-left flex items-center justify-between transition-colors cursor-pointer"
                 >
                   <span className="flex items-center gap-2.5">
@@ -310,7 +310,7 @@ export const ContactPage = () => {
                 </button>
 
                 <button 
-                  onClick={() => showToast('Terms of Service: Automated 24/7 instant dispatch system.')}
+                  onClick={() => openPolicyModal('terms')}
                   className="w-full p-3 rounded-2xl bg-slate-50 hover:bg-slate-100 text-left flex items-center justify-between transition-colors cursor-pointer"
                 >
                   <span className="flex items-center gap-2.5">

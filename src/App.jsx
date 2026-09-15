@@ -26,11 +26,12 @@ import { ResellerLoginPage } from './components/ResellerLoginPage';
 import { ResellerDashboard } from './components/ResellerDashboard';
 import { ResellerBannerSection } from './components/ResellerBannerSection';
 import { PopupAdModal } from './components/PopupAdModal';
+import { PolicyModal } from './components/PolicyModal';
 import { ToastNotification } from './components/ToastNotification';
 import { Flame } from 'lucide-react';
 
 const MainContent = () => {
-  const { setIsAdminOpen, isUserProfileOpen, isWalletModalOpen, openUserProfilePage, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, isReferralPageOpen, isResellerPageOpen, isResellerLoginPageOpen, isResellerDashboardOpen, openResellerPage, openContactPage, selectedGame } = useApp();
+  const { setIsAdminOpen, isUserProfileOpen, isWalletModalOpen, openUserProfilePage, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, isReferralPageOpen, isResellerPageOpen, isResellerLoginPageOpen, isResellerDashboardOpen, openResellerPage, openContactPage, openPolicyModal, selectedGame } = useApp();
 
   // Security: Prevent Right-Click Inspect Element & DevTools Keyboard Shortcuts
   React.useEffect(() => {
@@ -133,8 +134,9 @@ const MainContent = () => {
                 <li onClick={openContactPage} className="hover:text-[#cc040a] cursor-pointer transition-colors">ABOUT US</li>
                 <li onClick={openContactPage} className="hover:text-[#cc040a] cursor-pointer transition-colors">CONTACT</li>
                 <li onClick={openUserProfilePage} className="hover:text-[#cc040a] cursor-pointer transition-colors">MY ORDERS</li>
-                <li onClick={openContactPage} className="hover:text-[#cc040a] cursor-pointer transition-colors">TERMS OF SERVICE</li>
-                <li onClick={openContactPage} className="hover:text-[#cc040a] cursor-pointer transition-colors">PRIVACY POLICY</li>
+                <li onClick={() => openPolicyModal('refund')} className="hover:text-[#cc040a] cursor-pointer transition-colors">REFUND POLICY</li>
+                <li onClick={() => openPolicyModal('privacy')} className="hover:text-[#cc040a] cursor-pointer transition-colors">PRIVACY POLICY</li>
+                <li onClick={() => openPolicyModal('terms')} className="hover:text-[#cc040a] cursor-pointer transition-colors">TERMS OF SERVICE</li>
               </ul>
             </div>
 
@@ -161,6 +163,7 @@ const MainContent = () => {
 
       {/* Modals & Popups */}
       <PopupAdModal />
+      <PolicyModal />
       <AuthModal />
       <AdminDashboard />
       <ImportantNoticeModal />

@@ -151,6 +151,18 @@ export const AppProvider = ({ children }) => {
   const [walletActiveTab, setWalletActiveTab] = useState('binance'); // 'ezcash' | 'binance' | 'redeem'
   const [isDownloadAppModalOpen, setIsDownloadAppModalOpen] = useState(false);
 
+  const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false);
+  const [activePolicyTab, setActivePolicyTab] = useState('refund'); // 'refund' | 'privacy' | 'terms'
+
+  const openPolicyModal = (tab = 'refund') => {
+    setActivePolicyTab(tab);
+    setIsPolicyModalOpen(true);
+  };
+
+  const closePolicyModal = () => {
+    setIsPolicyModalOpen(false);
+  };
+
   const openWalletModal = (tab = 'binance') => {
     setWalletActiveTab(tab);
     setIsWalletModalOpen(true);
@@ -1622,7 +1634,13 @@ export const AppProvider = ({ children }) => {
       updateTicketStatus,
       updateTicketPriority,
       popupAdConfig,
-      updatePopupAdConfig
+      updatePopupAdConfig,
+      isPolicyModalOpen,
+      setIsPolicyModalOpen,
+      activePolicyTab,
+      setActivePolicyTab,
+      openPolicyModal,
+      closePolicyModal
     }}>
       {children}
     </AppContext.Provider>
