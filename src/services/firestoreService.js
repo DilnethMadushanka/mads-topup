@@ -3,6 +3,29 @@ import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, query, 
 import { ref as dbRef, get as rtdbGet, set as rtdbSet, update as rtdbUpdate, onValue as rtdbOnValue } from 'firebase/database';
 
 /**
+ * SHA-256 password hashing using Web Crypto API (runs in browser & Node).
+ * Returns a hex string prefixed with 'sha256:' so we can detect hashed vs plain-text legacy passwords.
+ */
+export const hashPassword = async (plain) => {
+  if (!plain) return '';
+  // Already hashed — don't double-hash
+  if (String(plain).startsWith('sha256:')) return plain;
+  try {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(String(plain));
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return `sha256:${hashHex}`;
+  } catch (e) {
+    // Fallback: simple non-crypto hash for environments without SubtleCrypto
+    let h = 0x811c9dc5;
+    for (let i = 0; i < plain.length; i++) h = Math.imul(31, h) + plain.charCodeAt(i) | 0;
+    return `sha256:fallback:${Math.abs(h).toString(16)}`;
+  }
+};
+
+/**
  * Helper function to generate a 100% unique & stable Security Key for each user/reseller.
  * Uses object properties (uid, email, username) or seed string and persists fallback in localStorage.
  */
@@ -504,7 +527,7 @@ export const syncUserProfileToFirestore = async (user) => {
           savedIds: user.savedIds || [],
           createdAt: user.createdAt || new Date().toISOString()
         };
-        if (user.password) newUserProfile.password = user.password;
+        if (user.password) newUserProfile.password = await hashPassword(user.password);
         await rtdbSet(userRtdbRef, newUserProfile);
         profileData = newUserProfile;
       }
@@ -544,7 +567,9 @@ export const syncUserProfileToFirestore = async (user) => {
           savedIds: profileData?.savedIds || user.savedIds || [],
           createdAt: profileData?.createdAt || user.createdAt || new Date().toISOString()
         };
-        if (user.password || profileData?.password) newUserProfile.password = user.password || profileData?.password;
+        if (user.password || profileData?.password) {
+          newUserProfile.password = await hashPassword(user.password || profileData?.password);
+        }
         await setDoc(userRef, newUserProfile);
         if (!profileData) profileData = newUserProfile;
       }
@@ -642,16 +667,30 @@ export const verifyUserLoginAsync = async (identifier, passwordInput) => {
         }
 
         if (matchedUser && matchedUid) {
-          // Check password if set in user profile
-          if (matchedUser.password && String(matchedUser.password) !== String(passwordInput)) {
-            return {
-              success: false,
-              message: 'Incorrect password! Please enter your updated password.'
-            };
+          // Check password if set in user profile — support both hashed (sha256:...) and legacy plain text
+          if (matchedUser.password) {
+            const storedPw = String(matchedUser.password);
+            const isHashed = storedPw.startsWith('sha256:');
+            if (isHashed) {
+              // Compare hashed vs hashed
+              const inputHash = await hashPassword(passwordInput);
+              if (inputHash !== storedPw) {
+                return { success: false, message: 'Incorrect password! Please enter your updated password.' };
+              }
+            } else {
+              // Legacy plain text — compare, then auto-migrate to hash
+              if (storedPw !== String(passwordInput)) {
+                return { success: false, message: 'Incorrect password! Please enter your updated password.' };
+              }
+              // Auto-migrate: save hashed version silently
+              const hashed = await hashPassword(passwordInput);
+              updateUserProfileInFirestore(matchedUid, { password: hashed });
+            }
           }
-          // If password wasn't set previously, bind passwordInput to profile
+          // If no password set yet, bind hashed password to profile
           if (!matchedUser.password) {
-            updateUserProfileInFirestore(matchedUid, { password: passwordInput });
+            const hashed = await hashPassword(passwordInput);
+            updateUserProfileInFirestore(matchedUid, { password: hashed });
           }
           return { success: true, user: { ...matchedUser, uid: matchedUid } };
         }
@@ -686,7 +725,7 @@ export const updateUserPasswordInFirestore = async (identifier, newPassword) => 
       if (snap && !snap.empty) {
         for (const userDoc of snap.docs) {
           const uId = userDoc.id;
-          await updateUserProfileInFirestore(uId, { password: newPassword, updatedAt: new Date().toISOString() });
+          await updateUserProfileInFirestore(uId, { password: await hashPassword(newPassword), updatedAt: new Date().toISOString() });
           updated = true;
         }
       }
@@ -714,7 +753,7 @@ export const updateUserPasswordInFirestore = async (identifier, newPassword) => 
           const uName = String(uData.name || uData.username || '').trim().toLowerCase();
 
           if (uEmail === cleanId || uName === cleanId || String(uId).toLowerCase() === cleanId) {
-            await updateUserProfileInFirestore(uId, { password: newPassword, updatedAt: new Date().toISOString() });
+            await updateUserProfileInFirestore(uId, { password: await hashPassword(newPassword), updatedAt: new Date().toISOString() });
             updated = true;
 
             // Non-blocking background update for reseller applications
@@ -729,7 +768,7 @@ export const updateUserPasswordInFirestore = async (identifier, newPassword) => 
                         await fetch(`https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/reseller_applications/${appId}.json`, {
                           method: 'PATCH',
                           headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ password: newPassword, updatedAt: new Date().toISOString() })
+                          body: JSON.stringify({ password: await hashPassword(newPassword), updatedAt: new Date().toISOString() })
                         });
                       }
                     }

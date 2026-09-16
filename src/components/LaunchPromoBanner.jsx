@@ -1,7 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { useApp } from '../context/AppContext';
-import { Flame, Clock, Sparkles, Copy, Check, Tag } from 'lucide-react';
+import React from 'react';
 
-export const LaunchPromoBanner = () => {
-  return null;
-};
+// LaunchPromoBanner removed as per design decision — banner moved inline to HeroSection.
+export const LaunchPromoBanner = () => null;

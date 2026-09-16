@@ -165,13 +165,13 @@ export const AuthModal = () => {
     }
 
     const cleanEntered = (enteredResetOtp || '').toString().trim();
-    if (cleanEntered !== storedOtp && cleanEntered !== '123456') {
+    if (cleanEntered !== storedOtp) {
       showToast('Invalid verification code! Please check your email inbox.', 'error');
       return;
     }
 
-    if (!newPassword || newPassword.length < 4) {
-      showToast('Please enter a new password (min 4 characters)!', 'error');
+    if (!newPassword || newPassword.length < 8) {
+      showToast('Password must be at least 8 characters!', 'error');
       return;
     }
 
@@ -420,12 +420,16 @@ export const AuthModal = () => {
       return;
     }
 
-    if (!password) {
-      showToast('Please create a password!', 'error');
+    if (!password || password.length < 8) {
+      showToast('Password must be at least 8 characters!', 'error');
       return;
     }
     if (password !== confirmPassword) {
       showToast('Passwords do not match!', 'error');
+      return;
+    }
+    if (phone && !/^\d{7,10}$/.test(phone.trim())) {
+      showToast('Please enter a valid phone number (digits only, 7-10 digits)!', 'error');
       return;
     }
 
