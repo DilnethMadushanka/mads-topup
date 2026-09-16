@@ -12,7 +12,7 @@ export const ReviewsSection = () => {
       location: 'Colombo, Sri Lanka',
       flag: '🇱🇰',
       rating: 5,
-      avatar: '/uploads/profile_pics/1344_4bf2414e.png',
+      avatar: null,
       initials: 'NE',
       text: 'MADS TOPUP IS THE LOW PRICE AND FAST TOP UP STORE WE HAPPY TO HAVE LIKE THIS STORE THE DIAMOND IS LUCKY A FEW EVENTS I GOT SUPER PRICES'
     },
@@ -22,7 +22,7 @@ export const ReviewsSection = () => {
       location: 'Colombo, Sri Lanka',
       flag: '🇱🇰',
       rating: 5,
-      avatar: '/uploads/profile_pics-[#3b82f6]',
+      avatar: null,
       initials: 'I',
       text: 'Super cool All Game top up in one place. 100% trustable and friendly website 🥰. Try your top up and enjoy your game very well 🥳.'
     },
@@ -32,7 +32,7 @@ export const ReviewsSection = () => {
       location: 'Kandy, Sri Lanka',
       flag: '🇱🇰',
       rating: 5,
-      avatar: '/uploads/profile_pics/10175_871f5dc4.png',
+      avatar: null,
       initials: 'S',
       text: 'The only top-up store in Sri Lanka that allows you to quickly top up by transacting with the largest number of payment methods used in the country.'
     },
@@ -42,7 +42,7 @@ export const ReviewsSection = () => {
       location: 'Colombo, Sri Lanka',
       flag: '🇱🇰',
       rating: 5,
-      avatar: '/uploads/profile_pics/11442_c1754a6f.png',
+      avatar: null,
       initials: 'YT',
       text: 'Maru bam me vidihata kollo kellange hitha sathutu karanavata. Vishvasaneeyathva saha aduma milata top up karanavanam MADS TOPUP thamai'
     },
@@ -52,7 +52,7 @@ export const ReviewsSection = () => {
       location: 'Colombo, Sri Lanka',
       flag: '🇱🇰',
       rating: 5,
-      avatar: '/uploads/profile_pics/15_6d8c0304.png',
+      avatar: null,
       initials: 'L',
       text: 'This app is so cool 😍 very convenient, also very reliable. Just took few seconds to get my top up done & no issues at all. 100% RECOMMENDED!!'
     }
