@@ -3,7 +3,8 @@ import { useApp } from '../context/AppContext';
 import { auth } from '../services/firebaseAuth';
 import {
   Wallet, Copy, Check, ArrowLeft, Zap, Clock, Crown,
-  Building2, Upload, ChevronRight, X, RefreshCw, AlertTriangle
+  Building2, Upload, ChevronRight, X, RefreshCw, AlertTriangle,
+  CreditCard, Smartphone, DollarSign, Gift
 } from 'lucide-react';
 
 export const WalletPage = () => {
@@ -31,6 +32,7 @@ export const WalletPage = () => {
   const [isRedeemingVoucher, setIsRedeemingVoucher] = useState(false);
   const [activePanel, setActivePanel] = useState(null);
 
+  // ── Auto-verify Genie return ────────────────────────────────
   React.useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const genieStatus = urlParams.get('genie');
@@ -46,7 +48,7 @@ export const WalletPage = () => {
             if (amt > 0) {
               creditUserWallet(amt, 0);
               addManualPayment({ id: 'PAY-GENIE-' + Math.floor(1000 + Math.random() * 9000), userId: userProfile?.uid || '', userEmail: userProfile?.email || 'guest@madstopup.com', userName: userProfile?.name || 'Gamer', method: 'Online Card / eZ Cash', referenceNumber: `Txn: ${txnId}`, amount: amt, currency: 'LKR', slipUrl: '', status: 'VERIFIED', createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16) });
-              showToast(`CARD PAYMENT VERIFIED! +LKR ${amt.toLocaleString()} credited!`);
+              showToast(`⚡ CARD PAYMENT VERIFIED! +LKR ${amt.toLocaleString()} credited!`);
             }
           } else { showToast(`Genie transaction: ${data.state || 'Pending'}`); }
         }).catch(err => console.warn('Genie verify error:', err.message));
@@ -54,6 +56,7 @@ export const WalletPage = () => {
     }
   }, []);
 
+  // ── Handlers ────────────────────────────────────────────────
   const handleGenieSubmit = async (e) => {
     e.preventDefault();
     const amt = parseFloat(genieAmount);
@@ -93,7 +96,7 @@ export const WalletPage = () => {
     if (!bankRef.trim()) { showToast('Please enter your name or reference!', 'error'); return; }
     if (!bankSlipPreview) { showToast('Please upload your deposit receipt!', 'error'); return; }
     addManualPayment({ id: 'PAY-' + Math.floor(1000 + Math.random() * 9000), userEmail: userProfile?.email || 'guest@madstopup.com', userName: userProfile?.name || 'Gamer', method: 'Bank Deposit', referenceNumber: bankRef.trim(), amount: parseFloat(bankAmount), currency: 'LKR', slipUrl: bankSlipPreview, receiptUrl: bankSlipPreview, status: 'PENDING', createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16) });
-    showToast('Bank receipt submitted! Admin will verify shortly.');
+    showToast('🏦 Bank receipt submitted! Admin will verify shortly.');
     setBankRef(''); setBankSlipPreview(''); setBankSlipFileName(''); setActivePanel(null);
   };
 
@@ -122,7 +125,7 @@ export const WalletPage = () => {
       if (resData.verified && resData.autoApproved) {
         creditUserWallet(0, amt);
         addManualPayment({ id: 'PAY-' + Math.floor(1000 + Math.random() * 9000), userEmail: userProfile?.email || 'guest@madstopup.com', userName: userProfile?.name || 'Gamer', method: 'Binance Pay (Automated)', referenceNumber: `Order: ${binanceOrderId} | PayID: ${binancePayId}`, amount: amt, currency: 'USDT', slipUrl: '', status: 'VERIFIED', createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16) });
-        showToast(`BINANCE VERIFIED! +${amt} USDT credited!`);
+        showToast(`⚡ BINANCE VERIFIED! +${amt} USDT credited!`);
       } else {
         addManualPayment({ id: 'PAY-' + Math.floor(1000 + Math.random() * 9000), userEmail: userProfile?.email || 'guest@madstopup.com', userName: userProfile?.name || 'Gamer', method: 'Binance Pay', referenceNumber: `Order: ${binanceOrderId} | PayID: ${binancePayId}`, amount: amt, currency: 'USDT', slipUrl: '', status: 'PENDING', createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16) });
         showToast('Binance deposit submitted for admin verification.');
@@ -150,7 +153,7 @@ export const WalletPage = () => {
       if (resData.verified && resData.autoApproved) {
         creditUserWallet(amt, 0);
         addManualPayment({ id: 'PAY-' + Math.floor(1000 + Math.random() * 9000), userId, userEmail, userName, resellerCode, method: 'EZ Cash (Automated)', referenceNumber: cleanRn, amount: amt, currency: 'LKR', slipUrl: '', status: 'VERIFIED', createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16) });
-        showToast(`EZ CASH VERIFIED! +Rs. ${amt.toLocaleString()} credited!`);
+        showToast(`⚡ EZ CASH VERIFIED! +Rs. ${amt.toLocaleString()} LKR credited!`);
       } else {
         addManualPayment({ id: 'PAY-' + Math.floor(1000 + Math.random() * 9000), userId, userEmail, userName, resellerCode, method: 'EZ Cash', referenceNumber: cleanRn, amount: amt, currency: 'LKR', slipUrl: '', status: 'PENDING', createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16) });
         showToast('EZ Cash deposit submitted for admin verification.');
@@ -177,285 +180,370 @@ export const WalletPage = () => {
   const QUICK_LKR = ['500', '1000', '2000', '5000'];
   const QUICK_USDT = ['5', '10', '20', '50'];
 
-  const inputCls = 'w-full px-4 py-3 bg-slate-800/60 border border-slate-700/80 rounded-2xl text-white text-sm font-semibold placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:border-red-500/40 transition-all';
+  // ── Shared style tokens ──────────────────────────────────────
+  const inputCls = 'w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm font-semibold placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#cc040a]/20 focus:border-[#cc040a]/50 transition-all';
+  const btnRed = 'w-full py-3.5 rounded-xl bg-gradient-to-r from-[#cc040a] to-red-600 hover:from-[#b00308] hover:to-red-700 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-red-600/20 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
 
-  const methods = [
-    { id: 'genie',   icon: '💳', label: 'Card & eZ Cash', sub: 'Instant automated credit', badge: 'INSTANT', badgeBg: 'bg-emerald-500', grad: 'from-[#cc040a] to-red-700',       border: 'border-red-500/20'    },
-    { id: 'ezcash',  icon: '📱', label: 'EZ Cash Manual',  sub: 'Submit RN for credit',      badge: 'FAST',    badgeBg: 'bg-amber-500',   grad: 'from-orange-600 to-amber-600',  border: 'border-orange-500/20' },
-    { id: 'binance', icon: '🔶', label: 'Binance Pay',     sub: 'Pay with USDT crypto',      badge: 'USDT',    badgeBg: 'bg-yellow-500',  grad: 'from-yellow-600 to-amber-500',  border: 'border-yellow-500/20' },
-    { id: 'bank',    icon: '🏦', label: 'Bank Transfer',   sub: 'HNB bank deposit',          badge: 'MANUAL',  badgeBg: 'bg-blue-500',    grad: 'from-blue-600 to-indigo-600',   border: 'border-blue-500/20'   },
-  ];
-  const activeMethod = methods.find(m => m.id === activePanel);
-
-  const QuickBtn = ({ amounts, current, set, activeClass }) => (
+  const QuickBtn = ({ amounts, current, set, color = '[#cc040a]' }) => (
     <div className="flex gap-2 mt-2">
       {amounts.map(a => (
         <button key={a} type="button" onClick={() => set(a)}
-          className={`flex-1 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer border ${current === a ? activeClass : 'bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-500'}`}>
+          className={`flex-1 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer border ${current === a
+            ? `bg-[#cc040a] border-[#cc040a] text-white shadow-sm`
+            : 'bg-white border-slate-200 text-slate-600 hover:border-[#cc040a]/40 hover:text-[#cc040a]'}`}>
           {a}
         </button>
       ))}
     </div>
   );
 
-  return (
-    <div className="min-h-screen bg-[#0A0F1E] pb-16 font-sans text-white animate-in fade-in duration-300">
+  const CopyBtn = ({ text, label }) => (
+    <button type="button" onClick={() => handleCopy(text, label)}
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#cc040a]/8 hover:bg-[#cc040a]/15 border border-[#cc040a]/20 rounded-lg text-[#cc040a] text-xs font-black transition-all cursor-pointer">
+      {isCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+      {isCopied ? 'Copied' : 'Copy'}
+    </button>
+  );
 
-      {/* NAV */}
-      <div className="sticky top-0 z-20 bg-[#0A0F1E]/95 backdrop-blur-xl border-b border-white/5 px-4 py-3 flex items-center gap-3">
-        <button onClick={goHome} className="w-9 h-9 rounded-xl bg-white/8 hover:bg-white/15 flex items-center justify-center transition-all cursor-pointer shrink-0">
-          <ArrowLeft className="w-4 h-4 text-white" />
-        </button>
-        <div className="flex-1">
-          <h1 className="text-sm font-black text-white">My Wallet</h1>
-          <p className="text-[10px] text-slate-400 font-medium">Recharge and manage balance</p>
+  const methods = [
+    {
+      id: 'genie', icon: '💳', label: 'Card & eZ Cash',
+      sub: 'Instant automated credit', badge: 'INSTANT',
+      accent: 'from-[#cc040a] to-red-600', iconBg: 'bg-red-50', iconColor: 'text-[#cc040a]',
+      badgeBg: 'bg-emerald-100 text-emerald-700', border: 'hover:border-[#cc040a]/30',
+    },
+    {
+      id: 'ezcash', icon: '📱', label: 'EZ Cash Manual',
+      sub: 'Submit RN number for credit', badge: 'FAST',
+      accent: 'from-orange-500 to-amber-500', iconBg: 'bg-orange-50', iconColor: 'text-orange-500',
+      badgeBg: 'bg-amber-100 text-amber-700', border: 'hover:border-orange-300',
+    },
+    {
+      id: 'binance', icon: '🔶', label: 'Binance Pay',
+      sub: 'Pay with USDT crypto', badge: 'USDT',
+      accent: 'from-yellow-500 to-amber-400', iconBg: 'bg-yellow-50', iconColor: 'text-yellow-600',
+      badgeBg: 'bg-yellow-100 text-yellow-700', border: 'hover:border-yellow-300',
+    },
+    {
+      id: 'bank', icon: '🏦', label: 'Bank Transfer',
+      sub: 'HNB bank deposit', badge: 'MANUAL',
+      accent: 'from-blue-600 to-indigo-600', iconBg: 'bg-blue-50', iconColor: 'text-blue-600',
+      badgeBg: 'bg-blue-100 text-blue-700', border: 'hover:border-blue-300',
+    },
+  ];
+  const activeMethod = methods.find(m => m.id === activePanel);
+
+  return (
+    <div className="min-h-screen bg-[#F8FAFF] pb-20 pt-6 animate-in fade-in duration-300 font-sans text-slate-900">
+
+      {/* ── BREADCRUMB NAV ── */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 mb-6">
+        <div className="flex items-center justify-between">
+          <button onClick={goHome}
+            className="inline-flex items-center gap-2 text-xs font-black text-slate-600 hover:text-[#cc040a] bg-white border border-slate-200 px-4 py-2 rounded-xl shadow-xs transition-all cursor-pointer">
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Store</span>
+          </button>
+          <div className="flex items-center gap-2 text-xs font-extrabold text-slate-400 font-mono">
+            <span onClick={goHome} className="hover:underline cursor-pointer hover:text-[#cc040a] transition-colors">Home</span>
+            <span>/</span>
+            <span className="text-[#cc040a] font-bold">My Wallet</span>
+          </div>
         </div>
-        {isApprovedReseller && (
-          <span className="px-2.5 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-            <Crown className="w-3 h-3 fill-amber-400" /> Reseller
-          </span>
-        )}
       </div>
 
-      <div className="max-w-lg mx-auto px-4 pt-5 space-y-4">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
 
-        {/* BALANCE CARDS */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-gradient-to-br from-[#cc040a] to-red-800 rounded-2xl p-4 relative overflow-hidden shadow-xl shadow-red-950/40">
-            <div className="absolute -top-4 -right-4 w-20 h-20 bg-white/10 rounded-full blur-2xl" />
-            <div className="relative z-10">
-              <div className="flex items-center gap-1.5 mb-2">
-                <Wallet className="w-3.5 h-3.5 text-red-200" />
-                <span className="text-[10px] font-black text-red-100 uppercase tracking-widest">LKR</span>
+        {/* ── HERO BALANCE BANNER ── */}
+        {isApprovedReseller ? (
+          <div className="bg-gradient-to-r from-slate-950 via-[#1E1656] to-slate-950 rounded-3xl p-6 sm:p-10 text-white text-center shadow-2xl relative overflow-hidden border-2 border-amber-500/40">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="relative z-10 space-y-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-black uppercase tracking-widest">
+                <Crown className="w-4 h-4 fill-amber-400" /> RESELLER PARTNER WALLET
               </div>
-              <div className="text-2xl font-black text-white leading-none">{(userProfile?.walletBalance || 0).toFixed(2)}</div>
-              <div className="text-xs text-red-200/80 font-semibold mt-0.5">Sri Lankan Rupees</div>
+              <div>
+                <span className="text-xs font-black text-slate-300 uppercase tracking-widest block mb-1">Available Balance</span>
+                <div className="text-4xl sm:text-6xl font-black font-heading text-white tracking-tight">LKR {(userProfile?.walletBalance || 0).toFixed(2)}</div>
+              </div>
+              <div className="flex items-center justify-center gap-3 pt-2 flex-wrap">
+                <div className="inline-flex items-center gap-2 bg-slate-900/80 px-4 py-1.5 rounded-full text-xs font-bold text-white border border-amber-500/20">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  {(userProfile?.walletUsdt || 0).toFixed(2)} USDT
+                </div>
+                <div className="inline-flex items-center gap-2 bg-slate-900/80 border border-slate-700 px-4 py-1.5 rounded-full text-xs font-mono font-bold text-amber-300">
+                  WALLET ID: <span className="text-white font-black">{resellerWalletId}</span>
+                  <button onClick={() => handleCopy(resellerWalletId, 'Wallet ID')} className="hover:text-white transition-colors cursor-pointer">
+                    {isCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="bg-gradient-to-br from-emerald-700 to-emerald-900 rounded-2xl p-4 relative overflow-hidden shadow-xl shadow-emerald-950/40">
-            <div className="absolute -top-4 -right-4 w-20 h-20 bg-white/10 rounded-full blur-2xl" />
+        ) : (
+          <div className="bg-gradient-to-r from-[#cc040a] via-[#dc2626] to-[#990207] rounded-3xl p-6 sm:p-10 text-white text-center shadow-2xl relative overflow-hidden border border-red-600/30">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-red-950/40 rounded-full blur-3xl pointer-events-none" />
             <div className="relative z-10">
-              <div className="flex items-center gap-1.5 mb-2">
-                <span className="w-3.5 h-3.5 rounded-full bg-white text-emerald-700 font-black text-[8px] flex items-center justify-center italic shrink-0">B</span>
-                <span className="text-[10px] font-black text-emerald-100 uppercase tracking-widest">USDT</span>
+              <span className="text-xs font-black text-red-100 uppercase tracking-widest block mb-1">Account Total Balance</span>
+              <div className="text-4xl sm:text-6xl font-black font-heading text-white tracking-tight">LKR {(userProfile?.walletBalance || 0).toFixed(2)}</div>
+              <div className="flex items-center justify-center gap-3 mt-4 flex-wrap">
+                <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-bold text-white border border-white/30">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                  {(userProfile?.walletUsdt || 0).toFixed(2)} USDT
+                </div>
               </div>
-              <div className="text-2xl font-black text-white leading-none">{(userProfile?.walletUsdt || 0).toFixed(2)}</div>
-              <div className="text-xs text-emerald-200/80 font-semibold mt-0.5">Tether USD</div>
             </div>
-          </div>
-        </div>
-
-        {/* RESELLER ID */}
-        {isApprovedReseller && (
-          <div className="bg-slate-800/50 border border-amber-500/20 rounded-2xl px-4 py-3 flex items-center justify-between">
-            <div>
-              <div className="text-[10px] text-amber-400 font-black uppercase tracking-widest">Reseller Wallet ID</div>
-              <div className="text-sm font-black text-white font-mono">{resellerWalletId}</div>
-            </div>
-            <button onClick={() => handleCopy(resellerWalletId, 'Wallet ID')} className="p-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 transition-all cursor-pointer">
-              {isCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-amber-400" />}
-            </button>
           </div>
         )}
 
-        {/* RECHARGE */}
+        {/* ── RECHARGE SECTION ── */}
         {!activePanel ? (
-          <div className="space-y-4">
+          <div className="space-y-5">
+
+            {/* Section heading */}
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-black text-white">Recharge Wallet</h2>
-              <span className="text-[10px] text-slate-500 font-semibold">Choose a method</span>
+              <div>
+                <h2 className="text-lg font-black text-slate-900 font-heading">Recharge Wallet</h2>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">Select your preferred payment method</p>
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+
+            {/* ── METHOD CARDS 2×2 GRID ── */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {methods.map(m => (
                 <button key={m.id} onClick={() => setActivePanel(m.id)}
-                  className={`bg-gradient-to-br ${m.grad} ${m.border} border rounded-2xl p-4 text-left relative overflow-hidden group hover:scale-[1.02] active:scale-[0.97] transition-all shadow-lg cursor-pointer`}>
-                  <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
-                  <div className="relative z-10">
-                    <div className="text-2xl mb-2">{m.icon}</div>
-                    <div className="text-sm font-black text-white leading-tight">{m.label}</div>
-                    <div className="text-[11px] text-white/65 font-medium mt-0.5">{m.sub}</div>
-                    <div className={`inline-flex items-center gap-1 mt-2.5 px-2 py-0.5 rounded-full ${m.badgeBg} text-white text-[9px] font-black uppercase tracking-wider`}>
-                      <Zap className="w-2.5 h-2.5" />{m.badge}
-                    </div>
+                  className={`group bg-white rounded-2xl p-4 sm:p-5 text-left border border-slate-200/80 shadow-sm ${m.border} hover:shadow-md transition-all cursor-pointer active:scale-[0.98] relative overflow-hidden`}>
+                  {/* Top accent line */}
+                  <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${m.accent} opacity-0 group-hover:opacity-100 transition-opacity rounded-t-2xl`} />
+                  <div className={`w-10 h-10 ${m.iconBg} rounded-xl flex items-center justify-center mb-3 text-xl`}>{m.icon}</div>
+                  <div className="text-sm font-black text-slate-900 leading-tight group-hover:text-[#cc040a] transition-colors">{m.label}</div>
+                  <div className="text-[11px] text-slate-400 font-medium mt-0.5 leading-snug">{m.sub}</div>
+                  <div className={`inline-flex items-center gap-1 mt-3 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${m.badgeBg}`}>
+                    <Zap className="w-2.5 h-2.5" />{m.badge}
                   </div>
-                  <ChevronRight className="absolute bottom-3 right-3 w-4 h-4 text-white/30 group-hover:text-white/70 group-hover:translate-x-0.5 transition-all" />
+                  <ChevronRight className="absolute top-4 right-4 w-4 h-4 text-slate-300 group-hover:text-[#cc040a] group-hover:translate-x-0.5 transition-all" />
                 </button>
               ))}
             </div>
 
-            {/* VOUCHER */}
-            <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-base">🎟️</span>
-                <span className="text-sm font-black text-white">Redeem Voucher</span>
+            {/* ── VOUCHER REDEEM ── */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 bg-red-50 rounded-xl flex items-center justify-center">
+                  <Gift className="w-4 h-4 text-[#cc040a]" />
+                </div>
+                <div>
+                  <div className="text-sm font-black text-slate-900">Redeem Voucher Code</div>
+                  <div className="text-[11px] text-slate-400 font-medium">Enter your gift or promotional code</div>
+                </div>
               </div>
               <form onSubmit={handleRedeemSubmit} className="flex gap-2">
-                <input type="text" placeholder="Enter voucher code..." value={voucherCode}
+                <input type="text" placeholder="Enter code e.g. MADS-XXXX-XXXX" value={voucherCode}
                   onChange={e => setVoucherCode(e.target.value.toUpperCase())}
-                  className={inputCls + ' py-2.5 text-xs'} />
+                  className={inputCls + ' flex-1'} />
                 <button type="submit" disabled={isRedeemingVoucher || !voucherCode.trim()}
-                  className="px-4 py-2.5 bg-[#cc040a] hover:bg-[#b00308] text-white font-black text-xs rounded-xl shrink-0 transition-all disabled:opacity-50 cursor-pointer">
+                  className="px-5 py-3 bg-gradient-to-r from-[#cc040a] to-red-600 hover:from-[#b00308] hover:to-red-700 text-white font-black text-xs rounded-xl shrink-0 shadow-md shadow-red-600/20 transition-all disabled:opacity-50 cursor-pointer">
                   {isRedeemingVoucher ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Apply'}
                 </button>
               </form>
             </div>
+
           </div>
         ) : (
-          /* FORM PANEL */
-          <div className="bg-slate-900/80 border border-white/8 rounded-3xl overflow-hidden animate-in slide-in-from-bottom-3 duration-300">
-            <div className={`bg-gradient-to-r ${activeMethod?.grad} p-4 flex items-center justify-between`}>
+          /* ── PAYMENT FORM PANEL ── */
+          <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
+
+            {/* Panel header — red gradient matching other pages */}
+            <div className={`bg-gradient-to-r ${activeMethod?.accent} p-5 sm:p-6 flex items-center justify-between`}>
               <div className="flex items-center gap-3">
-                <span className="text-2xl">{activeMethod?.icon}</span>
+                <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-xl">{activeMethod?.icon}</div>
                 <div>
-                  <div className="text-sm font-black text-white">{activeMethod?.label}</div>
-                  <div className="text-[11px] text-white/65">{activeMethod?.sub}</div>
+                  <div className="text-base font-black text-white font-heading">{activeMethod?.label}</div>
+                  <div className="text-xs text-white/75 font-medium">{activeMethod?.sub}</div>
                 </div>
               </div>
-              <button onClick={() => setActivePanel(null)} className="p-1.5 rounded-xl bg-black/20 hover:bg-black/40 transition-all cursor-pointer">
+              <button onClick={() => setActivePanel(null)} className="p-2 rounded-xl bg-white/15 hover:bg-white/30 transition-all cursor-pointer">
                 <X className="w-4 h-4 text-white" />
               </button>
             </div>
 
-            <div className="p-5 space-y-4">
+            <div className="p-5 sm:p-6 space-y-5">
 
+              {/* ── GENIE (Card / eZ Cash Instant) ── */}
               {activePanel === 'genie' && (
-                <form onSubmit={handleGenieSubmit} className="space-y-4">
-                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl px-4 py-3 flex items-start gap-2.5">
-                    <Zap className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <span className="text-xs font-semibold text-emerald-200">Accepts Visa, Mastercard, eZ Cash and Genie Wallet. Balance credited instantly.</span>
+                <form onSubmit={handleGenieSubmit} className="space-y-5">
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 flex items-start gap-2.5">
+                    <Zap className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span className="text-xs font-semibold text-emerald-700">Accepts Visa, Mastercard, Dialog eZ Cash and Genie Wallet. Balance credited instantly after payment.</span>
                   </div>
                   <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Amount (LKR)</label>
-                    <input type="number" value={genieAmount} onChange={e => setGenieAmount(e.target.value)} placeholder="Enter amount..." className={inputCls} min="50" />
-                    <QuickBtn amounts={QUICK_LKR} current={genieAmount} set={setGenieAmount} activeClass="bg-[#cc040a] border-[#cc040a] text-white" />
+                    <label className="text-xs font-black text-slate-500 uppercase tracking-wider block mb-2">Recharge Amount (LKR)</label>
+                    <input type="number" value={genieAmount} onChange={e => setGenieAmount(e.target.value)} placeholder="Enter amount in LKR..." className={inputCls} min="50" />
+                    <QuickBtn amounts={QUICK_LKR} current={genieAmount} set={setGenieAmount} />
                   </div>
-                  <button type="submit" disabled={isGenieLoading}
-                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#cc040a] to-red-600 hover:from-[#b00308] hover:to-red-700 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-red-600/25 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50">
-                    {isGenieLoading ? <><RefreshCw className="w-4 h-4 animate-spin" />Connecting...</> : <><Zap className="w-4 h-4 fill-white" />Pay Now — Rs. {genieAmount || '0'}</>}
+                  <button type="submit" disabled={isGenieLoading} className={btnRed}>
+                    {isGenieLoading
+                      ? <><RefreshCw className="w-4 h-4 animate-spin" /><span>Connecting to Gateway...</span></>
+                      : <><Zap className="w-4 h-4 fill-white" /><span>Pay Now — Rs. {Number(genieAmount || 0).toLocaleString()}</span></>}
                   </button>
+                  <p className="text-center text-[11px] text-slate-400 font-medium">You will be redirected to Dialog Genie Business IPG secure checkout</p>
                 </form>
               )}
 
+              {/* ── EZ CASH MANUAL ── */}
               {activePanel === 'ezcash' && (
-                <form onSubmit={handleEzCashSubmit} className="space-y-4">
-                  <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 space-y-3">
-                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Send EZ Cash to</div>
-                    <div className="flex items-center justify-between">
+                <form onSubmit={handleEzCashSubmit} className="space-y-5">
+                  {/* Step 1 — Send money */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="w-5 h-5 rounded-full bg-[#cc040a] text-white text-[10px] font-black flex items-center justify-center shrink-0">1</span>
+                      <span className="text-xs font-black text-slate-700 uppercase tracking-wider">Send EZ Cash to this number</span>
+                    </div>
+                    <div className="flex items-center justify-between bg-white border border-slate-200 rounded-xl px-4 py-3">
                       <div>
-                        <div className="text-[10px] text-slate-400">Merchant Number</div>
-                        <div className="text-xl font-black text-white font-mono">{ezCashMerchantNumber}</div>
+                        <div className="text-[10px] text-slate-400 font-medium">Dialog eZ Cash Merchant</div>
+                        <div className="text-2xl font-black text-slate-900 font-mono tracking-wider">{ezCashMerchantNumber}</div>
                       </div>
-                      <button type="button" onClick={() => handleCopy(ezCashMerchantNumber, 'Merchant number')}
-                        className="px-3 py-2 bg-orange-500/15 hover:bg-orange-500/25 border border-orange-500/30 rounded-xl text-orange-300 text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer">
-                        {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />} Copy
-                      </button>
+                      <CopyBtn text={ezCashMerchantNumber} label="Merchant number" />
                     </div>
-                    <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2">
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                      <span className="text-[11px] text-amber-200">Note the 14-digit RN from your Dialog SMS or Genie App history.</span>
+                    <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                      <span className="text-[11px] text-amber-700 font-medium">After sending, note the 14-digit <strong>RN number</strong> from your Dialog SMS or Genie App transaction history.</span>
                     </div>
                   </div>
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Amount Sent (LKR)</label>
-                    <input type="number" value={ezCashAmount} onChange={e => setEzCashAmount(e.target.value)} placeholder="Amount sent..." className={inputCls} min="100" />
-                    <QuickBtn amounts={QUICK_LKR} current={ezCashAmount} set={setEzCashAmount} activeClass="bg-orange-500 border-orange-500 text-white" />
+
+                  {/* Step 2 — Submit RN */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-[#cc040a] text-white text-[10px] font-black flex items-center justify-center shrink-0">2</span>
+                      <span className="text-xs font-black text-slate-700 uppercase tracking-wider">Enter the amount you sent</span>
+                    </div>
+                    <input type="number" value={ezCashAmount} onChange={e => setEzCashAmount(e.target.value)} placeholder="Amount sent in LKR..." className={inputCls} min="100" />
+                    <QuickBtn amounts={QUICK_LKR} current={ezCashAmount} set={setEzCashAmount} />
                   </div>
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">14-Digit RN Number</label>
-                    <input type="text" value={ezCashRnNumber} onChange={e => setEzCashRnNumber(e.target.value)} placeholder="e.g. 20260910XXXXXX" className={inputCls} maxLength={16} />
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-500 uppercase tracking-wider block">14-Digit RN Number</label>
+                    <input type="text" value={ezCashRnNumber} onChange={e => setEzCashRnNumber(e.target.value)} placeholder="e.g. 20260910XXXXXXXX" className={inputCls} maxLength={16} />
                   </div>
+
                   <button type="submit" disabled={isEzCashVerifying}
-                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-orange-600/25 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50">
-                    {isEzCashVerifying ? <><RefreshCw className="w-4 h-4 animate-spin" />Verifying...</> : <><Zap className="w-4 h-4 fill-white" />Verify and Credit Wallet</>}
+                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                    {isEzCashVerifying ? <><RefreshCw className="w-4 h-4 animate-spin" /><span>Verifying RN...</span></> : <><Zap className="w-4 h-4 fill-white" /><span>Verify & Credit Wallet</span></>}
                   </button>
                 </form>
               )}
 
+              {/* ── BINANCE PAY ── */}
               {activePanel === 'binance' && (
-                <form onSubmit={handleBinanceSubmit} className="space-y-4">
-                  <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 space-y-3">
-                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Send USDT to Binance Pay</div>
-                    <div className="flex items-center justify-between">
+                <form onSubmit={handleBinanceSubmit} className="space-y-5">
+                  {/* Merchant info */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="w-5 h-5 rounded-full bg-[#cc040a] text-white text-[10px] font-black flex items-center justify-center shrink-0">1</span>
+                      <span className="text-xs font-black text-slate-700 uppercase tracking-wider">Send USDT to this Binance Pay ID</span>
+                    </div>
+                    <div className="flex items-center justify-between bg-white border border-slate-200 rounded-xl px-4 py-3">
                       <div>
-                        <div className="text-[10px] text-slate-400">Binance Pay ID</div>
-                        <div className="text-xl font-black text-white font-mono">{binanceMerchantId}</div>
+                        <div className="text-[10px] text-slate-400 font-medium">Binance Pay ID</div>
+                        <div className="text-2xl font-black text-slate-900 font-mono tracking-wider">{binanceMerchantId}</div>
                       </div>
-                      <button type="button" onClick={() => handleCopy(binanceMerchantId, 'Pay ID')}
-                        className="px-3 py-2 bg-yellow-500/15 hover:bg-yellow-500/25 border border-yellow-500/30 rounded-xl text-yellow-300 text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer">
-                        {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />} Copy
-                      </button>
+                      <CopyBtn text={binanceMerchantId} label="Binance Pay ID" />
                     </div>
-                    <div className="text-[11px] text-slate-400">After paying: Binance App → Pay → History → copy Order ID</div>
+                    <div className="text-[11px] text-slate-500 font-medium bg-blue-50 border border-blue-100 rounded-xl px-3 py-2">
+                      📱 After paying: Binance App → <strong>Pay</strong> → <strong>History</strong> → copy your Order ID
+                    </div>
                   </div>
+
                   <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Amount (USDT)</label>
+                    <label className="text-xs font-black text-slate-500 uppercase tracking-wider block mb-2">Amount (USDT)</label>
                     <input type="number" value={binanceAmount} onChange={e => setBinanceAmount(e.target.value)} placeholder="USDT amount..." className={inputCls} min="1" step="0.01" />
-                    <QuickBtn amounts={QUICK_USDT} current={binanceAmount} set={setBinanceAmount} activeClass="bg-yellow-500 border-yellow-500 text-slate-900" />
+                    <QuickBtn amounts={QUICK_USDT} current={binanceAmount} set={setBinanceAmount} />
                   </div>
+
                   <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Binance Order ID</label>
+                    <label className="text-xs font-black text-slate-500 uppercase tracking-wider block mb-2">Binance Order ID</label>
                     <div className="relative">
-                      <input type="text" value={binanceOrderId} onChange={e => setBinanceOrderId(e.target.value)} placeholder="Paste Order ID..." className={inputCls + ' pr-20'} />
-                      <button type="button" onClick={handlePasteBinanceOrder} className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-black rounded-lg transition-all cursor-pointer">Paste</button>
+                      <input type="text" value={binanceOrderId} onChange={e => setBinanceOrderId(e.target.value)} placeholder="Paste Order ID from Binance App..." className={inputCls + ' pr-20'} />
+                      <button type="button" onClick={handlePasteBinanceOrder}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-black rounded-lg transition-all cursor-pointer">Paste</button>
                     </div>
                   </div>
+
                   <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Your Binance Pay ID</label>
-                    <input type="text" value={binancePayId} onChange={e => setBinancePayId(e.target.value)} placeholder="Your Binance Pay ID..." className={inputCls} />
+                    <label className="text-xs font-black text-slate-500 uppercase tracking-wider block mb-2">Your Binance Pay ID</label>
+                    <input type="text" value={binancePayId} onChange={e => setBinancePayId(e.target.value)} placeholder="Your own Binance Pay ID..." className={inputCls} />
                   </div>
+
                   <button type="submit" disabled={isBinanceVerifying}
-                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-slate-900 font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-yellow-500/25 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50">
-                    {isBinanceVerifying ? <><RefreshCw className="w-4 h-4 animate-spin" />Submitting...</> : <><span>🔶</span>Submit Binance Deposit</>}
+                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-yellow-500 to-amber-400 hover:from-yellow-600 hover:to-amber-500 text-slate-900 font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-yellow-500/20 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                    {isBinanceVerifying ? <><RefreshCw className="w-4 h-4 animate-spin" /><span>Submitting...</span></> : <><span>🔶</span><span>Submit Binance Deposit</span></>}
                   </button>
                 </form>
               )}
 
+              {/* ── BANK TRANSFER ── */}
               {activePanel === 'bank' && (
-                <form onSubmit={handleBankDepositSubmit} className="space-y-4">
-                  <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 space-y-2">
-                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Bank Account Details</div>
-                    {[['Bank', bankAccountDetails.bankName], ['Account Name', bankAccountDetails.accountName], ['Account No.', bankAccountDetails.accountNumber], ['Branch', bankAccountDetails.branch]].map(([label, value]) => (
-                      <div key={label} className="flex items-center justify-between py-1.5 border-b border-slate-700/30 last:border-0">
+                <form onSubmit={handleBankDepositSubmit} className="space-y-5">
+                  {/* Bank details card */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-0">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="w-5 h-5 rounded-full bg-[#cc040a] text-white text-[10px] font-black flex items-center justify-center shrink-0">1</span>
+                      <span className="text-xs font-black text-slate-700 uppercase tracking-wider">Deposit to this bank account</span>
+                    </div>
+                    {[['Bank', bankAccountDetails.bankName], ['Account Name', bankAccountDetails.accountName], ['Account No.', bankAccountDetails.accountNumber], ['Branch', bankAccountDetails.branch]].map(([label, value], i, arr) => (
+                      <div key={label} className={`flex items-center justify-between py-2.5 ${i < arr.length - 1 ? 'border-b border-slate-200' : ''}`}>
                         <div>
-                          <div className="text-[10px] text-slate-500">{label}</div>
-                          <div className="text-xs font-black text-white font-mono">{value}</div>
+                          <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">{label}</div>
+                          <div className="text-sm font-black text-slate-900 font-mono">{value}</div>
                         </div>
-                        <button type="button" onClick={() => handleCopy(value, label)} className="p-1.5 hover:bg-white/10 rounded-lg transition-all cursor-pointer">
-                          <Copy className="w-3.5 h-3.5 text-slate-500 hover:text-white" />
+                        <button type="button" onClick={() => handleCopy(value, label)}
+                          className="p-1.5 hover:bg-slate-200 rounded-lg transition-all cursor-pointer">
+                          <Copy className="w-3.5 h-3.5 text-slate-400 hover:text-slate-700" />
                         </button>
                       </div>
                     ))}
                   </div>
+
                   <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Amount Deposited (LKR)</label>
-                    <input type="number" value={bankAmount} onChange={e => setBankAmount(e.target.value)} placeholder="Exact amount..." className={inputCls} min="100" />
-                    <QuickBtn amounts={QUICK_LKR} current={bankAmount} set={setBankAmount} activeClass="bg-blue-600 border-blue-600 text-white" />
+                    <label className="text-xs font-black text-slate-500 uppercase tracking-wider block mb-2">Amount You Deposited (LKR)</label>
+                    <input type="number" value={bankAmount} onChange={e => setBankAmount(e.target.value)} placeholder="Exact deposited amount..." className={inputCls} min="100" />
+                    <QuickBtn amounts={QUICK_LKR} current={bankAmount} set={setBankAmount} />
                   </div>
+
                   <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Your Name / Reference</label>
+                    <label className="text-xs font-black text-slate-500 uppercase tracking-wider block mb-2">Your Name / Bank Reference</label>
                     <input type="text" value={bankRef} onChange={e => setBankRef(e.target.value)} placeholder="Name used at the bank..." className={inputCls} />
                   </div>
+
                   <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Upload Deposit Receipt</label>
-                    <label className="block border-2 border-dashed border-slate-600 hover:border-blue-500/50 rounded-2xl p-5 text-center cursor-pointer transition-all">
+                    <label className="text-xs font-black text-slate-500 uppercase tracking-wider block mb-2">Upload Deposit Receipt (Respit)</label>
+                    <label className="block border-2 border-dashed border-slate-300 hover:border-[#cc040a]/40 rounded-2xl p-6 text-center cursor-pointer transition-all bg-slate-50 hover:bg-red-50/30">
                       <input type="file" accept="image/*" onChange={handleBankFileChange} className="hidden" />
                       {bankSlipPreview ? (
                         <div className="space-y-2">
-                          <img src={bankSlipPreview} alt="Receipt" className="w-full max-h-40 object-contain rounded-xl" />
-                          <span className="text-[10px] text-slate-400 font-medium block truncate">{bankSlipFileName}</span>
+                          <img src={bankSlipPreview} alt="Receipt" className="w-full max-h-48 object-contain rounded-xl border border-slate-200" />
+                          <span className="text-xs text-slate-500 font-medium block truncate">{bankSlipFileName}</span>
+                          <span className="text-[11px] text-emerald-600 font-bold">✓ Receipt uploaded</span>
                         </div>
                       ) : (
-                        <div className="space-y-1.5">
-                          <Upload className="w-8 h-8 text-slate-500 mx-auto" />
-                          <div className="text-xs font-bold text-slate-400">Tap to upload receipt</div>
-                          <div className="text-[10px] text-slate-600">JPG, PNG up to 5MB</div>
+                        <div className="space-y-2">
+                          <div className="w-12 h-12 bg-slate-200 rounded-xl flex items-center justify-center mx-auto">
+                            <Upload className="w-6 h-6 text-slate-400" />
+                          </div>
+                          <div className="text-sm font-bold text-slate-500">Tap to upload deposit slip</div>
+                          <div className="text-xs text-slate-400">JPG, PNG · Max 5MB</div>
                         </div>
                       )}
                     </label>
                   </div>
+
                   <button type="submit"
-                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-600/25 transition-all active:scale-[0.98] cursor-pointer">
-                    <Building2 className="w-4 h-4" />Submit Bank Receipt
+                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 transition-all active:scale-[0.98] cursor-pointer">
+                    <Building2 className="w-4 h-4" />
+                    <span>Submit Bank Receipt</span>
                   </button>
                 </form>
               )}
@@ -464,33 +552,46 @@ export const WalletPage = () => {
           </div>
         )}
 
-        {/* HISTORY */}
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <Clock className="w-4 h-4 text-slate-600" />
-            <h2 className="text-sm font-black text-white">Recent Deposits</h2>
-            {userPayments.length > 0 && <span className="ml-auto text-[10px] text-slate-600 font-mono">{userPayments.length} records</span>}
+        {/* ── TRANSACTION HISTORY ── */}
+        <div className="bg-white rounded-3xl border border-slate-200/80 p-5 sm:p-6 shadow-sm space-y-4">
+          <div className="flex items-center gap-2">
+            <Clock className="w-5 h-5 text-[#cc040a]" />
+            <h3 className="text-base font-black text-slate-900 font-heading">Recent Deposit History</h3>
+            {userPayments.length > 0 && (
+              <span className="ml-auto text-[11px] text-slate-400 font-mono">{userPayments.length} record{userPayments.length !== 1 ? 's' : ''}</span>
+            )}
           </div>
+
           {userPayments.length === 0 ? (
-            <div className="bg-slate-800/20 border border-slate-700/30 rounded-2xl py-10 text-center">
-              <div className="text-2xl mb-2">📭</div>
-              <div className="text-xs text-slate-500 font-semibold">No deposit history yet</div>
+            <div className="text-center py-10 bg-slate-50 rounded-2xl border border-slate-100">
+              <div className="text-3xl mb-2">📭</div>
+              <div className="text-sm font-bold text-slate-400">No deposit history yet</div>
+              <div className="text-xs text-slate-300 font-medium mt-1">Your recharge transactions will appear here</div>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {userPayments.slice(0, 10).map(pay => (
-                <div key={pay.id} className="bg-slate-800/35 border border-slate-700/35 rounded-2xl px-4 py-3 flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-sm ${pay.status === 'VERIFIED' ? 'bg-emerald-500/15' : 'bg-amber-500/15'}`}>
-                    {pay.status === 'VERIFIED' ? '✅' : '⏳'}
+                <div key={pay.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-base ${pay.status === 'VERIFIED' ? 'bg-emerald-100' : 'bg-amber-100'}`}>
+                      {pay.status === 'VERIFIED' ? '✅' : '⏳'}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-black text-slate-900 font-mono">{pay.id}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide ${pay.status === 'VERIFIED' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                          {pay.status}
+                        </span>
+                      </div>
+                      <div className="text-sm font-bold text-slate-700 mt-0.5 truncate">{pay.method}</div>
+                      <div className="text-[11px] text-slate-400 font-mono truncate">Ref: {pay.referenceNumber}</div>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-black text-white truncate">{pay.method}</div>
-                    <div className="text-[10px] text-slate-500 font-mono truncate">Ref: {pay.referenceNumber}</div>
-                    <div className="text-[10px] text-slate-600 font-mono">{pay.createdAt}</div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <div className={`text-sm font-black ${pay.status === 'VERIFIED' ? 'text-emerald-400' : 'text-amber-400'}`}>+{pay.amount} {pay.currency}</div>
-                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase ${pay.status === 'VERIFIED' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>{pay.status}</span>
+                  <div className="text-right shrink-0 pl-12 sm:pl-0">
+                    <div className={`text-base font-black font-heading ${pay.status === 'VERIFIED' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                      +{pay.amount} {pay.currency}
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-mono">{pay.createdAt}</div>
                   </div>
                 </div>
               ))}
