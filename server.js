@@ -725,7 +725,7 @@ app.post('/api/genie/create-transaction', rateLimiter(15, 60000), async (req, re
     }
 
     const payload = {
-      amount: numAmount,
+      amount: Math.round(numAmount * 100),
       currency: 'LKR',
       redirectUrl: returnUrl,
       webhook: 'https://madstopup.com/api/genie/webhook',
@@ -740,7 +740,7 @@ app.post('/api/genie/create-transaction', rateLimiter(15, 60000), async (req, re
       }
     };
 
-    console.log(`[Geniebiz IPG Create Attempt] Amount: Rs. ${numAmount}, User: ${cleanEmail}, Ref: ${localId}, KeyLen: ${appKey.length}, Target: ${baseUrl}/public/v2/transactions`);
+    console.log(`[Geniebiz IPG Create Attempt] Amount: Rs. ${numAmount} (${payload.amount} cents), User: ${cleanEmail}, Ref: ${localId}, KeyLen: ${appKey.length}, Target: ${baseUrl}/public/v2/transactions`);
 
     let apiRes = await fetch(`${baseUrl}/public/v2/transactions`, {
       method: 'POST',
@@ -809,13 +809,15 @@ app.post('/api/genie/verify-status', rateLimiter(30, 60000), async (req, res) =>
     if (apiRes.ok && resJson) {
       const state = String(resJson.state || '').toUpperCase();
       const isPaid = state === 'SUCCESS' || state === 'COMPLETED' || state === 'CONFIRMED' || state === 'CAPTURED';
+      const rawAmt = parseFloat(resJson.amount || resJson.payAmount || 0);
+      const amtLkr = rawAmt > 1000 ? rawAmt / 100 : rawAmt;
 
       return res.json({
         success: true,
         isPaid,
         state,
         transactionId: resJson.id,
-        amount: resJson.amount || resJson.payAmount,
+        amount: amtLkr,
         currency: resJson.currency || 'LKR',
         localId: resJson.localId,
         details: resJson

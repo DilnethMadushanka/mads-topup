@@ -78,7 +78,7 @@ export default async function handler(req, res) {
       }
 
       const payload = {
-        amount: numAmount,
+        amount: Math.round(numAmount * 100),
         currency: 'LKR',
         redirectUrl: returnUrl,
         webhook: 'https://madstopup.com/api/genie/webhook',

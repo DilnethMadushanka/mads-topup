@@ -57,7 +57,8 @@ export const WalletPage = () => {
       .then(res => res.json())
       .then(data => {
         if (data.success && data.isPaid) {
-          const amt = parseFloat(data.amount || 0);
+          let amt = parseFloat(data.amount || 0);
+          if (amt > 1000) amt = amt / 100;
           if (amt > 0) {
             creditUserWallet(amt, 0);
             addManualPayment({
@@ -65,7 +66,7 @@ export const WalletPage = () => {
               userId: userProfile?.uid || '',
               userEmail: userProfile?.email || 'guest@madstopup.com',
               userName: userProfile?.name || 'Gamer',
-              method: 'Dialog Genie IPG (Online)',
+              method: 'Online Card / eZ Cash',
               referenceNumber: `Txn: ${txnId}`,
               amount: amt,
               currency: 'LKR',
@@ -73,7 +74,7 @@ export const WalletPage = () => {
               status: 'VERIFIED',
               createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
             });
-            showToast(`⚡ DIALOG GENIE PAYMENT VERIFIED! +LKR ${amt.toLocaleString()} credited to your wallet!`);
+            showToast(`⚡ ONLINE CARD PAYMENT VERIFIED! +LKR ${amt.toLocaleString()} credited to your wallet!`);
           }
         } else {
           showToast(`Dialog Genie IPG transaction state: ${data.state || 'Pending/Unconfirmed'}`);
@@ -541,7 +542,7 @@ export const WalletPage = () => {
             }`}
           >
             <span>💳</span>
-            <span>Dialog Genie (IPG)</span>
+            <span>Online Card & eZ Cash</span>
           </button>
 
           <button
@@ -659,7 +660,7 @@ export const WalletPage = () => {
                 ) : (
                   <>
                     <Zap className="w-4 h-4 text-amber-300" />
-                    <span>PAY VIA DIALOG GENIE IPG NOW</span>
+                    <span>PAY WITH CARD / EZ CASH NOW</span>
                   </>
                 )}
               </button>
