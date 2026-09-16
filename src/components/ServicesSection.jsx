@@ -11,7 +11,7 @@ export const ServicesSection = () => {
       title: 'Game TopUp',
       description: 'Instant in-game currency delivered to your account at unbeatable prices',
       buttonText: 'SHOP NOW',
-      image: '/uploads/index_page/game_topup.webp',
+      image: '/uploads/index_page/game_topup.png',
       action: openCatalog
     },
     {
@@ -19,7 +19,7 @@ export const ServicesSection = () => {
       title: 'Cards',
       description: 'Garena Shells, Bot Recharge Codes & premium gift cards for gamers',
       buttonText: 'SHOP NOW',
-      image: '/uploads/index_page/gift_cards.webp',
+      image: '/uploads/index_page/gift_cards.png',
       action: openCatalog
     },
     {
@@ -27,7 +27,7 @@ export const ServicesSection = () => {
       title: 'Other Services',
       description: 'Explore our growing catalog of free & premium digital services',
       buttonText: 'VIEW MORE',
-      image: '/uploads/index_page/other_service.webp',
+      image: '/uploads/index_page/other_service.png',
       action: openCatalog
     }
   ];
@@ -60,13 +60,13 @@ export const ServicesSection = () => {
               {/* Top Border Indicator Bar (Matching Screenshot Hover Effect) */}
               <div className="absolute top-0 left-0 right-0 h-1 bg-[#cc040a] rounded-t-3xl opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
 
-              {/* 3D App Icon Container with Circular Halo Ring (Matching Reference Image) */}
-              <div className="relative w-28 h-28 sm:w-32 sm:h-32 my-4 rounded-full p-2.5 border border-sky-200/80 bg-gradient-to-b from-sky-50/70 via-white to-blue-50/40 flex items-center justify-center shadow-xs group-hover:border-blue-400 group-hover:shadow-md transition-all duration-300">
-                <div className="w-full h-full rounded-2xl bg-white p-2 flex items-center justify-center overflow-hidden border border-slate-200/80 shadow-xs">
+              {/* 3D App Icon Container */}
+              <div className="relative w-28 h-28 sm:w-32 sm:h-32 my-4 flex items-center justify-center">
+                <div className="w-full h-full rounded-[24px] bg-gradient-to-b from-white via-slate-50 to-red-50/30 p-1 flex items-center justify-center overflow-hidden border border-slate-200/90 shadow-lg group-hover:shadow-red-500/20 group-hover:border-red-500/40 transition-all duration-300">
                   <img 
                     src={service.image} 
                     alt={service.title} 
-                    className="w-full h-full object-contain filter drop-shadow-md group-hover:scale-105 transition-transform duration-300" 
+                    className="w-full h-full object-cover rounded-[20px] filter drop-shadow-md group-hover:scale-105 transition-transform duration-300" 
                   />
                 </div>
               </div>
