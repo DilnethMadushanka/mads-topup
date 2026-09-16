@@ -175,18 +175,24 @@ export const Navbar = () => {
           <div className="hidden lg:flex items-center gap-2.5 xl:gap-3 shrink-0">
             {isUserLoggedIn ? (
               <div className="flex items-center gap-2">
-                {/* LKR Wallet */}
+                {/* LKR Wallet chip — always visible */}
                 <button onClick={() => handleWalletClick('ezcash')}
-                  className="group flex items-center gap-1.5 bg-[#cc040a] hover:bg-[#b00308] text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm shadow-red-600/25 cursor-pointer transition-all">
+                  className="group flex items-center gap-1.5 bg-[#cc040a] hover:bg-[#b00308] text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm shadow-red-600/25 cursor-pointer transition-all relative">
                   <Wallet className="w-3.5 h-3.5 fill-white/80 shrink-0" />
-                  <span className="tracking-wide whitespace-nowrap">{(userProfile.walletBalance || 0).toFixed(2)} LKR</span>
+                  <div className="text-left leading-none">
+                    <div className="text-[8px] text-red-200 font-bold uppercase tracking-widest leading-none">LKR</div>
+                    <div className="text-sm font-black">{(userProfile.walletBalance || 0).toFixed(2)}</div>
+                  </div>
                 </button>
 
-                {/* USDT Wallet */}
+                {/* USDT Wallet chip — always visible */}
                 <button onClick={() => handleWalletClick('binance')}
                   className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm shadow-emerald-600/20 cursor-pointer transition-all">
                   <div className="w-3.5 h-3.5 rounded-full bg-white text-emerald-600 font-black text-[9px] flex items-center justify-center italic shrink-0 leading-none">B</div>
-                  <span className="tracking-wide whitespace-nowrap">{(userProfile.walletUsdt || 0).toFixed(2)} USDT</span>
+                  <div className="text-left leading-none">
+                    <div className="text-[8px] text-emerald-200 font-bold uppercase tracking-widest leading-none">USDT</div>
+                    <div className="text-sm font-black">{(userProfile.walletUsdt || 0).toFixed(2)}</div>
+                  </div>
                 </button>
 
                 {/* Profile Pill */}
@@ -218,22 +224,35 @@ export const Navbar = () => {
             )}
           </div>
 
-          {/* ── MOBILE RIGHT (avatar + hamburger) ── */}
-          <div className="lg:hidden flex items-center gap-2">
+          {/* ── MOBILE RIGHT (balance chips + hamburger) ── */}
+          <div className="lg:hidden flex items-center gap-1.5">
+
+            {/* Live balance chips — visible without opening anything */}
             {isUserLoggedIn && (
-              <button onClick={openUserProfilePage}
-                className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 px-2 py-1 rounded-full cursor-pointer transition-all">
-                <div className="w-6 h-6 rounded-full bg-[#cc040a] text-white font-black text-[10px] flex items-center justify-center overflow-hidden shrink-0">
-                  {userProfile.avatar
-                    ? <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
-                    : getInitials(userProfile.name, userProfile.email)}
-                </div>
-                <span className="text-slate-800 font-extrabold text-[11px] max-w-[70px] truncate">
-                  {getCleanName(userProfile.name, userProfile.email)}
-                </span>
-              </button>
+              <div className="flex items-center gap-1.5">
+                {/* LKR chip */}
+                <button onClick={() => handleWalletClick('ezcash')}
+                  className="flex items-center gap-1 bg-[#cc040a] hover:bg-[#b00308] text-white font-black px-2.5 py-1.5 rounded-full cursor-pointer transition-all shadow-sm shadow-red-600/25 active:scale-95">
+                  <Wallet className="w-3 h-3 fill-white/80 shrink-0" />
+                  <div className="text-left leading-none">
+                    <div className="text-[7px] text-red-200 font-bold uppercase tracking-wider leading-none">LKR</div>
+                    <div className="text-[11px] font-black leading-tight">{(userProfile.walletBalance || 0).toFixed(0)}</div>
+                  </div>
+                </button>
+
+                {/* USDT chip */}
+                <button onClick={() => handleWalletClick('binance')}
+                  className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black px-2.5 py-1.5 rounded-full cursor-pointer transition-all shadow-sm shadow-emerald-600/20 active:scale-95">
+                  <div className="w-3 h-3 rounded-full bg-white text-emerald-600 font-black text-[8px] flex items-center justify-center italic shrink-0 leading-none">B</div>
+                  <div className="text-left leading-none">
+                    <div className="text-[7px] text-emerald-200 font-bold uppercase tracking-wider leading-none">USDT</div>
+                    <div className="text-[11px] font-black leading-tight">{(userProfile.walletUsdt || 0).toFixed(2)}</div>
+                  </div>
+                </button>
+              </div>
             )}
 
+            {/* Hamburger */}
             <button
               onClick={() => setIsMobileMenuOpen(true)}
               aria-label="Open Menu"
