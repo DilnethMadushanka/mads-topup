@@ -387,18 +387,22 @@ async function deductUserWallet(uid, priceLkr) {
   if (!uid || priceLkr <= 0) return { success: false, reason: 'Invalid amount' };
   try {
     const current = await getUserWalletData(uid);
+    // LKR and USDT wallets are INDEPENDENT — never recalculate one from the other
     let newLkr = current.walletBalance;
     let newUsdt = current.walletUsdt;
+    let usedCurrency = null;
 
     if (newLkr >= priceLkr) {
-      newLkr = newLkr - priceLkr;
-      newUsdt = newLkr / 305;
+      // Pay with LKR — only touch walletBalance, leave walletUsdt unchanged
+      newLkr = parseFloat((newLkr - priceLkr).toFixed(2));
+      usedCurrency = 'LKR';
     } else if ((newUsdt * 305) >= priceLkr) {
+      // Pay with USDT — only touch walletUsdt, leave walletBalance unchanged
       const reqUsdt = priceLkr / 305;
-      newUsdt = Math.max(0, newUsdt - reqUsdt);
-      newLkr = newUsdt * 305;
+      newUsdt = parseFloat(Math.max(0, newUsdt - reqUsdt).toFixed(6));
+      usedCurrency = 'USDT';
     } else {
-      return { success: false, reason: `Insufficient wallet balance. Required: Rs. ${priceLkr.toFixed(2)}, Available: Rs. ${newLkr.toFixed(2)}` };
+      return { success: false, reason: `Insufficient wallet balance. Required: Rs. ${priceLkr.toFixed(2)}, Available: Rs. ${newLkr.toFixed(2)} LKR / $${newUsdt.toFixed(2)} USDT` };
     }
 
     const patchRes = await fetch(`${FIREBASE_RTDB_URL}/users/${uid}.json`, {
@@ -412,7 +416,7 @@ async function deductUserWallet(uid, priceLkr) {
     });
 
     if (patchRes.ok) {
-      return { success: true, newBalanceLkr: newLkr, newBalanceUsdt: newUsdt };
+      return { success: true, newBalanceLkr: newLkr, newBalanceUsdt: newUsdt, usedCurrency };
     }
   } catch (e) {
     console.error('[Backend RTDB Deduct Error]:', e.message);
@@ -420,23 +424,38 @@ async function deductUserWallet(uid, priceLkr) {
   return { success: false, reason: 'Database update failed' };
 }
 
-async function refundUserWallet(uid, priceLkr) {
+async function refundUserWallet(uid, priceLkr, usedCurrency = 'LKR') {
   if (!uid || priceLkr <= 0) return;
   try {
     const current = await getUserWalletData(uid);
-    const newLkr = current.walletBalance + priceLkr;
-    const newUsdt = newLkr / 305;
+    let patchBody;
+
+    if (usedCurrency === 'USDT') {
+      // Refund back to USDT wallet — user originally paid from USDT
+      const reqUsdt = priceLkr / 305;
+      const newUsdt = parseFloat((current.walletUsdt + reqUsdt).toFixed(6));
+      patchBody = {
+        walletBalance: current.walletBalance, // LKR untouched
+        walletUsdt: newUsdt,
+        updatedAt: new Date().toISOString()
+      };
+      console.log(`[Backend Refund Success] Refunded $${reqUsdt.toFixed(6)} USDT to user ${uid}. New USDT: ${newUsdt}`);
+    } else {
+      // Refund back to LKR wallet (default)
+      const newLkr = parseFloat((current.walletBalance + priceLkr).toFixed(2));
+      patchBody = {
+        walletBalance: newLkr,
+        walletUsdt: current.walletUsdt, // USDT untouched
+        updatedAt: new Date().toISOString()
+      };
+      console.log(`[Backend Refund Success] Refunded Rs. ${priceLkr} to user ${uid}. New LKR: ${newLkr}`);
+    }
 
     await fetch(`${FIREBASE_RTDB_URL}/users/${uid}.json`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        walletBalance: newLkr,
-        walletUsdt: newUsdt,
-        updatedAt: new Date().toISOString()
-      })
+      body: JSON.stringify(patchBody)
     });
-    console.log(`[Backend Refund Success] Refunded Rs. ${priceLkr} to user ${uid}`);
   } catch (e) {
     console.error('[Backend Refund Error]:', e.message);
   }
@@ -526,10 +545,10 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
 
     const isSuccess = apiRes.ok && jsonResult && (jsonResult.status === 'processing' || jsonResult.status === 'true' || jsonResult.status === true || jsonResult.status === 1 || jsonResult.order_id);
 
-    // 4. REFUND USER IF MOOGOLD ORDER FAILED
+    // 4. REFUND USER IF MOOGOLD ORDER FAILED — refund to the same wallet they paid from
     if (isOrderCreation && !isSuccess) {
-      console.warn(`[MOOGOLD ORDER FAILED] Reverting & Refund Rs. ${numPriceLkr} to UID ${authenticatedUser.uid}`);
-      await refundUserWallet(authenticatedUser.uid, numPriceLkr);
+      console.warn(`[MOOGOLD ORDER FAILED] Reverting & Refund Rs. ${numPriceLkr} to UID ${authenticatedUser.uid} via ${deductResult.usedCurrency || 'LKR'}`);
+      await refundUserWallet(authenticatedUser.uid, numPriceLkr, deductResult.usedCurrency || 'LKR');
     }
 
     res.status(apiRes.status);

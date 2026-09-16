@@ -8,7 +8,7 @@ export const ToastNotification = () => {
   if (!toast) return null;
 
   return (
-    <div className="fixed top-20 right-4 z-50 animate-in slide-in-from-top-4 fade-in duration-300">
+    <div className="fixed top-20 right-4 z-[99999] animate-in slide-in-from-top-4 fade-in duration-300">
       <div className={`px-4 py-3 rounded-2xl shadow-xl border backdrop-blur-md flex items-center gap-3 text-xs font-extrabold ${
         toast.type === 'error'
           ? 'bg-rose-900/90 text-white border-rose-700 shadow-rose-950/40'

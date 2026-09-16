@@ -376,6 +376,7 @@ export const AppProvider = ({ children }) => {
   }, []);
 
   // Sync Firebase Auth & Firestore live profile/wallet data
+  const lastSyncedUidRef = React.useRef(null); // { uid, ts } — deduplicates double-sync after Google auth
   useEffect(() => {
     if (!auth) return;
 
@@ -404,17 +405,26 @@ export const AppProvider = ({ children }) => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         setIsLoggedIn(true);
-        const profile = await syncUserProfileToFirestore({
-          uid: firebaseUser.uid,
-          name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Verified Gamer',
-          email: firebaseUser.email || '',
-          photoURL: firebaseUser.photoURL || ''
-        });
-        if (profile) {
-          setUserProfileState(profile);
+
+        // Deduplicate: if handleGoogleAuth already synced this user within the last 8s,
+        // skip the heavy DB sync to avoid a redundant 2-6 second round-trip.
+        const lastSync = lastSyncedUidRef.current;
+        const alreadySynced = lastSync && lastSync.uid === firebaseUser.uid && (Date.now() - lastSync.ts < 8000);
+
+        if (!alreadySynced) {
+          const profile = await syncUserProfileToFirestore({
+            uid: firebaseUser.uid,
+            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Verified Gamer',
+            email: firebaseUser.email || '',
+            photoURL: firebaseUser.photoURL || ''
+          });
+          if (profile) {
+            setUserProfileState(profile);
+          }
+          lastSyncedUidRef.current = { uid: firebaseUser.uid, ts: Date.now() };
         }
 
-        // Subscribe to live Firestore updates
+        // Always subscribe to live Firestore updates
         const unsubFirestore = subscribeUserProfile(firebaseUser.uid, (liveData) => {
           if (liveData) {
             const cleanData = { ...liveData };
@@ -710,12 +720,18 @@ export const AppProvider = ({ children }) => {
     setUserProfile(prev => {
       const exists = prev.savedIds.some(s => s.gameId === gameId && s.playerId === playerId);
       if (exists) return prev;
+      const newEntry = { id: Date.now(), gameId, gameName, playerId, nickName: nickName || 'My ID' };
+      const updated = [
+        ...prev.savedIds,
+        newEntry
+      ];
+      // Persist savedIds to database so they survive across devices and sessions
+      if (prev.uid) {
+        updateUserProfileInFirestore(prev.uid, { savedIds: updated });
+      }
       return {
         ...prev,
-        savedIds: [
-          ...prev.savedIds,
-          { id: Date.now(), gameId, gameName, playerId, nickName: nickName || 'My ID' }
-        ]
+        savedIds: updated
       };
     });
     showToast('Game ID saved to profile for fast top-up!');
@@ -790,7 +806,12 @@ export const AppProvider = ({ children }) => {
         walletBalance: updatedLkr,
         walletUsdt: updatedUsdt
       };
-      if (prev.uid) {
+      // Only persist to DB for POSITIVE credits (deposits, voucher redemptions, etc.)
+      // Negative calls (deductions) must NOT write to DB — the backend server already
+      // deducted atomically in Firebase RTDB, and the real-time listener will sync the
+      // accurate server balance. Writing a locally-computed negative value would overwrite
+      // the server's authoritative balance with a potentially stale or double-deducted value.
+      if (prev.uid && (amountLkr > 0 || amountUsdt > 0)) {
         updateUserProfileInFirestore(prev.uid, { walletBalance: updatedLkr, walletUsdt: updatedUsdt });
       }
       return nextProfile;
@@ -935,11 +956,15 @@ export const AppProvider = ({ children }) => {
   const verifyUserAccount = async (uid) => {
     setUsersList(prev => prev.map(u => u.uid === uid ? { ...u, isVerified: true } : u));
     try {
-      const { db } = await import('../services/firebaseAuth');
+      const { db, rtdb } = await import('../services/firebaseAuth');
       const { doc, setDoc } = await import('firebase/firestore');
+      // Correct collection: 'users' (not 'resellerApplications')
       await setDoc(doc(db, 'users', uid), { isVerified: true }, { merge: true });
-      await setDoc(doc(db, 'resellerApplications', uid), { isVerified: true }, { merge: true });
-    } catch (e) {}
+      if (rtdb) {
+        const rtdbMod = await import('firebase/database');
+        await rtdbMod.update(rtdbMod.ref(rtdb, `users/${uid}`), { isVerified: true });
+      }
+    } catch (e) { console.warn('verifyUserAccount DB note:', e); }
     showToast('User account verified & badge granted!');
   };
 
@@ -953,11 +978,15 @@ export const AppProvider = ({ children }) => {
       return u;
     }));
     try {
-      const { db } = await import('../services/firebaseAuth');
+      const { db, rtdb } = await import('../services/firebaseAuth');
       const { doc, setDoc } = await import('firebase/firestore');
+      // Correct collection: 'users' (not 'resellerApplications')
       await setDoc(doc(db, 'users', uid), { status: newStatus }, { merge: true });
-      await setDoc(doc(db, 'resellerApplications', uid), { status: newStatus }, { merge: true });
-    } catch (e) {}
+      if (rtdb) {
+        const rtdbMod = await import('firebase/database');
+        await rtdbMod.update(rtdbMod.ref(rtdb, `users/${uid}`), { status: newStatus });
+      }
+    } catch (e) { console.warn('toggleBlockUser DB note:', e); }
     showToast(`User account status updated to ${newStatus}.`);
   };
 
@@ -1060,14 +1089,10 @@ export const AppProvider = ({ children }) => {
     const totalLkr = pay.currency === 'USDT' ? 0 : (amt + bonusLkr);
     const totalUsdt = pay.currency === 'USDT' ? amt : 0;
 
-    // Credit in Database (RTDB & Firestore) by UID, Email, or Reseller Code
-    const targetIdentifier = pay.userId || pay.userEmail || pay.resellerCode;
-    if (targetIdentifier) {
-      await creditUserWalletInDatabase(targetIdentifier, totalLkr, totalUsdt);
-    }
-
-    // Update local state / active userProfile
-    updateUserBalance(pay.userId || pay.userEmail || pay.resellerCode, totalLkr, totalUsdt);
+    // 1. Write balance to DB once via updateUserBalance (which internally calls creditUserWalletInDatabase)
+    // NOTE: Do NOT call creditUserWalletInDatabase here separately — updateUserBalance already does that,
+    // calling it again would DOUBLE the credit in the database.
+    await updateUserBalance(pay.userId || pay.userEmail || pay.resellerCode, totalLkr, totalUsdt);
 
     if (pay.currency === 'USDT') {
       showToast(`Payment ${paymentId} approved! Credited $${pay.amount} USDT to ${pay.userName}`);

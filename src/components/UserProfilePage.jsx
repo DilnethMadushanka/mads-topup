@@ -84,10 +84,16 @@ export const UserProfilePage = () => {
   };
 
   const handleDeleteSavedId = (id) => {
-    setUserProfile(prev => ({
-      ...prev,
-      savedIds: (prev.savedIds || []).filter(s => s.id !== id)
-    }));
+    setUserProfile(prev => {
+      const updated = (prev.savedIds || []).filter(s => s.id !== id);
+      // Persist removal to database so it syncs across devices
+      if (prev.uid) {
+        import('../services/firestoreService').then(({ updateUserProfileInFirestore }) => {
+          updateUserProfileInFirestore(prev.uid, { savedIds: updated }).catch(() => {});
+        });
+      }
+      return { ...prev, savedIds: updated };
+    });
     showToast('Saved Player ID deleted.');
   };
 

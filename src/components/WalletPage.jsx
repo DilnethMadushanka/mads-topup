@@ -100,7 +100,8 @@ export const WalletPage = () => {
     try {
       const userEmail = userProfile?.email || auth?.currentUser?.email || 'customer@madstopup.com';
       const userName = userProfile?.name || auth?.currentUser?.displayName || 'Gamer';
-      const returnUrl = `${window.location.origin}/wallet?genie=success&txnId=`;
+      // Return URL — do NOT include txnId= here; it gets appended from resData.transactionId below
+      const returnUrl = `${window.location.origin}/wallet?genie=success`;
 
       const response = await fetch('/api/genie/create-transaction', {
         method: 'POST',
@@ -118,8 +119,10 @@ export const WalletPage = () => {
 
       if (resData.success && resData.redirectUrl) {
         showToast('⚡ Redirecting to Dialog Genie Business IPG gateway...');
-        const redirectTarget = resData.redirectUrl.includes('?') 
-          ? `${resData.redirectUrl}&txnId=${resData.transactionId}` 
+        // Append txnId once and only once to the server's redirectUrl
+        const sep = resData.redirectUrl.includes('?') ? '&' : '?';
+        const redirectTarget = resData.transactionId
+          ? `${resData.redirectUrl}${sep}txnId=${resData.transactionId}`
           : resData.redirectUrl;
         window.location.href = redirectTarget;
       } else {

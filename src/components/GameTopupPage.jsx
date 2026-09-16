@@ -291,8 +291,12 @@ export const GameTopupPage = () => {
         return;
       }
 
-      // Deduct local wallet state upon successful order dispatch
-      creditUserWallet(-deductedLkr, -deductedUsdt);
+      // NOTE: Do NOT call creditUserWallet(-amount) here.
+      // The server's /api/moogold endpoint atomically deducts the wallet balance
+      // in Firebase RTDB before responding. The real-time listener in AppContext
+      // (subscribeAllUsersFromFirestore) will automatically sync the accurate
+      // server-deducted balance to the UI. A local negative credit here would
+      // cause a double-deduction by overwriting the server's correct value.
     }
 
     setIsSubmitting(false);
@@ -934,7 +938,7 @@ export const GameTopupPage = () => {
 
           {/* STICKY MOBILE CART SUMMARY BAR */}
           {totalItemsCount > 0 && (
-            <div className="sm:hidden fixed bottom-14 left-0 right-0 z-30 bg-slate-900/95 text-white backdrop-blur-md px-4 py-3 border-t border-slate-800 shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom">
+            <div className="sm:hidden fixed bottom-0 left-0 right-0 z-30 bg-slate-900/95 text-white backdrop-blur-md px-4 py-3 border-t border-slate-800 shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom">
               <div>
                 <span className="text-[10px] text-slate-400 font-bold uppercase block">Total ({totalItemsCount} item)</span>
                 <span className="text-lg font-black text-red-500 font-heading">{formatPrice(totalLkr)}</span>

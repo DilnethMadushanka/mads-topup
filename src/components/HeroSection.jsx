@@ -65,13 +65,11 @@ export const HeroSection = () => {
           <span className="font-mono text-slate-100">SRI LANKA'S #1 GAME TOP-UP PLATFORM</span>
         </div>
 
-        {/* Hero Title: White MADS + Red TOPUP */}
+        {/* Hero Title: White MADS + Red TOPUP — single h1 for SEO */}
         <div className="space-y-0">
-          <h1 className="text-7xl sm:text-8xl lg:text-9xl font-black font-heading tracking-tighter text-white uppercase leading-none drop-shadow-lg animate-pop-in delay-300">
-            MADS
-          </h1>
-          <h1 className="text-7xl sm:text-8xl lg:text-9xl font-black font-heading tracking-tighter text-[#cc040a] uppercase leading-none drop-shadow-[0_10px_35px_rgba(204,4,10,0.6)] animate-pop-in delay-400">
-            TOPUP
+          <h1 className="font-black font-heading tracking-tighter uppercase leading-none">
+            <span className="block text-7xl sm:text-8xl lg:text-9xl text-white drop-shadow-lg animate-pop-in delay-300">MADS</span>
+            <span className="block text-7xl sm:text-8xl lg:text-9xl text-[#cc040a] drop-shadow-[0_10px_35px_rgba(204,4,10,0.6)] animate-pop-in delay-400">TOPUP</span>
           </h1>
         </div>
 

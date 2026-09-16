@@ -109,7 +109,8 @@ const MainContent = () => {
         )}
       </div>
 
-      {/* Footer Matching Clean Minimalist Screenshot */}
+      {/* Footer: Only visible on the main home page, not on sub-pages */}
+      {!selectedGame && !isUserProfileOpen && !isWalletModalOpen && !isResellerDashboardOpen && !isResellerLoginPageOpen && !isResellerPageOpen && !isReferralPageOpen && !isContactPageOpen && !isReviewsPageOpen && !isGameCatalogOpen && (
       <footer className="bg-gray-950 text-[#ffffff] border-t border-gray-800 pt-16 pb-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 pb-12 border-b border-gray-800">
@@ -168,6 +169,7 @@ const MainContent = () => {
           </div>
         </div>
       </footer>
+      )}
 
       {/* Modals & Popups */}
       <PopupAdModal />

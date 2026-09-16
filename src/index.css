@@ -232,6 +232,48 @@
   border: 1px solid rgba(226, 232, 240, 0.8);
 }
 
+/* ============================================================
+   MADS ADMIN v4 — Scoped Theme Tokens (Dark / Light)
+   Only applies inside .mads-admin — does not affect storefront.
+   ============================================================ */
+.mads-admin {
+  --adm-bg: #090c13;
+  --adm-bg-soft: #0b0f17;
+  --adm-surface: #10151f;
+  --adm-surface-2: #0c1019;
+  --adm-surface-hover: #161d2b;
+  --adm-border: rgba(148, 163, 184, 0.14);
+  --adm-border-strong: rgba(148, 163, 184, 0.28);
+  --adm-text: #f8fafc;
+  --adm-text-muted: #8b96ab;
+  --adm-text-faint: #5b6578;
+  --adm-input-bg: #0a0e16;
+  --adm-shadow: 0 1px 2px rgba(0,0,0,0.4), 0 12px 32px -12px rgba(0,0,0,0.55);
+  --adm-scrollbar: #1c2333;
+  color-scheme: dark;
+}
+
+.mads-admin.theme-light {
+  --adm-bg: #eef1f8;
+  --adm-bg-soft: #f4f6fb;
+  --adm-surface: #ffffff;
+  --adm-surface-2: #f1f4fa;
+  --adm-surface-hover: #eef1f8;
+  --adm-border: rgba(15, 23, 42, 0.08);
+  --adm-border-strong: rgba(15, 23, 42, 0.16);
+  --adm-text: #0f172a;
+  --adm-text-muted: #5b6576;
+  --adm-text-faint: #94a1b8;
+  --adm-input-bg: #ffffff;
+  --adm-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 12px 28px -14px rgba(15,23,42,0.18);
+  --adm-scrollbar: #d7dde8;
+  color-scheme: light;
+}
+
+.mads-admin ::-webkit-scrollbar-track { background: transparent; }
+.mads-admin ::-webkit-scrollbar-thumb { background: var(--adm-scrollbar); border-radius: 99px; }
+
+.mads-admin * { scrollbar-color: var(--adm-scrollbar) transparent; }
 
 
 

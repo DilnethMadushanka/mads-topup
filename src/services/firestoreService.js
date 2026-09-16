@@ -410,27 +410,39 @@ export const getResellerProfileByKey = (keyOrCode) => {
 
 export const deductResellerWalletBalance = async (uid, amountLkr) => {
   if (!uid || !amountLkr) return false;
-  // Update in-memory registry
-  for (const [key, profile] of activeResellerRegistry.entries()) {
-    if (profile.uid === uid) {
-      profile.walletBalance = Math.max(0, (profile.walletBalance || 0) - amountLkr);
-    }
-  }
 
-  // Update in Realtime Database & Firestore
+  // Update in Realtime Database (source of truth)
   if (rtdb) {
     try {
       const userRef = dbRef(rtdb, `users/${uid}`);
       const snap = await rtdbGet(userRef);
       if (snap.exists()) {
-        const curBal = parseFloat(snap.val().walletBalance || 0);
-        const newBal = Math.max(0, curBal - amountLkr);
-        await rtdbUpdate(userRef, {
-          walletBalance: newBal,
-          updatedAt: new Date().toISOString()
-        });
+        const userData = snap.val();
+        const curLkr = parseFloat(userData.walletBalance || 0);
+        const curUsdt = parseFloat(userData.walletUsdt || 0);
+
+        // LKR and USDT wallets are independent — deduct from whichever has sufficient balance
+        if (curLkr >= amountLkr) {
+          // Deduct from LKR wallet
+          const newLkr = parseFloat((curLkr - amountLkr).toFixed(2));
+          await rtdbUpdate(userRef, { walletBalance: newLkr, updatedAt: new Date().toISOString() });
+          // Update in-memory registry
+          for (const [, profile] of activeResellerRegistry.entries()) {
+            if (profile.uid === uid) profile.walletBalance = newLkr;
+          }
+        } else if ((curUsdt * 305) >= amountLkr) {
+          // Deduct from USDT wallet
+          const reqUsdt = parseFloat((amountLkr / 305).toFixed(6));
+          const newUsdt = parseFloat(Math.max(0, curUsdt - reqUsdt).toFixed(6));
+          await rtdbUpdate(userRef, { walletUsdt: newUsdt, updatedAt: new Date().toISOString() });
+          for (const [, profile] of activeResellerRegistry.entries()) {
+            if (profile.uid === uid) profile.walletUsdt = newUsdt;
+          }
+        } else {
+          return false; // Insufficient balance in both wallets
+        }
       }
-    } catch (e) {}
+    } catch (e) { console.warn('deductResellerWalletBalance RTDB note:', e); }
   }
 
   if (db) {
@@ -438,14 +450,17 @@ export const deductResellerWalletBalance = async (uid, amountLkr) => {
       const userRef = doc(db, 'users', uid);
       const docSnap = await getDoc(userRef);
       if (docSnap.exists()) {
-        const curBal = parseFloat(docSnap.data().walletBalance || 0);
-        const newBal = Math.max(0, curBal - amountLkr);
-        await setDoc(userRef, {
-          walletBalance: newBal,
-          updatedAt: new Date().toISOString()
-        }, { merge: true });
+        const curData = docSnap.data();
+        const curLkr = parseFloat(curData.walletBalance || 0);
+        const curUsdt = parseFloat(curData.walletUsdt || 0);
+        if (curLkr >= amountLkr) {
+          await setDoc(userRef, { walletBalance: parseFloat((curLkr - amountLkr).toFixed(2)), updatedAt: new Date().toISOString() }, { merge: true });
+        } else if ((curUsdt * 305) >= amountLkr) {
+          const reqUsdt = parseFloat((amountLkr / 305).toFixed(6));
+          await setDoc(userRef, { walletUsdt: parseFloat(Math.max(0, curUsdt - reqUsdt).toFixed(6)), updatedAt: new Date().toISOString() }, { merge: true });
+        }
       }
-    } catch (e) {}
+    } catch (e) { console.warn('deductResellerWalletBalance Firestore note:', e); }
   }
   return true;
 };
@@ -1039,15 +1054,29 @@ export const subscribeOrdersFromFirestore = (uid, callback) => {
  * Update order status in Realtime Database & Firestore
  */
 export const updateOrderStatusInFirestore = async (orderId, newStatus, moongoldRef = null) => {
+  const updatePayload = {
+    status: newStatus,
+    ...(moongoldRef ? { moongoldRef } : {}),
+    updatedAt: new Date().toISOString()
+  };
+
   if (rtdb) {
     try {
       const orderRef = dbRef(rtdb, `orders/${orderId}`);
-      await rtdbUpdate(orderRef, {
-        status: newStatus,
-        ...(moongoldRef ? { moongoldRef } : {}),
-        updatedAt: new Date().toISOString()
+      await rtdbUpdate(orderRef, updatePayload);
+    } catch (e) { console.warn('RTDB order status update note:', e); }
+  }
+
+  // Also update Firestore orders collection (was missing before)
+  if (db) {
+    try {
+      const ordersCol = collection(db, 'orders');
+      const q = query(ordersCol, where('id', '==', orderId));
+      const qSnap = await getDocs(q);
+      qSnap.forEach(async (docSnap) => {
+        await updateDoc(doc(db, 'orders', docSnap.id), updatePayload);
       });
-    } catch (e) {}
+    } catch (e) { console.warn('Firestore order status update note:', e); }
   }
 };
 

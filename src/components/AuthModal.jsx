@@ -71,46 +71,42 @@ export const AuthModal = () => {
         }
       } catch (e) {}
 
+      // Derive recipient name immediately — skip the 3s blocking DB lookup
       let recipientName = 'Gamer';
+      if (username && !username.includes('@')) {
+        recipientName = username;
+      } else if (targetEmail.includes('@')) {
+        const uPart = targetEmail.split('@')[0];
+        recipientName = uPart.charAt(0).toUpperCase() + uPart.slice(1);
+      }
+
+      // 2. Send OTP via both endpoints in PARALLEL (6s timeout each, was 8s sequential)
+      const makeResetOtpRequest = (endpoint) => {
+        const controller = new AbortController();
+        const tid = setTimeout(() => controller.abort(), 6000);
+        return fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: targetEmail, otp: otpCode, name: recipientName }),
+          signal: controller.signal
+        }).then(r => { clearTimeout(tid); return r; })
+          .catch(err => { clearTimeout(tid); throw err; });
+      };
+
       try {
-        const userProfileObj = await Promise.race([
-          getResellerProfileByKeyAsync(targetEmail),
-          new Promise((resolve) => setTimeout(() => resolve(null), 3000))
+        const winner = await Promise.any([
+          makeResetOtpRequest('/api/send-otp'),
+          makeResetOtpRequest('https://madstopup.com/api/send-otp')
         ]);
-        if (userProfileObj && userProfileObj.name && !userProfileObj.name.includes('@')) {
-          recipientName = userProfileObj.name;
-        } else if (username && !username.includes('@')) {
-          recipientName = username;
-        } else if (targetEmail.includes('@')) {
-          const uPart = targetEmail.split('@')[0];
-          recipientName = uPart.charAt(0).toUpperCase() + uPart.slice(1);
-        }
-      } catch (e) {}
-
-      // 2. Send 6-digit OTP code via Backend Server endpoints
-      const apiEndpoints = ['/api/send-otp', 'https://madstopup.com/api/send-otp'];
-      for (const endpoint of apiEndpoints) {
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 8000);
-
-          const apiRes = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: targetEmail, otp: otpCode, name: recipientName }),
-            signal: controller.signal
-          });
-          clearTimeout(timeoutId);
-
-          if (apiRes.ok) {
-            const data = await apiRes.json();
-            if (data && data.success) {
-              sentSuccess = true;
-              console.log(`[Password Reset OTP Sent via ${endpoint}]`, data);
-              break;
-            }
+        if (winner.ok) {
+          const data = await winner.json().catch(() => ({}));
+          if (data?.success) {
+            sentSuccess = true;
+            console.log('[Password Reset OTP Sent via server]', data);
           }
-        } catch (err) {}
+        }
+      } catch (parallelErr) {
+        console.warn('[Reset OTP server endpoints unavailable]:', parallelErr.message);
       }
 
       // 3. Fallback to EmailJS for instant delivery of 6-digit OTP code
@@ -246,40 +242,44 @@ export const AuthModal = () => {
     setGeneratedCode(code);
 
     try {
-      // 1. Try backend server endpoints (/api/send-otp and https://madstopup.com/api/send-otp)
       let sentSuccess = false;
-      const apiEndpoints = [
-        '/api/send-otp',
-        'https://madstopup.com/api/send-otp'
-      ];
 
-      for (const endpoint of apiEndpoints) {
-        if (sentSuccess) break;
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-          const apiRes = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, otp: code, name: username || 'Gamer' }),
-            signal: controller.signal
-          });
+      // Fire BOTH server endpoints in parallel — first success wins (eliminates 15s sequential wait)
+      const makeOtpRequest = (endpoint) => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s per endpoint (was 15s)
+        return fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, otp: code, name: username || 'Gamer' }),
+          signal: controller.signal
+        }).then(res => {
           clearTimeout(timeoutId);
+          return res;
+        }).catch(err => {
+          clearTimeout(timeoutId);
+          throw err;
+        });
+      };
 
-          if (apiRes.ok) {
-            const data = await apiRes.json();
-            if (data && data.success) {
-              sentSuccess = true;
-              console.log(`[OTP Sent via ${endpoint}]`, data);
-            }
+      // 1. Try both server endpoints in parallel — first successful response wins
+      try {
+        const winner = await Promise.any([
+          makeOtpRequest('/api/send-otp'),
+          makeOtpRequest('https://madstopup.com/api/send-otp')
+        ]);
+        if (winner.ok) {
+          const data = await winner.json().catch(() => ({}));
+          if (data?.success) {
+            sentSuccess = true;
+            console.log('[OTP Sent via server]', data);
           }
-        } catch (backendErr) {
-          console.warn(`[OTP Endpoint ${endpoint} Note]:`, backendErr.message);
         }
+      } catch (parallelErr) {
+        console.warn('[OTP server endpoints unavailable]:', parallelErr.message);
       }
 
-      // 2. Fallback to EmailJS if backend route is unavailable
+      // 2. Fallback to EmailJS if both server routes failed
       if (!sentSuccess) {
         const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_42ovub5';
         const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_e9m409d';
@@ -447,29 +447,50 @@ export const AuthModal = () => {
     try {
       const res = await loginWithGoogle();
       if (res.success && res.user) {
-        // Sync or fetch existing profile from Firestore/RTDB
-        const existingProfile = await syncUserProfileToFirestore(res.user);
+        // Immediately set logged-in state from Google user data — no waiting for DB sync
+        // This eliminates the 2-6 second delay caused by awaiting two sequential DB reads
+        const immediateProfile = {
+          uid: res.user.uid,
+          name: res.user.name || 'Verified Gamer',
+          email: res.user.email || '',
+          avatar: res.user.photoURL || '',
+          provider: 'Google',
+          walletBalance: 0,
+          walletUsdt: 0
+        };
 
-        const hasPhone = Boolean(existingProfile && existingProfile.phone && existingProfile.phone.trim() !== '');
-        const isReturningUser = existingProfile && !res.isNewUser;
-
-        // If logging in, or user already has a phone, or is returning user: skip setup modal
-        if (hasPhone || isReturningUser || authMode === 'login') {
+        // For login mode or returning users: close modal instantly
+        if (authMode === 'login' || !res.isNewUser) {
           setIsLoggedIn(true);
-          setUserProfile(prev => ({
-            ...prev,
-            ...(existingProfile || {}),
-            uid: res.user.uid || prev.uid,
-            name: res.user.name || existingProfile?.name || prev.name,
-            email: res.user.email || existingProfile?.email || prev.email,
-            avatar: res.user.photoURL || existingProfile?.avatar || prev.avatar,
-            provider: 'Google'
-          }));
-          showToast(`Welcome back, ${res.user.name || existingProfile?.name || 'Gamer'}!`);
+          setUserProfile(prev => ({ ...prev, ...immediateProfile }));
+          showToast(`Welcome back, ${res.user.name || 'Gamer'}!`);
           setIsAuthModalOpen(false);
+
+          // Sync full profile from DB in background (non-blocking)
+          syncUserProfileToFirestore(res.user).then(existingProfile => {
+            if (existingProfile) {
+              setUserProfile(prev => ({
+                ...prev,
+                ...existingProfile,
+                // Keep Google avatar/name if DB has none
+                avatar: existingProfile.avatar || res.user.photoURL || prev.avatar,
+                name: existingProfile.name || res.user.name || prev.name
+              }));
+            }
+          }).catch(() => {});
         } else {
-          // First time registration: Ask for WhatsApp number
-          setPendingGoogleUser(res.user);
+          // First-time registration: sync first then ask for WhatsApp
+          const existingProfile = await syncUserProfileToFirestore(res.user);
+          const hasPhone = Boolean(existingProfile?.phone?.trim());
+          if (hasPhone) {
+            setIsLoggedIn(true);
+            setUserProfile(prev => ({ ...prev, ...(existingProfile || {}), ...immediateProfile }));
+            showToast(`Welcome, ${res.user.name || 'Gamer'}!`);
+            setIsAuthModalOpen(false);
+          } else {
+            // Ask for WhatsApp number to complete setup
+            setPendingGoogleUser(res.user);
+          }
         }
       }
     } catch (err) {
