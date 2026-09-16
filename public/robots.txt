@@ -2,5 +2,8 @@ User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /admin/*
+Disallow: /?*admin*
+Crawl-delay: 1
 
+# Google Search Console verified
 Sitemap: https://madstopup.com/sitemap.xml
