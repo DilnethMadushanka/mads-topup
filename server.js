@@ -709,14 +709,17 @@ app.post('/api/genie/create-transaction', rateLimiter(15, 60000), async (req, re
       return res.status(400).json({ error: 'Please specify a valid payment amount.' });
     }
 
-    const appKey = process.env.GENIE_APP_KEY || process.env.VITE_GENIE_APP_KEY || GENIE_DEFAULT_APP_KEY;
-    const baseUrl = process.env.GENIE_BASE_URL || process.env.VITE_GENIE_BASE_URL || GENIE_DEFAULT_BASE_URL;
+    const appKey = (process.env.GENIE_APP_KEY || process.env.VITE_GENIE_APP_KEY || GENIE_DEFAULT_APP_KEY).replace(/[\r\n\s]/g, '');
+    const baseUrl = (process.env.GENIE_BASE_URL || process.env.VITE_GENIE_BASE_URL || GENIE_DEFAULT_BASE_URL).replace(/[\r\n\s\/]+$/, '');
 
     const cleanEmail = sanitizeString(userEmail || 'customer@madstopup.com', 100);
     const cleanName = sanitizeString(userName || 'MADS Gamer', 100);
     const localId = orderRef || ('ORD-GENIE-' + Date.now());
 
-    const returnUrl = redirectUrl || 'https://madstopup.com/wallet?genie=success';
+    let returnUrl = redirectUrl || 'https://madstopup.com/wallet?genie=success';
+    if (!returnUrl.startsWith('https://')) {
+      returnUrl = 'https://madstopup.com/wallet?genie=success';
+    }
 
     const payload = {
       amount: numAmount,
@@ -734,7 +737,7 @@ app.post('/api/genie/create-transaction', rateLimiter(15, 60000), async (req, re
       }
     };
 
-    console.log(`[Geniebiz IPG Create Attempt] Amount: Rs. ${numAmount}, User: ${cleanEmail}, Ref: ${localId}`);
+    console.log(`[Geniebiz IPG Create Attempt] Amount: Rs. ${numAmount}, User: ${cleanEmail}, Ref: ${localId}, KeyLen: ${appKey.length}, Target: ${baseUrl}/public/v2/transactions`);
 
     const apiRes = await fetch(`${baseUrl}/public/v2/transactions`, {
       method: 'POST',
@@ -781,8 +784,8 @@ app.post('/api/genie/verify-status', rateLimiter(30, 60000), async (req, res) =>
       return res.status(400).json({ error: 'Missing transactionId' });
     }
 
-    const appKey = process.env.GENIE_APP_KEY || process.env.VITE_GENIE_APP_KEY || GENIE_DEFAULT_APP_KEY;
-    const baseUrl = process.env.GENIE_BASE_URL || process.env.VITE_GENIE_BASE_URL || GENIE_DEFAULT_BASE_URL;
+    const appKey = (process.env.GENIE_APP_KEY || process.env.VITE_GENIE_APP_KEY || GENIE_DEFAULT_APP_KEY).replace(/[\r\n\s]/g, '');
+    const baseUrl = (process.env.GENIE_BASE_URL || process.env.VITE_GENIE_BASE_URL || GENIE_DEFAULT_BASE_URL).replace(/[\r\n\s\/]+$/, '');
 
     const apiRes = await fetch(`${baseUrl}/public/transactions/${transactionId}`, {
       method: 'GET',
