@@ -695,9 +695,9 @@ app.get('/api/ezcash/webhook-logs', (req, res) => {
 });
 
 // Dialog Genie Business IPG Integration Endpoints
-const GENIE_DEFAULT_APP_ID = '36bafce7-a201-429b-a9e2-c5b78546677c';
-const GENIE_DEFAULT_APP_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBJZCI6IjM2YmFmY2U3LWEyMDEtNDI5Yi1hOWUyLWM1Yjc4NTQ2Njc3YyIsImNvbXBhbnlJZCI6IjYzOTdmMzlkZjA3ZmJhMDAwODQyYTkwYiIsImlhdCI6MTY3MDkwMjY4NSwiZXhwIjo0ODI2NTc2Mjg1fQ.fy12dgFhA3iB_RCjD7y8j5HClNRZUiBZgAg-QzFpxaE';
-const GENIE_DEFAULT_BASE_URL = 'https://api.uat.geniebiz.lk';
+const GENIE_DEFAULT_APP_ID = 'c99b450d-38e9-4557-89f1-5cdc91fd7a0f';
+const GENIE_DEFAULT_APP_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBJZCI6ImM5OWI0NTBkLTM4ZTktNDUxNy04OWYxLTVjZGM5MWZkN2EwZiIsImNvbXBhbnlJZCI6IjY5OWMyOTRiZWM5YWFlMDAwMTE1Nzc0NiIsImlhdCI6MTc3MTg0MjE0OSwiZXhwIjo0OTI3NTE1NzQ5fQ.LutDa2obyzXY6MsCGtrK3bPZHMrNpxI-T8Q4cCtKZo4';
+const GENIE_DEFAULT_BASE_URL = 'https://api.geniebiz.lk';
 
 // Create Genie Business IPG Transaction
 app.post('/api/genie/create-transaction', rateLimiter(15, 60000), async (req, res) => {
