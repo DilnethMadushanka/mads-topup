@@ -1037,6 +1037,26 @@ export const WalletPage = () => {
         {walletActiveTab === 'ezcash' && (
           <div className="space-y-6 animate-in fade-in">
             
+            {/* INSTANT EZ CASH AUTO-CREDIT PROMO BANNER */}
+            <div className="bg-gradient-to-r from-red-600 to-amber-600 rounded-3xl p-5 sm:p-6 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg border border-red-400/30">
+              <div className="flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 border border-white/30">
+                  <Zap className="w-6 h-6 text-amber-300 fill-amber-300" />
+                </div>
+                <div>
+                  <h4 className="text-sm sm:text-base font-black font-heading text-white">eZ Cash Instant Auto-Credit (100% Automated)</h4>
+                  <p className="text-xs text-red-100 font-medium mt-0.5">Pay via Genie IPG using eZ Cash for 1-second instant wallet credit!</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setWalletActiveTab('genie')}
+                className="px-5 py-3 bg-white hover:bg-amber-50 text-red-700 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shrink-0 shadow-md hover:scale-[1.02]"
+              >
+                PAY VIA GENIE IPG
+              </button>
+            </div>
+            
             {/* STEP-BY-STEP INSTRUCTION BOX */}
             <div className="bg-gradient-to-br from-red-600/10 via-slate-900 to-slate-950 rounded-3xl p-6 border border-red-500/30 text-white shadow-xl space-y-4">
               <div className="flex items-center gap-2.5 text-red-400 font-black text-sm font-heading">
