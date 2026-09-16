@@ -24,7 +24,7 @@ export default async function handler(req, res) {
 
   // 1. Forward to Live VPS server if available
   try {
-    const vpsRes = await fetch('http://198.211.111.194:3000' + req.url, {
+    const vpsRes = await fetch('http://152.42.202.221:3000' + req.url, {
       method: req.method,
       headers: {
         'Content-Type': 'application/json',

@@ -167,7 +167,7 @@ export default async function handler(req, res) {
 
     // 2. Forward request through Whitelisted VPS IP with Authorization header
     try {
-      const vpsRes = await fetch('http://198.211.111.194:3000/api/moogold', {
+      const vpsRes = await fetch('http://152.42.202.221:3000/api/moogold', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
