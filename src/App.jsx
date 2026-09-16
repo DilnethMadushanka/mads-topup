@@ -28,6 +28,7 @@ import { ResellerBannerSection } from './components/ResellerBannerSection';
 import { PopupAdModal } from './components/PopupAdModal';
 import { PolicyModal } from './components/PolicyModal';
 import { ToastNotification } from './components/ToastNotification';
+import { ScrollReveal } from './hooks/useScrollReveal';
 import { Flame } from 'lucide-react';
 
 const MainContent = () => {
@@ -97,14 +98,43 @@ const MainContent = () => {
           <GameGrid />
         ) : (
           <>
+            {/* Hero — no scroll animation (above fold) */}
             <HeroSection />
-            <ServicesSection />
-            <StatsSection />
-            <WhyChooseUs />
-            <ReviewsSection />
-            <BlogSection />
-            <PromoSection />
-            <ResellerBannerSection />
+
+            {/* Services — fade up */}
+            <ScrollReveal animation="fade-up" duration={700}>
+              <ServicesSection />
+            </ScrollReveal>
+
+            {/* Stats — scale in */}
+            <ScrollReveal animation="scale-in" duration={600} delay={80}>
+              <StatsSection />
+            </ScrollReveal>
+
+            {/* Why Choose Us — fade up slower */}
+            <ScrollReveal animation="fade-up" duration={750} delay={60}>
+              <WhyChooseUs />
+            </ScrollReveal>
+
+            {/* Reviews — fade in */}
+            <ScrollReveal animation="fade-in" duration={800}>
+              <ReviewsSection />
+            </ScrollReveal>
+
+            {/* Blog — fade up */}
+            <ScrollReveal animation="fade-up" duration={650} delay={40}>
+              <BlogSection />
+            </ScrollReveal>
+
+            {/* Promo — zoom up */}
+            <ScrollReveal animation="zoom-up" duration={700} delay={60}>
+              <PromoSection />
+            </ScrollReveal>
+
+            {/* Reseller Banner — fade left */}
+            <ScrollReveal animation="fade-left" duration={700} delay={80}>
+              <ResellerBannerSection />
+            </ScrollReveal>
           </>
         )}
       </div>
