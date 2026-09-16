@@ -19,6 +19,7 @@ export const TopupModal = () => {
     formatPrice,
     savePlayerId,
     userProfile,
+    setUserProfile,
     creditUserWallet,
     setIsWalletModalOpen
   } = useApp();
@@ -245,8 +246,14 @@ export const TopupModal = () => {
         return;
       }
 
-      // Deduct local wallet state upon successful order dispatch
-      creditUserWallet(-deductedLkr, -deductedUsdt);
+      // Sync local profile with the exact server-deducted balance (prevents double deduction)
+      if (moongoldResult?.newBalanceLkr !== undefined) {
+        setUserProfile(prev => ({
+          ...prev,
+          walletBalance: moongoldResult.newBalanceLkr,
+          walletUsdt: moongoldResult.newBalanceUsdt !== undefined ? moongoldResult.newBalanceUsdt : prev.walletUsdt
+        }));
+      }
     }
 
     setIsSubmitting(false);

@@ -401,11 +401,18 @@ export default async function handler(req, res) {
     const isSuccess = apiRes.ok && jsonResult && (jsonResult.status === 'processing' || jsonResult.status === 'true' || jsonResult.status === true || jsonResult.status === 1 || jsonResult.order_id);
 
     if (isOrderCreation && !isSuccess) {
-      await refundUserWallet(authenticatedUser.uid, numPriceLkr, deductResult?.usedCurrency || 'LKR');
+      await refundUserWallet(authenticatedUser.uid, numPriceLkr, deductResult?.usedCurrency || 'LKR', authenticatedUser.email, deductResult?.rtdbKey);
     }
 
     res.status(apiRes.status);
     if (jsonResult) {
+      if (isOrderCreation && deductResult?.success) {
+        return res.json({
+          ...jsonResult,
+          newBalanceLkr: deductResult.newBalanceLkr,
+          newBalanceUsdt: deductResult.newBalanceUsdt
+        });
+      }
       res.json(jsonResult);
     } else {
       res.send(text);

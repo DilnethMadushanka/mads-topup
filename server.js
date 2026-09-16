@@ -596,6 +596,7 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
     const isOrderCreation = apiPath === 'order/create_order';
     const numPriceLkr = parseFloat(priceLkr || req.body.priceLkr || bodyObj?.priceLkr || 0);
 
+    let deductResult = null;
     if (isOrderCreation) {
       if (numPriceLkr <= 0) {
         return res.status(400).json({ error: 'Invalid order price specified.' });
@@ -603,7 +604,7 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
 
       // Perform atomic backend wallet deduction BEFORE calling MooGold
       // Pass uid, email and clientProfile so resolveUserWalletKey can find the correct balance
-      const deductResult = await deductUserWallet(authenticatedUser.uid, numPriceLkr, authenticatedUser.email, clientProfile);
+      deductResult = await deductUserWallet(authenticatedUser.uid, numPriceLkr, authenticatedUser.email, clientProfile);
       if (!deductResult.success) {
         console.warn(`[INSUFFICIENT BALANCE BLOCKED] User ${authenticatedUser.uid} (${authenticatedUser.email}) attempted order without balance. Required: Rs. ${numPriceLkr}`);
         return res.status(403).json({
@@ -664,6 +665,13 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
 
     res.status(apiRes.status);
     if (jsonResult) {
+      if (isOrderCreation && deductResult?.success) {
+        return res.json({
+          ...jsonResult,
+          newBalanceLkr: deductResult.newBalanceLkr,
+          newBalanceUsdt: deductResult.newBalanceUsdt
+        });
+      }
       return res.json(jsonResult);
     } else {
       return res.send(text);
