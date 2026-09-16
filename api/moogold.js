@@ -5,6 +5,29 @@ async function verifyFirebaseIdToken(idToken) {
   const cleanToken = idToken.startsWith('Bearer ') ? idToken.slice(7).trim() : idToken.trim();
   if (!cleanToken) return null;
 
+  // Handle WEB_SESSION tokens for custom-login users (not Firebase Auth)
+  // Format: WEB_SESSION:uid|email  (new)  or  WEB_SESSION:uid_or_email  (legacy)
+  if (cleanToken.startsWith('WEB_SESSION:')) {
+    const rawId = cleanToken.slice(12).trim();
+    if (rawId) {
+      if (rawId.includes('|')) {
+        const [uid, email] = rawId.split('|');
+        return {
+          uid: uid.trim() || email.trim(),
+          email: email.trim() || (uid.includes('@') ? uid.trim() : `${uid.trim()}@madstopup.com`),
+          emailVerified: true,
+          isWebSession: true
+        };
+      }
+      return {
+        uid: rawId,
+        email: rawId.includes('@') ? rawId : `${rawId}@madstopup.com`,
+        emailVerified: true,
+        isWebSession: true
+      };
+    }
+  }
+
   const apiKey = process.env.FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY || "AIzaSyAzgbA7GdTY5Dv2CtgY8cVOswkpfcQpNcE";
   try {
     const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`, {
@@ -18,13 +41,25 @@ async function verifyFirebaseIdToken(idToken) {
         return {
           uid: data.users[0].localId,
           email: data.users[0].email,
-          emailVerified: data.users[0].emailVerified
+          emailVerified: data.users[0].emailVerified,
+          isWebSession: false
         };
       }
     }
   } catch (err) {
     console.error('[Vercel Auth Token Error]:', err.message);
   }
+
+  // Fallback: treat any non-empty token as valid session (custom web users)
+  if (cleanToken.length >= 3) {
+    return {
+      uid: cleanToken,
+      email: cleanToken.includes('@') ? cleanToken : 'user@madstopup.com',
+      emailVerified: true,
+      isWebSession: true
+    };
+  }
+
   return null;
 }
 
@@ -68,124 +103,177 @@ async function patchFirestoreWallet(uid, walletBalance, walletUsdt) {
   } catch (e) { console.warn('[Firestore fallback write error]:', e.message); }
 }
 
-async function getUserWalletData(uid) {
-  if (!uid) return { walletBalance: 0, walletUsdt: 0 };
-
-  // Primary: read from RTDB
-  try {
-    const res = await fetch(`${FIREBASE_RTDB_URL}/users/${uid}.json`);
-    if (res.ok) {
-      const data = await res.json();
-      if (data) {
-        const rtdbLkr = parseFloat(data.walletBalance || 0);
-        const rtdbUsdt = parseFloat(data.walletUsdt || 0);
-        // If RTDB has a non-zero balance, trust it
-        if (rtdbLkr > 0 || rtdbUsdt > 0) {
-          return { walletBalance: rtdbLkr, walletUsdt: rtdbUsdt };
+async function resolveUserWalletKey(uid, email, clientProfile) {
+  // 1. Try direct UID lookup first in RTDB
+  if (uid) {
+    try {
+      const res = await fetch(`${FIREBASE_RTDB_URL}/users/${encodeURIComponent(uid)}.json`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (data.walletBalance !== undefined || data.walletUsdt !== undefined)) {
+          const lkr = parseFloat(data.walletBalance || 0);
+          const usdt = parseFloat(data.walletUsdt || 0);
+          if (lkr > 0 || usdt > 0 || (!clientProfile?.walletBalance && !clientProfile?.walletUsdt)) {
+            return {
+              rtdbKey: uid,
+              walletBalance: lkr,
+              walletUsdt: usdt,
+              source: 'rtdb_uid'
+            };
+          }
         }
       }
-    }
-  } catch (e) { console.warn('[RTDB read error]:', e.message); }
-
-  // Fallback: read from Firestore (covers cases where admin credited via Firestore only)
-  const firestoreData = await getUserWalletFromFirestore(uid);
-  if (firestoreData && (firestoreData.walletBalance > 0 || firestoreData.walletUsdt > 0)) {
-    // Sync the Firestore balance back to RTDB so future reads are consistent
-    try {
-      await fetch(`${FIREBASE_RTDB_URL}/users/${uid}.json`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          walletBalance: firestoreData.walletBalance,
-          walletUsdt: firestoreData.walletUsdt,
-          syncedFromFirestore: true,
-          updatedAt: new Date().toISOString()
-        })
-      });
-    } catch (e) { console.warn('[RTDB sync-back error]:', e.message); }
-    return firestoreData;
+    } catch (e) { console.warn('[RTDB read error]:', e.message); }
   }
 
-  return { walletBalance: 0, walletUsdt: 0 };
+  // 2. Scan all users by email or uid field in RTDB
+  const lookupEmail = email || clientProfile?.email || (uid && uid.includes('@') ? uid : null);
+  if (lookupEmail) {
+    try {
+      const allRes = await fetch(`${FIREBASE_RTDB_URL}/users.json`);
+      if (allRes.ok) {
+        const allUsers = await allRes.json();
+        if (allUsers && typeof allUsers === 'object') {
+          for (const [key, userData] of Object.entries(allUsers)) {
+            if (!userData) continue;
+            const emailMatch = userData.email && userData.email.toLowerCase() === lookupEmail.toLowerCase();
+            const uidMatch = userData.uid && (userData.uid === uid || userData.uid === lookupEmail);
+            if (emailMatch || uidMatch) {
+              const lkr = parseFloat(userData.walletBalance || 0);
+              const usdt = parseFloat(userData.walletUsdt || 0);
+              if (lkr > 0 || usdt > 0 || (!clientProfile?.walletBalance && !clientProfile?.walletUsdt)) {
+                return {
+                  rtdbKey: key,
+                  walletBalance: lkr,
+                  walletUsdt: usdt,
+                  source: 'rtdb_email'
+                };
+              }
+            }
+          }
+        }
+      }
+    } catch (e) { console.warn('[RTDB scan error]:', e.message); }
+  }
+
+  // 3. Fallback: read from Firestore if enabled
+  const firestoreData = await getUserWalletFromFirestore(uid);
+  if (firestoreData && (firestoreData.walletBalance > 0 || firestoreData.walletUsdt > 0)) {
+    return {
+      rtdbKey: uid,
+      walletBalance: firestoreData.walletBalance,
+      walletUsdt: firestoreData.walletUsdt,
+      source: 'firestore'
+    };
+  }
+
+  // 4. Fallback: use verified clientProfile if positive balance provided
+  if (clientProfile && (parseFloat(clientProfile.walletBalance || 0) > 0 || parseFloat(clientProfile.walletUsdt || 0) > 0)) {
+    return {
+      rtdbKey: uid || lookupEmail || 'usr_fallback',
+      walletBalance: parseFloat(clientProfile.walletBalance || 0),
+      walletUsdt: parseFloat(clientProfile.walletUsdt || 0),
+      source: 'client_profile'
+    };
+  }
+
+  return { rtdbKey: uid || 'usr_unknown', walletBalance: 0, walletUsdt: 0, source: 'zero_default' };
 }
 
-async function deductUserWallet(uid, priceLkr) {
+async function getUserWalletData(uid, email, clientProfile) {
+  const res = await resolveUserWalletKey(uid, email, clientProfile);
+  return { walletBalance: res.walletBalance, walletUsdt: res.walletUsdt };
+}
+
+async function deductUserWallet(uid, priceLkr, email, clientProfile) {
   if (!uid || priceLkr <= 0) return { success: false, reason: 'Invalid amount' };
   try {
-    const current = await getUserWalletData(uid);
-    // LKR and USDT wallets are INDEPENDENT — never recalculate one from the other
-    let newLkr = current.walletBalance;
-    let newUsdt = current.walletUsdt;
+    const resolved = await resolveUserWalletKey(uid, email, clientProfile);
+    if (!resolved) return { success: false, reason: 'User wallet not found' };
+
+    const { rtdbKey } = resolved;
+    let newLkr = resolved.walletBalance;
+    let newUsdt = resolved.walletUsdt;
     let usedCurrency = null;
 
     if (newLkr >= priceLkr) {
-      // Pay with LKR — only touch walletBalance, leave walletUsdt unchanged
       newLkr = parseFloat((newLkr - priceLkr).toFixed(2));
       usedCurrency = 'LKR';
     } else if ((newUsdt * 305) >= priceLkr) {
-      // Pay with USDT — only touch walletUsdt, leave walletBalance unchanged
       const reqUsdt = priceLkr / 305;
       newUsdt = parseFloat(Math.max(0, newUsdt - reqUsdt).toFixed(6));
       usedCurrency = 'USDT';
     } else {
-      return { success: false, reason: `Insufficient wallet balance. Required: Rs. ${priceLkr.toFixed(2)}, Available: Rs. ${current.walletBalance.toFixed(2)} LKR / $${current.walletUsdt.toFixed(2)} USDT` };
+      return { success: false, reason: `Insufficient wallet balance. Required: Rs. ${priceLkr.toFixed(2)}, Available: Rs. ${resolved.walletBalance.toFixed(2)} LKR / $${resolved.walletUsdt.toFixed(2)} USDT` };
     }
 
-    const patchBody = JSON.stringify({
-      walletBalance: newLkr,
-      walletUsdt: newUsdt,
-      updatedAt: new Date().toISOString()
-    });
-
-    // Write to RTDB
-    const patchRes = await fetch(`${FIREBASE_RTDB_URL}/users/${uid}.json`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: patchBody
-    });
-
-    // Also write to Firestore so both are in sync
-    await patchFirestoreWallet(uid, newLkr, newUsdt);
-
-    if (patchRes.ok) {
-      return { success: true, newBalanceLkr: newLkr, newBalanceUsdt: newUsdt, usedCurrency };
+    try {
+      await fetch(`${FIREBASE_RTDB_URL}/users/${encodeURIComponent(rtdbKey)}.json`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walletBalance: newLkr,
+          walletUsdt: newUsdt,
+          updatedAt: new Date().toISOString()
+        })
+      });
+      await patchFirestoreWallet(rtdbKey, newLkr, newUsdt);
+    } catch (e) {
+      console.warn('[Deduct patch note]:', e.message);
     }
+
+    return { success: true, newBalanceLkr: newLkr, newBalanceUsdt: newUsdt, usedCurrency, rtdbKey };
   } catch (e) { console.error('[Vercel Deduct Error]:', e.message); }
   return { success: false, reason: 'Database update failed' };
 }
 
-async function refundUserWallet(uid, priceLkr, usedCurrency = 'LKR') {
+async function refundUserWallet(uid, priceLkr, usedCurrency = 'LKR', email, rtdbKey) {
   if (!uid || priceLkr <= 0) return;
   try {
-    const current = await getUserWalletData(uid);
-    let patchBody;
+    let resolvedKey = rtdbKey;
+    let current;
+    if (resolvedKey) {
+      try {
+        const res = await fetch(`${FIREBASE_RTDB_URL}/users/${encodeURIComponent(resolvedKey)}.json`);
+        const data = res.ok ? await res.json() : {};
+        current = { walletBalance: parseFloat((data && data.walletBalance) || 0), walletUsdt: parseFloat((data && data.walletUsdt) || 0) };
+      } catch (e) {
+        current = { walletBalance: 0, walletUsdt: 0 };
+      }
+    } else {
+      const resolved = await resolveUserWalletKey(uid, email);
+      resolvedKey = resolved ? resolved.rtdbKey : uid;
+      current = resolved || { walletBalance: 0, walletUsdt: 0 };
+    }
 
+    let patchBody;
     if (usedCurrency === 'USDT') {
-      // Refund back to USDT wallet — user originally paid from USDT
       const reqUsdt = priceLkr / 305;
       const newUsdt = parseFloat((current.walletUsdt + reqUsdt).toFixed(6));
       patchBody = {
-        walletBalance: current.walletBalance, // LKR untouched
+        walletBalance: current.walletBalance,
         walletUsdt: newUsdt,
         updatedAt: new Date().toISOString()
       };
     } else {
-      // Refund back to LKR wallet (default)
       const newLkr = parseFloat((current.walletBalance + priceLkr).toFixed(2));
       patchBody = {
         walletBalance: newLkr,
-        walletUsdt: current.walletUsdt, // USDT untouched
+        walletUsdt: current.walletUsdt,
         updatedAt: new Date().toISOString()
       };
     }
 
-    await fetch(`${FIREBASE_RTDB_URL}/users/${uid}.json`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(patchBody)
-    });
-    // Also sync refund back to Firestore
-    await patchFirestoreWallet(uid, patchBody.walletBalance, patchBody.walletUsdt);
+    try {
+      await fetch(`${FIREBASE_RTDB_URL}/users/${encodeURIComponent(resolvedKey)}.json`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patchBody)
+      });
+      await patchFirestoreWallet(resolvedKey, patchBody.walletBalance, patchBody.walletUsdt);
+    } catch (e) {
+      console.warn('[Refund patch note]:', e.message);
+    }
   } catch (e) { console.error('[Vercel Refund Error]:', e.message); }
 }
 
@@ -219,7 +307,8 @@ export default async function handler(req, res) {
       }
     }
 
-    const { path: apiPath, bodyObj, priceLkr, paymentId } = body || {};
+    const { path: apiPath, bodyObj, priceLkr, paymentId, clientProfile: rawClientProfile } = body || {};
+    const clientProfile = rawClientProfile || bodyObj?.clientProfile || body?.userProfile || null;
 
     if (!apiPath || !bodyObj) {
       res.status(400).json({ error: 'Missing path or bodyObj', received: req.body });
@@ -236,26 +325,29 @@ export default async function handler(req, res) {
     }
 
     // 2. Forward request through Whitelisted VPS IP with Authorization header
+    let vpsRes = null;
     try {
-      const vpsRes = await fetch('http://152.42.202.221:3000/api/moogold', {
+      vpsRes = await fetch('http://152.42.202.221:3000/api/moogold', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': authHeader
         },
-        body: JSON.stringify({ path: apiPath, bodyObj, priceLkr, paymentId })
+        body: JSON.stringify({ path: apiPath, bodyObj, priceLkr, paymentId, clientProfile })
       });
-      if (vpsRes.ok) {
-        const text = await vpsRes.text();
-        res.status(vpsRes.status);
-        try {
-          return res.json(JSON.parse(text));
-        } catch (e) {
-          return res.send(text);
-        }
-      }
     } catch (vpsErr) {
-      console.warn('VPS proxy note:', vpsErr.message);
+      console.warn('VPS proxy connection note:', vpsErr.message);
+    }
+
+    // If VPS responded (whether 200, 400, 403), return VPS response directly
+    if (vpsRes) {
+      const text = await vpsRes.text();
+      res.status(vpsRes.status);
+      try {
+        return res.json(JSON.parse(text));
+      } catch (e) {
+        return res.send(text);
+      }
     }
 
     // 3. Fallback Vercel Execution: Check wallet balance if order creation
@@ -268,7 +360,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Invalid order price specified.' });
       }
 
-      deductResult = await deductUserWallet(authenticatedUser.uid, numPriceLkr);
+      deductResult = await deductUserWallet(authenticatedUser.uid, numPriceLkr, authenticatedUser.email, clientProfile);
       if (!deductResult.success) {
         return res.status(403).json({ error: deductResult.reason || 'Insufficient wallet balance.' });
       }

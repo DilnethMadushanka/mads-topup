@@ -366,12 +366,21 @@ export const dispatchMoongoldOrder = async (orderData) => {
     : (orderData.package?.priceLkr || 0);
   const paymentId = orderData.payment?.id || orderData.paymentMethod || 'wallet';
 
+  const clientProfile = {
+    uid: targetUid,
+    email: targetEmail,
+    walletBalance: parseFloat(userProfile?.walletBalance || 0),
+    walletUsdt: parseFloat(userProfile?.walletUsdt || 0),
+    name: userProfile?.name || ''
+  };
+
   const bodyObj = {
     path,
     data: dataPayload,
     partnerOrderId,
     priceLkr,
-    paymentId
+    paymentId,
+    clientProfile
   };
 
   // Dispatch ONLY through secure backend proxy with Bearer Auth Token
@@ -382,7 +391,7 @@ export const dispatchMoongoldOrder = async (orderData) => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${idToken}`
       },
-      body: JSON.stringify({ path, bodyObj, priceLkr, paymentId })
+      body: JSON.stringify({ path, bodyObj, priceLkr, paymentId, clientProfile })
     });
 
     const data = await proxyRes.json().catch(() => ({}));

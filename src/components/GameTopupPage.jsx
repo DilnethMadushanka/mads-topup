@@ -164,46 +164,8 @@ export const GameTopupPage = () => {
 
     // 1. Strict Wallet Balance Check if paying with MADS Wallet
     if (selectedPayment.id === 'wallet') {
-      // Fetch fresh balance from RTDB to avoid stale local state mismatch
-      let availLkr = userProfile?.walletBalance || 0;
-      let availUsdt = userProfile?.walletUsdt || 0;
-
-      const uid = userProfile?.uid || (auth && auth.currentUser?.uid) || '';
-      const email = userProfile?.email || (auth && auth.currentUser?.email) || '';
-      if (uid || email) {
-        try {
-          const RTDB_URL = 'https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app';
-          // Try direct UID lookup
-          if (uid) {
-            const r = await fetch(`${RTDB_URL}/users/${encodeURIComponent(uid)}.json`);
-            if (r.ok) {
-              const d = await r.json();
-              if (d && (d.walletBalance !== undefined || d.email)) {
-                availLkr = parseFloat(d.walletBalance || 0);
-                availUsdt = parseFloat(d.walletUsdt || 0);
-              } else if (email) {
-                // UID key not found — scan by email
-                const allR = await fetch(`${RTDB_URL}/users.json`);
-                if (allR.ok) {
-                  const allUsers = await allR.json();
-                  if (allUsers && typeof allUsers === 'object') {
-                    for (const userData of Object.values(allUsers)) {
-                      if (userData && userData.email && userData.email.toLowerCase() === email.toLowerCase()) {
-                        availLkr = parseFloat(userData.walletBalance || 0);
-                        availUsdt = parseFloat(userData.walletUsdt || 0);
-                        break;
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        } catch (e) {
-          // Fallback to local state if RTDB fetch fails
-          console.warn('[Balance fetch warning]:', e.message);
-        }
-      }
+      const availLkr = parseFloat(userProfile?.walletBalance || 0);
+      const availUsdt = parseFloat(userProfile?.walletUsdt || 0);
 
       if (currency === 'USD') {
         const requiredUsdt = totalLkr / 305;
@@ -331,12 +293,10 @@ export const GameTopupPage = () => {
         return;
       }
 
-      // NOTE: Do NOT call creditUserWallet(-amount) here.
-      // The server's /api/moogold endpoint atomically deducts the wallet balance
-      // in Firebase RTDB before responding. The real-time listener in AppContext
-      // (subscribeAllUsersFromFirestore) will automatically sync the accurate
-      // server-deducted balance to the UI. A local negative credit here would
-      // cause a double-deduction by overwriting the server's correct value.
+      // Deduct local wallet state immediately upon successful order dispatch
+      if (deductedLkr > 0 || deductedUsdt > 0) {
+        creditUserWallet(-deductedLkr, -deductedUsdt);
+      }
     }
 
     setIsSubmitting(false);
