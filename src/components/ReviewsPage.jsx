@@ -50,16 +50,21 @@ export const ReviewsPage = () => {
     setFormText('');
   };
 
-  // Calculate Rating Distribution
-  const totalReviewsCount = 288 + (userReviews ? userReviews.length - 9 : 0);
-  const count5 = 263 + (userReviews ? userReviews.filter(r => r.rating === 5).length - 8 : 0);
-  const count4 = 17 + (userReviews ? userReviews.filter(r => r.rating === 4).length - 1 : 0);
-  const count3 = 5;
-  const count2 = 2;
-  const count1 = 1;
+  // Calculate Rating Distribution dynamically from actual user reviews
+  const validReviews = Array.isArray(userReviews) ? userReviews : [];
+  const totalReviewsCount = validReviews.length;
+  const count5 = validReviews.filter(r => r.rating === 5).length;
+  const count4 = validReviews.filter(r => r.rating === 4).length;
+  const count3 = validReviews.filter(r => r.rating === 3).length;
+  const count2 = validReviews.filter(r => r.rating === 2).length;
+  const count1 = validReviews.filter(r => r.rating === 1).length;
+
+  const averageRating = totalReviewsCount > 0
+    ? (validReviews.reduce((sum, r) => sum + (r.rating || 5), 0) / totalReviewsCount).toFixed(1)
+    : '5.0';
 
   // Filter Reviews
-  const filteredReviews = (userReviews || []).filter(rev => {
+  const filteredReviews = validReviews.filter(rev => {
     if (!rev) return false;
     const matchesFilter = selectedFilter === 'ALL' || rev.rating === selectedFilter;
     const q = (searchQuery || '').toLowerCase().trim();
@@ -115,7 +120,7 @@ export const ReviewsPage = () => {
           {/* Left Rating Box */}
           <div className="lg:col-span-3 text-center lg:text-left flex flex-col items-center lg:items-start justify-center space-y-2 border-b lg:border-b-0 lg:border-r border-slate-200 pb-6 lg:pb-0 lg:pr-6">
             <div className="text-5xl sm:text-6xl font-black text-slate-900 tracking-tight">
-              4.9
+              {averageRating}
             </div>
             <div className="flex text-amber-400 gap-1">
               {[...Array(5)].map((_, i) => (
@@ -123,18 +128,18 @@ export const ReviewsPage = () => {
               ))}
             </div>
             <div className="text-xs font-extrabold text-slate-500">
-              {totalReviewsCount} total reviews
+              {totalReviewsCount} total {totalReviewsCount === 1 ? 'review' : 'reviews'}
             </div>
           </div>
 
           {/* Middle Progress Bars */}
           <div className="lg:col-span-6 space-y-2.5">
             {[
-              { stars: 5, count: count5, percent: Math.round((count5 / totalReviewsCount) * 100) },
-              { stars: 4, count: count4, percent: Math.round((count4 / totalReviewsCount) * 100) },
-              { stars: 3, count: count3, percent: 2 },
-              { stars: 2, count: count2, percent: 1 },
-              { stars: 1, count: count1, percent: 1 },
+              { stars: 5, count: count5, percent: totalReviewsCount > 0 ? Math.round((count5 / totalReviewsCount) * 100) : 0 },
+              { stars: 4, count: count4, percent: totalReviewsCount > 0 ? Math.round((count4 / totalReviewsCount) * 100) : 0 },
+              { stars: 3, count: count3, percent: totalReviewsCount > 0 ? Math.round((count3 / totalReviewsCount) * 100) : 0 },
+              { stars: 2, count: count2, percent: totalReviewsCount > 0 ? Math.round((count2 / totalReviewsCount) * 100) : 0 },
+              { stars: 1, count: count1, percent: totalReviewsCount > 0 ? Math.round((count1 / totalReviewsCount) * 100) : 0 },
             ].map((row) => (
               <div key={row.stars} className="flex items-center gap-3 text-xs font-bold text-slate-600">
                 <span className="w-6 flex items-center gap-1 font-extrabold text-slate-700">
@@ -143,7 +148,7 @@ export const ReviewsPage = () => {
                 <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-[#cc040a] rounded-full transition-all duration-500" 
-                    style={{ width: `${Math.max(2, row.percent)}%` }}
+                    style={{ width: `${row.percent}%` }}
                   ></div>
                 </div>
                 <span className="w-8 text-right font-mono text-slate-500">{row.count}</span>
