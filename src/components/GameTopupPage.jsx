@@ -4,6 +4,7 @@ import { PAYMENT_METHODS, getVerifiedPackagePriceLkr } from '../data/games';
 import { checkPlayerIGN, dispatchMoongoldOrder } from '../services/moongoldApi';
 import { uploadToR2Storage } from '../services/storageService';
 import confetti from 'canvas-confetti';
+import { auth } from '../services/firebaseAuth';
 import { 
   ArrowLeft, Check, ShieldCheck, Zap, AlertCircle, RefreshCw, 
   CreditCard, ChevronRight, BookmarkPlus, CheckCircle2, Copy, UploadCloud, Cloud,
@@ -22,7 +23,8 @@ export const GameTopupPage = () => {
     currency,
     setCurrency,
     creditUserWallet,
-    setIsWalletModalOpen
+    setIsWalletModalOpen,
+    openWalletModal
   } = useApp();
 
   const [playerId, setPlayerId] = useState('');
@@ -162,8 +164,46 @@ export const GameTopupPage = () => {
 
     // 1. Strict Wallet Balance Check if paying with MADS Wallet
     if (selectedPayment.id === 'wallet') {
-      const availLkr = userProfile?.walletBalance || 0;
-      const availUsdt = userProfile?.walletUsdt || 0;
+      // Fetch fresh balance from RTDB to avoid stale local state mismatch
+      let availLkr = userProfile?.walletBalance || 0;
+      let availUsdt = userProfile?.walletUsdt || 0;
+
+      const uid = userProfile?.uid || (auth && auth.currentUser?.uid) || '';
+      const email = userProfile?.email || (auth && auth.currentUser?.email) || '';
+      if (uid || email) {
+        try {
+          const RTDB_URL = 'https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app';
+          // Try direct UID lookup
+          if (uid) {
+            const r = await fetch(`${RTDB_URL}/users/${encodeURIComponent(uid)}.json`);
+            if (r.ok) {
+              const d = await r.json();
+              if (d && (d.walletBalance !== undefined || d.email)) {
+                availLkr = parseFloat(d.walletBalance || 0);
+                availUsdt = parseFloat(d.walletUsdt || 0);
+              } else if (email) {
+                // UID key not found — scan by email
+                const allR = await fetch(`${RTDB_URL}/users.json`);
+                if (allR.ok) {
+                  const allUsers = await allR.json();
+                  if (allUsers && typeof allUsers === 'object') {
+                    for (const userData of Object.values(allUsers)) {
+                      if (userData && userData.email && userData.email.toLowerCase() === email.toLowerCase()) {
+                        availLkr = parseFloat(userData.walletBalance || 0);
+                        availUsdt = parseFloat(userData.walletUsdt || 0);
+                        break;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        } catch (e) {
+          // Fallback to local state if RTDB fetch fails
+          console.warn('[Balance fetch warning]:', e.message);
+        }
+      }
 
       if (currency === 'USD') {
         const requiredUsdt = totalLkr / 305;
@@ -172,8 +212,8 @@ export const GameTopupPage = () => {
         } else if (availLkr >= totalLkr) {
           deductedLkr = totalLkr;
         } else {
-          showToast(`Insufficient Wallet Balance! Required: $${requiredUsdt.toFixed(2)} USDT (or Rs. ${totalLkr.toFixed(2)} LKR). Available: $${availUsdt.toFixed(2)} USDT / Rs. ${availLkr.toFixed(2)} LKR. Please top up your wallet first!`, 'error');
-          setIsWalletModalOpen(true);
+          showToast(`Topup Failed: Insufficient wallet balance. Required: $${requiredUsdt.toFixed(2)} USDT (or Rs. ${totalLkr.toFixed(2)} LKR). Available: $${availUsdt.toFixed(2)} USDT / Rs. ${availLkr.toFixed(2)} LKR. Please top up your wallet!`, 'error');
+          openWalletModal();
           return;
         }
       } else {
@@ -182,8 +222,8 @@ export const GameTopupPage = () => {
         } else if ((availUsdt * 305) >= totalLkr) {
           deductedUsdt = totalLkr / 305;
         } else {
-          showToast(`Insufficient Wallet Balance! Required: Rs. ${totalLkr.toFixed(2)} LKR. Available: Rs. ${availLkr.toFixed(2)} LKR / $${availUsdt.toFixed(2)} USDT. Please top up your wallet first!`, 'error');
-          setIsWalletModalOpen(true);
+          showToast(`Topup Failed: Insufficient wallet balance. Required: Rs. ${totalLkr.toFixed(2)} LKR. Available: Rs. ${availLkr.toFixed(2)} LKR / $${availUsdt.toFixed(2)} USDT. Please recharge your wallet!`, 'error');
+          openWalletModal();
           return;
         }
       }
@@ -234,8 +274,8 @@ export const GameTopupPage = () => {
           payment: selectedPayment,
           priceLkr: itemTotalPrice,
           ign: ign || (`Player ${playerId}`),
-          userId: userProfile?.uid || auth?.currentUser?.uid || '',
-          userEmail: userProfile?.email || auth?.currentUser?.email || '',
+          userId: userProfile?.uid || (auth && auth.currentUser?.uid) || '',
+          userEmail: userProfile?.email || (auth && auth.currentUser?.email) || '',
           userProfile
         };
 
@@ -268,9 +308,9 @@ export const GameTopupPage = () => {
         // Record failed order in Firestore & State for transparency
         const failedOrder = {
           id: 'ORD-' + Math.floor(10000 + Math.random() * 90000),
-          userId: userProfile?.uid || auth?.currentUser?.uid || '',
-          userEmail: userProfile?.email || auth?.currentUser?.email || '',
-          userName: userProfile?.name || auth?.currentUser?.displayName || 'Registered Gamer',
+          userId: userProfile?.uid || (auth && auth.currentUser?.uid) || '',
+          userEmail: userProfile?.email || (auth && auth.currentUser?.email) || '',
+          userName: userProfile?.name || (auth && auth.currentUser?.displayName) || 'Registered Gamer',
           gameId: selectedGame.id,
           gameName: selectedGame.name,
           packageName: packageSummary,
@@ -307,9 +347,9 @@ export const GameTopupPage = () => {
 
     const newOrder = {
       id: 'ORD-' + Math.floor(10000 + Math.random() * 90000),
-      userId: userProfile?.uid || auth?.currentUser?.uid || '',
-      userEmail: userProfile?.email || auth?.currentUser?.email || '',
-      userName: userProfile?.name || auth?.currentUser?.displayName || 'Registered Gamer',
+      userId: userProfile?.uid || (auth && auth.currentUser?.uid) || '',
+      userEmail: userProfile?.email || (auth && auth.currentUser?.email) || '',
+      userName: userProfile?.name || (auth && auth.currentUser?.displayName) || 'Registered Gamer',
       gameId: selectedGame.id,
       gameName: selectedGame.name,
       packageName: packageSummary,
@@ -810,7 +850,7 @@ export const GameTopupPage = () => {
 
               {/* Recharge Wallet Helper Card */}
               <div
-                onClick={() => setIsWalletModalOpen(true)}
+                onClick={() => openWalletModal()}
                 className="p-4 rounded-2xl border-2 border-dashed border-emerald-300 bg-emerald-50/50 hover:bg-emerald-50 text-slate-900 cursor-pointer transition-all flex flex-col justify-between group"
               >
                 <div className="flex items-center justify-between mb-2">

@@ -317,9 +317,21 @@ async function verifyFirebaseIdToken(idToken) {
   if (!cleanToken) return null;
 
   // Handle WEB_SESSION fallback tokens generated for custom web user logins
+  // Format: WEB_SESSION:uid|email  (new format with pipe separator)
+  // Format: WEB_SESSION:uid_or_email  (legacy single-value format)
   if (cleanToken.startsWith('WEB_SESSION:')) {
     const rawId = cleanToken.slice(12).trim();
     if (rawId) {
+      // New format: uid|email
+      if (rawId.includes('|')) {
+        const [uid, email] = rawId.split('|');
+        return {
+          uid: uid.trim() || email.trim(),
+          email: email.trim() || (uid.includes('@') ? uid.trim() : `${uid.trim()}@madstopup.com`),
+          emailVerified: true
+        };
+      }
+      // Legacy format: single uid or email
       return {
         uid: rawId,
         email: rawId.includes('@') ? rawId : `${rawId}@madstopup.com`,
@@ -364,33 +376,85 @@ async function verifyFirebaseIdToken(idToken) {
 // User Wallet Database Helpers (Realtime Database REST Integration)
 const FIREBASE_RTDB_URL = process.env.FIREBASE_DATABASE_URL || process.env.VITE_FIREBASE_DATABASE_URL || "https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app";
 
-async function getUserWalletData(uid) {
-  if (!uid) return { walletBalance: 0, walletUsdt: 0 };
-  try {
-    const res = await fetch(`${FIREBASE_RTDB_URL}/users/${uid}.json`);
-    if (res.ok) {
-      const data = await res.json();
-      if (data) {
-        return {
-          walletBalance: parseFloat(data.walletBalance || 0),
-          walletUsdt: parseFloat(data.walletUsdt || 0)
-        };
+/**
+ * Resolve the actual RTDB key for a user — tries uid directly, then scans by email.
+ * Returns { rtdbKey, walletBalance, walletUsdt } or null if not found.
+ */
+async function resolveUserWalletKey(uid, email) {
+  // 1. Try direct UID lookup first
+  if (uid) {
+    try {
+      const res = await fetch(`${FIREBASE_RTDB_URL}/users/${encodeURIComponent(uid)}.json`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (data.walletBalance !== undefined || data.walletUsdt !== undefined || data.email || data.uid)) {
+          return {
+            rtdbKey: uid,
+            walletBalance: parseFloat(data.walletBalance || 0),
+            walletUsdt: parseFloat(data.walletUsdt || 0)
+          };
+        }
       }
+    } catch (e) {
+      console.warn('[Backend RTDB UID Read Warning]:', e.message);
     }
-  } catch (e) {
-    console.warn('[Backend RTDB Read Warning]:', e.message);
   }
+
+  // 2. Fallback: scan all users and match by email or uid field
+  const lookupEmail = email || (uid && uid.includes('@') ? uid : null);
+  if (lookupEmail) {
+    try {
+      const allRes = await fetch(`${FIREBASE_RTDB_URL}/users.json`);
+      if (allRes.ok) {
+        const allUsers = await allRes.json();
+        if (allUsers && typeof allUsers === 'object') {
+          for (const [key, userData] of Object.entries(allUsers)) {
+            if (!userData) continue;
+            const emailMatch = userData.email && userData.email.toLowerCase() === lookupEmail.toLowerCase();
+            const uidMatch = userData.uid && (userData.uid === uid || userData.uid === lookupEmail);
+            if (emailMatch || uidMatch) {
+              console.log(`[RTDB Key Resolved] Found user by ${emailMatch ? 'email' : 'uid field'}: key=${key}`);
+              return {
+                rtdbKey: key,
+                walletBalance: parseFloat(userData.walletBalance || 0),
+                walletUsdt: parseFloat(userData.walletUsdt || 0)
+              };
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[Backend RTDB Scan Warning]:', e.message);
+    }
+  }
+
+  // 3. If uid was given but no record found, still return uid as key (will create fresh entry on PATCH)
+  if (uid) {
+    return { rtdbKey: uid, walletBalance: 0, walletUsdt: 0 };
+  }
+
+  return null;
+}
+
+async function getUserWalletData(uid, email) {
+  const result = await resolveUserWalletKey(uid, email);
+  if (result) return { walletBalance: result.walletBalance, walletUsdt: result.walletUsdt };
   return { walletBalance: 0, walletUsdt: 0 };
 }
 
-async function deductUserWallet(uid, priceLkr) {
+async function deductUserWallet(uid, priceLkr, email) {
   if (!uid || priceLkr <= 0) return { success: false, reason: 'Invalid amount' };
   try {
-    const current = await getUserWalletData(uid);
+    const resolved = await resolveUserWalletKey(uid, email);
+    if (!resolved) return { success: false, reason: 'User wallet not found' };
+
+    const { rtdbKey } = resolved;
     // LKR and USDT wallets are INDEPENDENT — never recalculate one from the other
-    let newLkr = current.walletBalance;
-    let newUsdt = current.walletUsdt;
+    let newLkr = resolved.walletBalance;
+    let newUsdt = resolved.walletUsdt;
     let usedCurrency = null;
+
+    console.log(`[Wallet Check] User ${uid} (key: ${rtdbKey}) — LKR: ${newLkr}, USDT: ${newUsdt}, Required: Rs.${priceLkr}`);
 
     if (newLkr >= priceLkr) {
       // Pay with LKR — only touch walletBalance, leave walletUsdt unchanged
@@ -402,10 +466,10 @@ async function deductUserWallet(uid, priceLkr) {
       newUsdt = parseFloat(Math.max(0, newUsdt - reqUsdt).toFixed(6));
       usedCurrency = 'USDT';
     } else {
-      return { success: false, reason: `Insufficient wallet balance. Required: Rs. ${priceLkr.toFixed(2)}, Available: Rs. ${newLkr.toFixed(2)} LKR / $${newUsdt.toFixed(2)} USDT` };
+      return { success: false, reason: `Insufficient wallet balance. Required: Rs. ${priceLkr.toFixed(2)}, Available: Rs. ${resolved.walletBalance.toFixed(2)} LKR / $${resolved.walletUsdt.toFixed(2)} USDT` };
     }
 
-    const patchRes = await fetch(`${FIREBASE_RTDB_URL}/users/${uid}.json`, {
+    const patchRes = await fetch(`${FIREBASE_RTDB_URL}/users/${encodeURIComponent(rtdbKey)}.json`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -416,7 +480,7 @@ async function deductUserWallet(uid, priceLkr) {
     });
 
     if (patchRes.ok) {
-      return { success: true, newBalanceLkr: newLkr, newBalanceUsdt: newUsdt, usedCurrency };
+      return { success: true, newBalanceLkr: newLkr, newBalanceUsdt: newUsdt, usedCurrency, rtdbKey };
     }
   } catch (e) {
     console.error('[Backend RTDB Deduct Error]:', e.message);
@@ -424,12 +488,23 @@ async function deductUserWallet(uid, priceLkr) {
   return { success: false, reason: 'Database update failed' };
 }
 
-async function refundUserWallet(uid, priceLkr, usedCurrency = 'LKR') {
+async function refundUserWallet(uid, priceLkr, usedCurrency = 'LKR', email, rtdbKey) {
   if (!uid || priceLkr <= 0) return;
   try {
-    const current = await getUserWalletData(uid);
-    let patchBody;
+    // Use the resolved key if provided (from deductResult), otherwise resolve fresh
+    let resolvedKey = rtdbKey;
+    let current;
+    if (resolvedKey) {
+      const res = await fetch(`${FIREBASE_RTDB_URL}/users/${encodeURIComponent(resolvedKey)}.json`);
+      const data = res.ok ? await res.json() : {};
+      current = { walletBalance: parseFloat((data && data.walletBalance) || 0), walletUsdt: parseFloat((data && data.walletUsdt) || 0) };
+    } else {
+      const resolved = await resolveUserWalletKey(uid, email);
+      resolvedKey = resolved ? resolved.rtdbKey : uid;
+      current = resolved || { walletBalance: 0, walletUsdt: 0 };
+    }
 
+    let patchBody;
     if (usedCurrency === 'USDT') {
       // Refund back to USDT wallet — user originally paid from USDT
       const reqUsdt = priceLkr / 305;
@@ -439,7 +514,7 @@ async function refundUserWallet(uid, priceLkr, usedCurrency = 'LKR') {
         walletUsdt: newUsdt,
         updatedAt: new Date().toISOString()
       };
-      console.log(`[Backend Refund Success] Refunded $${reqUsdt.toFixed(6)} USDT to user ${uid}. New USDT: ${newUsdt}`);
+      console.log(`[Backend Refund Success] Refunded $${reqUsdt.toFixed(6)} USDT to user ${uid} (key: ${resolvedKey}). New USDT: ${newUsdt}`);
     } else {
       // Refund back to LKR wallet (default)
       const newLkr = parseFloat((current.walletBalance + priceLkr).toFixed(2));
@@ -448,10 +523,10 @@ async function refundUserWallet(uid, priceLkr, usedCurrency = 'LKR') {
         walletUsdt: current.walletUsdt, // USDT untouched
         updatedAt: new Date().toISOString()
       };
-      console.log(`[Backend Refund Success] Refunded Rs. ${priceLkr} to user ${uid}. New LKR: ${newLkr}`);
+      console.log(`[Backend Refund Success] Refunded Rs. ${priceLkr} to user ${uid} (key: ${resolvedKey}). New LKR: ${newLkr}`);
     }
 
-    await fetch(`${FIREBASE_RTDB_URL}/users/${uid}.json`, {
+    await fetch(`${FIREBASE_RTDB_URL}/users/${encodeURIComponent(resolvedKey)}.json`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(patchBody)
@@ -492,15 +567,16 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
       }
 
       // Perform atomic backend wallet deduction BEFORE calling MooGold
-      const deductResult = await deductUserWallet(authenticatedUser.uid, numPriceLkr);
+      // Pass both uid and email so resolveUserWalletKey can find the correct RTDB path
+      const deductResult = await deductUserWallet(authenticatedUser.uid, numPriceLkr, authenticatedUser.email);
       if (!deductResult.success) {
-        console.warn(`[INSUFFICIENT BALANCE BLOCKED] User ${authenticatedUser.uid} attempted order without balance. Required: Rs. ${numPriceLkr}`);
+        console.warn(`[INSUFFICIENT BALANCE BLOCKED] User ${authenticatedUser.uid} (${authenticatedUser.email}) attempted order without balance. Required: Rs. ${numPriceLkr}`);
         return res.status(403).json({
           error: deductResult.reason || 'Insufficient wallet balance. Please top up your wallet first.'
         });
       }
 
-      console.log(`[WALLET DEDUCTED] Deducted Rs. ${numPriceLkr} from UID ${authenticatedUser.uid}. New Balance: Rs. ${deductResult.newBalanceLkr}`);
+      console.log(`[WALLET DEDUCTED] Deducted Rs. ${numPriceLkr} from UID ${authenticatedUser.uid} (key: ${deductResult.rtdbKey}). New Balance: Rs. ${deductResult.newBalanceLkr}`);
     }
 
     // 3. EXECUTE SIGNED MOOGOLD API REQUEST
@@ -548,7 +624,7 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
     // 4. REFUND USER IF MOOGOLD ORDER FAILED — refund to the same wallet they paid from
     if (isOrderCreation && !isSuccess) {
       console.warn(`[MOOGOLD ORDER FAILED] Reverting & Refund Rs. ${numPriceLkr} to UID ${authenticatedUser.uid} via ${deductResult.usedCurrency || 'LKR'}`);
-      await refundUserWallet(authenticatedUser.uid, numPriceLkr, deductResult.usedCurrency || 'LKR');
+      await refundUserWallet(authenticatedUser.uid, numPriceLkr, deductResult.usedCurrency || 'LKR', authenticatedUser.email, deductResult.rtdbKey);
     }
 
     res.status(apiRes.status);

@@ -302,7 +302,8 @@ export const dispatchMoongoldOrder = async (orderData) => {
   const targetEmail = orderData.userEmail || userProfile?.email || auth?.currentUser?.email || '';
 
   if (!idToken && (targetUid || targetEmail)) {
-    idToken = `WEB_SESSION:${targetUid || targetEmail}`;
+    // Include both uid and email in WEB_SESSION token so the server can resolve the correct RTDB key
+    idToken = `WEB_SESSION:${targetUid || targetEmail}|${targetEmail}`;
   }
 
   if (!idToken) {
