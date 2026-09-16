@@ -15,6 +15,11 @@
     font-family: var(--font-body);
     background-color: #F8FAFF;
     color: #0F172A;
+    overflow-x: hidden;
+  }
+
+  body {
+    overflow-x: hidden;
   }
 
   h1, h2, h3, h4, h5, h6, .font-heading {
@@ -45,11 +50,28 @@
   border-radius: 9999px;
   box-shadow: 0 8px 25px -4px rgba(204, 4, 10, 0.5);
   transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+.btn-cyan-pill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.22) 50%, transparent 60%);
+  transform: translateX(-100%);
+  transition: transform 0.5s ease;
+}
+.btn-cyan-pill:hover::after {
+  transform: translateX(100%);
 }
 .btn-cyan-pill:hover {
   background: linear-gradient(135deg, #e6050c 0%, #cc040a 100%);
-  box-shadow: 0 12px 30px -2px rgba(204, 4, 10, 0.7);
-  transform: translateY(-2px);
+  box-shadow: 0 14px 32px -2px rgba(204, 4, 10, 0.7);
+  transform: translateY(-2px) scale(1.02);
+}
+.btn-cyan-pill:active {
+  transform: translateY(0px) scale(0.97);
+  box-shadow: 0 4px 12px -2px rgba(204, 4, 10, 0.4);
 }
 
 /* Dark Pill Button */
@@ -110,21 +132,40 @@
   padding: 1rem;
 }
 
-/* MADS Card Lift & Red Glow Animation */
+/* MADS Card — Premium lift with glossy shine */
 .mads-card {
   background: #FFFFFF;
   border-radius: 1.75rem;
-  border: 1px solid rgba(226, 232, 240, 0.9);
-  box-shadow: 0 10px 30px -10px rgba(204, 4, 10, 0.08);
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  box-shadow:
+    0 1px 3px rgba(0,0,0,0.04),
+    0 6px 16px -4px rgba(204, 4, 10, 0.07),
+    0 20px 40px -12px rgba(15, 23, 42, 0.08);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   overflow: hidden;
 }
 
+/* Glossy top-shine pseudo-element */
+.mads-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9) 50%, transparent);
+  opacity: 0.7;
+  z-index: 1;
+  pointer-events: none;
+}
+
 .mads-card:hover {
-  transform: translateY(-8px);
-  border-color: rgba(204, 4, 10, 0.5);
-  box-shadow: 0 22px 50px -10px rgba(204, 4, 10, 0.3), 0 0 25px rgba(204, 4, 10, 0.15);
+  transform: translateY(-10px) scale(1.012);
+  border-color: rgba(204, 4, 10, 0.35);
+  box-shadow:
+    0 2px 6px rgba(0,0,0,0.04),
+    0 12px 28px -6px rgba(204, 4, 10, 0.18),
+    0 32px 60px -14px rgba(204, 4, 10, 0.22),
+    0 0 0 1px rgba(204, 4, 10, 0.08);
 }
 
 .mads-card-glow-bar {
@@ -132,14 +173,59 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #cc040a 0%, #e6050c 50%, #3B2896 100%);
+  height: 3px;
+  background: linear-gradient(90deg, #cc040a 0%, #ff3340 40%, #e6050c 70%, #3B2896 100%);
   opacity: 0;
-  transition: opacity 0.35s ease;
+  transform: scaleX(0.5);
+  transform-origin: center;
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .mads-card:hover .mads-card-glow-bar {
   opacity: 1;
+  transform: scaleX(1);
+}
+
+/* ── Scroll Reveal Utility ── */
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.reveal {
+  opacity: 0;
+  animation: fadeSlideUp 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.reveal-1 { animation-delay: 0ms; }
+.reveal-2 { animation-delay: 100ms; }
+.reveal-3 { animation-delay: 200ms; }
+.reveal-4 { animation-delay: 300ms; }
+
+/* ── Section Header Spacing Upgrade ── */
+.section-header {
+  margin-bottom: 4rem;
+}
+.section-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-family: var(--font-body);
+  color: #cc040a;
+  background: rgba(204, 4, 10, 0.07);
+  border: 1px solid rgba(204, 4, 10, 0.18);
+  padding: 0.35rem 1rem;
+  border-radius: 9999px;
+  margin-bottom: 1rem;
 }
 
 /* Hero Text Popup Entrance Animation */

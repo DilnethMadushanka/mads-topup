@@ -73,7 +73,7 @@ const MainContent = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFF] flex flex-col justify-between pb-0 font-sans text-[#0f172a]">
+    <div className="min-h-screen bg-[#F8FAFF] flex flex-col justify-between pb-0 font-sans text-[#0f172a] overflow-x-hidden">
       <div>
         <Navbar />
         {selectedGame ? (

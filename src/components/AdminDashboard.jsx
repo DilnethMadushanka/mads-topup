@@ -117,8 +117,8 @@ const ToggleSwitch = ({ checked, onChange, label, description }) => (
 );
 
 const ModalShell = ({ onClose, title, subtitle, icon: Icon, children, maxWidth = 'max-w-lg', footer }) => (
-  <div className="fixed inset-0 z-[70] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-    <div className={`w-full ${maxWidth} rounded-3xl border p-6 space-y-4 relative shadow-2xl max-h-[90vh] flex flex-col`} style={cardStyle}>
+  <div className="fixed inset-0 z-[70] bg-slate-950/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div className={`w-full ${maxWidth} rounded-t-3xl sm:rounded-3xl border p-5 sm:p-6 space-y-4 relative shadow-2xl max-h-[92vh] sm:max-h-[90vh] flex flex-col overflow-hidden`} style={cardStyle}>
       <div className="flex items-center justify-between pb-3 border-b shrink-0" style={{ borderColor: 'var(--adm-border)' }}>
         <div className="flex items-center gap-2.5">
           {Icon && (
@@ -240,8 +240,8 @@ const DataTable = ({ columns, rows, rowKey = 'id', pageSize = 8, emptyMessage = 
   };
 
   return (
-    <div className="rounded-2xl border overflow-hidden" style={cardStyle}>
-      <div className="overflow-x-auto">
+    <div className="rounded-2xl border overflow-hidden min-w-0" style={cardStyle}>
+      <div className="overflow-x-auto -mx-px">
         <table className="w-full text-left text-xs">
           <thead style={{ background: 'var(--adm-surface-2)' }} className="uppercase font-mono text-[10px]">
             <tr>
@@ -563,11 +563,11 @@ export const AdminDashboard = () => {
 
   if (!isAdminAuthenticated) {
     return (
-      <div className={`mads-admin ${themeClass} fixed inset-0 z-50 w-screen h-screen min-h-screen overflow-y-auto flex flex-col items-center justify-center p-4`} style={{ background: 'var(--adm-bg)', color: 'var(--adm-text)' }}>
+      <div className={`mads-admin ${themeClass} fixed inset-0 z-50 w-screen h-screen min-h-screen overflow-y-auto overflow-x-hidden flex flex-col items-center justify-center p-3 sm:p-4`} style={{ background: 'var(--adm-bg)', color: 'var(--adm-text)' }}>
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
 
-        <div className="w-full max-w-md rounded-3xl shadow-2xl border overflow-hidden relative p-6 sm:p-8 z-10" style={cardStyle}>
+        <div className="w-full max-w-md rounded-3xl shadow-2xl border overflow-hidden relative p-5 sm:p-8 z-10" style={cardStyle}>
           <button
             onClick={() => setIsAdminOpen(false)}
             className="absolute top-4 right-4 p-2 rounded-xl hover:bg-[var(--adm-surface-hover)] transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-bold font-mono"
@@ -954,7 +954,7 @@ export const AdminDashboard = () => {
     return results.slice(0, 7);
   })();
 
-  const wrapperCls = `mads-admin ${themeClass} fixed inset-0 z-50 w-screen h-screen min-h-screen overflow-hidden flex flex-col`;
+  const wrapperCls = `mads-admin ${themeClass} fixed inset-0 z-50 w-screen h-screen min-h-screen overflow-hidden overflow-x-hidden flex flex-col`;
 
   return (
     <div className={wrapperCls} style={{ background: 'var(--adm-bg)', color: 'var(--adm-text)' }}>
@@ -1091,7 +1091,7 @@ export const AdminDashboard = () => {
           ))}
         </aside>
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6" style={{ background: 'var(--adm-bg-soft)' }}>
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-6 space-y-6" style={{ background: 'var(--adm-bg-soft)' }}>
 
           {adminTab !== 'overview' && TAB_TITLES[adminTab] && (
             <SectionHeader title={TAB_TITLES[adminTab][0]} subtitle={TAB_TITLES[adminTab][1]} />

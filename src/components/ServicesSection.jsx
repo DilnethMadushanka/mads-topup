@@ -33,18 +33,16 @@ export const ServicesSection = () => {
   ];
 
   return (
-    <section id="services-section" className="py-20 bg-[#F8FAFF] border-b border-slate-200/70">
+    <section id="services-section" className="py-24 bg-[#F8FAFF] border-b border-slate-200/70">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         
         {/* Header matching screenshot */}
-        <div className="space-y-3 mb-14">
-          <span className="text-xs font-black text-[#cc040a] tracking-widest uppercase font-mono bg-[#cc040a]/10 px-4 py-1.5 rounded-full border border-[#cc040a]/20">
-            — WHAT WE OFFER —
-          </span>
-          <h2 className="text-3xl sm:text-5xl font-black text-slate-900 font-heading tracking-tight">
+        <div className="section-header space-y-3 text-center">
+          <span className="section-badge">— WHAT WE OFFER —</span>
+          <h2 className="text-3xl sm:text-5xl font-black text-slate-900 font-heading tracking-tight leading-tight">
             Our Premium <span className="text-[#cc040a]">Services</span>
           </h2>
-          <p className="text-slate-600 text-sm sm:text-base font-semibold max-w-lg mx-auto">
+          <p className="text-slate-500 text-sm sm:text-base font-medium max-w-lg mx-auto leading-relaxed">
             Elevate your gaming experience with our top-tier digital services
           </p>
         </div>
@@ -55,7 +53,7 @@ export const ServicesSection = () => {
             <div
               key={service.id}
               onClick={service.action}
-              className="bg-white rounded-3xl p-6 sm:p-7 flex flex-col justify-between items-center text-center border border-slate-200/80 shadow-md hover:shadow-2xl hover:shadow-red-500/15 hover:border-[#cc040a]/40 hover:-translate-y-2.5 transition-all duration-300 group cursor-pointer min-h-[390px] relative overflow-hidden"
+              className={`bg-white rounded-3xl p-6 sm:p-8 flex flex-col justify-between items-center text-center border border-slate-200/80 shadow-md hover:shadow-2xl hover:shadow-red-500/15 hover:border-[#cc040a]/40 hover:-translate-y-2.5 transition-all duration-300 group cursor-pointer min-h-[390px] relative overflow-hidden reveal reveal-${service.id === 'topup' ? '1' : service.id === 'cards' ? '2' : '3'}`}
             >
               {/* Top Border Indicator Bar (Matching Screenshot Hover Effect) */}
               <div className="absolute top-0 left-0 right-0 h-1 bg-[#cc040a] rounded-t-3xl opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
@@ -70,11 +68,11 @@ export const ServicesSection = () => {
               </div>
 
               {/* Title & Description */}
-              <div className="space-y-2.5 mb-6 relative z-10 flex-1 flex flex-col justify-center">
+              <div className="space-y-2 mb-6 relative z-10 flex-1 flex flex-col justify-center">
                 <h3 className="text-lg sm:text-xl font-black text-slate-900 font-heading tracking-tight group-hover:text-[#cc040a] transition-colors duration-300">
                   {service.title}
                 </h3>
-                <p className="text-slate-500 text-xs sm:text-[13px] leading-relaxed font-semibold max-w-[210px] mx-auto">
+                <p className="text-slate-500 text-xs sm:text-[13px] leading-relaxed font-medium max-w-[210px] mx-auto">
                   {service.description}
                 </p>
               </div>
@@ -86,7 +84,7 @@ export const ServicesSection = () => {
                   e.stopPropagation();
                   service.action();
                 }}
-                className="bg-[#cc040a] hover:bg-[#b00308] text-white px-6 py-2.5 sm:py-3 rounded-full font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-red-600/20 group-hover:shadow-lg group-hover:shadow-red-600/40 group-hover:scale-105 transition-all cursor-pointer relative z-10 border-0 outline-none"
+                className="btn-cyan-pill px-7 py-2.5 sm:py-3 text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 group-hover:shadow-lg group-hover:shadow-red-600/40 group-hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer relative z-10 border-0 outline-none"
               >
                 <span>{service.buttonText}</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

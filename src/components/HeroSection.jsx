@@ -25,13 +25,13 @@ export const HeroSection = () => {
   };
 
   return (
-    <section className="relative bg-[#090D16] text-white min-h-[92vh] flex flex-col justify-between items-center overflow-hidden py-16 px-4">
+    <section className="relative bg-[#0d1220] text-white min-h-[92vh] flex flex-col justify-between items-center overflow-hidden py-16 px-4">
       {/* Background Artwork Slider - MADS Hero Media */}
       {heroImages.map((img, idx) => (
         <div 
           key={img}
           className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out scale-105 pointer-events-none ${
-            idx === currentHeroIndex ? 'opacity-40' : 'opacity-0'
+            idx === currentHeroIndex ? 'opacity-60' : 'opacity-0'
           }`}
           style={{
             backgroundImage: `url('${img}')`
@@ -40,13 +40,13 @@ export const HeroSection = () => {
       ))}
 
       {/* Ambient Dark Navy Vignette & Red Aura */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#090D16]/80 via-[#090D16]/50 to-[#090D16] pointer-events-none"></div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-[#cc040a]/15 rounded-full blur-[160px] pointer-events-none"></div>
+      <div className="absolute inset-0 bg-gradient-to-b from-[#0d1220]/55 via-[#0d1220]/20 to-[#0d1220]/88 pointer-events-none"></div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(700px,100vw)] h-[min(700px,100vw)] bg-[#cc040a]/20 rounded-full blur-[140px] pointer-events-none"></div>
 
       {/* ── FLOATING GEM DIAMONDS ── */}
 
       {/* Diamond 1 — top left, large */}
-      <div className="absolute top-24 left-10 sm:left-16 pointer-events-none select-none diamond-gem-1" style={{ opacity: 0.85 }}>
+      <div className="absolute top-24 left-10 sm:left-16 pointer-events-none select-none diamond-gem-1 hidden sm:block" style={{ opacity: 0.85 }}>
         <svg width="72" height="80" viewBox="0 0 72 80" fill="none" xmlns="http://www.w3.org/2000/svg">
           <polygon points="36,2 70,26 70,54 36,78 2,54 2,26" fill="url(#d1a)" stroke="rgba(147,197,253,0.6)" strokeWidth="1"/>
           <polygon points="36,2 70,26 36,30" fill="url(#d1b)" opacity="0.9"/>
@@ -67,7 +67,7 @@ export const HeroSection = () => {
       </div>
 
       {/* Diamond 2 — top right, xlarge */}
-      <div className="absolute top-16 right-12 sm:right-20 pointer-events-none select-none diamond-gem-2" style={{ opacity: 0.9 }}>
+      <div className="absolute top-16 right-12 sm:right-20 pointer-events-none select-none diamond-gem-2 hidden sm:block" style={{ opacity: 0.9 }}>
         <svg width="90" height="100" viewBox="0 0 90 100" fill="none" xmlns="http://www.w3.org/2000/svg">
           <polygon points="45,3 87,30 87,70 45,97 3,70 3,30" fill="url(#d2a)" stroke="rgba(186,230,253,0.5)" strokeWidth="1"/>
           <polygon points="45,3 87,30 45,36" fill="url(#d2b)" opacity="0.95"/>
@@ -87,7 +87,7 @@ export const HeroSection = () => {
       </div>
 
       {/* Diamond 3 — bottom left, medium */}
-      <div className="absolute bottom-32 left-8 sm:left-20 pointer-events-none select-none diamond-gem-3" style={{ opacity: 0.75 }}>
+      <div className="absolute bottom-32 left-8 sm:left-20 pointer-events-none select-none diamond-gem-3 hidden sm:block" style={{ opacity: 0.75 }}>
         <svg width="54" height="60" viewBox="0 0 54 60" fill="none" xmlns="http://www.w3.org/2000/svg">
           <polygon points="27,2 52,18 52,42 27,58 2,42 2,18" fill="url(#d3a)" stroke="rgba(147,197,253,0.5)" strokeWidth="1"/>
           <polygon points="27,2 52,18 27,22" fill="url(#d3b)" opacity="0.9"/>
@@ -106,7 +106,7 @@ export const HeroSection = () => {
       </div>
 
       {/* Diamond 4 — mid right, small */}
-      <div className="absolute top-1/2 right-6 sm:right-10 -translate-y-1/2 pointer-events-none select-none diamond-gem-4" style={{ opacity: 0.7 }}>
+      <div className="absolute top-1/2 right-6 sm:right-10 -translate-y-1/2 pointer-events-none select-none diamond-gem-4 hidden sm:block" style={{ opacity: 0.7 }}>
         <svg width="40" height="46" viewBox="0 0 40 46" fill="none" xmlns="http://www.w3.org/2000/svg">
           <polygon points="20,2 38,14 38,32 20,44 2,32 2,14" fill="url(#d4a)" stroke="rgba(186,230,253,0.4)" strokeWidth="1"/>
           <polygon points="20,2 38,14 20,17" fill="url(#d4b)" opacity="0.9"/>
@@ -137,7 +137,7 @@ export const HeroSection = () => {
       </div>
 
       {/* Diamond 6 — bottom right, medium */}
-      <div className="absolute bottom-24 right-12 sm:right-24 pointer-events-none select-none diamond-gem-6" style={{ opacity: 0.65 }}>
+      <div className="absolute bottom-24 right-12 sm:right-24 pointer-events-none select-none diamond-gem-6 hidden sm:block" style={{ opacity: 0.65 }}>
         <svg width="48" height="55" viewBox="0 0 48 55" fill="none">
           <polygon points="24,2 46,16 46,39 24,53 2,39 2,16" fill="url(#d6a)" stroke="rgba(186,230,253,0.45)" strokeWidth="1"/>
           <polygon points="24,2 46,16 24,20" fill="url(#d6b)" opacity="0.9"/>
@@ -161,7 +161,7 @@ export const HeroSection = () => {
       <div className="relative z-10 max-w-4xl text-center space-y-7 my-auto pt-4">
         
         {/* Top Pill Badge */}
-        <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-slate-900/90 border border-[#cc040a]/40 backdrop-blur-xl text-slate-200 text-xs font-black uppercase tracking-widest shadow-xl animate-pop-in delay-100">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/90 border border-[#cc040a]/40 backdrop-blur-xl text-slate-200 text-[10px] font-black uppercase tracking-widest shadow-xl animate-pop-in delay-100">
           <span className="w-2 h-2 rounded-full bg-[#cc040a] animate-pulse shadow-[0_0_8px_#cc040a]"></span>
           <span className="font-mono text-slate-100">SRI LANKA'S #1 GAME TOP-UP PLATFORM</span>
         </div>
@@ -169,13 +169,13 @@ export const HeroSection = () => {
         {/* Hero Title: White MADS + Red TOPUP — single h1 for SEO */}
         <div className="space-y-0">
           <h1 className="font-black font-heading tracking-tighter uppercase leading-none">
-            <span className="block text-7xl sm:text-8xl lg:text-9xl text-white drop-shadow-lg animate-pop-in delay-300">MADS</span>
-            <span className="block text-7xl sm:text-8xl lg:text-9xl text-[#cc040a] drop-shadow-[0_10px_35px_rgba(204,4,10,0.6)] animate-pop-in delay-400">TOPUP</span>
+            <span className="block text-5xl sm:text-8xl lg:text-9xl text-white drop-shadow-lg animate-pop-in delay-300">MADS</span>
+            <span className="block text-5xl sm:text-8xl lg:text-9xl text-[#cc040a] drop-shadow-[0_10px_35px_rgba(204,4,10,0.6)] animate-pop-in delay-400">TOPUP</span>
           </h1>
         </div>
 
         {/* Subtitle */}
-        <p className="text-slate-300 text-base sm:text-xl max-w-2xl mx-auto font-semibold leading-relaxed drop-shadow animate-pop-in delay-600">
+        <p className="text-slate-300 text-sm sm:text-xl max-w-2xl mx-auto font-semibold leading-relaxed drop-shadow animate-pop-in delay-600">
           Premium game top-ups at <strong className="text-white font-extrabold">unbeatable prices</strong> — instant delivery, trusted by thousands of Sri Lankan gamers.
         </p>
 

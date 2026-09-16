@@ -31,14 +31,12 @@ export const WhyChooseUs = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         
         {/* Section Header */}
-        <div className="space-y-3 mb-16">
-          <span className="text-xs font-black text-[#cc040a] tracking-widest uppercase font-mono bg-[#cc040a]/10 px-4 py-1.5 rounded-full border border-[#cc040a]/20">
-            — WHY CHOOSE US —
-          </span>
-          <h2 className="text-4xl sm:text-5xl font-black text-slate-900 font-heading tracking-tight">
+        <div className="section-header space-y-3">
+          <span className="section-badge">— WHY CHOOSE US —</span>
+          <h2 className="text-4xl sm:text-5xl font-black text-slate-900 font-heading tracking-tight leading-tight">
             The Best Free Fire <span className="text-[#cc040a]">Top-Up Experience in Sri Lanka</span>
           </h2>
-          <p className="text-slate-600 text-sm sm:text-base font-semibold max-w-2xl mx-auto">
+          <p className="text-slate-500 text-sm sm:text-base font-medium max-w-2xl mx-auto leading-relaxed">
             Discover why thousands of gamers trust MADS TOPUP for instant, cheap, and secure top-ups. We are dedicated to providing the fastest service for Free Fire, Garena Shells, and PUBG.
           </p>
         </div>
@@ -62,11 +60,11 @@ export const WhyChooseUs = () => {
                     <Icon className="w-7 h-7 stroke-[2.5]" />
                   </div>
 
-                  <h3 className="text-xl font-black text-slate-900 font-heading group-hover:text-[#cc040a] transition-colors">
+                  <h3 className="text-xl font-black text-slate-900 font-heading tracking-tight group-hover:text-[#cc040a] transition-colors">
                     {item.title}
                   </h3>
 
-                  <p className="text-slate-600 text-xs leading-relaxed font-medium">
+                  <p className="text-[13px] text-slate-500 leading-relaxed font-medium">
                     {item.description}
                   </p>
                 </div>

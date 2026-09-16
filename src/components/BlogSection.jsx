@@ -11,15 +11,15 @@ export const BlogSection = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
-        <div className="text-center space-y-3 mb-16">
-          <span className="text-xs font-black text-[#cc040a] tracking-widest uppercase font-mono bg-[#cc040a]/10 px-4 py-1.5 rounded-full border border-[#cc040a]/20 inline-flex items-center gap-1.5">
+        <div className="section-header text-center space-y-3">
+          <span className="section-badge">
             <BookOpen className="w-3.5 h-3.5" />
             <span>LATEST GAMING ARTICLES</span>
           </span>
           <h2 className="text-4xl sm:text-5xl font-black text-slate-900 font-heading tracking-tight uppercase">
             News & <span className="text-[#cc040a]">Guides</span>
           </h2>
-          <p className="text-slate-600 text-sm sm:text-base font-semibold max-w-lg mx-auto">
+          <p className="text-slate-500 text-sm sm:text-base font-medium max-w-lg mx-auto leading-relaxed">
             Stay updated with the latest gaming top-up guides, Garena Shell tips, and esports news
           </p>
         </div>
@@ -48,7 +48,7 @@ export const BlogSection = () => {
               </div>
 
               {/* Content */}
-              <div className="p-8 space-y-4 flex-1 flex flex-col justify-between relative z-10">
+              <div className="p-8 sm:p-9 space-y-4 flex-1 flex flex-col justify-between relative z-10">
                 <div className="space-y-3">
                   <div className="flex items-center gap-4 text-xs text-slate-500 font-medium">
                     <span className="flex items-center gap-1">
@@ -62,11 +62,11 @@ export const BlogSection = () => {
                     </span>
                   </div>
 
-                  <h3 className="text-xl font-extrabold text-slate-900 font-heading leading-snug group-hover:text-[#cc040a] transition-colors">
+                  <h3 className="text-xl font-extrabold text-slate-900 font-heading leading-snug tracking-tight group-hover:text-[#cc040a] transition-colors">
                     {post.title}
                   </h3>
 
-                  <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                  <p className="text-[13px] text-slate-500 leading-relaxed font-medium">
                     {post.summary}
                   </p>
                 </div>

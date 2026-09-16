@@ -100,7 +100,7 @@ export const StatsSection = () => {
   ];
 
   return (
-    <section className="py-12 bg-white border-y border-slate-200/80">
+    <section className="py-16 bg-white border-y border-slate-200/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {stats.map((stat, idx) => {
@@ -108,19 +108,19 @@ export const StatsSection = () => {
             return (
               <div 
                 key={idx}
-                className="bg-slate-50 p-6 rounded-3xl border border-slate-200 shadow-xs flex flex-col items-center text-center space-y-3 hover:border-[#cc040a]/40 hover:bg-white transition-all transform hover:-translate-y-1 duration-300"
+                className="bg-slate-50/70 p-7 rounded-3xl border border-slate-200/70 shadow-sm flex flex-col items-center text-center space-y-3 hover:border-[#cc040a]/30 hover:bg-white hover:shadow-lg hover:shadow-red-500/10 hover:-translate-y-1 transition-all duration-300 group"
               >
                 <div className={`w-12 h-12 rounded-2xl ${stat.iconBg} flex items-center justify-center transition-transform hover:scale-110 duration-300`}>
                   <Icon className="w-6 h-6 stroke-[2.5]" />
                 </div>
-                <div className="text-3xl sm:text-4xl font-black text-slate-900 font-heading tracking-tight">
+                <div className="text-4xl sm:text-5xl font-black text-slate-900 font-heading tracking-tighter leading-none">
                   <CountUpNumber 
                     target={stat.target} 
                     suffix={stat.suffix} 
                     formatComma={stat.formatComma} 
                   />
                 </div>
-                <div className="text-xs font-extrabold text-slate-600 uppercase tracking-wider">
+                <div className="text-[11px] font-black text-slate-500 uppercase tracking-widest">
                   {stat.label}
                 </div>
               </div>
