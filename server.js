@@ -151,12 +151,13 @@ app.post('/api/send-otp', rateLimiter(10, 60000), async (req, res) => {
         });
         const info = await mailTransporter.sendMail({
           from: `"MADS TOPUP" <${zohoUser}>`,
+          replyTo: 'support@madstopup.com',
           to: email,
-          subject: `Your Verification Code: ${otp}`,
+          subject: `Your MADS TOPUP Verification Code: ${otp}`,
           text: `Your MADS TOPUP verification code is: ${otp}. Valid for 15 minutes.`,
           html: emailHtml
         });
-        console.log(`[Zoho Mail OTP Sent] Successfully sent to ${email}`, info?.messageId);
+        console.log(`[Zoho Mail OTP Sent] Successfully sent to ${email} via ${zohoUser}`, info?.messageId);
         return res.json({ success: true, provider: 'Zoho Mail SMTP', messageId: info?.messageId });
       } catch (z465Err) {
         console.warn('[Zoho OTP Note]:', z465Err.message);
@@ -184,7 +185,9 @@ app.post('/api/send-otp', rateLimiter(10, 60000), async (req, res) => {
       }
     }
 
-    return res.json({ success: true, simulated: true });
+    // Both providers failed
+    console.error('[OTP Email] Both Zoho SMTP and Resend failed — OTP not delivered to', email);
+    return res.status(503).json({ success: false, error: 'Email service temporarily unavailable. Please try again.' });
   } catch (err) {
     console.error('Mail OTP Error:', err);
     return res.status(500).json({ error: err.message });
