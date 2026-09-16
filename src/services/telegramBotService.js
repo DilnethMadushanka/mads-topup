@@ -885,10 +885,10 @@ Send: /auth <SecurityKey>
             return;
           }
           processedMsgIds.add(msgId);
-          if (processedMsgIds.size > 10000) {
+          if (processedMsgIds.size > 1000) {
             const arr = Array.from(processedMsgIds);
             processedMsgIds.clear();
-            arr.slice(-5000).forEach(id => processedMsgIds.add(id));
+            arr.slice(-500).forEach(id => processedMsgIds.add(id));
           }
         }
 
@@ -1024,7 +1024,7 @@ Examples:
 
           if (mgResult.success) {
             try {
-              await deductResellerWalletBalance(reseller.uid, pkgInfo.priceLkr);
+              await deductResellerWalletBalance(freshReseller.uid || reseller.uid, pkgInfo.priceLkr);
             } catch (e) {}
 
             const newBalance = Math.max(0, currentBalance - pkgInfo.priceLkr);
@@ -1080,6 +1080,7 @@ Order placed live on MooGold Reseller Portal & credited instantly!
 
             setTimeout(async () => {
               try {
+                // Wait 20s — MooGold needs time to fully process before a refund/cancel status appears
                 const detail = await checkMoongoldOrderStatus(mgResult.moongoldRef);
                 if (detail && (detail.status === 'refunded' || detail.status === 'cancelled' || detail.status === 'failed')) {
                   const cancelMsg = `
@@ -1096,7 +1097,7 @@ Order placed live on MooGold Reseller Portal & credited instantly!
                   safeReply(ctx, cancelMsg).catch(() => {});
                 }
               } catch (e) {}
-            }, 3000);
+            }, 20000); // 20s delay — gives MooGold API time to process & potentially trigger a refund
 
             return;
           } else {
