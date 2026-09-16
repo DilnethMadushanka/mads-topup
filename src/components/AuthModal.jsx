@@ -328,11 +328,11 @@ export const AuthModal = () => {
       showToast('Please enter the 6-digit verification code!', 'error');
       return;
     }
-    if (verificationCode.trim() === generatedCode || verificationCode.trim() === '123456') {
+    if (verificationCode.trim() === generatedCode) {
       setIsEmailVerified(true);
       showToast('Email verified successfully! ✅');
     } else {
-      showToast('Invalid verification code. Please check and try again!', 'error');
+      showToast('Invalid verification code. Please check your email and try again!', 'error');
     }
   };
 
@@ -409,6 +409,17 @@ export const AuthModal = () => {
       showToast('Please enter your email address!', 'error');
       return;
     }
+
+    // 🔒 OTP GATE — email must be verified before account creation
+    if (!isEmailVerified) {
+      if (!isCodeSent) {
+        showToast('Please verify your email first! Click "Send Code" to get your OTP.', 'error');
+      } else {
+        showToast('Please enter and verify the OTP code sent to your email!', 'error');
+      }
+      return;
+    }
+
     if (!password) {
       showToast('Please create a password!', 'error');
       return;
@@ -428,6 +439,7 @@ export const AuthModal = () => {
       walletBalance: 0,
       walletUsdt: 0,
       isReseller: false,
+      isVerified: true,
       createdAt: new Date().toISOString()
     };
 
@@ -438,7 +450,7 @@ export const AuthModal = () => {
       ...(savedProfile || newAccountData)
     }));
 
-    showToast(`Account created successfully! Welcome ${username}.`);
+    showToast(`Account created successfully! Welcome ${username}. ✅`);
     setIsAuthModalOpen(false);
   };
 
