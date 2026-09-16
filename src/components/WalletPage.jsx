@@ -122,7 +122,11 @@ export const WalletPage = () => {
           : resData.redirectUrl;
         window.location.href = redirectTarget;
       } else {
-        showToast(resData.error || 'Failed to initialize Dialog Genie IPG transaction', 'error');
+        let errText = resData.error || 'Failed to initialize Dialog Genie IPG transaction';
+        if (errText === 'Unauthorized' || errText.toLowerCase().includes('unauthorized')) {
+          errText = 'Dialog Genie IPG Authorization Failed. Please use Bank Deposit, eZ Cash, or Binance Pay!';
+        }
+        showToast(errText, 'error');
       }
     } catch (err) {
       console.error('Genie IPG Submit Error:', err);

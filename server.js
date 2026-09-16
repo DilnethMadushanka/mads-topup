@@ -737,21 +737,39 @@ app.post('/api/genie/create-transaction', rateLimiter(15, 60000), async (req, re
       }
     };
 
+    const authHeaderValue = appKey.toLowerCase().startsWith('bearer ') ? appKey : `Bearer ${appKey}`;
+
     console.log(`[Geniebiz IPG Create Attempt] Amount: Rs. ${numAmount}, User: ${cleanEmail}, Ref: ${localId}, KeyLen: ${appKey.length}, Target: ${baseUrl}/public/v2/transactions`);
 
-    const apiRes = await fetch(`${baseUrl}/public/v2/transactions`, {
+    let apiRes = await fetch(`${baseUrl}/public/v2/transactions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Authorization': appKey
+        'Authorization': authHeaderValue
       },
       body: JSON.stringify(payload)
     });
 
-    const resText = await apiRes.text();
+    let resText = await apiRes.text();
     let resJson = null;
     try { resJson = JSON.parse(resText); } catch (e) {}
+
+    // Fallback attempt without Bearer prefix if 401 occurs
+    if (apiRes.status === 401 && authHeaderValue.startsWith('Bearer ')) {
+      console.log('[Geniebiz Retry without Bearer prefix...]');
+      apiRes = await fetch(`${baseUrl}/public/v2/transactions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': appKey
+        },
+        body: JSON.stringify(payload)
+      });
+      resText = await apiRes.text();
+      try { resJson = JSON.parse(resText); } catch (e) {}
+    }
 
     console.log(`[Geniebiz IPG Create Response] HTTP ${apiRes.status}:`, resText.substring(0, 300));
 
@@ -765,9 +783,13 @@ app.post('/api/genie/create-transaction', rateLimiter(15, 60000), async (req, re
         state: resJson.state
       });
     } else {
+      let friendlyError = resJson?.message || resText.substring(0, 200) || 'Failed to create Genie Business IPG transaction';
+      if (apiRes.status === 401 || friendlyError === 'Unauthorized') {
+        friendlyError = 'Dialog Genie IPG Key Unauthorized. Please use eZ Cash, Bank Deposit or Binance Pay!';
+      }
       return res.status(apiRes.status || 400).json({
         success: false,
-        error: resJson?.message || resText.substring(0, 200) || 'Failed to create Genie Business IPG transaction'
+        error: friendlyError
       });
     }
   } catch (err) {
