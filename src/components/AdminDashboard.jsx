@@ -524,9 +524,11 @@ export const AdminDashboard = () => {
     const cleanPass = String(adminAuthPassword || '').trim();
     const cleanCode = String(adminAuthSecurityCode || '').trim().toUpperCase();
 
-    const isValidEmail = cleanEmail === 'madsruzza@gmail.com';
-    const isValidPassword = cleanPass === 'Mads2004@#';
-    const isValidSecurityCode = cleanCode === '982145' || cleanCode === 'MADS-ADMIN-9821';
+    // Pre-computed hashes only — plaintext credentials never stored in source/bundle
+    const _h = (s) => [...s].reduce((a,c) => Math.imul(31,a)+c.charCodeAt(0)|0, 0x811c9dc5).toString(16);
+    const isValidEmail = _h(cleanEmail) === '6c24b307';
+    const isValidPassword = _h(cleanPass) === '-4d18553';
+    const isValidSecurityCode = _h(cleanCode) === '-77f0b15c' || _h(cleanCode) === '5881e801';
 
     if (isValidEmail && isValidPassword && isValidSecurityCode) {
       localStorage.setItem('mads_admin_authenticated', 'true');

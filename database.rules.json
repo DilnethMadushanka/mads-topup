@@ -1,0 +1,36 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "users": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('isAdmin').val() === true)",
+        ".write": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('isAdmin').val() === true)"
+      }
+    },
+    "orders": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$orderId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+    "manual_payments": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "reseller_applications": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "siteConfig": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "settings": {
+      ".read": true,
+      ".write": "auth != null"
+    }
+  }
+}
