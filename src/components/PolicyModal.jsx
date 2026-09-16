@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  X, ShieldCheck, RefreshCw, FileText, CheckCircle2, Lock, 
+import {
+  X, ShieldCheck, RefreshCw, FileText, CheckCircle2, Lock,
   AlertCircle, HelpCircle, PhoneCall, Zap, ArrowRight, Check
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
@@ -30,11 +30,11 @@ export const PolicyModal = () => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
-      <div 
+      <div
         className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh] text-slate-800"
         onClick={(e) => e.stopPropagation()}
       >
-        
+
         {/* Header Bar */}
         <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white px-6 py-5 flex items-center justify-between border-b border-slate-800 shrink-0">
           <div className="flex items-center gap-3">
@@ -62,11 +62,10 @@ export const PolicyModal = () => {
         <div className="bg-slate-50 border-b border-slate-200 p-2 sm:p-3 flex flex-wrap sm:flex-nowrap gap-2 shrink-0">
           <button
             onClick={() => setActiveTab('refund')}
-            className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-2xl text-xs font-black tracking-wider uppercase flex items-center justify-center gap-2 transition-all cursor-pointer ${
-              activeTab === 'refund'
+            className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-2xl text-xs font-black tracking-wider uppercase flex items-center justify-center gap-2 transition-all cursor-pointer ${activeTab === 'refund'
                 ? 'bg-[#cc040a] text-white shadow-md shadow-red-500/20'
                 : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-            }`}
+              }`}
           >
             <RefreshCw className="w-4 h-4" />
             <span>Refund Policy</span>
@@ -74,11 +73,10 @@ export const PolicyModal = () => {
 
           <button
             onClick={() => setActiveTab('privacy')}
-            className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-2xl text-xs font-black tracking-wider uppercase flex items-center justify-center gap-2 transition-all cursor-pointer ${
-              activeTab === 'privacy'
+            className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-2xl text-xs font-black tracking-wider uppercase flex items-center justify-center gap-2 transition-all cursor-pointer ${activeTab === 'privacy'
                 ? 'bg-[#cc040a] text-white shadow-md shadow-red-500/20'
                 : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-            }`}
+              }`}
           >
             <Lock className="w-4 h-4" />
             <span>Privacy Policy</span>
@@ -86,11 +84,10 @@ export const PolicyModal = () => {
 
           <button
             onClick={() => setActiveTab('terms')}
-            className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-2xl text-xs font-black tracking-wider uppercase flex items-center justify-center gap-2 transition-all cursor-pointer ${
-              activeTab === 'terms'
+            className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-2xl text-xs font-black tracking-wider uppercase flex items-center justify-center gap-2 transition-all cursor-pointer ${activeTab === 'terms'
                 ? 'bg-[#cc040a] text-white shadow-md shadow-red-500/20'
                 : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-            }`}
+              }`}
           >
             <FileText className="w-4 h-4" />
             <span>Terms of Service</span>
@@ -99,11 +96,11 @@ export const PolicyModal = () => {
 
         {/* Scrollable Content Body */}
         <div className="p-6 sm:p-8 overflow-y-auto space-y-6 text-sm text-slate-600 leading-relaxed font-sans">
-          
+
           {/* TAB 1: REFUND & CANCELLATION POLICY */}
           {activeTab === 'refund' && (
             <div className="space-y-6 animate-fadeIn">
-              
+
               {/* Top Banner Notice */}
               <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-start gap-3.5">
                 <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
@@ -172,7 +169,7 @@ export const PolicyModal = () => {
           {/* TAB 2: PRIVACY POLICY */}
           {activeTab === 'privacy' && (
             <div className="space-y-6 animate-fadeIn">
-              
+
               <div className="bg-slate-900 text-white rounded-2xl p-4 flex items-center justify-between border border-slate-800">
                 <div className="flex items-center gap-3">
                   <Lock className="w-6 h-6 text-red-500 shrink-0" />
@@ -229,7 +226,7 @@ export const PolicyModal = () => {
           {/* TAB 3: TERMS OF SERVICE */}
           {activeTab === 'terms' && (
             <div className="space-y-6 animate-fadeIn">
-              
+
               <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start gap-3.5">
                 <Zap className="w-6 h-6 text-[#cc040a] shrink-0 mt-0.5" />
                 <div>
@@ -276,17 +273,6 @@ export const PolicyModal = () => {
                 </h3>
                 <p className="pl-8 text-xs sm:text-sm text-slate-600 font-medium">
                   While our automated engine operates 24/7/365, occasional game server maintenance by official publishers (Garena, Tencent, Moonton) may temporarily delay delivery until server connections resume.
-                </p>
-              </div>
-
-              {/* Terms Clause 4: Intellectual Property & DMCA Notice */}
-              <div className="space-y-2">
-                <h3 className="text-base font-extrabold text-slate-900 font-heading flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-red-100 text-[#cc040a] font-mono text-xs flex items-center justify-center">4</span>
-                  Intellectual Property & DMCA Takedown Notice
-                </h3>
-                <p className="pl-8 text-xs sm:text-sm text-slate-600 font-medium">
-                  MADS TOPUP is an independent top-up service provider. All game names, logos, trademarks, and artwork (including Free Fire, PUBG Mobile, Mobile Legends, Blood Strike, Garena) are the intellectual property of their respective copyright owners (Garena, Tencent, Moonton, NetEase). Trademark usage on this platform is solely for identification and digital top-up fulfillment purposes under Fair Use. For copyright questions or DMCA takedown requests, please email <a href="mailto:support@madstopup.com" className="text-[#cc040a] font-bold underline">support@madstopup.com</a>.
                 </p>
               </div>
 
