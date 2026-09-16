@@ -31,11 +31,106 @@ export const WalletPage = () => {
   const [isCopied, setIsCopied] = useState(false);
   const [isBinanceVerifying, setIsBinanceVerifying] = useState(false);
 
+  // Dialog Genie Business IPG State
+  const [genieAmount, setGenieAmount] = useState('1000');
+  const [isGenieLoading, setIsGenieLoading] = useState(false);
+
   // Bank Deposit State
   const [bankAmount, setBankAmount] = useState('1000');
   const [bankRef, setBankRef] = useState('');
   const [bankSlipPreview, setBankSlipPreview] = useState('');
   const [bankSlipFileName, setBankSlipFileName] = useState('');
+
+  // Auto-verify Dialog Genie Business IPG return redirect
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const genieStatus = urlParams.get('genie');
+    const txnId = urlParams.get('txnId') || urlParams.get('id') || urlParams.get('transactionId');
+
+    if (genieStatus && txnId) {
+      showToast('⌛ Verifying Dialog Genie Business IPG payment...');
+      fetch('/api/genie/verify-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactionId: txnId })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.isPaid) {
+          const amt = parseFloat(data.amount || 0);
+          if (amt > 0) {
+            creditUserWallet(amt, 0);
+            addManualPayment({
+              id: 'PAY-GENIE-' + Math.floor(1000 + Math.random() * 9000),
+              userId: userProfile?.uid || '',
+              userEmail: userProfile?.email || 'guest@madstopup.com',
+              userName: userProfile?.name || 'Gamer',
+              method: 'Dialog Genie IPG (Online)',
+              referenceNumber: `Txn: ${txnId}`,
+              amount: amt,
+              currency: 'LKR',
+              slipUrl: '',
+              status: 'VERIFIED',
+              createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
+            });
+            showToast(`⚡ DIALOG GENIE PAYMENT VERIFIED! +LKR ${amt.toLocaleString()} credited to your wallet!`);
+          }
+        } else {
+          showToast(`Dialog Genie IPG transaction state: ${data.state || 'Pending/Unconfirmed'}`);
+        }
+      })
+      .catch(err => {
+        console.warn('Genie verify error:', err.message);
+      });
+
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  const handleGenieSubmit = async (e) => {
+    e.preventDefault();
+    const amt = parseFloat(genieAmount);
+    if (!amt || amt < 50) {
+      showToast('Minimum deposit amount for Dialog Genie IPG is Rs. 50 LKR!', 'error');
+      return;
+    }
+
+    setIsGenieLoading(true);
+    try {
+      const userEmail = userProfile?.email || auth?.currentUser?.email || 'customer@madstopup.com';
+      const userName = userProfile?.name || auth?.currentUser?.displayName || 'Gamer';
+      const returnUrl = `${window.location.origin}/wallet?genie=success&txnId=`;
+
+      const response = await fetch('/api/genie/create-transaction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: amt,
+          userEmail,
+          userName,
+          redirectUrl: returnUrl,
+          orderRef: 'DEP-GENIE-' + Date.now()
+        })
+      });
+
+      const resData = await response.json();
+
+      if (resData.success && resData.redirectUrl) {
+        showToast('⚡ Redirecting to Dialog Genie Business IPG gateway...');
+        const redirectTarget = resData.redirectUrl.includes('?') 
+          ? `${resData.redirectUrl}&txnId=${resData.transactionId}` 
+          : resData.redirectUrl;
+        window.location.href = redirectTarget;
+      } else {
+        showToast(resData.error || 'Failed to initialize Dialog Genie IPG transaction', 'error');
+      }
+    } catch (err) {
+      console.error('Genie IPG Submit Error:', err);
+      showToast('Network error connecting to Dialog Genie IPG!', 'error');
+    } finally {
+      setIsGenieLoading(false);
+    }
+  };
 
   const bankAccountDetails = {
     bankName: 'Hatton National Bank (HNB)',
@@ -434,6 +529,18 @@ export const WalletPage = () => {
           )}
 
           <button
+            onClick={() => setWalletActiveTab('genie')}
+            className={`flex-1 py-3 px-4 rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 ${
+              walletActiveTab === 'genie'
+                ? 'bg-gradient-to-r from-red-600 to-amber-600 text-white shadow-md font-black'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <span>💳</span>
+            <span>Dialog Genie (IPG)</span>
+          </button>
+
+          <button
             onClick={() => setWalletActiveTab('bank')}
             className={`flex-1 py-3 px-4 rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 ${
               walletActiveTab === 'bank'
@@ -470,6 +577,91 @@ export const WalletPage = () => {
           </button>
 
         </div>
+
+        {/* TAB: DIALOG GENIE BUSINESS IPG PANEL */}
+        {walletActiveTab === 'genie' && (
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-md space-y-6 animate-in fade-in">
+            {/* Genie Banner */}
+            <div className="bg-gradient-to-r from-red-600 via-amber-500 to-red-700 rounded-2xl p-6 text-white text-center relative overflow-hidden shadow-lg">
+              <div className="relative z-10 space-y-2">
+                <span className="text-xs font-black uppercase tracking-widest text-amber-200 font-mono block">
+                  DIALOG GENIE BUSINESS ONLINE IPG
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-black font-heading">
+                  Instant Online Card & eZ Cash Payment
+                </h3>
+                <p className="text-xs text-red-100 font-medium max-w-lg mx-auto">
+                  Pay securely using Visa, Mastercard, Genie Wallet, or eZ Cash via Dialog Genie Official Gateway. Balance credited to your wallet immediately!
+                </p>
+                <div className="flex items-center justify-center gap-2 pt-2 text-[10px] font-bold text-white/90">
+                  <span className="bg-white/20 px-2.5 py-1 rounded-full backdrop-blur-xs">💳 Visa / Mastercard</span>
+                  <span className="bg-white/20 px-2.5 py-1 rounded-full backdrop-blur-xs">⚡ Instant Auto-Credit</span>
+                  <span className="bg-white/20 px-2.5 py-1 rounded-full backdrop-blur-xs">🔒 100% Encrypted</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleGenieSubmit} className="space-y-4 text-xs">
+              <div>
+                <label className="font-extrabold text-slate-700 block mb-1.5">
+                  Deposit Amount (LKR)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-slate-400">Rs.</span>
+                  <input
+                    type="number"
+                    required
+                    min="50"
+                    placeholder="e.g. 1000"
+                    value={genieAmount}
+                    onChange={(e) => setGenieAmount(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3.5 bg-[#F8FAFC] border border-slate-200 rounded-xl text-base font-black text-slate-900 focus:outline-none focus:border-red-500 shadow-xs"
+                  />
+                </div>
+                <p className="text-[10px] text-slate-500 font-semibold mt-1">
+                  Minimum deposit: Rs. 50 LKR. Fast, instant credit to your MADS TOPUP wallet.
+                </p>
+              </div>
+
+              {/* Quick Amount Presets */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                {['500', '1000', '2500', '5000', '10000'].map((amt) => (
+                  <button
+                    key={amt}
+                    type="button"
+                    onClick={() => setGenieAmount(amt)}
+                    className={`px-3 py-1.5 rounded-lg border text-xs font-black transition-all cursor-pointer ${
+                      genieAmount === amt
+                        ? 'bg-red-600 text-white border-red-600 shadow-xs'
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    Rs. {parseInt(amt).toLocaleString()}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="submit"
+                disabled={isGenieLoading}
+                className="w-full py-4 bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-700 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl transition-all cursor-pointer shadow-lg shadow-red-500/20 flex items-center justify-center gap-2 mt-3 disabled:opacity-50"
+              >
+                {isGenieLoading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Connecting to Dialog Genie IPG...</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-4 h-4 text-amber-300" />
+                    <span>PAY VIA DIALOG GENIE IPG NOW</span>
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+        )}
 
         {/* TAB: BANK DEPOSIT PANEL */}
         {walletActiveTab === 'bank' && (

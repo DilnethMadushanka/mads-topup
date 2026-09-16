@@ -694,6 +694,144 @@ app.get('/api/ezcash/webhook-logs', (req, res) => {
   }
 });
 
+// Dialog Genie Business IPG Integration Endpoints
+const GENIE_DEFAULT_APP_ID = '36bafce7-a201-429b-a9e2-c5b78546677c';
+const GENIE_DEFAULT_APP_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBJZCI6IjM2YmFmY2U3LWEyMDEtNDI5Yi1hOWUyLWM1Yjc4NTQ2Njc3YyIsImNvbXBhbnlJZCI6IjYzOTdmMzlkZjA3ZmJhMDAwODQyYTkwYiIsImlhdCI6MTY3MDkwMjY4NSwiZXhwIjo0ODI2NTc2Mjg1fQ.fy12dgFhA3iB_RCjD7y8j5HClNRZUiBZgAg-QzFpxaE';
+const GENIE_DEFAULT_BASE_URL = 'https://api.uat.geniebiz.lk';
+
+// Create Genie Business IPG Transaction
+app.post('/api/genie/create-transaction', rateLimiter(15, 60000), async (req, res) => {
+  try {
+    const { amount, userEmail, userName, redirectUrl, orderRef } = req.body || {};
+    const numAmount = parseFloat(amount);
+
+    if (!numAmount || numAmount <= 0) {
+      return res.status(400).json({ error: 'Please specify a valid payment amount.' });
+    }
+
+    const appKey = process.env.GENIE_APP_KEY || process.env.VITE_GENIE_APP_KEY || GENIE_DEFAULT_APP_KEY;
+    const baseUrl = process.env.GENIE_BASE_URL || process.env.VITE_GENIE_BASE_URL || GENIE_DEFAULT_BASE_URL;
+
+    const cleanEmail = sanitizeString(userEmail || 'customer@madstopup.com', 100);
+    const cleanName = sanitizeString(userName || 'MADS Gamer', 100);
+    const localId = orderRef || ('ORD-GENIE-' + Date.now());
+
+    const returnUrl = redirectUrl || 'https://madstopup.com/wallet?genie=success';
+
+    const payload = {
+      amount: numAmount,
+      currency: 'LKR',
+      redirectUrl: returnUrl,
+      webhook: 'https://madstopup.com/api/genie/webhook',
+      localId,
+      customerReference: cleanName,
+      billingDetails: {
+        email: cleanEmail,
+        name: cleanName,
+        address1: 'Colombo, Sri Lanka',
+        city: 'Colombo',
+        country: 'LK'
+      }
+    };
+
+    console.log(`[Geniebiz IPG Create Attempt] Amount: Rs. ${numAmount}, User: ${cleanEmail}, Ref: ${localId}`);
+
+    const apiRes = await fetch(`${baseUrl}/public/v2/transactions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': appKey
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const resText = await apiRes.text();
+    let resJson = null;
+    try { resJson = JSON.parse(resText); } catch (e) {}
+
+    console.log(`[Geniebiz IPG Create Response] HTTP ${apiRes.status}:`, resText.substring(0, 300));
+
+    if (apiRes.ok && resJson && (resJson.url || resJson.shortUrl)) {
+      return res.json({
+        success: true,
+        transactionId: resJson.id,
+        redirectUrl: resJson.url || resJson.shortUrl,
+        shortUrl: resJson.shortUrl,
+        localId: resJson.localId,
+        state: resJson.state
+      });
+    } else {
+      return res.status(apiRes.status || 400).json({
+        success: false,
+        error: resJson?.message || resText.substring(0, 200) || 'Failed to create Genie Business IPG transaction'
+      });
+    }
+  } catch (err) {
+    console.error('[Geniebiz Create Error]:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Verify Genie Business IPG Transaction Status
+app.post('/api/genie/verify-status', rateLimiter(30, 60000), async (req, res) => {
+  try {
+    const { transactionId } = req.body || {};
+    if (!transactionId) {
+      return res.status(400).json({ error: 'Missing transactionId' });
+    }
+
+    const appKey = process.env.GENIE_APP_KEY || process.env.VITE_GENIE_APP_KEY || GENIE_DEFAULT_APP_KEY;
+    const baseUrl = process.env.GENIE_BASE_URL || process.env.VITE_GENIE_BASE_URL || GENIE_DEFAULT_BASE_URL;
+
+    const apiRes = await fetch(`${baseUrl}/public/transactions/${transactionId}`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': appKey
+      }
+    });
+
+    const resText = await apiRes.text();
+    let resJson = null;
+    try { resJson = JSON.parse(resText); } catch (e) {}
+
+    if (apiRes.ok && resJson) {
+      const state = String(resJson.state || '').toUpperCase();
+      const isPaid = state === 'SUCCESS' || state === 'COMPLETED' || state === 'CONFIRMED' || state === 'CAPTURED';
+
+      return res.json({
+        success: true,
+        isPaid,
+        state,
+        transactionId: resJson.id,
+        amount: resJson.amount || resJson.payAmount,
+        currency: resJson.currency || 'LKR',
+        localId: resJson.localId,
+        details: resJson
+      });
+    } else {
+      return res.status(apiRes.status || 400).json({
+        success: false,
+        error: resJson?.message || 'Failed to retrieve transaction status'
+      });
+    }
+  } catch (err) {
+    console.error('[Geniebiz Verify Error]:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Genie Business Webhook (IPN Callback)
+app.post('/api/genie/webhook', (req, res) => {
+  try {
+    console.log(`[Genie Business IPG Webhook Received]:`, req.body);
+    res.json({ success: true, message: 'Webhook received successfully' });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Express endpoint for Live Game Player IGN Lookup (Mobile Legends, Free Fire, PUBG, etc.)
 app.get('/api/player-lookup', async (req, res) => {
   try {
