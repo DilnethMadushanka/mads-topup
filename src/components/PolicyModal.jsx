@@ -279,6 +279,17 @@ export const PolicyModal = () => {
                 </p>
               </div>
 
+              {/* Terms Clause 4: Intellectual Property & DMCA Notice */}
+              <div className="space-y-2">
+                <h3 className="text-base font-extrabold text-slate-900 font-heading flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-red-100 text-[#cc040a] font-mono text-xs flex items-center justify-center">4</span>
+                  Intellectual Property & DMCA Takedown Notice
+                </h3>
+                <p className="pl-8 text-xs sm:text-sm text-slate-600 font-medium">
+                  MADS TOPUP is an independent top-up service provider. All game names, logos, trademarks, and artwork (including Free Fire, PUBG Mobile, Mobile Legends, Blood Strike, Garena) are the intellectual property of their respective copyright owners (Garena, Tencent, Moonton, NetEase). Trademark usage on this platform is solely for identification and digital top-up fulfillment purposes under Fair Use. For copyright questions or DMCA takedown requests, please email <a href="mailto:support@madstopup.com" className="text-[#cc040a] font-bold underline">support@madstopup.com</a>.
+                </p>
+              </div>
+
             </div>
           )}
 

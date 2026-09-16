@@ -153,8 +153,16 @@ const MainContent = () => {
 
           </div>
 
+          {/* Legal Trademark & DMCA Disclaimer Notice */}
+          <div className="mt-8 pt-6 border-t border-gray-800 text-[10px] text-gray-400 leading-relaxed font-normal">
+            <p className="font-bold text-gray-300 uppercase tracking-wider mb-1 font-mono">LEGAL DISCLAIMER & TRADEMARK NOTICE:</p>
+            <p>
+              MADS TOPUP is an independent 24/7 digital service platform and is not affiliated with, sponsored by, or endorsed by Garena, Tencent Games, Moonton, NetEase Games, or any other official game publisher. All game titles, registered trademarks, logos, and artwork (including Free Fire, PUBG Mobile, Mobile Legends, Blood Strike, Delta Force) belong strictly to their respective copyright holders. Used strictly for identification and digital top-up delivery purposes. DMCA & Copyright Takedown Contact: <a href="mailto:support@madstopup.com" className="text-red-400 hover:underline font-bold">support@madstopup.com</a>.
+            </p>
+          </div>
+
           {/* Bottom Copyright Bar */}
-          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-gray-500 font-semibold">
+          <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-gray-500 font-semibold border-t border-gray-900 mt-6">
             <p>© 2026 MADS TOPUP. All rights reserved.</p>
             <p className="text-gray-500">POWERED BY MADS AUTOMATED ENGINE • SRI LANKA OFFICIAL STORE</p>
           </div>
