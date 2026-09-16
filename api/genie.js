@@ -55,7 +55,10 @@ export default async function handler(req, res) {
 
     const { amount, userEmail, userName, redirectUrl, orderRef, transactionId } = body || {};
 
-    const appKey = (process.env.GENIE_APP_KEY || process.env.VITE_GENIE_APP_KEY || GENIE_DEFAULT_APP_KEY).replace(/[\r\n\s]/g, '');
+    let appKey = (process.env.GENIE_APP_KEY || process.env.VITE_GENIE_APP_KEY || GENIE_DEFAULT_APP_KEY).replace(/[\r\n\s]/g, '');
+    if (!appKey.includes('699c294bec9aae0002066016')) {
+      appKey = GENIE_DEFAULT_APP_KEY;
+    }
     const baseUrl = (process.env.GENIE_BASE_URL || process.env.VITE_GENIE_BASE_URL || GENIE_DEFAULT_BASE_URL).replace(/[\r\n\s\/]+$/, '');
 
     // Endpoint: /api/genie/create-transaction
