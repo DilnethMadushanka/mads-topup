@@ -1951,44 +1951,63 @@ export const AdminDashboard = () => {
             </div>
 
             <div className="rounded-2xl border p-3.5 space-y-3" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
+              {/* Current balance reminder */}
+              <div className="text-[10px] font-bold px-1 py-0.5 rounded" style={{ color: 'var(--adm-muted)', background: 'var(--adm-surface)' }}>
+                Current: Rs.{(selectedInspectUser.walletBalance||0).toLocaleString()} LKR &nbsp;|&nbsp; ${(selectedInspectUser.walletUsdt||0).toFixed(2)} USDT
+              </div>
               <div className="grid grid-cols-2 gap-2">
-                <div><label className="text-[10px] font-bold block mb-1" style={mutedStyle}>Custom LKR Amount</label><input type="number" placeholder="e.g. 5000" value={editLkrVal} onChange={(e) => setEditLkrVal(e.target.value)} className={`${fieldCls} font-mono`} style={fieldStyle} /></div>
-                <div><label className="text-[10px] font-bold block mb-1" style={mutedStyle}>Custom USDT Amount</label><input type="number" placeholder="e.g. 50" value={editUsdtVal} onChange={(e) => setEditUsdtVal(e.target.value)} className={`${fieldCls} font-mono`} style={fieldStyle} /></div>
+                <div>
+                  <label className="text-[10px] font-bold block mb-1" style={mutedStyle}>LKR Amount</label>
+                  <input type="number" placeholder="e.g. 5000" value={editLkrVal} onChange={(e) => setEditLkrVal(e.target.value)} className={`${fieldCls} font-mono`} style={fieldStyle} />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold block mb-1" style={mutedStyle}>USDT Amount</label>
+                  <input type="number" placeholder="e.g. 50" value={editUsdtVal} onChange={(e) => setEditUsdtVal(e.target.value)} className={`${fieldCls} font-mono`} style={fieldStyle} />
+                </div>
               </div>
               <div className="flex gap-2 pt-1">
+                {/* SET EXACT: overwrites both fields. Blank field = 0 (NOT keep existing) */}
                 <button
                   type="button"
                   onClick={() => {
-                    if (editLkrVal !== '' || editUsdtVal !== '') {
-                      const lkr = editLkrVal !== '' ? parseFloat(editLkrVal) : (selectedInspectUser.walletBalance || 0);
-                      const usdt = editUsdtVal !== '' ? parseFloat(editUsdtVal) : (selectedInspectUser.walletUsdt || 0);
-                      const targetId = selectedInspectUser.uid || selectedInspectUser.email || selectedInspectUser.resellerCode || selectedInspectUser.securityKey;
-                      setUserExactBalance(targetId, lkr, usdt);
-                      showToast(`Set ${selectedInspectUser.name}'s balance to Rs. ${lkr} LKR / $${usdt} USDT`);
-                      setEditLkrVal(''); setEditUsdtVal(''); setSelectedInspectUser(null);
-                    } else {
-                      showToast('Please enter an amount to set exact balance', 'error');
+                    if (editLkrVal === '' && editUsdtVal === '') {
+                      showToast('Enter LKR or USDT to set exact balance', 'error');
+                      return;
                     }
+                    const lkr = editLkrVal !== '' ? parseFloat(editLkrVal) : 0;
+                    const usdt = editUsdtVal !== '' ? parseFloat(editUsdtVal) : 0;
+                    const targetId = selectedInspectUser.uid || selectedInspectUser.email || selectedInspectUser.resellerCode || selectedInspectUser.securityKey;
+                    if (!window.confirm(`SET balance for ${selectedInspectUser.name} to:\nRs. ${lkr.toLocaleString()} LKR / $${usdt.toFixed(2)} USDT\n\nThis REPLACES the current balance. Are you sure?`)) return;
+                    setUserExactBalance(targetId, lkr, usdt);
+                    showToast(`✅ Set ${selectedInspectUser.name} balance → Rs.${lkr.toLocaleString()} LKR / $${usdt} USDT`);
+                    setEditLkrVal(''); setEditUsdtVal(''); setSelectedInspectUser(null);
                   }}
-                  className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-extrabold cursor-pointer"
-                >Set Exact Balance</button>
+                  className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-extrabold cursor-pointer border-2 border-blue-400"
+                  title="REPLACES the existing balance with the value you enter"
+                >🔵 Set Exact</button>
+                {/* ADD: adds on top of existing balance */}
                 <button
                   type="button"
                   onClick={() => {
-                    if (editLkrVal !== '' || editUsdtVal !== '') {
-                      const lkr = parseFloat(editLkrVal) || 0;
-                      const usdt = parseFloat(editUsdtVal) || 0;
-                      const targetId = selectedInspectUser.uid || selectedInspectUser.email || selectedInspectUser.resellerCode || selectedInspectUser.securityKey;
-                      updateUserBalance(targetId, lkr, usdt);
-                      showToast(`Added +${lkr} LKR / +${usdt} USDT to ${selectedInspectUser.name}`);
-                      setEditLkrVal(''); setEditUsdtVal(''); setSelectedInspectUser(null);
-                    } else {
-                      showToast('Please enter an amount to add', 'error');
+                    if (editLkrVal === '' && editUsdtVal === '') {
+                      showToast('Enter amount to add', 'error');
+                      return;
                     }
+                    const lkr = parseFloat(editLkrVal) || 0;
+                    const usdt = parseFloat(editUsdtVal) || 0;
+                    const newLkr = (selectedInspectUser.walletBalance || 0) + lkr;
+                    const newUsdt = (selectedInspectUser.walletUsdt || 0) + usdt;
+                    const targetId = selectedInspectUser.uid || selectedInspectUser.email || selectedInspectUser.resellerCode || selectedInspectUser.securityKey;
+                    if (!window.confirm(`ADD funds to ${selectedInspectUser.name}:\n+Rs.${lkr.toLocaleString()} LKR / +$${usdt} USDT\nNew total: Rs.${newLkr.toLocaleString()} LKR / $${newUsdt.toFixed(2)} USDT`)) return;
+                    updateUserBalance(targetId, lkr, usdt);
+                    showToast(`✅ Added +Rs.${lkr.toLocaleString()} LKR / +$${usdt} USDT to ${selectedInspectUser.name}`);
+                    setEditLkrVal(''); setEditUsdtVal(''); setSelectedInspectUser(null);
                   }}
-                  className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-extrabold cursor-pointer"
-                >+ Add Funds</button>
+                  className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-extrabold cursor-pointer border-2 border-emerald-400"
+                  title="ADDS to the existing balance (does not replace it)"
+                >🟢 + Add Funds</button>
               </div>
+              <p className="text-[9px] text-center" style={{ color: 'var(--adm-muted)' }}>🔵 Set Exact = overwrites balance &nbsp;|&nbsp; 🟢 Add Funds = adds on top</p>
             </div>
           </div>
         </ModalShell>
