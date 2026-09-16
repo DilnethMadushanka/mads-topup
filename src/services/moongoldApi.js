@@ -403,6 +403,8 @@ export const dispatchMoongoldOrder = async (orderData) => {
           moongoldRef: data.order_id || partnerOrderId,
           status: 'COMPLETED',
           message: data.message || 'Order created successfully!',
+          newBalanceLkr: data.newBalanceLkr,
+          newBalanceUsdt: data.newBalanceUsdt,
           data
         };
       } else {

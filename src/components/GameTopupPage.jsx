@@ -20,6 +20,7 @@ export const GameTopupPage = () => {
     formatPrice,
     savePlayerId,
     userProfile,
+    setUserProfile,
     currency,
     setCurrency,
     creditUserWallet,
@@ -219,6 +220,8 @@ export const GameTopupPage = () => {
       let allSuccess = true;
       let lastRef = null;
       let lastErrMsg = '';
+      let lastNewBalanceLkr = undefined;
+      let lastNewBalanceUsdt = undefined;
 
       // Loop through all selected packages in cart to process each item/quantity
       for (const item of selectedItems) {
@@ -245,6 +248,8 @@ export const GameTopupPage = () => {
           const res = await dispatchMoongoldOrder(orderPayload);
           if (res.success) {
             lastRef = res.moongoldRef;
+            if (res.newBalanceLkr !== undefined) lastNewBalanceLkr = res.newBalanceLkr;
+            if (res.newBalanceUsdt !== undefined) lastNewBalanceUsdt = res.newBalanceUsdt;
           } else {
             allSuccess = false;
             lastErrMsg = res.message || 'Provider dispatch failed';
@@ -293,9 +298,13 @@ export const GameTopupPage = () => {
         return;
       }
 
-      // Deduct local wallet state immediately upon successful order dispatch
-      if (deductedLkr > 0 || deductedUsdt > 0) {
-        creditUserWallet(-deductedLkr, -deductedUsdt);
+      // Sync local profile with the exact server-deducted balance (prevents double deduction)
+      if (lastNewBalanceLkr !== undefined) {
+        setUserProfile(prev => ({
+          ...prev,
+          walletBalance: lastNewBalanceLkr,
+          walletUsdt: lastNewBalanceUsdt !== undefined ? lastNewBalanceUsdt : prev.walletUsdt
+        }));
       }
     }
 
