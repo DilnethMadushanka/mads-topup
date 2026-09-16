@@ -517,15 +517,15 @@ export const WalletPage = () => {
           </div>
         )}
 
-        {/* TAB SWITCHER PILLS */}
-        <div className="bg-white rounded-full p-2 border border-slate-200/90 shadow-sm max-w-3xl mx-auto flex items-center justify-around text-xs font-black overflow-x-auto gap-1">
+        {/* TAB SWITCHER PILLS (Sleek Modern Horizontal Pill Bar) */}
+        <div className="bg-white rounded-2xl sm:rounded-full p-2 border border-slate-200/90 shadow-sm max-w-3xl mx-auto flex items-center overflow-x-auto gap-1.5 scrollbar-none">
           {isApprovedReseller && (
             <button
               onClick={() => setWalletActiveTab('telegram_bot')}
-              className={`py-3 px-4 rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 ${
+              className={`py-2.5 px-4 rounded-xl sm:rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 whitespace-nowrap text-xs font-black ${
                 walletActiveTab === 'telegram_bot'
                   ? 'bg-gradient-to-r from-indigo-600 to-sky-500 text-white shadow-md'
-                  : 'text-slate-600 hover:text-slate-900'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
               <Send className="w-3.5 h-3.5 text-sky-300" />
@@ -535,22 +535,22 @@ export const WalletPage = () => {
 
           <button
             onClick={() => setWalletActiveTab('genie')}
-            className={`flex-1 py-3 px-4 rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 ${
+            className={`flex-1 py-2.5 px-4 rounded-xl sm:rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 whitespace-nowrap text-xs font-black ${
               walletActiveTab === 'genie'
-                ? 'bg-gradient-to-r from-red-600 to-amber-600 text-white shadow-md font-black'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-gradient-to-r from-[#cc040a] to-red-600 text-white shadow-md shadow-red-600/25 scale-[1.01]'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
             }`}
           >
             <span>💳</span>
-            <span>Online Card & eZ Cash</span>
+            <span>Card & eZ Cash</span>
           </button>
 
           <button
             onClick={() => setWalletActiveTab('bank')}
-            className={`flex-1 py-3 px-4 rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 ${
+            className={`flex-1 py-2.5 px-4 rounded-xl sm:rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 whitespace-nowrap text-xs font-black ${
               walletActiveTab === 'bank'
-                ? 'bg-[#cc040a] text-white shadow-md'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-[#cc040a] text-white shadow-md shadow-red-600/25 scale-[1.01]'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
             }`}
           >
             <span>🏦</span>
@@ -559,10 +559,10 @@ export const WalletPage = () => {
 
           <button
             onClick={() => setWalletActiveTab('ezcash')}
-            className={`flex-1 py-3 px-4 rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 ${
+            className={`flex-1 py-2.5 px-4 rounded-xl sm:rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 whitespace-nowrap text-xs font-black ${
               walletActiveTab === 'ezcash'
-                ? 'bg-[#cc040a] text-white shadow-md'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-[#cc040a] text-white shadow-md shadow-red-600/25 scale-[1.01]'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
             }`}
           >
             <span>💸</span>
@@ -571,10 +571,10 @@ export const WalletPage = () => {
 
           <button
             onClick={() => setWalletActiveTab('binance')}
-            className={`flex-1 py-3 px-4 rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 ${
+            className={`flex-1 py-2.5 px-4 rounded-xl sm:rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 whitespace-nowrap text-xs font-black ${
               walletActiveTab === 'binance'
-                ? 'bg-[#cc040a] text-white shadow-md'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-[#cc040a] text-white shadow-md shadow-red-600/25 scale-[1.01]'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
             }`}
           >
             <span>🔶</span>
@@ -585,35 +585,39 @@ export const WalletPage = () => {
 
         {/* TAB: DIALOG GENIE BUSINESS IPG PANEL */}
         {walletActiveTab === 'genie' && (
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-md space-y-6 animate-in fade-in">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-xl space-y-6 animate-in fade-in duration-300">
             {/* Genie Banner */}
-            <div className="bg-gradient-to-r from-red-600 via-amber-500 to-red-700 rounded-2xl p-6 text-white text-center relative overflow-hidden shadow-lg">
-              <div className="relative z-10 space-y-2">
-                <span className="text-xs font-black uppercase tracking-widest text-amber-200 font-mono block">
-                  DIALOG GENIE BUSINESS ONLINE IPG
-                </span>
-                <h3 className="text-2xl sm:text-3xl font-black font-heading">
-                  Instant Online Card & eZ Cash Payment
+            <div className="bg-gradient-to-br from-slate-950 via-red-950 to-red-900 rounded-3xl p-6 sm:p-8 text-white text-center relative overflow-hidden shadow-xl border border-red-500/30">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/20 rounded-full blur-3xl pointer-events-none"></div>
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+              <div className="relative z-10 space-y-3">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/20 border border-red-500/30 text-red-300 text-[11px] font-mono font-bold tracking-widest uppercase">
+                  <span>⚡ INSTANT AUTOMATED PAYMENT</span>
+                </div>
+                <h3 className="text-2xl sm:text-3xl font-black font-heading tracking-tight text-white">
+                  Online Card & eZ Cash Payment
                 </h3>
-                <p className="text-xs text-red-100 font-medium max-w-lg mx-auto">
-                  Pay securely using Visa, Mastercard, Genie Wallet, or eZ Cash via Dialog Genie Official Gateway. Balance credited to your wallet immediately!
+                <p className="text-xs sm:text-sm text-slate-300 font-medium max-w-lg mx-auto leading-relaxed">
+                  Pay securely using Visa, Mastercard, Genie Wallet, or eZ Cash. Balance is credited to your wallet instantly!
                 </p>
-                <div className="flex items-center justify-center gap-2 pt-2 text-[10px] font-bold text-white/90">
-                  <span className="bg-white/20 px-2.5 py-1 rounded-full backdrop-blur-xs">💳 Visa / Mastercard</span>
-                  <span className="bg-white/20 px-2.5 py-1 rounded-full backdrop-blur-xs">⚡ Instant Auto-Credit</span>
-                  <span className="bg-white/20 px-2.5 py-1 rounded-full backdrop-blur-xs">🔒 100% Encrypted</span>
+
+                <div className="flex items-center justify-center gap-2.5 pt-2 text-[11px] font-extrabold flex-wrap">
+                  <span className="bg-white/10 border border-white/20 px-3 py-1 rounded-full text-white backdrop-blur-md">💳 Visa / Mastercard</span>
+                  <span className="bg-emerald-500/20 border border-emerald-500/30 px-3 py-1 rounded-full text-emerald-300 backdrop-blur-md">⚡ Instant Auto-Credit</span>
+                  <span className="bg-amber-500/20 border border-amber-500/30 px-3 py-1 rounded-full text-amber-300 backdrop-blur-md">🔒 100% Encrypted</span>
                 </div>
               </div>
             </div>
 
             {/* Form */}
-            <form onSubmit={handleGenieSubmit} className="space-y-4 text-xs">
+            <form onSubmit={handleGenieSubmit} className="space-y-5 text-xs">
               <div>
-                <label className="font-extrabold text-slate-700 block mb-1.5">
+                <label className="font-black text-slate-800 text-xs uppercase tracking-wide block mb-2">
                   Deposit Amount (LKR)
                 </label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-slate-400">Rs.</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-slate-400 text-base">Rs.</span>
                   <input
                     type="number"
                     required
@@ -621,45 +625,48 @@ export const WalletPage = () => {
                     placeholder="e.g. 1000"
                     value={genieAmount}
                     onChange={(e) => setGenieAmount(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3.5 bg-[#F8FAFC] border border-slate-200 rounded-xl text-base font-black text-slate-900 focus:outline-none focus:border-red-500 shadow-xs"
+                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-lg font-black text-slate-900 focus:outline-none focus:border-red-500 focus:bg-white focus:ring-4 focus:ring-red-500/10 shadow-xs transition-all"
                   />
                 </div>
-                <p className="text-[10px] text-slate-500 font-semibold mt-1">
-                  Minimum deposit: Rs. 50 LKR. Fast, instant credit to your MADS TOPUP wallet.
+                <p className="text-[11px] text-slate-500 font-semibold mt-1.5">
+                  Minimum deposit: Rs. 50 LKR. Fast & 100% secure payment gateway.
                 </p>
               </div>
 
               {/* Quick Amount Presets */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                {['500', '1000', '2500', '5000', '10000'].map((amt) => (
-                  <button
-                    key={amt}
-                    type="button"
-                    onClick={() => setGenieAmount(amt)}
-                    className={`px-3 py-1.5 rounded-lg border text-xs font-black transition-all cursor-pointer ${
-                      genieAmount === amt
-                        ? 'bg-red-600 text-white border-red-600 shadow-xs'
-                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                    }`}
-                  >
-                    Rs. {parseInt(amt).toLocaleString()}
-                  </button>
-                ))}
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Quick Presets</span>
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                  {['500', '1000', '2500', '5000', '10000'].map((amt) => (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => setGenieAmount(amt)}
+                      className={`px-4 py-2.5 rounded-xl border text-xs font-black transition-all cursor-pointer shrink-0 ${
+                        genieAmount === amt
+                          ? 'bg-red-600 text-white border-red-600 shadow-md shadow-red-600/20 scale-[1.02]'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:border-slate-300'
+                      }`}
+                    >
+                      Rs. {parseInt(amt).toLocaleString()}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <button
                 type="submit"
                 disabled={isGenieLoading}
-                className="w-full py-4 bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-700 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl transition-all cursor-pointer shadow-lg shadow-red-500/20 flex items-center justify-center gap-2 mt-3 disabled:opacity-50"
+                className="w-full py-4 bg-gradient-to-r from-[#cc040a] via-red-600 to-red-700 hover:from-red-700 hover:to-[#cc040a] text-white font-black text-sm uppercase tracking-wider rounded-2xl transition-all cursor-pointer shadow-xl shadow-red-600/25 flex items-center justify-center gap-2 mt-4 disabled:opacity-50 hover:scale-[1.01]"
               >
                 {isGenieLoading ? (
                   <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <RefreshCw className="w-5 h-5 animate-spin" />
                     <span>Connecting to Dialog Genie IPG...</span>
                   </>
                 ) : (
                   <>
-                    <Zap className="w-4 h-4 text-amber-300" />
+                    <Zap className="w-5 h-5 text-amber-300 fill-amber-300" />
                     <span>PAY WITH CARD / EZ CASH NOW</span>
                   </>
                 )}
