@@ -51,18 +51,22 @@ async function deductUserWallet(uid, priceLkr) {
   if (!uid || priceLkr <= 0) return { success: false, reason: 'Invalid amount' };
   try {
     const current = await getUserWalletData(uid);
+    // LKR and USDT wallets are INDEPENDENT — never recalculate one from the other
     let newLkr = current.walletBalance;
     let newUsdt = current.walletUsdt;
+    let usedCurrency = null;
 
     if (newLkr >= priceLkr) {
-      newLkr = newLkr - priceLkr;
-      newUsdt = newLkr / 305;
+      // Pay with LKR — only touch walletBalance, leave walletUsdt unchanged
+      newLkr = parseFloat((newLkr - priceLkr).toFixed(2));
+      usedCurrency = 'LKR';
     } else if ((newUsdt * 305) >= priceLkr) {
+      // Pay with USDT — only touch walletUsdt, leave walletBalance unchanged
       const reqUsdt = priceLkr / 305;
-      newUsdt = Math.max(0, newUsdt - reqUsdt);
-      newLkr = newUsdt * 305;
+      newUsdt = parseFloat(Math.max(0, newUsdt - reqUsdt).toFixed(6));
+      usedCurrency = 'USDT';
     } else {
-      return { success: false, reason: `Insufficient wallet balance. Required: Rs. ${priceLkr.toFixed(2)}, Available: Rs. ${newLkr.toFixed(2)}` };
+      return { success: false, reason: `Insufficient wallet balance. Required: Rs. ${priceLkr.toFixed(2)}, Available: Rs. ${newLkr.toFixed(2)} LKR / $${newUsdt.toFixed(2)} USDT` };
     }
 
     const patchRes = await fetch(`${FIREBASE_RTDB_URL}/users/${uid}.json`, {
@@ -76,29 +80,43 @@ async function deductUserWallet(uid, priceLkr) {
     });
 
     if (patchRes.ok) {
-      return { success: true, newBalanceLkr: newLkr, newBalanceUsdt: newUsdt };
+      return { success: true, newBalanceLkr: newLkr, newBalanceUsdt: newUsdt, usedCurrency };
     }
-  } catch (e) {}
+  } catch (e) { console.error('[Vercel Deduct Error]:', e.message); }
   return { success: false, reason: 'Database update failed' };
 }
 
-async function refundUserWallet(uid, priceLkr) {
+async function refundUserWallet(uid, priceLkr, usedCurrency = 'LKR') {
   if (!uid || priceLkr <= 0) return;
   try {
     const current = await getUserWalletData(uid);
-    const newLkr = current.walletBalance + priceLkr;
-    const newUsdt = newLkr / 305;
+    let patchBody;
+
+    if (usedCurrency === 'USDT') {
+      // Refund back to USDT wallet — user originally paid from USDT
+      const reqUsdt = priceLkr / 305;
+      const newUsdt = parseFloat((current.walletUsdt + reqUsdt).toFixed(6));
+      patchBody = {
+        walletBalance: current.walletBalance, // LKR untouched
+        walletUsdt: newUsdt,
+        updatedAt: new Date().toISOString()
+      };
+    } else {
+      // Refund back to LKR wallet (default)
+      const newLkr = parseFloat((current.walletBalance + priceLkr).toFixed(2));
+      patchBody = {
+        walletBalance: newLkr,
+        walletUsdt: current.walletUsdt, // USDT untouched
+        updatedAt: new Date().toISOString()
+      };
+    }
 
     await fetch(`${FIREBASE_RTDB_URL}/users/${uid}.json`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        walletBalance: newLkr,
-        walletUsdt: newUsdt,
-        updatedAt: new Date().toISOString()
-      })
+      body: JSON.stringify(patchBody)
     });
-  } catch (e) {}
+  } catch (e) { console.error('[Vercel Refund Error]:', e.message); }
 }
 
 export default async function handler(req, res) {
@@ -173,13 +191,14 @@ export default async function handler(req, res) {
     // 3. Fallback Vercel Execution: Check wallet balance if order creation
     const isOrderCreation = apiPath === 'order/create_order';
     const numPriceLkr = parseFloat(priceLkr || body?.priceLkr || bodyObj?.priceLkr || 0);
+    let deductResult = null;
 
     if (isOrderCreation) {
       if (numPriceLkr <= 0) {
         return res.status(400).json({ error: 'Invalid order price specified.' });
       }
 
-      const deductResult = await deductUserWallet(authenticatedUser.uid, numPriceLkr);
+      deductResult = await deductUserWallet(authenticatedUser.uid, numPriceLkr);
       if (!deductResult.success) {
         return res.status(403).json({ error: deductResult.reason || 'Insufficient wallet balance.' });
       }
@@ -220,7 +239,7 @@ export default async function handler(req, res) {
     const isSuccess = apiRes.ok && jsonResult && (jsonResult.status === 'processing' || jsonResult.status === 'true' || jsonResult.status === true || jsonResult.status === 1 || jsonResult.order_id);
 
     if (isOrderCreation && !isSuccess) {
-      await refundUserWallet(authenticatedUser.uid, numPriceLkr);
+      await refundUserWallet(authenticatedUser.uid, numPriceLkr, deductResult?.usedCurrency || 'LKR');
     }
 
     res.status(apiRes.status);
