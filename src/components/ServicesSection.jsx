@@ -60,12 +60,12 @@ export const ServicesSection = () => {
               {/* Top Border Indicator Bar (Matching Screenshot Hover Effect) */}
               <div className="absolute top-0 left-0 right-0 h-1 bg-[#cc040a] rounded-t-3xl opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
 
-              {/* 3D App Icon Container matching reference screenshot */}
-              <div className="relative w-28 h-28 sm:w-32 sm:h-32 my-3 rounded-full border border-red-100 bg-gradient-to-b from-red-50/50 via-white to-red-50/20 flex items-center justify-center p-2 shadow-xs group-hover:border-red-300 group-hover:shadow-md transition-all duration-300">
+              {/* 3D App Icon Container (Direct 3D Icon - Large Size) */}
+              <div className="relative w-36 h-36 sm:w-44 sm:h-44 my-3 flex items-center justify-center">
                 <img 
                   src={service.image} 
                   alt={service.title} 
-                  className="w-20 h-20 sm:w-24 sm:h-24 object-contain rounded-2xl filter drop-shadow-md group-hover:scale-105 transition-transform duration-300" 
+                  className="w-full h-full object-contain filter drop-shadow-xl group-hover:scale-108 transition-transform duration-300 rounded-3xl" 
                 />
               </div>
 
