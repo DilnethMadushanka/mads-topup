@@ -446,7 +446,15 @@ export function initTelegramBot() {
   if (!token) return null;
 
   try {
-    const BotConstructor = typeof TelegramBot === 'function' ? TelegramBot : (TelegramBot.default || TelegramBot.TelegramBot);
+    const BotConstructor = typeof TelegramBot === 'function'
+      ? TelegramBot
+      : (TelegramBot?.default || TelegramBot?.TelegramBot || TelegramBot?.Bot);
+
+    if (!BotConstructor || typeof BotConstructor !== 'function') {
+      console.warn('⚠️ [Telegram Bot Warning]: Could not resolve valid TelegramBot constructor function.');
+      return null;
+    }
+
     const bot = new BotConstructor(token, { polling: true });
     botInstance = bot;
 
