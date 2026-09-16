@@ -99,7 +99,7 @@ export const Navbar = () => {
       ? { label: 'Reseller Dashboard', icon: Crown, color: 'text-amber-500', bg: 'bg-amber-50', action: () => { openResellerDashboard(); setIsMobileMenuOpen(false); }, badge: 'PARTNER', active: isResellerDashboardOpen }
       : { label: 'Reseller Program', icon: Crown, color: 'text-cyan-500', bg: 'bg-cyan-50', action: () => { openResellerPage(); setIsMobileMenuOpen(false); }, active: isResellerPageOpen },
     { label: '24/7 Support', icon: Headset, color: 'text-[#cc040a]', bg: 'bg-red-50', action: () => { openContactPage(); setIsMobileMenuOpen(false); } },
-    { label: 'My Orders', icon: ShoppingBag, color: 'text-indigo-500', bg: 'bg-indigo-50', action: () => { if (isUserLoggedIn) { openUserProfilePage(); } else { openAuth('login'); } setIsMobileMenuOpen(false); }, count: (orders || []).length || 0 },
+    { label: 'My Orders', icon: ShoppingBag, color: 'text-indigo-500', bg: 'bg-indigo-50', action: () => { if (isUserLoggedIn) { openUserProfilePage(); } else { openAuth('login'); } setIsMobileMenuOpen(false); }, count: isUserLoggedIn ? (orders || []).length || 0 : 0 },
   ];
 
   return (
