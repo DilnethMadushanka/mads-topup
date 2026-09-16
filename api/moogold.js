@@ -29,21 +29,83 @@ async function verifyFirebaseIdToken(idToken) {
 }
 
 const FIREBASE_RTDB_URL = process.env.FIREBASE_DATABASE_URL || process.env.VITE_FIREBASE_DATABASE_URL || "https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app";
+const FIREBASE_FIRESTORE_URL = process.env.FIREBASE_FIRESTORE_URL || `https://firestore.googleapis.com/v1/projects/mads-topup-76445/databases/(default)/documents/users`;
+const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY || "AIzaSyAzgbA7GdTY5Dv2CtgY8cVOswkpfcQpNcE";
+
+// Read wallet from Firestore REST API as fallback
+async function getUserWalletFromFirestore(uid) {
+  if (!uid) return null;
+  try {
+    const res = await fetch(`${FIREBASE_FIRESTORE_URL}/${uid}?key=${FIREBASE_API_KEY}`);
+    if (res.ok) {
+      const doc = await res.json();
+      const fields = doc.fields || {};
+      return {
+        walletBalance: parseFloat(fields.walletBalance?.doubleValue || fields.walletBalance?.integerValue || 0),
+        walletUsdt: parseFloat(fields.walletUsdt?.doubleValue || fields.walletUsdt?.integerValue || 0)
+      };
+    }
+  } catch (e) { console.warn('[Firestore fallback read error]:', e.message); }
+  return null;
+}
+
+// Write updated balance back to Firestore REST API
+async function patchFirestoreWallet(uid, walletBalance, walletUsdt) {
+  if (!uid) return;
+  try {
+    const url = `${FIREBASE_FIRESTORE_URL}/${uid}?updateMask.fieldPaths=walletBalance&updateMask.fieldPaths=walletUsdt&updateMask.fieldPaths=updatedAt&key=${FIREBASE_API_KEY}`;
+    await fetch(url, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fields: {
+          walletBalance: { doubleValue: walletBalance },
+          walletUsdt: { doubleValue: walletUsdt },
+          updatedAt: { stringValue: new Date().toISOString() }
+        }
+      })
+    });
+  } catch (e) { console.warn('[Firestore fallback write error]:', e.message); }
+}
 
 async function getUserWalletData(uid) {
   if (!uid) return { walletBalance: 0, walletUsdt: 0 };
+
+  // Primary: read from RTDB
   try {
     const res = await fetch(`${FIREBASE_RTDB_URL}/users/${uid}.json`);
     if (res.ok) {
       const data = await res.json();
       if (data) {
-        return {
-          walletBalance: parseFloat(data.walletBalance || 0),
-          walletUsdt: parseFloat(data.walletUsdt || 0)
-        };
+        const rtdbLkr = parseFloat(data.walletBalance || 0);
+        const rtdbUsdt = parseFloat(data.walletUsdt || 0);
+        // If RTDB has a non-zero balance, trust it
+        if (rtdbLkr > 0 || rtdbUsdt > 0) {
+          return { walletBalance: rtdbLkr, walletUsdt: rtdbUsdt };
+        }
       }
     }
-  } catch (e) {}
+  } catch (e) { console.warn('[RTDB read error]:', e.message); }
+
+  // Fallback: read from Firestore (covers cases where admin credited via Firestore only)
+  const firestoreData = await getUserWalletFromFirestore(uid);
+  if (firestoreData && (firestoreData.walletBalance > 0 || firestoreData.walletUsdt > 0)) {
+    // Sync the Firestore balance back to RTDB so future reads are consistent
+    try {
+      await fetch(`${FIREBASE_RTDB_URL}/users/${uid}.json`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walletBalance: firestoreData.walletBalance,
+          walletUsdt: firestoreData.walletUsdt,
+          syncedFromFirestore: true,
+          updatedAt: new Date().toISOString()
+        })
+      });
+    } catch (e) { console.warn('[RTDB sync-back error]:', e.message); }
+    return firestoreData;
+  }
+
   return { walletBalance: 0, walletUsdt: 0 };
 }
 
@@ -66,18 +128,24 @@ async function deductUserWallet(uid, priceLkr) {
       newUsdt = parseFloat(Math.max(0, newUsdt - reqUsdt).toFixed(6));
       usedCurrency = 'USDT';
     } else {
-      return { success: false, reason: `Insufficient wallet balance. Required: Rs. ${priceLkr.toFixed(2)}, Available: Rs. ${newLkr.toFixed(2)} LKR / $${newUsdt.toFixed(2)} USDT` };
+      return { success: false, reason: `Insufficient wallet balance. Required: Rs. ${priceLkr.toFixed(2)}, Available: Rs. ${current.walletBalance.toFixed(2)} LKR / $${current.walletUsdt.toFixed(2)} USDT` };
     }
 
+    const patchBody = JSON.stringify({
+      walletBalance: newLkr,
+      walletUsdt: newUsdt,
+      updatedAt: new Date().toISOString()
+    });
+
+    // Write to RTDB
     const patchRes = await fetch(`${FIREBASE_RTDB_URL}/users/${uid}.json`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        walletBalance: newLkr,
-        walletUsdt: newUsdt,
-        updatedAt: new Date().toISOString()
-      })
+      body: patchBody
     });
+
+    // Also write to Firestore so both are in sync
+    await patchFirestoreWallet(uid, newLkr, newUsdt);
 
     if (patchRes.ok) {
       return { success: true, newBalanceLkr: newLkr, newBalanceUsdt: newUsdt, usedCurrency };
@@ -116,6 +184,8 @@ async function refundUserWallet(uid, priceLkr, usedCurrency = 'LKR') {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(patchBody)
     });
+    // Also sync refund back to Firestore
+    await patchFirestoreWallet(uid, patchBody.walletBalance, patchBody.walletUsdt);
   } catch (e) { console.error('[Vercel Refund Error]:', e.message); }
 }
 

@@ -832,14 +832,32 @@ export const creditUserWalletInDatabase = async (identifier, lkrAmount, usdtAmou
         const usersCol = collection(db, 'users');
         const qEmail = query(usersCol, where('email', '==', cleanIdLower));
         const qSnap = await getDocs(qEmail);
-        qSnap.forEach(async (d) => {
+        for (const d of qSnap.docs) {
           const curData = d.data();
           const curLkr = parseFloat(curData.walletBalance || 0);
           const curUsdt = parseFloat(curData.walletUsdt || 0);
           const newLkr = Math.max(0, curLkr + (lkrAmount || 0));
           const newUsdt = Math.max(0, curUsdt + (usdtAmount || 0));
           await setDoc(doc(db, 'users', d.id), { walletBalance: newLkr, walletUsdt: newUsdt, updatedAt: new Date().toISOString() }, { merge: true });
-        });
+          // CRITICAL FIX: Also write to RTDB using the Firestore doc ID as the UID,
+          // so the serverless API (which reads RTDB at /users/{uid}) can see the balance.
+          if (rtdb) {
+            try {
+              const userRtdbRef = dbRef(rtdb, `users/${d.id}`);
+              await rtdbUpdate(userRtdbRef, {
+                walletBalance: newLkr,
+                walletUsdt: newUsdt,
+                email: curData.email || cleanIdLower,
+                uid: d.id,
+                updatedAt: new Date().toISOString()
+              });
+              targetUid = d.id; // mark found
+            } catch (rtdbErr) {
+              console.warn('RTDB sync from Firestore email credit:', rtdbErr.message);
+            }
+          }
+          break; // Only process the first matching document
+        }
       }
     } catch (err) {
       console.warn('Firestore wallet credit note:', err.message);
