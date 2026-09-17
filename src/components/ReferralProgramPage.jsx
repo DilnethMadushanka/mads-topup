@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Lock, ArrowLeft, ShoppingBag, Coins, Copy, CheckCircle2,
   Share2, MessageCircle, Send, Sparkles, Gift, Calculator,
@@ -39,10 +39,16 @@ export const ReferralProgramPage = () => {
   const purchasesProgressPercent = Math.min(100, Math.round((userCompletedCount / 3) * 100));
   const spendProgressPercent     = Math.min(100, Math.round((userTotalSpentLkr / 1000) * 100));
 
-  // ── BUG FIX: Safe referral code + dynamic domain ─────────────────
-  const namePart = (userProfile?.displayName || userProfile?.name || 'USER').replace(/\s+/g, '').slice(0, 3).toUpperCase();
-  const uidPart  = userProfile?.uid ? userProfile.uid.slice(-4) : Math.floor(1000 + Math.random() * 9000).toString();
-  const referralCode = `MADS-${namePart}${uidPart}`;
+  // ── BUG FIX: useMemo prevents Math.random() re-running on every render
+  const referralCode = useMemo(() => {
+    const namePart = (userProfile?.displayName || userProfile?.name || 'USER')
+      .replace(/\s+/g, '').slice(0, 3).toUpperCase();
+    const uidPart = userProfile?.uid
+      ? userProfile.uid.slice(-4)
+      : String(Math.floor(1000 + Math.random() * 9000)); // stable per mount
+    return `MADS-${namePart}${uidPart}`;
+  }, [userProfile?.uid, userProfile?.displayName, userProfile?.name]);
+
   const referralLink = `${window.location.origin}/ref/${referralCode}`;
 
   // Estimated cashback: 1.5% per friend
