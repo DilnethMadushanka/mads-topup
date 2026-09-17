@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { GAMES_DATA, getVerifiedPackagePriceLkr } from '../data/games';
 import { generateUniqueSecurityKey, ensureResellerCredentials, getResellerProfileByKeyAsync, updateUserProfileInFirestore } from '../services/firestoreService';
@@ -51,6 +51,21 @@ export const ResellerDashboard = () => {
   const resellerWalletId = profileWithCreds.resellerCode || userProfile?.resellerCode || 'RS-OFFICIAL';
   const resellerSecurityKey = profileWithCreds.securityKey || userProfile?.securityKey || 'MADS-SEC-OFFICIAL';
   const [isCopiedKey, setIsCopiedKey] = useState(false);
+
+  // Bug 8 fix: persist generated credentials to Firestore if they weren't saved yet
+  // This ensures the key in the dashboard matches the DB and the approval email
+  useEffect(() => {
+    if (!userProfile?.uid) return;
+    const needsKeyUpdate = !userProfile.securityKey || userProfile.securityKey !== resellerSecurityKey;
+    const needsCodeUpdate = !userProfile.resellerCode || userProfile.resellerCode !== resellerWalletId;
+    if (needsKeyUpdate || needsCodeUpdate) {
+      updateUserProfileInFirestore(userProfile.uid, {
+        securityKey: resellerSecurityKey,
+        resellerCode: resellerWalletId
+      }).catch(e => console.warn('[ResellerDashboard] Key persist note:', e));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userProfile?.uid]);
 
   const handleCopySecurityKey = () => {
     navigator.clipboard.writeText(resellerSecurityKey);

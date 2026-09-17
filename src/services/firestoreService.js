@@ -462,12 +462,19 @@ export const deductResellerWalletBalance = async (uid, amountLkr) => {
             if (profile.uid === uid) profile.walletUsdt = newUsdt;
           }
         } else {
-          return false; // Insufficient balance in both wallets
+          // Bug 5 fix: insufficient balance — return false immediately, do NOT fall through to Firestore
+          console.warn(`[deductResellerWalletBalance] Insufficient balance for uid ${uid}: needed Rs.${amountLkr}, has Rs.${curLkr} LKR / $${curUsdt} USDT`);
+          return false;
         }
+      } else {
+        // User not found in RTDB — cannot deduct safely
+        return false;
       }
     } catch (e) { console.warn('deductResellerWalletBalance RTDB note:', e); }
   }
 
+  // Bug 5 fix: Firestore is a secondary mirror — only sync after confirmed RTDB deduction
+  // We re-read from Firestore and write the same values RTDB already applied
   if (db) {
     try {
       const userRef = doc(db, 'users', uid);
@@ -482,6 +489,7 @@ export const deductResellerWalletBalance = async (uid, amountLkr) => {
           const reqUsdt = parseFloat((amountLkr / 305).toFixed(6));
           await setDoc(userRef, { walletUsdt: parseFloat(Math.max(0, curUsdt - reqUsdt).toFixed(6)), updatedAt: new Date().toISOString() }, { merge: true });
         }
+        // If Firestore also doesn't have enough, it's a sync lag — RTDB already succeeded, so we don't block
       }
     } catch (e) { console.warn('deductResellerWalletBalance Firestore note:', e); }
   }

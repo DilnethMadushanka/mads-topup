@@ -85,11 +85,11 @@ export function restartTelegramPolling() {
  * Runs automatically every 2 hours
  */
 export async function checkBotHealthAndRefresh(isManual = false) {
-  const defaultToken = '8721752035:AAHT3qzLWgytmhk8ApCEAEHVrTfD3iujgr0';
-  const token = (typeof process !== 'undefined' && process.env.TELEGRAM_BOT_TOKEN) || defaultToken;
+  const token = (typeof process !== 'undefined' && process.env.TELEGRAM_BOT_TOKEN) || '';
   if (!token) {
     botStatus = 'OFFLINE';
-    return { success: false, status: botStatus, error: 'TELEGRAM_BOT_TOKEN missing' };
+    console.error('[Telegram Bot] TELEGRAM_BOT_TOKEN env var is missing — bot cannot start!');
+    return { success: false, status: botStatus, error: 'TELEGRAM_BOT_TOKEN env var not set' };
   }
 
   const startMs = Date.now();
@@ -441,9 +441,12 @@ async function checkMoongoldOrderStatus(orderId) {
 export function initTelegramBot() {
   if (botInstance) return botInstance;
 
-  const defaultToken = '8721752035:AAHT3qzLWgytmhk8ApCEAEHVrTfD3iujgr0';
-  const token = (typeof process !== 'undefined' && process.env.TELEGRAM_BOT_TOKEN) || defaultToken;
-  if (!token) return null;
+  // Bug 3 fix: token MUST come from env var — no hardcoded fallback
+  const token = (typeof process !== 'undefined' && process.env.TELEGRAM_BOT_TOKEN) || '';
+  if (!token) {
+    console.error('[Telegram Bot] TELEGRAM_BOT_TOKEN env var is not set — bot will not start. Set it in your .env file.');
+    return null;
+  }
 
   try {
     const BotConstructor = typeof TelegramBot === 'function'
@@ -648,20 +651,25 @@ Telegram long-polling connection is 100% active 24/7!
         const chatId = ctx.message?.chat?.id || ctx.chat?.id;
         const text = ctx.message?.text || ctx.msg?.text || '';
         const parts = text.split(/\s+/).filter(Boolean);
-        const matchStr = (typeof ctx.match === 'string' ? ctx.match : (Array.isArray(ctx.match) ? ctx.match[0] : ''));
-        const keyArg = (matchStr || parts[1] || parts[0]?.replace(/^\/(auth|link|key)\s*/i, '') || '').trim();
 
         if (!chatId) return;
+
+        // Bug 1 fix: guard against missing key argument before any parsing
+        if (parts.length < 2) {
+          return safeReply(ctx, '❌ Error: Please specify your unique Security Key or Reseller Code.\nUsage: /auth MADS-SEC-50048A92\nExample: /link RS-048A92');
+        }
+
+        const keyArg = (parts[1] || '').trim();
+
+        if (!keyArg || keyArg.startsWith('/')) {
+          return safeReply(ctx, '❌ Error: Please specify your unique Security Key or Reseller Code.\nUsage: /auth MADS-SEC-50048A92');
+        }
 
         const now = Date.now();
         const rateData = authRateLimiter.get(chatId) || { failedAttempts: 0, lockoutUntil: 0 };
         if (rateData.lockoutUntil > now) {
           const waitMins = Math.ceil((rateData.lockoutUntil - now) / 60000);
           return safeReply(ctx, `🛡️ SECURITY LOCKOUT ACTIVATED\n\nToo many failed auth attempts. Chat locked for ${waitMins} minute(s) to prevent key brute-forcing.`);
-        }
-
-        if (!keyArg || keyArg.startsWith('/')) {
-          return safeReply(ctx, '❌ Error: Please specify your unique Security Key or Reseller Code.\nUsage: /auth MADS-SEC-50048A92');
         }
 
         const reseller = await getResellerProfileByKeyAsync(keyArg);
@@ -981,6 +989,9 @@ Examples:
           const pkgInfo = findPackageInGame(matchedGame, pkgArg);
           const orderId = 'ORD-TG-' + Math.floor(100000 + Math.random() * 900000);
 
+          // Bug 4 fix: apply 5% wholesale discount — resellers pay wholesale, not retail
+          const wholesalePrice = Math.round(pkgInfo.priceLkr * 0.95);
+
           let freshReseller = reseller;
           const keyToQuery = reseller.securityKey || reseller.resellerCode || reseller.uid;
           if (keyToQuery) {
@@ -992,8 +1003,8 @@ Examples:
 
           const currentBalance = parseFloat(freshReseller.walletBalance !== undefined ? freshReseller.walletBalance : 0);
 
-          if (currentBalance < pkgInfo.priceLkr) {
-            const shortfall = pkgInfo.priceLkr - currentBalance;
+          if (currentBalance < wholesalePrice) {
+            const shortfall = wholesalePrice - currentBalance;
             const failBalanceMsg = `
 ❌ TOP-UP FAILED: INSUFFICIENT RESELLER BALANCE
 
@@ -1001,7 +1012,8 @@ Examples:
 👑 Reseller: ${freshReseller.name} (${freshReseller.resellerCode})
 🔑 Security Key: ${freshReseller.securityKey}
 
-💵 Required Package Price: Rs. ${pkgInfo.priceLkr.toLocaleString()} LKR
+📦 Retail Price: Rs. ${pkgInfo.priceLkr.toLocaleString()} LKR
+💵 Wholesale Price (5% OFF): Rs. ${wholesalePrice.toLocaleString()} LKR
 💰 Available Wallet Balance: Rs. ${currentBalance.toLocaleString()} LKR ($${(parseFloat(freshReseller.walletUsdt !== undefined ? freshReseller.walletUsdt : 0)).toFixed(2)} USDT)
 ⚠️ Shortfall Amount: Rs. ${shortfall.toLocaleString()} LKR
 
@@ -1010,7 +1022,7 @@ Examples:
             return safeReply(ctx, failBalanceMsg);
           }
 
-          await safeReply(ctx, `⌛ Processing Top-up Order #${orderId}...\n\n${matchedGame.currencyIcon} Game: ${matchedGame.name}\n🆔 Player ID: ${idArg} ${zoneArg ? `\n🌐 Zone ID: ${zoneArg}` : ''}\n📦 Package: ${pkgInfo.name}\n\nDispatching order to MooGold API & verifying IGN...`);
+          await safeReply(ctx, `⌛ Processing Top-up Order #${orderId}...\n\n${matchedGame.currencyIcon} Game: ${matchedGame.name}\n🆔 Player ID: ${idArg} ${zoneArg ? `\n🌐 Zone ID: ${zoneArg}` : ''}\n📦 Package: ${pkgInfo.name}\n💵 Wholesale Price: Rs. ${wholesalePrice.toLocaleString()} LKR\n\nDispatching order to MooGold API & verifying IGN...`);
 
           let realIgn = `Player ${idArg}`;
           try {
@@ -1020,48 +1032,62 @@ Examples:
             }
           } catch (e) {}
 
+          // Bug 7 fix: Save order BEFORE deducting — status PROCESSING prevents lost-order on crash
+          const pendingOrder = {
+            id: orderId,
+            userId: freshReseller.uid || reseller.uid,
+            userEmail: freshReseller.email || reseller.email || '',
+            resellerCode: freshReseller.resellerCode || reseller.resellerCode,
+            gameId: matchedGame.id,
+            gameName: matchedGame.name,
+            packageName: pkgInfo.name,
+            playerId: idArg,
+            zoneId: zoneArg,
+            ign: realIgn,
+            priceLkr: wholesalePrice,
+            retailPriceLkr: pkgInfo.priceLkr,
+            wholesaleDiscount: pkgInfo.priceLkr - wholesalePrice,
+            paymentMethod: `Reseller Wallet (${freshReseller.resellerCode || reseller.resellerCode})`,
+            isResellerOrder: true,
+            viaTelegramBot: true,
+            channel: 'Telegram Bot',
+            status: 'PROCESSING',
+            moongoldRef: null,
+            createdAt: new Date().toISOString()
+          };
+          try { await saveOrderToFirestore(freshReseller.uid || reseller.uid, pendingOrder); } catch (e) {}
+
           const mgResult = await sendMoongoldLiveOrder(matchedGame, pkgInfo, idArg, zoneArg, orderId);
 
           if (mgResult.success) {
+            // Deduct wholesale price from reseller wallet
+            const deductOk = await deductResellerWalletBalance(freshReseller.uid || reseller.uid, wholesalePrice).catch(() => false);
+
+            // Bug 6+2 fix: fetch confirmed post-deduction balance from DB
+            let confirmedBalance = Math.max(0, currentBalance - wholesalePrice);
             try {
-              await deductResellerWalletBalance(freshReseller.uid || reseller.uid, pkgInfo.priceLkr);
+              const postDeductProfile = await getResellerProfileByKeyAsync(keyToQuery);
+              if (postDeductProfile && postDeductProfile.walletBalance !== undefined) {
+                confirmedBalance = postDeductProfile.walletBalance;
+                boundChatSessions.set(chatId, postDeductProfile);
+              }
             } catch (e) {}
 
-            const newBalance = Math.max(0, currentBalance - pkgInfo.priceLkr);
-            reseller.walletBalance = newBalance;
-
-            const newOrder = {
-              id: orderId,
-              userId: reseller.uid,
-              userEmail: reseller.email || '',
-              resellerCode: reseller.resellerCode,
-              gameId: matchedGame.id,
-              gameName: matchedGame.name,
-              packageName: pkgInfo.name,
-              playerId: idArg,
-              zoneId: zoneArg,
-              ign: realIgn,
-              priceLkr: pkgInfo.priceLkr,
-              paymentMethod: `Reseller Wallet (${reseller.resellerCode})`,
-              isResellerOrder: true,
-              viaTelegramBot: true,
-              channel: 'Telegram Bot',
+            const completedOrder = {
+              ...pendingOrder,
               status: 'COMPLETED',
               moongoldRef: mgResult.moongoldRef,
-              createdAt: new Date().toISOString()
+              completedAt: new Date().toISOString()
             };
-
-            try {
-              await saveOrderToFirestore(reseller.uid, newOrder);
-            } catch (e) {}
+            try { await saveOrderToFirestore(freshReseller.uid || reseller.uid, completedOrder); } catch (e) {}
 
             const successMsg = `
 ✅ TOP-UP SUCCESSFUL!
 
 📦 Order Ref ID: ${orderId}
 🔖 MooGold Ref: #${mgResult.moongoldRef}
-👑 Reseller: ${reseller.name} (${reseller.resellerCode})
-🔑 Security Key: ${(reseller.securityKey || 'MADS-SEC-PROTECTED').slice(0, 10)}****
+👑 Reseller: ${freshReseller.name || reseller.name} (${freshReseller.resellerCode || reseller.resellerCode})
+🔑 Security Key: ${(freshReseller.securityKey || reseller.securityKey || 'MADS-SEC-PROTECTED').slice(0, 10)}****
 
 ${matchedGame.currencyIcon} Game: ${matchedGame.name}
 👤 Real IGN Name: ${realIgn}
@@ -1070,8 +1096,9 @@ ${matchedGame.currencyIcon} Game: ${matchedGame.name}
 ${matchedGame.currencyIcon} Topup Package: ${pkgInfo.name} (Credited Successfully!)
 ⚡ Quantity Added: ${pkgInfo.countText || pkgInfo.name}
 
-💵 Wholesale Price Paid: Rs. ${pkgInfo.priceLkr.toLocaleString()} LKR
-💰 Remaining Reseller Balance: Rs. ${newBalance.toLocaleString()} LKR ($${(parseFloat(reseller.walletUsdt !== undefined ? reseller.walletUsdt : 0)).toFixed(2)} USDT)
+📦 Retail Price: Rs. ${pkgInfo.priceLkr.toLocaleString()} LKR
+💵 Wholesale Price Paid (5% OFF): Rs. ${wholesalePrice.toLocaleString()} LKR
+💰 Confirmed Remaining Balance: Rs. ${confirmedBalance.toLocaleString()} LKR
 
 Order placed live on MooGold Reseller Portal & credited instantly!
             `.trim();
@@ -1088,40 +1115,26 @@ Order placed live on MooGold Reseller Portal & credited instantly!
 
 📦 Order Ref ID: ${orderId}
 🔖 MooGold Ref: #${mgResult.moongoldRef}
-👑 Reseller: ${reseller.name} (${reseller.resellerCode})
+👑 Reseller: ${freshReseller.name || reseller.name} (${freshReseller.resellerCode || reseller.resellerCode})
 
 ℹ️ Notice: Order was refunded by MooGold gateway (Item out of stock or First Topup Bonus already claimed).
 
-💰 Reseller Wallet Balance Refunded: Rs. ${pkgInfo.priceLkr.toLocaleString()} LKR
+💰 Reseller Wallet Balance Refunded: Rs. ${wholesalePrice.toLocaleString()} LKR
                   `.trim();
                   safeReply(ctx, cancelMsg).catch(() => {});
                 }
               } catch (e) {}
-            }, 20000); // 20s delay — gives MooGold API time to process & potentially trigger a refund
+            }, 20000);
 
             return;
           } else {
             const failedOrder = {
-              id: orderId,
-              userId: reseller.uid,
-              userEmail: reseller.email || '',
-              resellerCode: reseller.resellerCode,
-              gameId: matchedGame.id,
-              packageName: pkgInfo.name,
-              playerId: idArg,
-              zoneId: zoneArg,
-              priceLkr: pkgInfo.priceLkr,
-              paymentMethod: `Reseller Wallet (${reseller.resellerCode})`,
-              isResellerOrder: true,
-              viaTelegramBot: true,
-              channel: 'Telegram Bot',
+              ...pendingOrder,
               status: 'FAILED',
               error: mgResult.error,
-              createdAt: new Date().toISOString()
+              failedAt: new Date().toISOString()
             };
-            try {
-              await saveOrderToFirestore(reseller.uid, failedOrder);
-            } catch (e) {}
+            try { await saveOrderToFirestore(freshReseller.uid || reseller.uid, failedOrder); } catch (e) {}
 
             const failMsg = `
 ❌ TOP-UP GATEWAY FAILURE
