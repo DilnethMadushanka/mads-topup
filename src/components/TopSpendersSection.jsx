@@ -265,7 +265,7 @@ export const TopSpendersSection = () => {
       <style>{`
         /* ── Section & layout ──────────────────────────────── */
         .ts-section {
-          background: linear-gradient(160deg, #fff5f5 0%, #fef2f2 30%, #f8faff 70%, #fafafa 100%);
+          background: #ffffff;
           padding: 52px 20px 60px;
           margin-top: 32px;
           border-radius: 24px;

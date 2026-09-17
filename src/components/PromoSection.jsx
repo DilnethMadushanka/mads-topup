@@ -14,17 +14,17 @@ export const PromoSection = () => {
         <div
           className="relative rounded-3xl overflow-hidden"
           style={{
-            background: 'linear-gradient(145deg, #fff5f5 0%, #fef2f2 35%, #ffffff 65%, #fff8f8 100%)',
-            border: '1.5px solid rgba(204,4,10,0.1)',
-            boxShadow: '0 20px 60px rgba(204,4,10,0.08), 0 4px 16px rgba(0,0,0,0.05)',
+            background: '#ffffff',
+            border: '1.5px solid rgba(204,4,10,0.08)',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)',
             padding: '52px 36px',
           }}>
 
           {/* ── Decorative blobs ─────────────────────────── */}
           <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full pointer-events-none"
-            style={{ background: 'radial-gradient(circle, rgba(204,4,10,0.09) 0%, transparent 70%)', filter: 'blur(50px)' }} />
+            style={{ background: 'radial-gradient(circle, rgba(204,4,10,0.04) 0%, transparent 70%)', filter: 'blur(50px)' }} />
           <div className="absolute -bottom-16 right-10 w-72 h-72 rounded-full pointer-events-none"
-            style={{ background: 'radial-gradient(circle, rgba(204,4,10,0.07) 0%, transparent 70%)', filter: 'blur(50px)' }} />
+            style={{ background: 'radial-gradient(circle, rgba(204,4,10,0.03) 0%, transparent 70%)', filter: 'blur(50px)' }} />
 
           {/* ── Subtle dot grid ──────────────────────────── */}
           <div className="absolute inset-0 pointer-events-none opacity-[0.025]"

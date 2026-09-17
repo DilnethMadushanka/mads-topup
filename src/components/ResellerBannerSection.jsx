@@ -9,9 +9,9 @@ export const ResellerBannerSection = () => {
     <section id="reseller-section" className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       <div className="relative rounded-3xl overflow-hidden text-center"
         style={{
-          background: 'linear-gradient(145deg, #fff5f5 0%, #fef2f2 40%, #ffffff 70%, #fff8f8 100%)',
-          border: '1.5px solid rgba(204,4,10,0.1)',
-          boxShadow: '0 20px 60px rgba(204,4,10,0.08), 0 4px 16px rgba(0,0,0,0.06)',
+          background: '#ffffff',
+          border: '1.5px solid rgba(204,4,10,0.08)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)',
           padding: '52px 24px',
         }}>
 
