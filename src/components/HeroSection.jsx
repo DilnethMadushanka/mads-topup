@@ -177,16 +177,30 @@ export const HeroSection = () => {
         </div>
 
         {/* Hero Title: White MADS + Red TOPUP — single h1 for SEO */}
-        <div className="space-y-0">
-          <h1 className="font-black font-heading tracking-tighter uppercase leading-none">
+        <div className="space-y-0 relative">
+          {/* Frosted glass blur backdrop behind text */}
+          <div
+            className="absolute inset-x-0 inset-y-0 rounded-3xl pointer-events-none"
+            style={{
+              background: 'linear-gradient(135deg, rgba(0,0,0,0.38) 0%, rgba(10,0,0,0.32) 100%)',
+              backdropFilter: 'blur(14px)',
+              WebkitBackdropFilter: 'blur(14px)',
+              borderRadius: '28px',
+              padding: '10px 32px',
+              margin: '-10px -24px',
+              border: '1px solid rgba(255,255,255,0.07)',
+              boxShadow: '0 8px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)',
+            }}
+          />
+          <h1 className="font-black font-heading tracking-tighter uppercase leading-none relative z-10 px-6 py-2">
 
-            {/* MADS — white with entrance + glow */}
-            <span className="block text-5xl sm:text-8xl lg:text-9xl text-white hero-mads-text">
+            {/* MADS — bigger, white with entrance + glow */}
+            <span className="block text-6xl sm:text-9xl lg:text-[10rem] text-white hero-mads-text">
               MADS
             </span>
 
-            {/* TOPUP — red with entrance + glow pulse */}
-            <span className="block text-5xl sm:text-8xl lg:text-9xl text-[#cc040a] hero-topup-text">
+            {/* TOPUP — smaller than MADS, red with entrance + glow pulse */}
+            <span className="block text-4xl sm:text-6xl lg:text-8xl text-[#cc040a] hero-topup-text" style={{ marginTop: '-0.1em' }}>
               TOPUP
             </span>
           </h1>
