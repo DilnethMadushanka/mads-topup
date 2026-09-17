@@ -770,7 +770,7 @@ export const GameTopupPage = () => {
                     <div className="w-full pt-3 border-t border-slate-100 flex items-center justify-between px-0.5">
                       <button
                         type="button"
-                        onClick={() => updateQuantity(pkg.id, -1)}
+                        onClick={(e) => { e.stopPropagation(); updateQuantity(pkg.id, -1); }}
                         disabled={qty === 0}
                         className={`w-9 h-9 rounded-xl font-black text-base flex items-center justify-center transition-all cursor-pointer ${
                           qty > 0 
@@ -787,7 +787,7 @@ export const GameTopupPage = () => {
 
                       <button
                         type="button"
-                        onClick={() => updateQuantity(pkg.id, 1)}
+                        onClick={(e) => { e.stopPropagation(); updateQuantity(pkg.id, 1); }}
                         className="w-9 h-9 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-black text-base flex items-center justify-center transition-all cursor-pointer shadow-md shadow-blue-500/25"
                       >
                         +
