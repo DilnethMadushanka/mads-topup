@@ -7,9 +7,9 @@ export const HeroSection = () => {
   const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
 
   const heroImages = [
-    '/uploads/hero_media/hero_03f995f15258.jpg',
-    '/uploads/hero_media/hero_5915a6b90d1b.jpg',
-    '/uploads/hero_media/hero_cc64b9056d35.jpg'
+    { src: '/uploads/hero_media/hero_freefire.jpg', label: 'Free Fire' },
+    { src: '/uploads/hero_media/hero_pubg.jpg',     label: 'PUBG Mobile' },
+    { src: '/uploads/hero_media/hero_mlbb.jpg',     label: 'Mobile Legends' },
   ];
 
   useEffect(() => {
@@ -29,12 +29,12 @@ export const HeroSection = () => {
       {/* Background Artwork Slider - MADS Hero Media */}
       {heroImages.map((img, idx) => (
         <div 
-          key={img}
+          key={img.src}
           className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out scale-105 pointer-events-none ${
             idx === currentHeroIndex ? 'opacity-60' : 'opacity-0'
           }`}
           style={{
-            backgroundImage: `url('${img}')`
+            backgroundImage: `url('${img.src}')`
           }}
         ></div>
       ))}
