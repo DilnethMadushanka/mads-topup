@@ -733,7 +733,12 @@ export const AppProvider = ({ children }) => {
     updateOrderStatusInFirestore(orderId, newStatus, moongoldRef);
   };
 
-  const formatPrice = (priceLkr) => {
+  const formatPrice = (priceLkr, priceUsd) => {
+    if (currency === 'USD') {
+      const usd = priceUsd != null ? priceUsd : Number((priceLkr / 340).toFixed(2));
+      if (isNaN(usd)) return '$ 0.00';
+      return `$ ${Number(usd).toFixed(2)}`;
+    }
     if (priceLkr === null || priceLkr === undefined || isNaN(priceLkr)) return 'Rs. 0';
     return `Rs. ${Number(priceLkr).toLocaleString('en-US')}`;
   };

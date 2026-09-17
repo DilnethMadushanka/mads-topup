@@ -349,7 +349,7 @@ export const GameTopupPage = () => {
         particleCount: 100,
         spread: 80,
         origin: { y: 0.5 },
-        colors: ['#2563EB', '#cc040a', '#10B981', '#F59E0B']
+        colors: ['#cc040a', '#cc040a', '#10B981', '#F59E0B']
       });
     } catch (e) {}
 
@@ -365,7 +365,7 @@ export const GameTopupPage = () => {
           onClick={() => setSelectedGame(null)}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-slate-800 hover:bg-slate-100 font-extrabold text-xs border border-slate-200 cursor-pointer transition-all shadow-xs"
         >
-          <ArrowLeft className="w-4 h-4 text-blue-600" />
+          <ArrowLeft className="w-4 h-4 text-[#cc040a]" />
           <span>Back to All Games</span>
         </button>
 
@@ -411,7 +411,7 @@ export const GameTopupPage = () => {
             </div>
             <div className="flex justify-between border-b border-slate-200 pb-2">
               <span className="text-slate-500 font-semibold">Moongold API Ref:</span>
-              <span className="font-mono font-bold text-blue-600">{completedOrder.moongoldRef}</span>
+              <span className="font-mono font-bold text-[#cc040a]">{completedOrder.moongoldRef}</span>
             </div>
             <div className="flex justify-between border-b border-slate-200 pb-2">
               <span className="text-slate-500 font-semibold">Game Title:</span>
@@ -431,7 +431,7 @@ export const GameTopupPage = () => {
             </div>
             <div className="flex justify-between pt-1 font-bold text-sm">
               <span className="text-slate-700">Total Price Paid:</span>
-              <span className="text-blue-600 font-black">{formatPrice(completedOrder.priceLkr)}</span>
+              <span className="text-[#cc040a] font-black">{formatPrice(completedOrder.priceLkr)}</span>
             </div>
           </div>
 
@@ -500,7 +500,7 @@ export const GameTopupPage = () => {
           {/* STEP 1: Verify Your Player ID (Matching Screenshot 1) */}
           <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 sm:p-7 mb-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-full bg-[#2563EB] text-white font-extrabold flex items-center justify-center text-sm shadow-md">
+              <div className="w-8 h-8 rounded-full bg-[#cc040a] text-white font-extrabold flex items-center justify-center text-sm shadow-md">
                 1
               </div>
               <div>
@@ -516,9 +516,9 @@ export const GameTopupPage = () => {
               /* Mobile Legends: Two separate labeled boxes for User ID + Zone ID */
               <div className="flex flex-col sm:flex-row gap-3">
                 {/* User ID Box */}
-                <div className="flex-1 bg-[#F8FAFC] border-2 border-slate-200 rounded-2xl shadow-inner overflow-hidden focus-within:border-[#2563EB] transition-colors">
+                <div className="flex-1 bg-[#F8FAFC] border-2 border-slate-200 rounded-2xl shadow-inner overflow-hidden focus-within:border-[#cc040a] transition-colors">
                   <div className="px-4 pt-2.5 pb-0">
-                    <span className="text-[10px] font-extrabold text-[#2563EB] uppercase tracking-widest">User ID</span>
+                    <span className="text-[10px] font-extrabold text-[#cc040a] uppercase tracking-widest">User ID</span>
                   </div>
                   <input
                     type="text"
@@ -579,7 +579,7 @@ export const GameTopupPage = () => {
                 type="button"
                 onClick={handleVerifyIgn}
                 disabled={isVerifyingIgn}
-                className="px-6 py-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-md w-1/2 sm:w-auto"
+                className="px-6 py-3 bg-[#cc040a] hover:bg-[#b00308] text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-md w-1/2 sm:w-auto"
               >
                 {isVerifyingIgn ? (
                   <RefreshCw className="w-4 h-4 animate-spin" />
@@ -648,14 +648,14 @@ export const GameTopupPage = () => {
           <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 sm:p-7 mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#2563EB] text-white font-extrabold flex items-center justify-center text-sm shadow-md">
+                <div className="w-8 h-8 rounded-full bg-[#cc040a] text-white font-extrabold flex items-center justify-center text-sm shadow-md">
                   2
                 </div>
                 <div>
                   <h2 className="text-lg font-black text-slate-900 font-heading leading-none">
                     Select {selectedGame.currencyName} Packages
                   </h2>
-                  <div className="w-12 h-1 bg-amber-500 rounded-full mt-1.5"></div>
+                  <div className="w-12 h-1 bg-[#cc040a] rounded-full mt-1.5"></div>
                 </div>
               </div>
 
@@ -757,8 +757,8 @@ export const GameTopupPage = () => {
                     }}
                     className={`bg-white rounded-2xl sm:rounded-3xl border transition-all duration-300 p-5 flex flex-col justify-between items-center text-center relative shadow-xs hover:shadow-md cursor-pointer group hover:-translate-y-1 ${
                       isSelected 
-                        ? 'border-[#2563EB] ring-4 ring-blue-500/15 bg-blue-50/20' 
-                        : 'border-slate-200/90 hover:border-slate-300'
+                        ? 'border-[#cc040a] ring-4 ring-[#cc040a]/15 bg-red-50/30' 
+                        : 'border-slate-200/90 hover:border-[#cc040a]/40'
                     }`}
                   >
                     {pkg.isPopular && (
@@ -783,7 +783,7 @@ export const GameTopupPage = () => {
 
                     {/* Bonus Tag */}
                     {pkg.bonus && (
-                      <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full mb-1">
+                      <span className="text-[10px] font-bold text-[#cc040a] bg-red-50 border border-red-100 px-2 py-0.5 rounded-full mb-1">
                         {pkg.bonus}
                       </span>
                     )}
@@ -800,7 +800,7 @@ export const GameTopupPage = () => {
                           </span>
                         </div>
                       ) : (
-                        <div className="font-black text-base sm:text-lg text-[#2563EB] font-heading tracking-tight">
+                        <div className="font-black text-base sm:text-lg text-[#cc040a] font-heading tracking-tight">
                           {formatPrice(pkg.priceLkr)}
                         </div>
                       )}
@@ -821,14 +821,14 @@ export const GameTopupPage = () => {
                         -
                       </button>
 
-                      <span className={`font-black text-base sm:text-lg font-heading px-1 ${qty > 0 ? 'text-blue-600' : 'text-slate-400'}`}>
+                      <span className={`font-black text-base sm:text-lg font-heading px-1 ${qty > 0 ? 'text-[#cc040a]' : 'text-slate-400'}`}>
                         {qty}
                       </span>
 
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); updateQuantity(pkg.id, 1); }}
-                        className="w-9 h-9 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-black text-base flex items-center justify-center transition-all cursor-pointer shadow-md shadow-blue-500/25"
+                        className="w-9 h-9 rounded-xl bg-[#cc040a] hover:bg-[#b00308] text-white font-black text-base flex items-center justify-center transition-all cursor-pointer shadow-md shadow-red-600/25"
                       >
                         +
                       </button>
@@ -844,7 +844,7 @@ export const GameTopupPage = () => {
           {/* STEP 3: Payment Method & Submit Order */}
           <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 sm:p-7 mb-6">
             <div className="flex items-center gap-3 mb-5">
-              <div className="w-8 h-8 rounded-full bg-[#2563EB] text-white font-extrabold flex items-center justify-center text-sm shadow-md">
+              <div className="w-8 h-8 rounded-full bg-[#cc040a] text-white font-extrabold flex items-center justify-center text-sm shadow-md">
                 3
               </div>
               <div>
@@ -864,7 +864,7 @@ export const GameTopupPage = () => {
                     onClick={() => setSelectedPayment(method)}
                     className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
                       isSelected
-                        ? 'bg-[#2563EB] text-white border-blue-600 shadow-md shadow-blue-500/20'
+                        ? 'bg-[#cc040a] text-white border-blue-600 shadow-md shadow-blue-500/20'
                         : 'bg-white text-slate-900 border-slate-200 hover:border-slate-300'
                     }`}
                   >
@@ -929,7 +929,7 @@ export const GameTopupPage = () => {
               <div id="receipt-upload-section" className="bg-slate-50 p-4 rounded-2xl border-2 border-blue-200 text-xs space-y-3 mb-6 transition-all shadow-sm">
                 <div className="font-extrabold text-slate-900 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <CreditCard className="w-4 h-4 text-blue-600" />
+                    <CreditCard className="w-4 h-4 text-[#cc040a]" />
                     <span>Payment Instructions ({selectedPayment.name}):</span>
                   </div>
                   <span className="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
@@ -941,14 +941,14 @@ export const GameTopupPage = () => {
                   <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1 font-mono text-[11px] text-slate-800">
                     <div>Bank Name: <strong>{selectedPayment.accountDetails.bankName}</strong></div>
                     <div>Account Name: <strong>{selectedPayment.accountDetails.accountName}</strong></div>
-                    <div>Account Number: <strong className="text-blue-600">{selectedPayment.accountDetails.accountNumber}</strong></div>
+                    <div>Account Number: <strong className="text-[#cc040a]">{selectedPayment.accountDetails.accountNumber}</strong></div>
                     <div>Branch: <strong>{selectedPayment.accountDetails.branch}</strong></div>
                   </div>
                 )}
 
                 {selectedPayment.id === 'ezcash' && (
                   <div className="bg-white p-3 rounded-xl border border-slate-200 font-mono text-[11px] text-slate-800">
-                    <div>eZ Cash / mCash Number: <strong className="text-blue-600 font-extrabold text-sm">{selectedPayment.accountDetails.number}</strong></div>
+                    <div>eZ Cash / mCash Number: <strong className="text-[#cc040a] font-extrabold text-sm">{selectedPayment.accountDetails.number}</strong></div>
                   </div>
                 )}
 
@@ -975,7 +975,7 @@ export const GameTopupPage = () => {
                       className="text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
                     />
                     {isUploadingReceipt && (
-                      <span className="text-xs text-blue-600 font-bold flex items-center gap-1">
+                      <span className="text-xs text-[#cc040a] font-bold flex items-center gap-1">
                         <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                         <span>Uploading...</span>
                       </span>
@@ -999,7 +999,7 @@ export const GameTopupPage = () => {
             <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div>
                 <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block">Total Amount</span>
-                <div className="text-2xl sm:text-3xl font-black text-blue-600 font-heading">
+                <div className="text-2xl sm:text-3xl font-black text-[#cc040a] font-heading">
                   {formatPrice(totalLkr)}
                 </div>
                 <span className="text-[11px] text-slate-500 font-medium">
@@ -1011,7 +1011,7 @@ export const GameTopupPage = () => {
                 type="button"
                 onClick={handleCompleteOrder}
                 disabled={isSubmitting}
-                className="w-full sm:w-auto px-10 py-4 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-black text-sm rounded-2xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-blue-500/25"
+                className="w-full sm:w-auto px-10 py-4 bg-[#cc040a] hover:bg-[#b00308] text-white font-black text-sm rounded-2xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-red-600/25"
               >
                 {isSubmitting ? (
                   <>
