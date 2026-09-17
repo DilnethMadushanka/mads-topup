@@ -28,6 +28,8 @@ export const Navbar = () => {
     isResellerPageOpen,
     openResellerDashboard,
     isResellerDashboardOpen,
+    openReferralPage,
+    isReferralPageOpen,
     handleLogout
   } = useApp();
 
