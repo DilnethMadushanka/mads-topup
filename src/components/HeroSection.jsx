@@ -170,88 +170,78 @@ export const HeroSection = () => {
         <div className="space-y-0">
           <h1 className="font-black font-heading tracking-tighter uppercase leading-none">
 
-            {/* MADS — white with deep shadow stack + shimmer sweep */}
-            <span
-              className="block text-5xl sm:text-8xl lg:text-9xl text-white animate-pop-in delay-300 hero-mads-text"
-            >
+            {/* MADS — white with entrance + glow */}
+            <span className="block text-5xl sm:text-8xl lg:text-9xl text-white hero-mads-text">
               MADS
             </span>
 
-            {/* TOPUP — red with glow pulse + shimmer */}
-            <span
-              className="block text-5xl sm:text-8xl lg:text-9xl text-[#cc040a] animate-pop-in delay-400 hero-topup-text"
-            >
+            {/* TOPUP — red with entrance + glow pulse */}
+            <span className="block text-5xl sm:text-8xl lg:text-9xl text-[#cc040a] hero-topup-text">
               TOPUP
             </span>
           </h1>
         </div>
 
         <style>{`
-          /* MADS — white, layered shadow for depth + contrast */
+          /* ── MADS: entrance then white glow breathe ─────── */
           .hero-mads-text {
-            text-shadow:
-              0 0 0px rgba(255,255,255,1),
-              0 2px 4px rgba(0,0,0,0.9),
-              0 4px 12px rgba(0,0,0,0.85),
-              0 8px 28px rgba(0,0,0,0.75),
-              0 16px 48px rgba(0,0,0,0.6),
-              0 0 60px rgba(255,255,255,0.25),
-              0 0 100px rgba(255,255,255,0.1);
-            -webkit-text-stroke: 1.5px rgba(255,255,255,0.15);
-            position: relative;
-            animation: hero-mads-glow 4s ease-in-out infinite;
+            -webkit-text-stroke: 1px rgba(255,255,255,0.12);
+            animation: hero-mads-enter 0.7s cubic-bezier(0.34,1.56,0.64,1) 0.3s both,
+                       hero-mads-glow  4s ease-in-out 1s infinite;
           }
 
-          /* TOPUP — red, deep drop shadows + red glow pulse */
-          .hero-topup-text {
-            text-shadow:
-              0 2px 4px rgba(0,0,0,0.95),
-              0 4px 14px rgba(0,0,0,0.9),
-              0 8px 32px rgba(0,0,0,0.8),
-              0 0 40px rgba(204,4,10,0.7),
-              0 0 80px rgba(204,4,10,0.45),
-              0 0 120px rgba(204,4,10,0.25);
-            -webkit-text-stroke: 1.5px rgba(180,0,0,0.3);
-            animation: hero-topup-pulse 3s ease-in-out infinite;
+          @keyframes hero-mads-enter {
+            from { opacity: 0; transform: translateY(18px) scale(0.95); }
+            to   { opacity: 1; transform: translateY(0)    scale(1); }
           }
 
           @keyframes hero-mads-glow {
             0%, 100% {
               text-shadow:
-                0 2px 4px rgba(0,0,0,0.9),
-                0 4px 12px rgba(0,0,0,0.85),
-                0 8px 28px rgba(0,0,0,0.75),
-                0 16px 48px rgba(0,0,0,0.6),
-                0 0 60px rgba(255,255,255,0.2);
+                0 2px 4px rgba(0,0,0,0.92),
+                0 6px 20px rgba(0,0,0,0.85),
+                0 14px 40px rgba(0,0,0,0.7),
+                0 0 55px rgba(255,255,255,0.18);
             }
             50% {
               text-shadow:
-                0 2px 4px rgba(0,0,0,0.9),
-                0 4px 12px rgba(0,0,0,0.85),
-                0 8px 28px rgba(0,0,0,0.75),
-                0 16px 48px rgba(0,0,0,0.6),
-                0 0 80px rgba(255,255,255,0.35),
-                0 0 120px rgba(255,255,255,0.15);
+                0 2px 4px rgba(0,0,0,0.92),
+                0 6px 20px rgba(0,0,0,0.85),
+                0 14px 40px rgba(0,0,0,0.7),
+                0 0 80px rgba(255,255,255,0.38),
+                0 0 130px rgba(255,255,255,0.14);
             }
+          }
+
+          /* ── TOPUP: entrance then red glow pulse ────────── */
+          .hero-topup-text {
+            -webkit-text-stroke: 1px rgba(180,0,0,0.2);
+            animation: hero-topup-enter 0.7s cubic-bezier(0.34,1.56,0.64,1) 0.45s both,
+                       hero-topup-pulse 3s ease-in-out 1.2s infinite;
+          }
+
+          @keyframes hero-topup-enter {
+            from { opacity: 0; transform: translateY(18px) scale(0.95); }
+            to   { opacity: 1; transform: translateY(0)    scale(1); }
           }
 
           @keyframes hero-topup-pulse {
             0%, 100% {
               text-shadow:
                 0 2px 4px rgba(0,0,0,0.95),
-                0 4px 14px rgba(0,0,0,0.9),
-                0 8px 32px rgba(0,0,0,0.8),
-                0 0 40px rgba(204,4,10,0.6),
-                0 0 80px rgba(204,4,10,0.35);
+                0 6px 22px rgba(0,0,0,0.88),
+                0 14px 40px rgba(0,0,0,0.78),
+                0 0 38px rgba(204,4,10,0.65),
+                0 0 75px rgba(204,4,10,0.38);
             }
             50% {
               text-shadow:
                 0 2px 4px rgba(0,0,0,0.95),
-                0 4px 14px rgba(0,0,0,0.9),
-                0 8px 32px rgba(0,0,0,0.8),
-                0 0 60px rgba(204,4,10,0.9),
-                0 0 100px rgba(204,4,10,0.6),
-                0 0 160px rgba(204,4,10,0.3);
+                0 6px 22px rgba(0,0,0,0.88),
+                0 14px 40px rgba(0,0,0,0.78),
+                0 0 60px rgba(204,4,10,0.95),
+                0 0 110px rgba(204,4,10,0.65),
+                0 0 180px rgba(204,4,10,0.28);
             }
           }
         `}</style>
