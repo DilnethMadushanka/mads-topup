@@ -174,7 +174,7 @@ export const GAMES_DATA = [
     flag: '🇮🇩',
     banner: '/game_logos/free_fire.webp',
     logo: '/game_logos/free_fire.webp',
-    heroBanner: '/game_banners/freefire.jpg',
+    heroBanner: '/game_banners/freefire_id.jpg',
     gradient: 'from-red-600 via-rose-500 to-amber-500',
     requiresServer: false,
     idLabel: 'Player ID (UID)',

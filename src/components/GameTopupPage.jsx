@@ -452,50 +452,50 @@ export const GameTopupPage = () => {
           </div>
         </div>
       ) : (
-        <>
-          {/* HERO BANNER (Matching Screenshot 1) */}
-          <div className="relative rounded-3xl overflow-hidden shadow-xl mb-8 min-h-[240px] sm:min-h-[280px] bg-slate-950 flex flex-col justify-between p-6 sm:p-10 border border-slate-800">
+        <>          {/* HERO BANNER (Matching Image 2) */}
+          <div className="relative rounded-3xl overflow-hidden shadow-2xl mb-8 min-h-[340px] sm:min-h-[400px] md:min-h-[460px] bg-slate-950 flex flex-col justify-center items-center p-6 sm:p-10 border border-slate-800/80">
             {/* Background Cover Image with Gradient Overlay */}
             <div className="absolute inset-0 z-0">
               <img 
                 src={selectedGame.heroBanner || selectedGame.banner} 
                 alt={selectedGame.name} 
-                className="w-full h-full object-cover opacity-50 scale-105"
+                className="w-full h-full object-cover object-center opacity-85"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-slate-950/30"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/30"></div>
             </div>
 
-            {/* Top Brand Tag */}
-            <div className="relative z-10 flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <span className="text-white/80 font-black text-xs uppercase tracking-wider font-mono bg-white/10 backdrop-blur-md px-3 py-1 rounded-md border border-white/15">
+            {/* Optional Publisher Tag at top-left corner */}
+            {selectedGame.publisher && (
+              <div className="absolute top-4 left-5 sm:top-6 sm:left-7 z-10 flex items-center gap-2">
+                <span className="text-white/80 font-black text-[11px] uppercase tracking-wider font-mono bg-black/40 backdrop-blur-md px-3 py-1 rounded-md border border-white/15 shadow-sm">
                   {selectedGame.publisher}
                 </span>
                 {selectedGame.flag && (
-                  <span className="text-sm bg-white/10 backdrop-blur-md px-2 py-0.5 rounded border border-white/20">
+                  <span className="text-xs bg-black/40 backdrop-blur-md px-2 py-0.5 rounded border border-white/15 shadow-sm">
                     {selectedGame.flag}
                   </span>
                 )}
               </div>
+            )}
 
-              {/* Instant Delivery Badge */}
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/90 backdrop-blur-md border border-slate-700 text-white text-xs font-bold shadow-md">
+            {/* Hero Centered Content (Matching Reference Image 2) */}
+            <div className="relative z-10 flex flex-col items-center justify-center text-center px-4 max-w-2xl mx-auto my-auto">
+              {/* Instant Delivery Pill Badge */}
+              <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-black/50 backdrop-blur-md border border-white/25 text-white text-xs sm:text-sm font-semibold shadow-lg mb-3">
                 <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
                 <span>Instant Delivery</span>
               </div>
-            </div>
 
-            {/* Banner Center Title */}
-            <div className="relative z-10 text-center my-6">
-              <h1 className="text-3xl sm:text-5xl font-black text-white font-heading tracking-tight drop-shadow-md">
+              {/* Title */}
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white font-heading tracking-tight drop-shadow-lg">
                 {selectedGame.name} Top-Up
               </h1>
-              <p className="text-slate-300 text-xs sm:text-sm font-semibold mt-2 drop-shadow-sm">
-                Official Distributor | Trusted by thousands of Sri Lankan Gamers
+
+              {/* Subtitle */}
+              <p className="text-slate-200 text-xs sm:text-sm font-medium mt-2 drop-shadow-md">
+                Official Distributor | Trusted by thousands
               </p>
             </div>
-
-            <div className="relative z-10"></div>
           </div>
 
           {/* STEP 1: Verify Your Player ID (Matching Screenshot 1) */}
@@ -835,7 +835,7 @@ export const GameTopupPage = () => {
                       </button>
                     </div>
                   </div>
-                );\r
+                );
               })}
                 </div>
               );
