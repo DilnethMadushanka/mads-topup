@@ -19,6 +19,7 @@ export const GameTopupPage = () => {
     addOrder, 
     showToast,
     formatPrice,
+    formatLkr,
     savePlayerId,
     userProfile,
     setUserProfile,
@@ -431,7 +432,7 @@ export const GameTopupPage = () => {
             </div>
             <div className="flex justify-between pt-1 font-bold text-sm">
               <span className="text-slate-700">Total Price Paid:</span>
-              <span className="text-[#cc040a] font-black">{formatPrice(completedOrder.priceLkr)}</span>
+              <span className="text-[#cc040a] font-black">{formatLkr(completedOrder.priceLkr)}</span>
             </div>
           </div>
 
@@ -834,8 +835,8 @@ export const GameTopupPage = () => {
                       </button>
                     </div>
                   </div>
-                );
-              })}\
+                );\r
+              })}
                 </div>
               );
             })()}
@@ -1000,7 +1001,7 @@ export const GameTopupPage = () => {
               <div>
                 <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block">Total Amount</span>
                 <div className="text-2xl sm:text-3xl font-black text-[#cc040a] font-heading">
-                  {formatPrice(totalLkr)}
+                  {formatLkr(totalLkr)}
                 </div>
                 <span className="text-[11px] text-slate-500 font-medium">
                   {totalItemsCount} package(s) selected
@@ -1033,7 +1034,7 @@ export const GameTopupPage = () => {
             <div className="sm:hidden fixed bottom-0 left-0 right-0 z-30 bg-slate-900/95 text-white backdrop-blur-md px-4 py-3 border-t border-slate-800 shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom">
               <div>
                 <span className="text-[10px] text-slate-400 font-bold uppercase block">Total ({totalItemsCount} item)</span>
-                <span className="text-lg font-black text-red-500 font-heading">{formatPrice(totalLkr)}</span>
+                <span className="text-lg font-black text-red-500 font-heading">{formatLkr(totalLkr)}</span>
               </div>
               <button
                 onClick={handleCompleteOrder}

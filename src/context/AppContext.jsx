@@ -760,6 +760,13 @@ export const AppProvider = ({ children }) => {
     return `Rs. ${Number(priceLkr).toLocaleString('en-US')}`;
   };
 
+  // Always formats in LKR regardless of currency toggle
+  // Use this for: order history, admin totals, wallet balance, receipts
+  const formatLkr = (priceLkr) => {
+    if (priceLkr === null || priceLkr === undefined || isNaN(priceLkr)) return 'Rs. 0';
+    return `Rs. ${Number(priceLkr).toLocaleString('en-US')}`;
+  };
+
   const savePlayerId = (gameId, gameName, playerId, nickName) => {
     setUserProfile(prev => {
       const exists = prev.savedIds.some(s => s.gameId === gameId && s.playerId === playerId);
@@ -1620,6 +1627,7 @@ export const AppProvider = ({ children }) => {
       toast,
       showToast,
       formatPrice,
+      formatLkr,
       savePlayerId,
       isAuthModalOpen,
       setIsAuthModalOpen,

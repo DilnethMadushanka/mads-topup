@@ -331,7 +331,8 @@ const TAB_TITLES = {
 export const AdminDashboard = () => {
   const {
     isAdminOpen, setIsAdminOpen, orders, updateOrderStatus, moongoldConfig, updateMoongoldConfig,
-    r2Config, updateR2Config, formatPrice, showToast, userProfile, vouchers, addVoucher, deleteVoucher,
+    r2Config, updateR2Config, formatPrice,
+    formatLkr, showToast, userProfile, vouchers, addVoucher, deleteVoucher,
     tickerNotice, setTickerNotice, usersList, verifyUserAccount, toggleBlockUser, updateUserBalance,
     setUserExactBalance, manualPayments, approveManualPayment, rejectManualPayment, addManualPayment,
     supportTickets, sendTicketMessage, updateTicketStatus, updateTicketPriority, resellerApplications,
@@ -926,7 +927,7 @@ export const AdminDashboard = () => {
   ];
 
   const activityFeed = [];
-  safeOrders.slice(0, 25).forEach(o => activityFeed.push({ id: `ord-${o.id}`, ts: o.createdAt, icon: ShoppingCart, color: '#38bdf8', title: `Order ${o.id} — ${o.gameName || 'Top-up'}`, sub: `${o.status} • ${formatPrice(o.priceLkr)}` }));
+  safeOrders.slice(0, 25).forEach(o => activityFeed.push({ id: `ord-${o.id}`, ts: o.createdAt, icon: ShoppingCart, color: '#38bdf8', title: `Order ${o.id} — ${o.gameName || 'Top-up'}`, sub: `${o.status} • ${formatLkr(o.priceLkr)}` }));
   safePayments.slice(0, 25).forEach(p => activityFeed.push({ id: `pay-${p.id}`, ts: p.createdAt, icon: FileCheck, color: '#34d399', title: `Deposit ${p.id} — ${p.userName || p.userEmail || 'Customer'}`, sub: `${p.method} • ${p.amount} ${p.currency} • ${p.status}` }));
   safeTickets.slice(0, 25).forEach(t => activityFeed.push({ id: `tck-${t.id}`, ts: t.updatedAt || t.createdAt, icon: Headset, color: '#fb7185', title: `Ticket ${t.id} — ${t.subject}`, sub: `${t.status} • Priority ${t.priority}` }));
   safeResellerApps.slice(0, 25).forEach(a => activityFeed.push({ id: `app-${a.id || a.firestoreId}`, ts: a.submittedAt, icon: Crown, color: '#fbbf24', title: `Reseller Application — ${a.storeName}`, sub: `${a.status}` }));
@@ -1113,7 +1114,7 @@ export const AdminDashboard = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="rounded-2xl border p-5" style={cardStyle}>
                   <span className="text-[10px] font-black uppercase tracking-wider block" style={mutedStyle}>Gross Revenue</span>
-                  <h4 className="text-2xl font-black text-emerald-400 font-heading mt-1">{formatPrice(totalRevenueLkr)}</h4>
+                  <h4 className="text-2xl font-black text-emerald-400 font-heading mt-1">{formatLkr(totalRevenueLkr)}</h4>
                   <span className="text-[10px] font-bold mt-1 inline-block" style={faintStyle}>{completedOrders.length} completed orders</span>
                 </div>
                 <div className="rounded-2xl border p-5" style={cardStyle}>
@@ -1161,7 +1162,7 @@ export const AdminDashboard = () => {
                 <div className="lg:col-span-2 rounded-2xl border p-5" style={cardStyle}>
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-xs font-black uppercase tracking-wider font-mono" style={mutedStyle}>Revenue — Last 7 Days</h4>
-                    <span className="text-sm font-black text-emerald-400 font-heading">{formatPrice(revenueTrendTotal)}</span>
+                    <span className="text-sm font-black text-emerald-400 font-heading">{formatLkr(revenueTrendTotal)}</span>
                   </div>
                   <AreaChart data={revenueTrend.map(b => b.total)} color="#cc040a" />
                   <div className="flex justify-between mt-1 text-[9px] font-mono" style={faintStyle}>
@@ -1279,7 +1280,7 @@ export const AdminDashboard = () => {
                       </div>
                     );
                   }},
-                  { key: 'price', label: 'Price', sortable: true, sortValue: o => o.priceLkr || 0, render: o => <span className="font-black font-heading" style={{ color: 'var(--adm-text)' }}>{formatPrice(o.priceLkr)}</span> },
+                  { key: 'price', label: 'Price', sortable: true, sortValue: o => o.priceLkr || 0, render: o => <span className="font-black font-heading" style={{ color: 'var(--adm-text)' }}>{formatLkr(o.priceLkr)}</span> },
                   { key: 'status', label: 'Status', sortable: true, sortValue: o => o.status || '', render: o => <StatusPill status={o.status} /> },
                   { key: 'actions', label: 'Actions', align: 'right', render: o => (
                     <div className="flex justify-end gap-1.5 flex-wrap">
@@ -1936,7 +1937,7 @@ export const AdminDashboard = () => {
             <div style={mutedStyle}>Player ID: <strong className="text-red-400">{selectedInspectOrder.playerId}</strong></div>
             <div style={mutedStyle}>IGN: <strong className="text-amber-400">{selectedInspectOrder.ign || 'N/A'}</strong></div>
             <div style={mutedStyle}>Payment Method: <strong className="text-emerald-400">{selectedInspectOrder.paymentMethod}</strong></div>
-            <div style={mutedStyle}>Amount: <strong style={{ color: 'var(--adm-text)' }}>{formatPrice(selectedInspectOrder.priceLkr)}</strong></div>
+            <div style={mutedStyle}>Amount: <strong style={{ color: 'var(--adm-text)' }}>{formatLkr(selectedInspectOrder.priceLkr)}</strong></div>
             <div style={mutedStyle}>Status: <strong className="text-sky-400">{selectedInspectOrder.status}</strong></div>
             <div style={mutedStyle}>Created At: <span>{selectedInspectOrder.createdAt}</span></div>
           </div>

@@ -15,6 +15,7 @@ export const UserProfilePage = () => {
     setUserProfile, 
     orders, 
     formatPrice,
+    formatLkr,
     openTopup,
     showToast,
     handleLogout,
@@ -504,7 +505,7 @@ Thank you for using MADS TOPUP Sri Lanka!
                       </div>
 
                       <div className="text-right sm:text-right border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
-                        <div className="font-black text-[#cc040a] text-lg font-heading">{formatPrice(ord.priceLkr)}</div>
+                        <div className="font-black text-[#cc040a] text-lg font-heading">{formatLkr(ord.priceLkr)}</div>
                         <div className="text-[11px] text-slate-400 font-mono">{ord.paymentMethod}</div>
                       </div>
                     </div>

@@ -17,6 +17,7 @@ export const TopupModal = () => {
     addOrder, 
     showToast,
     formatPrice,
+    formatLkr,
     savePlayerId,
     userProfile,
     setUserProfile,
@@ -701,7 +702,7 @@ export const TopupModal = () => {
                 </div>
                 <div className="flex justify-between pt-1 font-bold text-sm">
                   <span className="text-slate-700">Total Paid:</span>
-                  <span className="text-[#cc040a]">{formatPrice(completedOrder.priceLkr)}</span>
+                  <span className="text-[#cc040a]">{formatLkr(completedOrder.priceLkr)}</span>
                 </div>
               </div>
 
@@ -725,11 +726,11 @@ export const TopupModal = () => {
               <span className="text-[10px] text-slate-400 font-semibold block uppercase">Total Amount</span>
               <div className="flex items-baseline gap-2">
                 <span className="text-xl font-black text-[#cc040a] font-heading">
-                  {formatPrice(finalPrice)}
+                  {formatLkr(finalPrice)}
                 </span>
                 {appliedPromo && (
                   <span className="text-xs text-slate-400 line-through font-mono">
-                    {formatPrice(selectedPackage?.priceLkr || 0)}
+                    {formatLkr(selectedPackage?.priceLkr || 0)}
                   </span>
                 )}
               </div>
