@@ -8,7 +8,8 @@ import { auth } from '../services/firebaseAuth';
 import { 
   ArrowLeft, Check, ShieldCheck, Zap, AlertCircle, RefreshCw, 
   CreditCard, ChevronRight, BookmarkPlus, CheckCircle2, Copy, UploadCloud, Cloud,
-  Clipboard, Plus, Minus, ChevronUp, ChevronDown, HelpCircle, Shield, Edit3, Crown
+  Clipboard, Plus, Minus, ChevronUp, ChevronDown, HelpCircle, Shield, Edit3, Crown,
+  ArrowUpDown, ArrowUp, ArrowDown
 } from 'lucide-react';
 
 export const GameTopupPage = () => {
@@ -43,6 +44,9 @@ export const GameTopupPage = () => {
   
   // Accordion state for How It Works
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(true);
+
+  // Package sort order: 'default' | 'lth' (low-to-high) | 'htl' (high-to-low)
+  const [sortOrder, setSortOrder] = useState('default');
 
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -655,8 +659,39 @@ export const GameTopupPage = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between sm:justify-end gap-4">
+              <div className="flex items-center justify-between sm:justify-end gap-3 flex-wrap">
                 <span className="text-xs text-slate-400 font-medium">Tap + to add items</span>
+
+                {/* Sort Filter */}
+                <div className="bg-slate-100 p-1 rounded-xl flex gap-1 border border-slate-200 text-xs font-bold">
+                  <button
+                    onClick={() => setSortOrder('default')}
+                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                      sortOrder === 'default' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-400 hover:text-slate-700'
+                    }`}
+                  >
+                    <ArrowUpDown className="w-3 h-3" />
+                    <span className="hidden sm:inline">Default</span>
+                  </button>
+                  <button
+                    onClick={() => setSortOrder('lth')}
+                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                      sortOrder === 'lth' ? 'bg-[#cc040a] text-white shadow-sm' : 'text-slate-400 hover:text-slate-700'
+                    }`}
+                  >
+                    <ArrowUp className="w-3 h-3" />
+                    <span>Low→High</span>
+                  </button>
+                  <button
+                    onClick={() => setSortOrder('htl')}
+                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                      sortOrder === 'htl' ? 'bg-[#cc040a] text-white shadow-sm' : 'text-slate-400 hover:text-slate-700'
+                    }`}
+                  >
+                    <ArrowDown className="w-3 h-3" />
+                    <span>High→Low</span>
+                  </button>
+                </div>
 
                 {/* LKR / USDT Currency Toggle */}
                 <div className="bg-slate-100 p-1 rounded-xl flex gap-1 border border-slate-200 text-xs font-bold">
@@ -703,8 +738,13 @@ export const GameTopupPage = () => {
             )}
 
             {/* Packages Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
-              {selectedGame.packages.map((pkg) => {
+            {(() => {
+              const packages = [...(selectedGame.packages || [])];
+              if (sortOrder === 'lth') packages.sort((a, b) => a.priceLkr - b.priceLkr);
+              if (sortOrder === 'htl') packages.sort((a, b) => b.priceLkr - a.priceLkr);
+              return (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+                  {packages.map((pkg) => {
                 const qty = cartQuantities[pkg.id] || 0;
                 const isSelected = qty > 0;
                 const effectivePrice = isApprovedReseller ? Math.round(pkg.priceLkr * 0.95) : pkg.priceLkr;
@@ -795,8 +835,10 @@ export const GameTopupPage = () => {
                     </div>
                   </div>
                 );
-              })}
-            </div>
+              })}\
+                </div>
+              );
+            })()}
           </div>
 
           {/* STEP 3: Payment Method & Submit Order */}
