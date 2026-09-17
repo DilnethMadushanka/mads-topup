@@ -43,7 +43,33 @@ export const lookupFreePlayerIgn = async (gameId = '', playerId = '', zoneId = '
 
   // 2. Mobile Legends (MLBB) Real Username Lookup via SmileOne API Engine
   if (gKey.includes('mobilelegend') || gKey.includes('mlbb') || gKey.includes('ml')) {
-    // Primary SmileOne Gateway
+
+    // Primary: Server-side proxy (avoids CORS) → /api/mlbb-ign
+    try {
+      const proxyRes = await fetch('/api/mlbb-ign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: cleanId, zone_id: cleanZone }),
+        signal: AbortSignal.timeout(8000)
+      });
+
+      if (proxyRes.ok) {
+        const data = await proxyRes.json();
+        if (data.success && data.ign && String(data.ign).trim()) {
+          const finalIgn = String(data.ign).trim();
+          saveCachedIgn(cleanId, finalIgn);
+          return { success: true, ign: finalIgn, isReal: true, source: data.source || 'MLBB_PROXY' };
+        }
+        // If proxy returned a clear failure (bad ID/zone), stop here
+        if (!data.success && data.error) {
+          return null;
+        }
+      }
+    } catch (e) {
+      console.warn('MLBB IGN proxy note:', e.message);
+    }
+
+    // Fallback: Direct SmileOne Gateway (may be blocked by browser CORS)
     try {
       const params = new URLSearchParams();
       params.append('user_id', cleanId);
@@ -79,7 +105,7 @@ export const lookupFreePlayerIgn = async (gameId = '', playerId = '', zoneId = '
       console.warn('SmileOne MLBB lookup note:', e.message);
     }
 
-    // Secondary SmileOne BR Gateway
+    // Fallback: SmileOne BR Gateway
     try {
       const params = new URLSearchParams();
       params.append('user_id', cleanId);
@@ -115,6 +141,7 @@ export const lookupFreePlayerIgn = async (gameId = '', playerId = '', zoneId = '
       console.warn('SmileOne BR lookup note:', e.message);
     }
   }
+
 
   // 3. Free Fire Community & Multi-Gateway API
   if (gKey.includes('freefire') || gKey.includes('ff')) {
