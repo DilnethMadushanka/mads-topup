@@ -30,7 +30,9 @@ async function fetchTopSpenders() {
       else if (typeof entry === 'object') Object.values(entry).forEach(o => { if (o && (o.id || o.gameId)) flatOrders.push(o); });
     });
 
-    const spendMap = {};
+    const spendMap = {};   // keyed by uid (preferred) or lowercased email
+    const uidToEmail = {}; // track uid→email for cross-dedup
+
     flatOrders.forEach(order => {
       if (!order || ['FAILED', 'REFUNDED', 'CANCELLED'].includes(order.status)) return;
       if (order.createdAt) {
@@ -41,16 +43,42 @@ async function fetchTopSpenders() {
       }
       const amount = parseFloat(order.priceLkr || 0);
       if (!amount || amount <= 0) return;
-      const key = order.userId || order.userUid || order.userEmail || order.userName || 'anon';
-      if (!key || key === 'anon') return;
-      const userInfo = usersMap[key] || usersMap[(order.userEmail || '').toLowerCase()] || null;
-      if (!spendMap[key]) spendMap[key] = { key, name: userInfo?.name || order.userName || order.ign || key, avatar: userInfo?.avatar || order.userAvatar || '', totalLkr: 0, orderCount: 0 };
-      spendMap[key].totalLkr += amount;
+
+      // ── BUG FIX: Normalize key — always prefer uid so same person isn't split
+      const uid   = order.userId || order.userUid || null;
+      const email = (order.userEmail || '').toLowerCase() || null;
+
+      // Resolve canonical key: uid wins, then email
+      let key = uid || email;
+      if (!key) return;
+
+      // If we see a uid for an email we already have, merge them
+      if (uid && email) {
+        if (!uidToEmail[uid]) uidToEmail[uid] = email;
+        // If email entry exists but uid entry doesn't yet, rename it
+        if (!spendMap[uid] && spendMap[email]) {
+          spendMap[uid] = spendMap[email];
+          delete spendMap[email];
+        }
+        key = uid; // always use uid as canonical key
+      }
+
+      const userInfo = usersMap[uid] || usersMap[email] || null;
+      const name = userInfo?.name || order.userName || order.ign || uid || email || '?';
+
+      if (!spendMap[key]) {
+        spendMap[key] = { key, name, avatar: userInfo?.avatar || order.userAvatar || '', totalLkr: 0, orderCount: 0 };
+      }
+      spendMap[key].totalLkr   += amount;
       spendMap[key].orderCount += 1;
-      if (userInfo?.name) spendMap[key].name = userInfo.name;
+      if (userInfo?.name)   spendMap[key].name   = userInfo.name;
       if (userInfo?.avatar) spendMap[key].avatar = userInfo.avatar;
     });
-    return Object.values(spendMap).filter(u => u.name && u.name.length > 1).sort((a, b) => b.totalLkr - a.totalLkr).slice(0, 3);
+
+    return Object.values(spendMap)
+      .filter(u => u.name && u.name.length > 1 && u.totalLkr > 0)
+      .sort((a, b) => b.totalLkr - a.totalLkr)
+      .slice(0, 3);
   } catch (e) { return []; }
 }
 
