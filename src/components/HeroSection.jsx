@@ -25,7 +25,7 @@ export const HeroSection = () => {
   };
 
   return (
-    <section className="relative bg-[#0d1220] text-white min-h-[92vh] flex flex-col justify-between items-center overflow-hidden py-16 px-4">
+    <section className="relative bg-[#0d1220] text-white min-h-[92vh] flex flex-col justify-between items-center py-16 px-4" style={{ paddingBottom: '80px' }}>
       {/* Background Artwork Slider - MADS Hero Media */}
       {heroImages.map((img, idx) => (
         <div 
@@ -42,6 +42,15 @@ export const HeroSection = () => {
       {/* Ambient Dark Navy Vignette & Red Aura */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#0d1220]/55 via-[#0d1220]/20 to-[#0d1220]/88 pointer-events-none"></div>
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(700px,100vw)] h-[min(700px,100vw)] bg-[#cc040a]/20 rounded-full blur-[140px] pointer-events-none"></div>
+
+      {/* ── Bottom white fade — blends hero into next section ── */}
+      <div
+        className="absolute bottom-0 left-0 right-0 pointer-events-none z-20"
+        style={{
+          height: '220px',
+          background: 'linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.05) 30%, rgba(255,255,255,0.4) 60%, rgba(255,255,255,0.85) 80%, #ffffff 100%)',
+        }}
+      />
 
       {/* ── FLOATING GEM DIAMONDS ── */}
 
