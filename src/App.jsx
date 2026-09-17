@@ -6,7 +6,6 @@ import { ServicesSection } from './components/ServicesSection';
 import { StatsSection } from './components/StatsSection';
 import { GameGrid } from './components/GameGrid';
 import { WhyChooseUs } from './components/WhyChooseUs';
-import { TopSpendersSection } from './components/TopSpendersSection';
 import { ReviewsSection } from './components/ReviewsSection';
 import { PromoSection } from './components/PromoSection';
 import { BlogSection } from './components/BlogSection';
@@ -110,11 +109,6 @@ const MainContent = () => {
             {/* Stats — scale in */}
             <ScrollReveal animation="scale-in" duration={600} delay={80}>
               <StatsSection />
-            </ScrollReveal>
-
-            {/* Top Spenders Leaderboard */}
-            <ScrollReveal animation="fade-up" duration={700} delay={60}>
-              <TopSpendersSection />
             </ScrollReveal>
 
             {/* Why Choose Us — fade up slower */}

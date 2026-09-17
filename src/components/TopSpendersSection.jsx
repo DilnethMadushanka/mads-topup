@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Crown, Medal, ChevronRight, Flame, Star } from 'lucide-react';
+import { Trophy, Crown, ChevronRight, Flame, Star } from 'lucide-react';
 
 const RTDB_URL = 'https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app';
 
@@ -91,14 +91,12 @@ function fmtLkr(val) {
   return `Rs. ${Math.round(val).toLocaleString()}`;
 }
 
-function AvatarBubble({ name, src, size = 'md' }) {
+/* ─── Avatar bubble ───────────────────────────────────── */
+function AvatarBubble({ name, src, size = 64 }) {
   const [imgErr, setImgErr] = useState(false);
-  const sizes = { sm: 56, md: 64, lg: 80 };
-  const px = sizes[size] || 64;
   const initials = (name || '?').trim().split(/\s+/).map(p => p[0]).join('').slice(0, 2).toUpperCase();
-
   const palettes = [
-    ['#cc040a', '#ff4d4f'],
+    ['#cc040a', '#ff6b6b'],
     ['#f97316', '#fb923c'],
     ['#7c3aed', '#a78bfa'],
     ['#059669', '#34d399'],
@@ -106,96 +104,138 @@ function AvatarBubble({ name, src, size = 'md' }) {
     ['#db2777', '#f472b6'],
     ['#d97706', '#fbbf24'],
   ];
-  const pidx = (name || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0) % palettes.length;
-  const [c1, c2] = palettes[pidx];
+  const idx = (name || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0) % palettes.length;
+  const [c1, c2] = palettes[idx];
 
   return (
-    <div
-      style={{ width: px, height: px, borderRadius: '50%', border: '3px solid #fff', boxShadow: '0 4px 16px rgba(0,0,0,0.15)', overflow: 'hidden', flexShrink: 0 }}
-    >
+    <div style={{
+      width: size, height: size, borderRadius: '50%',
+      border: '3px solid #fff',
+      boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
+      overflow: 'hidden', flexShrink: 0,
+      background: `linear-gradient(135deg, ${c1}, ${c2})`
+    }}>
       {src && !imgErr ? (
-        <img src={src} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={() => setImgErr(true)} />
+        <img src={src} alt={name}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          onError={() => setImgErr(true)} />
       ) : (
-        <div style={{ width: '100%', height: '100%', background: `linear-gradient(135deg, ${c1}, ${c2})`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ color: '#fff', fontWeight: 900, fontSize: px * 0.34, fontFamily: 'inherit' }}>{initials}</span>
+        <div style={{
+          width: '100%', height: '100%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <span style={{ color: '#fff', fontWeight: 900, fontSize: size * 0.33, lineHeight: 1 }}>
+            {initials}
+          </span>
         </div>
       )}
     </div>
   );
 }
 
-/* ─── Individual podium card ─────────────────────────── */
+/* ─── Podium card ─────────────────────────────────────── */
 function PodiumCard({ user, rank }) {
   const isFirst = rank === 1;
+  const avatarSize = isFirst ? 80 : 64;
 
-  const rankBars = {
-    1: { bar: 'linear-gradient(90deg, #cc040a 0%, #ff6b6b 50%, #cc040a 100%)', label: 'TOP SPENDER', labelColor: '#cc040a' },
-    2: { bar: 'linear-gradient(90deg, #8b9aab, #c0cdd8)', label: '2ND PLACE', labelColor: '#6b7280' },
-    3: { bar: 'linear-gradient(90deg, #c9974a, #e8c27a)', label: '3RD PLACE', labelColor: '#92400e' },
-  };
-  const cfg = rankBars[rank];
+  const rankCfg = {
+    1: {
+      bar: 'linear-gradient(90deg, #cc040a 0%, #ff6b6b 50%, #cc040a 100%)',
+      labelColor: '#cc040a',
+      label: 'TOP SPENDER',
+      cardShadow: '0 10px 40px rgba(204,4,10,0.2), 0 2px 10px rgba(0,0,0,0.08)',
+      cardBorder: '2px solid rgba(204,4,10,0.12)',
+    },
+    2: {
+      bar: 'linear-gradient(90deg, #94a3b8, #cbd5e1)',
+      labelColor: '#64748b',
+      label: '2ND PLACE',
+      cardShadow: '0 4px 20px rgba(0,0,0,0.08)',
+      cardBorder: '1.5px solid rgba(0,0,0,0.06)',
+    },
+    3: {
+      bar: 'linear-gradient(90deg, #ca8a04, #fbbf24)',
+      labelColor: '#92400e',
+      label: '3RD PLACE',
+      cardShadow: '0 4px 20px rgba(0,0,0,0.08)',
+      cardBorder: '1.5px solid rgba(0,0,0,0.06)',
+    },
+  }[rank];
 
   return (
-    <div style={{
-      position: 'relative',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      background: '#fff',
-      borderRadius: 20,
-      boxShadow: isFirst
-        ? '0 8px 40px rgba(204,4,10,0.18), 0 2px 8px rgba(0,0,0,0.08)'
-        : '0 4px 20px rgba(0,0,0,0.08)',
-      border: isFirst ? '2px solid rgba(204,4,10,0.15)' : '1.5px solid rgba(0,0,0,0.06)',
-      paddingBottom: 0,
-      overflow: 'hidden',
-      transform: isFirst ? 'translateY(-20px)' : 'none',
-      transition: 'transform 0.3s, box-shadow 0.3s',
-      minWidth: 0,
-    }}>
+    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
 
-      {/* Avatar — floats above card (negative margin) */}
-      <div style={{ marginTop: isFirst ? -28 : -24, zIndex: 2, position: 'relative' }}>
-        {isFirst && (
-          <div style={{
-            position: 'absolute', top: -18, left: '50%', transform: 'translateX(-50%)',
-            background: '#cc040a', color: '#fff', borderRadius: 99, padding: '3px 10px',
-            fontSize: 9, fontWeight: 900, letterSpacing: '0.1em', whiteSpace: 'nowrap',
-            display: 'flex', alignItems: 'center', gap: 4,
-            boxShadow: '0 2px 8px rgba(204,4,10,0.4)'
-          }}>
-            <Crown size={10} /> CHAMPION
-          </div>
-        )}
-        <AvatarBubble name={user.name} src={user.avatar} size={isFirst ? 'lg' : 'md'} />
+      {/* Champion crown — sits ABOVE the avatar, not overlapping it */}
+      {isFirst && (
+        <div style={{
+          background: '#cc040a', color: '#fff',
+          borderRadius: 99, padding: '3px 10px',
+          fontSize: 9, fontWeight: 900, letterSpacing: '0.1em',
+          display: 'inline-flex', alignItems: 'center', gap: 4,
+          boxShadow: '0 2px 8px rgba(204,4,10,0.45)',
+          marginBottom: 6, whiteSpace: 'nowrap',
+          zIndex: 3
+        }}>
+          <Crown size={10} /> CHAMPION
+        </div>
+      )}
+
+      {/* Spacer for non-first to keep alignment */}
+      {!isFirst && <div style={{ height: 26 }} />}
+
+      {/* Avatar — sits above card (negative margin into card) */}
+      <div style={{ position: 'relative', zIndex: 2, marginBottom: -avatarSize / 2 }}>
+        <AvatarBubble name={user.name} src={user.avatar} size={avatarSize} />
       </div>
 
-      {/* Name */}
-      <p style={{
-        marginTop: 10, fontWeight: 900, fontSize: isFirst ? 15 : 13,
-        color: '#1e293b', maxWidth: '90%', overflow: 'hidden',
-        textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'center', padding: '0 8px'
-      }}>
-        {user.name}
-      </p>
-
-      {/* Rank label */}
-      <p style={{ fontSize: 10, fontWeight: 800, color: cfg.labelColor, letterSpacing: '0.12em', marginTop: 3 }}>
-        {cfg.label}
-      </p>
-
-      {/* Order count + spend */}
-      <p style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginTop: 4 }}>
-        {user.orderCount} top-up{user.orderCount !== 1 ? 's' : ''} · {fmtLkr(user.totalLkr)}
-      </p>
-
-      {/* Rank number bar */}
+      {/* Card */}
       <div style={{
-        marginTop: 14, width: '100%',
-        background: cfg.bar,
-        padding: '10px 0', textAlign: 'center',
+        width: '100%',
+        background: '#fff',
+        borderRadius: 20,
+        boxShadow: rankCfg.cardShadow,
+        border: rankCfg.cardBorder,
+        overflow: 'hidden',
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        paddingTop: avatarSize / 2 + 12,
+        paddingBottom: 0,
+        paddingLeft: 8, paddingRight: 8,
       }}>
-        <span style={{ color: '#fff', fontWeight: 900, fontSize: 22, lineHeight: 1 }}>{rank}</span>
+        {/* Name */}
+        <p style={{
+          fontWeight: 900, fontSize: isFirst ? 14 : 12,
+          color: '#1e293b', maxWidth: '100%',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          textAlign: 'center', padding: '0 4px', lineHeight: 1.2,
+        }}>
+          {user.name}
+        </p>
+
+        {/* Rank label */}
+        <p style={{
+          fontSize: 9, fontWeight: 900,
+          color: rankCfg.labelColor,
+          letterSpacing: '0.14em',
+          marginTop: 4
+        }}>
+          {rankCfg.label}
+        </p>
+
+        {/* Stats */}
+        <p style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginTop: 5 }}>
+          {user.orderCount} top-up{user.orderCount !== 1 ? 's' : ''} · {fmtLkr(user.totalLkr)}
+        </p>
+
+        {/* Rank bar */}
+        <div style={{
+          marginTop: 12, width: '100%',
+          background: rankCfg.bar,
+          padding: '10px 0', textAlign: 'center',
+        }}>
+          <span style={{ color: '#fff', fontWeight: 900, fontSize: 22, lineHeight: 1 }}>
+            {rank}
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -203,29 +243,36 @@ function PodiumCard({ user, rank }) {
 
 function PlaceholderCard({ rank }) {
   const isFirst = rank === 1;
+  const sz = isFirst ? 80 : 64;
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      background: '#f8fafc', borderRadius: 20, border: '1.5px dashed #e2e8f0',
-      overflow: 'hidden', opacity: 0.5,
-      transform: isFirst ? 'translateY(-20px)' : 'none',
-    }}>
-      <div style={{ marginTop: isFirst ? -28 : -24 }}>
-        <div style={{ width: isFirst ? 80 : 64, height: isFirst ? 80 : 64, borderRadius: '50%', background: '#e2e8f0', border: '3px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ color: '#94a3b8', fontWeight: 900, fontSize: 22 }}>?</span>
-        </div>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: 0.45 }}>
+      <div style={{ height: isFirst ? 32 : 26 }} />
+      <div style={{
+        width: sz, height: sz, borderRadius: '50%', background: '#e2e8f0',
+        border: '3px solid #fff', boxShadow: '0 4px 10px rgba(0,0,0,0.08)',
+        marginBottom: -sz / 2, zIndex: 2, position: 'relative',
+        display: 'flex', alignItems: 'center', justifyContent: 'center'
+      }}>
+        <span style={{ color: '#94a3b8', fontWeight: 900, fontSize: 20 }}>?</span>
       </div>
-      <p style={{ marginTop: 10, fontWeight: 700, fontSize: 12, color: '#94a3b8' }}>—</p>
-      <p style={{ fontSize: 10, fontWeight: 700, color: '#cbd5e1', letterSpacing: '0.1em' }}>
-        {rank === 1 ? 'TOP SPENDER' : rank === 2 ? '2ND PLACE' : '3RD PLACE'}
-      </p>
-      <div style={{ marginTop: 14, width: '100%', background: '#e2e8f0', padding: '10px 0', textAlign: 'center' }}>
-        <span style={{ color: '#94a3b8', fontWeight: 900, fontSize: 22 }}>{rank}</span>
+      <div style={{
+        width: '100%', background: '#f8fafc',
+        borderRadius: 20, border: '1.5px dashed #e2e8f0',
+        overflow: 'hidden', paddingTop: sz / 2 + 12, paddingBottom: 0
+      }}>
+        <p style={{ textAlign: 'center', fontWeight: 700, fontSize: 11, color: '#94a3b8' }}>—</p>
+        <p style={{ textAlign: 'center', fontSize: 9, fontWeight: 700, color: '#cbd5e1', letterSpacing: '0.12em', marginTop: 3, marginBottom: 12 }}>
+          {rank === 1 ? 'TOP SPENDER' : rank === 2 ? '2ND PLACE' : '3RD PLACE'}
+        </p>
+        <div style={{ background: '#e2e8f0', padding: '10px 0', textAlign: 'center' }}>
+          <span style={{ color: '#94a3b8', fontWeight: 900, fontSize: 22 }}>{rank}</span>
+        </div>
       </div>
     </div>
   );
 }
 
+/* ─── Main export ─────────────────────────────────────── */
 export const TopSpendersSection = () => {
   const [topSpenders, setTopSpenders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -239,33 +286,31 @@ export const TopSpendersSection = () => {
   const third = topSpenders[2];
 
   return (
-    <section style={{ background: 'linear-gradient(135deg, #fef2f2 0%, #fff5f5 50%, #fafafa 100%)', padding: '48px 16px' }}>
+    <section style={{
+      background: 'linear-gradient(135deg, #fef2f2 0%, #fff5f5 40%, #f8faff 100%)',
+      padding: '48px 16px 56px',
+      marginTop: 32,
+      borderRadius: 24,
+    }}>
       <div style={{ maxWidth: 780, margin: '0 auto' }}>
 
-        {/* ── Header ── */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 48, gap: 12 }}>
+        {/* Header row */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 48, gap: 12, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            {/* Icon box */}
             <div style={{
-              width: 48, height: 48, borderRadius: 14,
+              width: 50, height: 50, borderRadius: 14, flexShrink: 0,
               background: 'linear-gradient(135deg, #cc040a, #ff4d4f)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 4px 16px rgba(204,4,10,0.35)',
-              flexShrink: 0
+              boxShadow: '0 4px 18px rgba(204,4,10,0.38)',
             }}>
-              <Trophy size={22} color="#fff" />
+              <Trophy size={23} color="#fff" />
             </div>
             <div>
-              <h2 style={{ margin: 0, fontWeight: 900, fontSize: 20, color: '#1e293b', fontFamily: 'inherit' }}>
-                Top Spenders
-              </h2>
-              <p style={{ margin: '2px 0 0', fontWeight: 600, fontSize: 12, color: '#64748b' }}>
-                Most valued customers this month
-              </p>
-              {/* THIS MONTH badge */}
+              <h2 style={{ margin: 0, fontWeight: 900, fontSize: 20, color: '#1e293b' }}>Top Spenders</h2>
+              <p style={{ margin: '2px 0 0', fontWeight: 600, fontSize: 12, color: '#64748b' }}>Most valued customers this month</p>
               <span style={{
-                display: 'inline-flex', alignItems: 'center', gap: 5,
-                marginTop: 6, padding: '2px 10px', borderRadius: 99,
+                display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 6,
+                padding: '2px 10px', borderRadius: 99,
                 background: 'rgba(204,4,10,0.08)', border: '1px solid rgba(204,4,10,0.2)',
                 fontSize: 9, fontWeight: 900, color: '#cc040a', letterSpacing: '0.12em'
               }}>
@@ -273,14 +318,12 @@ export const TopSpendersSection = () => {
               </span>
             </div>
           </div>
-
-          {/* View Leaderboard button */}
           <button style={{
             display: 'flex', alignItems: 'center', gap: 6,
             padding: '9px 18px', borderRadius: 12,
             background: 'linear-gradient(135deg, #cc040a, #ff4d4f)',
             color: '#fff', border: 'none', cursor: 'pointer',
-            fontWeight: 800, fontSize: 12, letterSpacing: '0.02em',
+            fontWeight: 800, fontSize: 12,
             boxShadow: '0 4px 14px rgba(204,4,10,0.35)',
             flexShrink: 0, whiteSpace: 'nowrap'
           }}>
@@ -288,43 +331,35 @@ export const TopSpendersSection = () => {
           </button>
         </div>
 
-        {/* ── Podium container ── */}
+        {/* Podium container */}
         <div style={{
-          background: 'linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 50%, #f5f0ff 100%)',
-          borderRadius: 24,
-          padding: '40px 20px 0',
-          boxShadow: '0 2px 24px rgba(0,0,0,0.07)',
-          border: '1px solid rgba(255,255,255,0.9)',
+          background: 'linear-gradient(135deg, #eef2ff 0%, #e8f0fe 50%, #f0f4ff 100%)',
+          borderRadius: 24, padding: '44px 20px 0',
+          boxShadow: '0 2px 24px rgba(0,0,0,0.06)',
+          border: '1px solid rgba(255,255,255,0.95)',
         }}>
-          {/* 3-col grid: 2nd | 1st | 3rd */}
           {loading ? (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, alignItems: 'flex-end' }}>
-              {[2, 1, 3].map(r => (
-                <div key={r} style={{
-                  height: r === 1 ? 200 : 170, borderRadius: 20,
-                  background: 'rgba(255,255,255,0.6)',
-                  animation: 'pulse 1.5s ease-in-out infinite'
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
+              {[1, 2, 3].map(i => (
+                <div key={i} style={{
+                  height: 190, borderRadius: 20,
+                  background: 'rgba(255,255,255,0.55)',
+                  animation: 'ts-pulse 1.5s ease-in-out infinite',
+                  animationDelay: `${i * 0.15}s`
                 }} />
               ))}
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, alignItems: 'flex-end' }}>
               {/* 2nd */}
-              <div style={{ paddingTop: 28 }}>
-                {second ? <PodiumCard user={second} rank={2} /> : <PlaceholderCard rank={2} />}
-              </div>
-              {/* 1st */}
-              <div style={{ paddingTop: 28 }}>
-                {first ? <PodiumCard user={first} rank={1} /> : <PlaceholderCard rank={1} />}
-              </div>
+              <div>{second ? <PodiumCard user={second} rank={2} /> : <PlaceholderCard rank={2} />}</div>
+              {/* 1st — taller/elevated */}
+              <div>{first ? <PodiumCard user={first} rank={1} /> : <PlaceholderCard rank={1} />}</div>
               {/* 3rd */}
-              <div style={{ paddingTop: 28 }}>
-                {third ? <PodiumCard user={third} rank={3} /> : <PlaceholderCard rank={3} />}
-              </div>
+              <div>{third ? <PodiumCard user={third} rank={3} /> : <PlaceholderCard rank={3} />}</div>
             </div>
           )}
 
-          {/* Empty state */}
           {!loading && topSpenders.length === 0 && (
             <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: 12, fontWeight: 600, padding: '16px 0 32px' }}>
               🎮 Be the first top spender this month!
@@ -332,21 +367,23 @@ export const TopSpendersSection = () => {
           )}
         </div>
 
-        {/* Mobile view leaderboard */}
-        <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center' }}>
+        {/* Bottom button */}
+        <div style={{ marginTop: 20, display: 'flex', justifyContent: 'center' }}>
           <button style={{
-            display: 'flex', alignItems: 'center', gap: 6, padding: '10px 28px',
-            borderRadius: 12, background: 'linear-gradient(135deg, #cc040a, #ff4d4f)',
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '10px 28px', borderRadius: 12,
+            background: 'linear-gradient(135deg, #cc040a, #ff4d4f)',
             color: '#fff', border: 'none', cursor: 'pointer',
-            fontWeight: 800, fontSize: 12, boxShadow: '0 4px 14px rgba(204,4,10,0.3)'
+            fontWeight: 800, fontSize: 12,
+            boxShadow: '0 4px 14px rgba(204,4,10,0.32)'
           }}>
-            <Star size={13} /> View Full Leaderboard <ChevronRight size={14} />
+            <Star size={12} /> View Full Leaderboard <ChevronRight size={14} />
           </button>
         </div>
       </div>
 
       <style>{`
-        @keyframes pulse {
+        @keyframes ts-pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.4; }
         }

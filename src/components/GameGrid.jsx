@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { GAMES_DATA } from '../data/games';
 import { Sparkles, Zap, Search, ShieldCheck, Headphones, ArrowLeft } from 'lucide-react';
+import { TopSpendersSection } from './TopSpendersSection';
 
 export const GameGrid = () => {
   const { searchQuery, setSearchQuery, openTopup, closeCatalog } = useApp();
@@ -196,6 +197,10 @@ export const GameGrid = () => {
           })}
         </div>
       )}
+
+      {/* Top Spenders Leaderboard */}
+      <TopSpendersSection />
+
     </section>
   );
 };
