@@ -508,56 +508,82 @@ export const GameTopupPage = () => {
             </div>
 
             {/* Input Box Area */}
-            <div className="bg-[#F8FAFC] border border-slate-200 rounded-2xl p-2.5 flex flex-col sm:flex-row items-center gap-2 shadow-inner">
-              <div className="relative w-full flex-1">
-                <input
-                  type="text"
-                  placeholder={selectedGame.idPlaceholder || "Enter your Player ID (UID)"}
-                  value={playerId}
-                  onChange={(e) => {
-                    setPlayerId(e.target.value);
-                    setIgnVerified(false);
-                  }}
-                  className="w-full px-4 py-3 bg-transparent text-sm text-slate-900 font-semibold focus:outline-none placeholder:text-slate-400"
-                />
-              </div>
-
-              {selectedGame.requiresServer && (
-                <div className="w-full sm:w-48">
+            {selectedGame.requiresServer ? (
+              /* Mobile Legends: Two separate labeled boxes for User ID + Zone ID */
+              <div className="flex flex-col sm:flex-row gap-3">
+                {/* User ID Box */}
+                <div className="flex-1 bg-[#F8FAFC] border-2 border-slate-200 rounded-2xl shadow-inner overflow-hidden focus-within:border-[#2563EB] transition-colors">
+                  <div className="px-4 pt-2.5 pb-0">
+                    <span className="text-[10px] font-extrabold text-[#2563EB] uppercase tracking-widest">User ID</span>
+                  </div>
                   <input
                     type="text"
-                    placeholder={selectedGame.serverPlaceholder || "Server / Zone ID"}
-                    value={zoneId}
-                    onChange={(e) => setZoneId(e.target.value)}
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 font-semibold focus:outline-none"
+                    placeholder={selectedGame.idPlaceholder || "e.g. 84218845"}
+                    value={playerId}
+                    onChange={(e) => {
+                      setPlayerId(e.target.value);
+                      setIgnVerified(false);
+                    }}
+                    className="w-full px-4 pb-3 pt-1 bg-transparent text-sm text-slate-900 font-semibold focus:outline-none placeholder:text-slate-400"
                   />
                 </div>
-              )}
 
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <button
-                  type="button"
-                  onClick={handlePastePlayerId}
-                  className="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 flex items-center justify-center gap-1.5 transition-colors cursor-pointer w-1/2 sm:w-auto"
-                >
-                  <Clipboard className="w-4 h-4 text-slate-500" />
-                  <span>Paste</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleVerifyIgn}
-                  disabled={isVerifyingIgn}
-                  className="px-6 py-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-md w-1/2 sm:w-auto"
-                >
-                  {isVerifyingIgn ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <CheckCircle2 className="w-4 h-4" />
-                  )}
-                  <span>{isVerifyingIgn ? 'Checking...' : 'Verify'}</span>
-                </button>
+                {/* Zone ID Box */}
+                <div className="flex-1 sm:max-w-[200px] bg-[#F8FAFC] border-2 border-slate-200 rounded-2xl shadow-inner overflow-hidden focus-within:border-amber-500 transition-colors">
+                  <div className="px-4 pt-2.5 pb-0">
+                    <span className="text-[10px] font-extrabold text-amber-600 uppercase tracking-widest">Zone ID</span>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder={selectedGame.serverPlaceholder || "e.g. 2168"}
+                    value={zoneId}
+                    onChange={(e) => setZoneId(e.target.value)}
+                    className="w-full px-4 pb-3 pt-1 bg-transparent text-sm text-slate-900 font-semibold focus:outline-none placeholder:text-slate-400"
+                  />
+                </div>
               </div>
+            ) : (
+              /* Other games: single input box */
+              <div className="bg-[#F8FAFC] border border-slate-200 rounded-2xl p-2.5 flex flex-col sm:flex-row items-center gap-2 shadow-inner">
+                <div className="relative w-full flex-1">
+                  <input
+                    type="text"
+                    placeholder={selectedGame.idPlaceholder || "Enter your Player ID (UID)"}
+                    value={playerId}
+                    onChange={(e) => {
+                      setPlayerId(e.target.value);
+                      setIgnVerified(false);
+                    }}
+                    className="w-full px-4 py-3 bg-transparent text-sm text-slate-900 font-semibold focus:outline-none placeholder:text-slate-400"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Paste + Verify buttons — shared for all games */}
+            <div className="flex items-center gap-2 mt-2">
+              <button
+                type="button"
+                onClick={handlePastePlayerId}
+                className="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 flex items-center justify-center gap-1.5 transition-colors cursor-pointer w-1/2 sm:w-auto"
+              >
+                <Clipboard className="w-4 h-4 text-slate-500" />
+                <span>Paste</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleVerifyIgn}
+                disabled={isVerifyingIgn}
+                className="px-6 py-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-md w-1/2 sm:w-auto"
+              >
+                {isVerifyingIgn ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4" />
+                )}
+                <span>{isVerifyingIgn ? 'Checking...' : 'Verify'}</span>
+              </button>
             </div>
 
             {/* Helper Guide Hint Banner ONLY for Mobile Legends */}
@@ -567,6 +593,7 @@ export const GameTopupPage = () => {
                 <span className="leading-snug">💡 MLBB User ID (e.g. 84218845) සහ Zone ID (e.g. 2168 - Profile එකේ වරහන් ඇතුළත ඇති අංකය) ඇතුළත් කරන්න.</span>
               </div>
             )}
+
 
             {/* Saved IDs & Verified IGN Badge */}
             {(userProfile?.savedIds || []).filter(s => s.gameId === selectedGame.id).length > 0 && (

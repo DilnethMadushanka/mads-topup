@@ -381,7 +381,44 @@ export const TopupModal = () => {
                 )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-1">
-                  <div className={selectedGame.requiresServer ? 'sm:col-span-7' : 'sm:col-span-8'}>
+                  {/* Input fields: split for ML (User ID + Zone ID), single for others */}
+                {selectedGame.requiresServer ? (
+                  /* Mobile Legends: two separate labeled boxes */
+                  <div className="sm:col-span-12 flex flex-col sm:flex-row gap-3">
+                    {/* User ID Box */}
+                    <div className="flex-1 bg-white border-2 border-slate-300 rounded-xl overflow-hidden focus-within:border-[#cc040a] transition-colors shadow-xs">
+                      <div className="px-4 pt-2 pb-0">
+                        <span className="text-[10px] font-extrabold text-[#cc040a] uppercase tracking-widest">User ID</span>
+                      </div>
+                      <input
+                        type="text"
+                        placeholder={selectedGame.idPlaceholder || "e.g. 84218845"}
+                        value={playerId}
+                        onChange={(e) => {
+                          setPlayerId(e.target.value);
+                          setIgnVerified(false);
+                        }}
+                        className="w-full px-4 pb-2.5 pt-0.5 bg-transparent text-sm text-slate-900 font-semibold focus:outline-none placeholder:text-slate-400"
+                      />
+                    </div>
+
+                    {/* Zone ID Box */}
+                    <div className="flex-1 sm:max-w-[180px] bg-white border-2 border-slate-300 rounded-xl overflow-hidden focus-within:border-amber-500 transition-colors shadow-xs">
+                      <div className="px-4 pt-2 pb-0">
+                        <span className="text-[10px] font-extrabold text-amber-600 uppercase tracking-widest">Zone ID</span>
+                      </div>
+                      <input
+                        type="text"
+                        placeholder={selectedGame.serverPlaceholder || "e.g. 2168"}
+                        value={zoneId}
+                        onChange={(e) => setZoneId(e.target.value)}
+                        className="w-full px-4 pb-2.5 pt-0.5 bg-transparent text-sm text-slate-900 font-semibold focus:outline-none placeholder:text-slate-400"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  /* Other games: single input */
+                  <div className="sm:col-span-8">
                     <input
                       type="text"
                       placeholder={selectedGame.idPlaceholder}
@@ -393,20 +430,10 @@ export const TopupModal = () => {
                       className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 font-semibold focus:outline-none focus:border-[#cc040a] shadow-xs"
                     />
                   </div>
+                )}
 
-                  {selectedGame.requiresServer && (
-                    <div className="sm:col-span-5">
-                      <input
-                        type="text"
-                        placeholder={selectedGame.serverPlaceholder}
-                        value={zoneId}
-                        onChange={(e) => setZoneId(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 font-semibold focus:outline-none focus:border-[#cc040a] shadow-xs"
-                      />
-                    </div>
-                  )}
 
-                  <div className={selectedGame.requiresServer ? 'sm:col-span-12' : 'sm:col-span-4'}>
+                  <div className="sm:col-span-12">
                     <button
                       onClick={handleVerifyIgn}
                       disabled={isVerifyingIgn}
@@ -421,6 +448,7 @@ export const TopupModal = () => {
                     </button>
                   </div>
                 </div>
+              </div>
 
                 {/* Helper Guide Hint Banner ONLY for Mobile Legends */}
                 {selectedGame?.id === 'mobilelegends' && (
