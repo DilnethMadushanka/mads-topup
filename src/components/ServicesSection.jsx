@@ -28,7 +28,8 @@ export const ServicesSection = () => {
       description: 'Explore our growing catalog of free & premium digital services',
       buttonText: 'VIEW MORE',
       image: '/uploads/index_page/other_service.png',
-      action: openCatalog
+      action: openCatalog,
+      comingSoon: true
     }
   ];
 
@@ -52,18 +53,26 @@ export const ServicesSection = () => {
           {services.map((service) => (
             <div
               key={service.id}
-              onClick={service.action}
-              className={`bg-white rounded-3xl p-6 sm:p-8 flex flex-col justify-between items-center text-center border border-slate-200/80 shadow-md hover:shadow-2xl hover:shadow-red-500/15 hover:border-[#cc040a]/40 hover:-translate-y-2.5 transition-all duration-300 group cursor-pointer min-h-[390px] relative overflow-hidden reveal reveal-${service.id === 'topup' ? '1' : service.id === 'cards' ? '2' : '3'}`}
+              onClick={service.comingSoon ? undefined : service.action}
+              className={`bg-white rounded-3xl p-6 sm:p-8 flex flex-col justify-between items-center text-center border border-slate-200/80 shadow-md hover:shadow-2xl hover:shadow-red-500/15 hover:border-[#cc040a]/40 hover:-translate-y-2.5 transition-all duration-300 group cursor-pointer min-h-[390px] relative overflow-hidden reveal reveal-${service.id === 'topup' ? '1' : service.id === 'cards' ? '2' : '3'} ${service.comingSoon ? 'opacity-80 cursor-default' : ''}`}
             >
               {/* Top Border Indicator Bar (Matching Screenshot Hover Effect) */}
               <div className="absolute top-0 left-0 right-0 h-1 bg-[#cc040a] rounded-t-3xl opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
+
+              {/* Coming Soon Badge */}
+              {service.comingSoon && (
+                <div className="absolute top-4 right-4 z-20 flex items-center gap-1 bg-[#cc040a] text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-md shadow-red-600/30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse inline-block"></span>
+                  Coming Soon
+                </div>
+              )}
 
               {/* 3D App Icon Container (Direct 3D Icon - Large Size) */}
               <div className="relative w-36 h-36 sm:w-44 sm:h-44 my-3 flex items-center justify-center">
                 <img 
                   src={service.image} 
                   alt={service.title} 
-                  className="w-full h-full object-contain filter drop-shadow-xl group-hover:scale-108 transition-transform duration-300 rounded-3xl" 
+                  className={`w-full h-full object-contain filter drop-shadow-xl group-hover:scale-108 transition-transform duration-300 rounded-3xl ${service.comingSoon ? 'grayscale-[20%]' : ''}`}
                 />
               </div>
 
@@ -80,14 +89,17 @@ export const ServicesSection = () => {
               {/* Red Theme Action Button (Matching Screenshot) */}
               <button
                 type="button"
+                disabled={service.comingSoon}
                 onClick={(e) => {
                   e.stopPropagation();
-                  service.action();
+                  if (!service.comingSoon) service.action();
                 }}
-                className="btn-cyan-pill px-7 py-2.5 sm:py-3 text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 group-hover:shadow-lg group-hover:shadow-red-600/40 group-hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer relative z-10 border-0 outline-none"
+                className={`btn-cyan-pill px-7 py-2.5 sm:py-3 text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 group-hover:shadow-lg group-hover:shadow-red-600/40 group-hover:scale-105 active:scale-95 transition-all duration-200 relative z-10 border-0 outline-none ${
+                  service.comingSoon ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'
+                }`}
               >
-                <span>{service.buttonText}</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                <span>{service.comingSoon ? 'Coming Soon' : service.buttonText}</span>
+                {!service.comingSoon && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
               </button>
 
             </div>
