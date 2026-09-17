@@ -1143,14 +1143,65 @@ export const GameTopupPage = () => {
               We accept a wide range of secure payment methods:
             </p>
 
-            {/* Real Payment Logos Image */}
-            <div className="flex items-center justify-center py-3">
-              <img
-                src="/uploads/index_page/payment_logos.jpg"
-                alt="VISA, Mastercard, Binance Pay, LankaPay, eZ Cash, mCash"
-                className="max-w-full h-auto object-contain"
-                style={{ height: '160px', width: '100%', maxWidth: '700px', objectFit: 'contain' }}
-              />
+            {/* Individual Payment Logo Cards */}
+            <div className="flex flex-wrap items-center justify-center gap-3 py-2">
+
+              {/* VISA */}
+              <div className="flex items-center justify-center w-20 h-14 bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all">
+                <span style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontWeight: 900, fontSize: '22px', color: '#1a1f71', letterSpacing: '-1px' }}>VISA</span>
+              </div>
+
+              {/* Mastercard */}
+              <div className="flex items-center justify-center w-20 h-14 bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all">
+                <div style={{ position: 'relative', width: 42, height: 28 }}>
+                  <div style={{ position: 'absolute', left: 0, top: 0, width: 28, height: 28, borderRadius: '50%', background: '#EB001B', opacity: 0.95 }} />
+                  <div style={{ position: 'absolute', right: 0, top: 0, width: 28, height: 28, borderRadius: '50%', background: '#F79E1B', opacity: 0.95 }} />
+                  <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: 0, width: 14, height: 28, background: '#FF5F00', opacity: 0.9 }} />
+                </div>
+              </div>
+
+              {/* AMEX */}
+              <div className="flex items-center justify-center w-20 h-14 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all" style={{ background: '#2E77BC' }}>
+                <span style={{ fontWeight: 900, fontSize: '13px', color: '#fff', letterSpacing: '1px', fontFamily: 'Arial, sans-serif' }}>AMEX</span>
+              </div>
+
+              {/* Binance Pay */}
+              <div className="flex items-center justify-center w-20 h-14 bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all gap-1">
+                <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
+                  <path d="M16 2L20.5 6.5L13 14L8.5 9.5L16 2Z" fill="#F3BA2F"/>
+                  <path d="M22.5 8.5L27 13L19.5 20.5L15 16L22.5 8.5Z" fill="#F3BA2F"/>
+                  <path d="M9.5 8.5L14 13L6.5 20.5L2 16L9.5 8.5Z" fill="#F3BA2F"/>
+                  <path d="M16 18L20.5 22.5L16 27L11.5 22.5L16 18Z" fill="#F3BA2F"/>
+                  <path d="M16 10L20.5 14.5L16 19L11.5 14.5L16 10Z" fill="#F3BA2F"/>
+                </svg>
+                <span style={{ fontSize: '9px', fontWeight: 900, color: '#F3BA2F', lineHeight: 1 }}>BINANCE<br/>PAY</span>
+              </div>
+
+              {/* LankaPay */}
+              <div className="flex items-center justify-center w-20 h-14 bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all flex-col gap-0.5">
+                <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#8B1A1A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ color: '#fff', fontSize: '12px', fontWeight: 900 }}>L</span>
+                </div>
+                <span style={{ fontSize: '8px', fontWeight: 800, color: '#8B1A1A', letterSpacing: '0.5px' }}>LANKAPAY</span>
+              </div>
+
+              {/* eZ Cash */}
+              <div className="flex items-center justify-center w-20 h-14 bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all flex-col gap-0.5">
+                <div style={{ background: '#6DBB3A', borderRadius: '10px', padding: '2px 8px', display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <span style={{ color: '#fff', fontSize: '13px', fontWeight: 900, fontStyle: 'italic' }}>eZ</span>
+                  <span style={{ color: '#fff', fontSize: '10px', fontWeight: 700 }}>Cash</span>
+                </div>
+                <span style={{ fontSize: '7px', color: '#64748b', fontWeight: 600 }}>by Dialog</span>
+              </div>
+
+              {/* mCash */}
+              <div className="flex items-center justify-center w-20 h-14 bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all gap-1">
+                <div style={{ width: 28, height: 28, borderRadius: '8px', background: '#FF6B1A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ color: '#fff', fontSize: '16px', fontWeight: 900, fontStyle: 'italic' }}>m</span>
+                </div>
+                <span style={{ fontSize: '11px', fontWeight: 800, color: '#333' }}>Cash</span>
+              </div>
+
             </div>
           </div>
         </>
