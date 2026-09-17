@@ -16,14 +16,49 @@
     background-color: #F8FAFF;
     color: #0F172A;
     overflow-x: hidden;
+    /* Prevent pinch-zoom on iOS/Android */
+    touch-action: pan-x pan-y;
   }
 
   body {
     overflow-x: hidden;
+    /* Prevent pinch-zoom */
+    touch-action: pan-x pan-y;
   }
 
   h1, h2, h3, h4, h5, h6, .font-heading {
     font-family: var(--font-heading);
+  }
+
+  /* 
+   * iOS Safari auto-zooms any input with font-size < 16px.
+   * Force 16px on all inputs/selects/textareas to prevent zoom,
+   * then scale text down visually with transform so design is unchanged.
+   */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="search"],
+  input[type="url"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  @media screen and (max-width: 768px) {
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="search"],
+    input[type="url"],
+    textarea,
+    select {
+      font-size: 16px !important;
+    }
   }
 }
 
