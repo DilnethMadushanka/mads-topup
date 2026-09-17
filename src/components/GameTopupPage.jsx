@@ -25,7 +25,9 @@ export const GameTopupPage = () => {
     setCurrency,
     creditUserWallet,
     setIsWalletModalOpen,
-    openWalletModal
+    openWalletModal,
+    isLoggedIn,
+    openAuth
   } = useApp();
 
   const [playerId, setPlayerId] = useState('');
@@ -784,9 +786,8 @@ export const GameTopupPage = () => {
               </div>
             </div>
 
-            {/* Payment Method Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-              {PAYMENT_METHODS.map((method) => {
+              {PAYMENT_METHODS.filter(m => isLoggedIn || m.id !== 'wallet').map((method) => {
                 const isSelected = selectedPayment.id === method.id;
                 return (
                   <div
@@ -816,6 +817,19 @@ export const GameTopupPage = () => {
                   </div>
                 );
               })}
+
+              {/* Login prompt card for wallet — only when logged out */}
+              {!isLoggedIn && (
+                <div
+                  onClick={() => openAuth('login')}
+                  className="p-4 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 hover:border-[#cc040a]/60 hover:bg-red-50 cursor-pointer transition-all flex flex-col justify-center items-center text-center gap-1.5"
+                >
+                  <span className="text-2xl">💳</span>
+                  <div className="font-extrabold text-sm text-slate-700">MADS Wallet</div>
+                  <div className="text-[10px] text-slate-400 font-semibold">Log in to pay with wallet balance</div>
+                  <span className="mt-1 text-[10px] bg-[#cc040a] text-white px-2.5 py-0.5 rounded-full font-bold">Login Required</span>
+                </div>
+              )}
 
               {/* Recharge Wallet Helper Card */}
               <div

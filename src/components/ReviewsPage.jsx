@@ -3,7 +3,7 @@ import { Star, Quote, ArrowLeft, PenSquare, Search, CheckCircle, Sparkles, X } f
 import { useApp } from '../context/AppContext';
 
 export const ReviewsPage = () => {
-  const { userReviews, addReview, closeReviewsPage, userProfile, showToast } = useApp();
+  const { userReviews, addReview, closeReviewsPage, userProfile, showToast, isLoggedIn, openAuth } = useApp();
 
   const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('ALL'); // 'ALL' | 5 | 4 | 3 | 2 | 1
@@ -163,11 +163,18 @@ export const ReviewsPage = () => {
               Help other gamers and tell us how we did.
             </p>
             <button
-              onClick={() => setIsWriteModalOpen(true)}
+              onClick={() => {
+                if (!isLoggedIn) {
+                  showToast('Please log in to write a review!', 'error');
+                  openAuth('login');
+                  return;
+                }
+                setIsWriteModalOpen(true);
+              }}
               className="w-full py-3 px-6 rounded-xl bg-[#cc040a] hover:bg-[#b00308] text-white font-extrabold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer shadow-red-500/20"
             >
               <PenSquare className="w-4 h-4" />
-              <span>Write a Review</span>
+              <span>{isLoggedIn ? 'Write a Review' : 'Login to Review'}</span>
             </button>
           </div>
 

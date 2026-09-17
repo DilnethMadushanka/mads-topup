@@ -1920,3 +1920,84 @@ export const subscribeSupportTicketsFromFirestore = (callback) => {
     if (typeof unsubDb === 'function') unsubDb();
   };
 };
+
+/* ================================================================
+   REVIEWS SYSTEM — Firestore + RTDB dual-sync
+   ================================================================ */
+
+/**
+ * Save a new user review to RTDB and Firestore.
+ */
+export const saveReviewToFirestore = async (review) => {
+  if (!review || !review.id) return false;
+  const key = String(review.id).replace(/[.#$[\]]/g, '_');
+
+  if (rtdb) {
+    try {
+      const rRef = dbRef(rtdb, `reviews/${key}`);
+      await rtdbSet(rRef, review);
+    } catch (e) { console.warn('[firestoreService] RTDB review save:', e); }
+  }
+
+  if (db) {
+    try {
+      const rDocRef = doc(db, 'reviews', key);
+      await setDoc(rDocRef, review, { merge: true });
+    } catch (e) { console.warn('[firestoreService] Firestore review save:', e); }
+  }
+  return true;
+};
+
+/**
+ * Real-time subscription to all community reviews.
+ * Fires callback(reviewsArray) immediately from localStorage, then from live DB.
+ */
+export const subscribeReviewsFromFirestore = (callback) => {
+  if (typeof callback !== 'function') return () => {};
+
+  // Seed from localStorage cache immediately
+  try {
+    const cached = localStorage.getItem('mads_user_reviews');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length > 0) callback(parsed);
+    }
+  } catch (e) {}
+
+  let unsubRtdb = null;
+  let unsubDb = null;
+
+  if (rtdb) {
+    try {
+      const rRef = dbRef(rtdb, 'reviews');
+      unsubRtdb = rtdbOnValue(rRef, (snap) => {
+        if (snap.exists()) {
+          const val = snap.val();
+          const reviews = Object.values(val || {}).filter(Boolean);
+          if (reviews.length > 0) {
+            try { localStorage.setItem('mads_user_reviews', JSON.stringify(reviews)); } catch (e) {}
+            callback(reviews);
+          }
+        }
+      });
+    } catch (e) {}
+  }
+
+  if (db) {
+    try {
+      const rCol = collection(db, 'reviews');
+      unsubDb = onSnapshot(rCol, (snapshot) => {
+        const reviews = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).filter(Boolean);
+        if (reviews.length > 0) {
+          try { localStorage.setItem('mads_user_reviews', JSON.stringify(reviews)); } catch (e) {}
+          callback(reviews);
+        }
+      });
+    } catch (e) {}
+  }
+
+  return () => {
+    if (typeof unsubRtdb === 'function') unsubRtdb();
+    if (typeof unsubDb === 'function') unsubDb();
+  };
+};

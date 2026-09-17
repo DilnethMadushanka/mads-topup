@@ -12,7 +12,8 @@ import {
   saveManualPaymentToFirestore, updateManualPaymentStatusInFirestore, subscribeManualPaymentsFromFirestore, creditUserWalletInDatabase, setUserExactBalanceInDatabase,
   saveVouchersToFirestore, subscribeVouchersFromFirestore, redeemVoucherInDatabase,
   savePopupAdConfigToFirestore, subscribePopupAdConfigFromFirestore, DEFAULT_POPUP_AD_CONFIG,
-  saveSupportTicketToFirestore, updateSupportTicketInFirestore, subscribeSupportTicketsFromFirestore
+  saveSupportTicketToFirestore, updateSupportTicketInFirestore, subscribeSupportTicketsFromFirestore,
+  saveReviewToFirestore, subscribeReviewsFromFirestore
 } from '../services/firestoreService';
 
 
@@ -222,10 +223,8 @@ export const AppProvider = ({ children }) => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          // Filter out hardcoded mock reviews
-          return parsed.filter(r => r && r.id && !String(r.id).startsWith('rev-'));
-        }
+        // Bug 4 fix: keep ALL saved reviews (old filter wrongly stripped 'rev-' prefix IDs)
+        if (Array.isArray(parsed)) return parsed.filter(r => r && r.id);
       } catch (e) {}
     }
     return INITIAL_REVIEWS;
@@ -235,8 +234,24 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem('mads_user_reviews', JSON.stringify(userReviews));
   }, [userReviews]);
 
+  // Bug 5: real-time Firestore subscription so all browsers see new reviews
+  useEffect(() => {
+    const unsub = subscribeReviewsFromFirestore((liveReviews) => {
+      if (!Array.isArray(liveReviews) || liveReviews.length === 0) return;
+      setUserReviews(prev => {
+        const map = new Map();
+        (prev || []).forEach(r => { if (r?.id) map.set(r.id, r); });
+        liveReviews.forEach(r => { if (r?.id) map.set(r.id, r); });
+        return Array.from(map.values());
+      });
+    });
+    return () => unsub();
+  }, []);
+
   const addReview = (newRev) => {
     setUserReviews(prev => [newRev, ...prev]);
+    // Bug 5: persist to Firestore so all users/devices see the new review
+    saveReviewToFirestore(newRev);
     if (showToast) showToast('Thank you! Your review has been published successfully.');
   };
   
