@@ -369,59 +369,63 @@ export const Navbar = () => {
         )}
 
         {/* ── NAV ITEMS ── */}
-        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-          {/* Section header */}
-          <div className="flex items-center gap-2 px-2 py-2 mb-1">
-            <div className="h-px flex-1 bg-gradient-to-r from-[#cc040a]/40 to-transparent" />
-            <span className="text-[9px] font-black text-[#cc040a] uppercase tracking-[0.2em]">MENU</span>
-            <div className="h-px flex-1 bg-gradient-to-l from-[#cc040a]/40 to-transparent" />
-          </div>
+        {isUserLoggedIn ? (
+          <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
+            {/* Section header */}
+            <div className="flex items-center gap-2 px-2 py-2 mb-1">
+              <div className="h-px flex-1 bg-gradient-to-r from-[#cc040a]/40 to-transparent" />
+              <span className="text-[9px] font-black text-[#cc040a] uppercase tracking-[0.2em]">MENU</span>
+              <div className="h-px flex-1 bg-gradient-to-l from-[#cc040a]/40 to-transparent" />
+            </div>
 
-          {navItems.map((item, i) => (
-            <button key={i} onClick={item.action}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-150 cursor-pointer group relative overflow-hidden border ${
-                item.active
-                  ? 'bg-red-50 border-red-200'
-                  : 'bg-transparent border-transparent hover:bg-slate-50 hover:border-slate-200'
-              }`}>
-              {/* Active left accent bar */}
-              {item.active && (
-                <div className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full bg-[#cc040a]" />
-              )}
-
-              {/* Icon box */}
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all group-hover:scale-105 ${
-                item.active ? 'bg-[#cc040a] shadow-md shadow-red-600/25' : 'bg-slate-100 group-hover:bg-red-50'
-              }`}>
-                <item.icon className={`w-4 h-4 ${item.active ? 'text-white' : 'text-slate-500 group-hover:text-[#cc040a]'}`} />
-              </div>
-
-              {/* Label */}
-              <span className={`flex-1 text-sm font-bold ${item.active ? 'text-[#cc040a] font-black' : 'text-slate-700 group-hover:text-slate-900'}`}>
-                {item.label}
-              </span>
-
-              {/* Badge */}
-              {item.badge && (
-                <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider flex-shrink-0 ${
-                  item.badge === 'PARTNER' ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-red-100 text-[#cc040a] border border-red-200'
+            {navItems.map((item, i) => (
+              <button key={i} onClick={item.action}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-150 cursor-pointer group relative overflow-hidden border ${
+                  item.active
+                    ? 'bg-red-50 border-red-200'
+                    : 'bg-transparent border-transparent hover:bg-slate-50 hover:border-slate-200'
                 }`}>
-                  {item.badge}
-                </span>
-              )}
+                {/* Active left accent bar */}
+                {item.active && (
+                  <div className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full bg-[#cc040a]" />
+                )}
 
-              {/* Order count */}
-              {item.count > 0 && (
-                <span className="bg-[#cc040a] text-white text-[10px] font-black px-2 py-0.5 rounded-full min-w-[20px] text-center flex-shrink-0 shadow-sm shadow-red-600/30">
-                  {item.count}
-                </span>
-              )}
+                {/* Icon box */}
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all group-hover:scale-105 ${
+                  item.active ? 'bg-[#cc040a] shadow-md shadow-red-600/25' : 'bg-slate-100 group-hover:bg-red-50'
+                }`}>
+                  <item.icon className={`w-4 h-4 ${item.active ? 'text-white' : 'text-slate-500 group-hover:text-[#cc040a]'}`} />
+                </div>
 
-              {/* Arrow */}
-              <ChevronRight className={`w-3.5 h-3.5 shrink-0 transition-all group-hover:translate-x-0.5 ${item.active ? 'text-[#cc040a]' : 'text-slate-300'}`} />
-            </button>
-          ))}
-        </nav>
+                {/* Label */}
+                <span className={`flex-1 text-sm font-bold ${item.active ? 'text-[#cc040a] font-black' : 'text-slate-700 group-hover:text-slate-900'}`}>
+                  {item.label}
+                </span>
+
+                {/* Badge */}
+                {item.badge && (
+                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider flex-shrink-0 ${
+                    item.badge === 'PARTNER' ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-red-100 text-[#cc040a] border border-red-200'
+                  }`}>
+                    {item.badge}
+                  </span>
+                )}
+
+                {/* Order count */}
+                {item.count > 0 && (
+                  <span className="bg-[#cc040a] text-white text-[10px] font-black px-2 py-0.5 rounded-full min-w-[20px] text-center flex-shrink-0 shadow-sm shadow-red-600/30">
+                    {item.count}
+                  </span>
+                )}
+
+                {/* Arrow */}
+                <ChevronRight className={`w-3.5 h-3.5 shrink-0 transition-all group-hover:translate-x-0.5 ${item.active ? 'text-[#cc040a]' : 'text-slate-300'}`} />
+              </button>
+            ))}
+          </nav>
+        ) : (
+          <div className="flex-1" />
+        )}
 
         {/* ── FOOTER ── */}
         <div className="border-t border-slate-100 px-4 py-3 flex-shrink-0 flex items-center justify-between bg-slate-50">

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { GAMES_DATA, getVerifiedPackagePriceLkr } from '../data/games';
-import { generateUniqueSecurityKey, ensureResellerCredentials, getResellerProfileByKeyAsync } from '../services/firestoreService';
+import { generateUniqueSecurityKey, ensureResellerCredentials, getResellerProfileByKeyAsync, updateUserProfileInFirestore } from '../services/firestoreService';
 import confetti from 'canvas-confetti';
 import { 
   Crown, Wallet, Zap, Copy, Check, ArrowLeft, Send, ShieldCheck, 
@@ -32,7 +32,8 @@ export const ResellerDashboard = () => {
   const [customerUid, setCustomerUid] = useState('');
   const [customerZoneId, setCustomerZoneId] = useState('');
   const [customerIgn, setCustomerIgn] = useState('');
-  const [selectedPackageId, setSelectedPackageId] = useState('');
+  // Bug 4: Pre-select first package so wholesale price shows immediately
+  const [selectedPackageId, setSelectedPackageId] = useState(GAMES_DATA[0]?.packages?.[0]?.id || '');
   const [isFulfilling, setIsFulfilling] = useState(false);
 
   // Search & Filter States
@@ -173,7 +174,7 @@ export const ResellerDashboard = () => {
     }, 1000);
   };
 
-  const handleSaveStoreProfile = (e) => {
+  const handleSaveStoreProfile = async (e) => {
     e.preventDefault();
     setUserProfile(prev => ({
       ...prev,
@@ -181,6 +182,14 @@ export const ResellerDashboard = () => {
       phone: whatsappContact,
       email: storeEmail
     }));
+    // Bug 6: Persist to Firestore so settings survive page refresh
+    if (userProfile?.uid) {
+      try {
+        await updateUserProfileInFirestore(userProfile.uid, { storeName, phone: whatsappContact, email: storeEmail });
+      } catch (err) {
+        console.warn('[ResellerDashboard] Store profile DB save note:', err);
+      }
+    }
     showToast('Reseller Store profile saved successfully!');
   };
 
@@ -590,17 +599,17 @@ export const ResellerDashboard = () => {
 
             {/* Orders Table */}
             <div className="space-y-3">
-              {resellerOrders
-                .filter(o => {
+              {(() => {
+                const filteredOrders = resellerOrders.filter(o => {
                   if (!o) return false;
                   const isTelegramOrder = Boolean(o.viaTelegramBot || (o.id && String(o.id).startsWith('ORD-TG-')) || o.channel === 'Telegram Bot' || (o.paymentMethod && String(o.paymentMethod).toLowerCase().includes('telegram')));
-                  
+
                   const search = (orderSearch || '').toLowerCase();
                   const oId = String(o.id || '').toLowerCase();
                   const oPlayerId = String(o.playerId || '').toLowerCase();
                   const oGameName = String(o.gameName || '').toLowerCase();
 
-                  const matchesSearch = 
+                  const matchesSearch =
                     oId.includes(search) ||
                     oPlayerId.includes(search) ||
                     oGameName.includes(search);
@@ -610,8 +619,28 @@ export const ResellerDashboard = () => {
                     (orderChannelFilter === 'WEB' && !isTelegramOrder);
 
                   return matchesSearch && matchesChannel;
-                })
-                .map((ord) => {
+                });
+
+                // Bug 9: Empty state when no orders
+                if (filteredOrders.length === 0) {
+                  return (
+                    <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
+                      <div className="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center">
+                        <ShoppingBag className="w-8 h-8 text-slate-600" />
+                      </div>
+                      <h4 className="text-sm font-black text-slate-400">
+                        {orderSearch || orderChannelFilter !== 'ALL' ? 'No orders match your filter' : 'No orders yet'}
+                      </h4>
+                      <p className="text-xs text-slate-600 font-medium max-w-xs">
+                        {orderSearch || orderChannelFilter !== 'ALL'
+                          ? 'Try adjusting your search or channel filter.'
+                          : 'Your dispatched customer top-ups will appear here. Use the Instant Dispatch tab to fulfill your first order!'}
+                      </p>
+                    </div>
+                  );
+                }
+
+                return filteredOrders.map((ord) => {
                   const isTelegramOrder = Boolean(ord.viaTelegramBot || (ord.id && ord.id.startsWith('ORD-TG-')) || ord.channel === 'Telegram Bot' || (ord.paymentMethod && ord.paymentMethod.toLowerCase().includes('telegram')));
 
                   return (
@@ -658,7 +687,8 @@ export const ResellerDashboard = () => {
                       </div>
                     </div>
                   );
-                })}
+                });
+              })()}
             </div>
           </div>
         )}

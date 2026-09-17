@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 
 export const ResellerProgramPage = () => {
-  const { userProfile, openResellerLoginPage, showToast, closeResellerPage, addResellerApplication, openResellerDashboard } = useApp();
+  const { userProfile, isLoggedIn, openAuth, showToast, closeResellerPage, addResellerApplication, openResellerDashboard, resellerApplications } = useApp();
 
   const [realName, setRealName] = useState(userProfile?.name || '');
   const [storeName, setStoreName] = useState('');
@@ -32,6 +32,13 @@ export const ResellerProgramPage = () => {
   const handleSubmitApplication = (e) => {
     e.preventDefault();
 
+    // Bug 1: Guard — must be logged in to submit
+    if (!isLoggedIn || !userProfile?.uid) {
+      showToast('Please log in or register an account before submitting a reseller application!', 'error');
+      openAuth('login');
+      return;
+    }
+
     if (!storeName.trim()) {
       showToast('Please enter your Store / Shop Name!', 'error');
       return;
@@ -47,11 +54,27 @@ export const ResellerProgramPage = () => {
       return;
     }
 
+    // Bug 2: Prevent duplicate applications
+    const existingApp = (resellerApplications || []).find(app =>
+      (userProfile?.uid && app.userId === userProfile.uid) ||
+      (userProfile?.email && app.emailAddress?.toLowerCase() === userProfile.email.toLowerCase())
+    );
+    if (existingApp) {
+      if (existingApp.status === 'APPROVED') {
+        showToast('You are already an approved Reseller Partner! Open your Reseller Dashboard.', 'error');
+      } else if (existingApp.status === 'PENDING') {
+        showToast('You already have a pending application! Our team will review it within 24 hours.', 'error');
+      } else {
+        showToast('A previous application was found. Please contact support if you believe this is an error.', 'error');
+      }
+      return;
+    }
+
     setIsSubmitting(true);
 
     const newApp = {
       id: 'APP-' + Math.floor(10000 + Math.random() * 90000),
-      userId: userProfile?.uid || 'usr-' + Date.now(),
+      userId: userProfile?.uid,
       realName: realName || userProfile?.name || 'Partner Reseller',
       storeName: storeName.trim(),
       whatsappNumber: whatsappNumber.trim(),
@@ -195,7 +218,7 @@ export const ResellerProgramPage = () => {
             </div>
 
             <button
-              onClick={openResellerLoginPage}
+              onClick={() => openAuth('reseller')}
               className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-red-600/25 cursor-pointer uppercase tracking-wider active:scale-[0.99]"
             >
               <span>LOGIN</span>
@@ -237,7 +260,18 @@ export const ResellerProgramPage = () => {
             </div>
 
             <button
-              onClick={() => setIsSubmittedSuccess(false)}
+              onClick={() => {
+                // Bug 10: Reset all form state when submitting another application
+                setIsSubmittedSuccess(false);
+                setStoreName('');
+                setWhatsappNumber(userProfile?.phone || '');
+                setEmailAddress(userProfile?.email || '');
+                setRealName(userProfile?.name || '');
+                setIsRunningStore(false);
+                setHasSocialReach(false);
+                setDailySale('2,000 - 5,000 LKR');
+                setAgreedTerms(false);
+              }}
               className="px-6 py-2.5 rounded-full bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700 transition-colors"
             >
               Submit Another Application

@@ -694,7 +694,9 @@ export const AppProvider = ({ children }) => {
 
   const addOrder = (newOrder) => {
     setOrders(prev => [newOrder, ...prev]);
-    saveOrderToFirestore(userProfile?.uid || 'guest', newOrder);
+    // Bug 5: Use best available identifier so reseller orders don't save under 'guest'
+    const saveKey = userProfile?.uid || userProfile?.resellerCode || userProfile?.email || 'guest';
+    saveOrderToFirestore(saveKey, newOrder);
   };
 
   const updateOrderStatus = (orderId, newStatus, moongoldRef = null) => {
@@ -1367,6 +1369,17 @@ export const AppProvider = ({ children }) => {
     updateResellerApplicationStatusInFirestore(targetId || targetUserId, targetUserId, newStatus, targetFirestoreId, securityKey, resellerCode);
     
     if (newStatus === 'APPROVED') {
+      // Bug 8: Update usersList so the approved user's record reflects reseller status
+      setUsersList(prev => prev.map(u => {
+        const matchUid = targetUserId && u.uid === targetUserId;
+        const matchEmail = targetApp?.emailAddress && u.email &&
+          u.email.toLowerCase() === targetApp.emailAddress.toLowerCase();
+        if (matchUid || matchEmail) {
+          return { ...u, isReseller: true, role: 'reseller', resellerStatus: 'APPROVED', resellerCode, securityKey };
+        }
+        return u;
+      }));
+
       if (userId && userProfile?.uid === userId) {
         setUserProfileState(prev => ({ ...prev, isReseller: true, role: 'reseller', resellerStatus: 'APPROVED', resellerCode, securityKey }));
       }
