@@ -1144,12 +1144,12 @@ export const GameTopupPage = () => {
             </p>
 
             {/* Real Payment Logos Image */}
-            <div className="flex items-center justify-center py-2">
+            <div className="flex items-center justify-center py-3">
               <img
                 src="/uploads/index_page/payment_logos.jpg"
                 alt="VISA, Mastercard, Binance Pay, LankaPay, eZ Cash, mCash"
                 className="max-w-full h-auto object-contain"
-                style={{ maxHeight: '90px', width: '100%', maxWidth: '600px' }}
+                style={{ height: '160px', width: '100%', maxWidth: '700px', objectFit: 'contain' }}
               />
             </div>
           </div>
