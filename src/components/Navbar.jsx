@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import {
   Gamepad2, Gift, BookOpen, Download, User, Wallet, ChevronDown,
   Headset, Menu, X, LogIn, UserPlus, Home, ShoppingBag, Smartphone,
-  Crown, ChevronRight, ArrowRight, Star, Zap
+  Crown, ChevronRight, ArrowRight, Star, Zap, LogOut
 } from 'lucide-react';
 
 export const Navbar = () => {
@@ -27,7 +27,8 @@ export const Navbar = () => {
     openResellerPage,
     isResellerPageOpen,
     openResellerDashboard,
-    isResellerDashboardOpen
+    isResellerDashboardOpen,
+    handleLogout
   } = useApp();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -422,6 +423,25 @@ export const Navbar = () => {
                 <ChevronRight className={`w-3.5 h-3.5 shrink-0 transition-all group-hover:translate-x-0.5 ${item.active ? 'text-[#cc040a]' : 'text-slate-300'}`} />
               </button>
             ))}
+
+            {/* ── Logout button — right after My Orders ── */}
+            {isUserLoggedIn && (
+              <>
+                <div className="mx-2 my-1 h-px bg-slate-100" />
+                <button
+                  onClick={() => { handleLogout && handleLogout(); setIsMobileMenuOpen(false); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-150 cursor-pointer group border border-transparent hover:bg-red-50 hover:border-red-200 active:scale-[0.98]"
+                >
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-red-50 group-hover:bg-[#cc040a] transition-all group-hover:scale-105 group-hover:shadow-md group-hover:shadow-red-600/25">
+                    <LogOut className="w-4 h-4 text-[#cc040a] group-hover:text-white transition-colors" />
+                  </div>
+                  <span className="flex-1 text-sm font-bold text-[#cc040a] group-hover:font-black">
+                    Logout
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5 shrink-0 text-red-300 group-hover:translate-x-0.5 transition-all" />
+                </button>
+              </>
+            )}
           </nav>
         ) : (
           <div className="flex-1" />
