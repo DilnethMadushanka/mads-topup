@@ -851,7 +851,7 @@ export const GameTopupPage = () => {
                 <h2 className="text-lg font-black text-slate-900 font-heading leading-none">
                   Select Payment Method
                 </h2>
-                <div className="w-12 h-1 bg-amber-500 rounded-full mt-1.5"></div>
+                <div className="w-12 h-1 bg-[#cc040a] rounded-full mt-1.5"></div>
               </div>
             </div>
 
@@ -864,14 +864,14 @@ export const GameTopupPage = () => {
                     onClick={() => setSelectedPayment(method)}
                     className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
                       isSelected
-                        ? 'bg-[#cc040a] text-white border-blue-600 shadow-md shadow-blue-500/20'
-                        : 'bg-white text-slate-900 border-slate-200 hover:border-slate-300'
+                        ? 'bg-[#cc040a] text-white border-[#cc040a] shadow-md shadow-red-600/20'
+                        : 'bg-white text-slate-900 border-slate-200 hover:border-[#cc040a]/40'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-2xl">{method.icon}</span>
                       <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                        isSelected ? 'bg-white text-blue-700' : 'bg-blue-100 text-blue-800'
+                        isSelected ? 'bg-white text-[#cc040a]' : 'bg-red-50 text-[#cc040a] border border-red-100'
                       }`}>
                         {method.badge}
                       </span>
@@ -879,7 +879,7 @@ export const GameTopupPage = () => {
 
                     <div>
                       <div className="font-extrabold text-sm font-heading">{method.name}</div>
-                      <div className={`text-xs mt-0.5 ${isSelected ? 'text-blue-100' : 'text-slate-500'}`}>
+                      <div className={`text-xs mt-0.5 ${isSelected ? 'text-red-100' : 'text-slate-500'}`}>
                         {method.subtitle}
                       </div>
                     </div>
@@ -926,7 +926,7 @@ export const GameTopupPage = () => {
 
             {/* Payment Details Instructions & R2 Upload */}
             {selectedPayment.accountDetails && (
-              <div id="receipt-upload-section" className="bg-slate-50 p-4 rounded-2xl border-2 border-blue-200 text-xs space-y-3 mb-6 transition-all shadow-sm">
+              <div id="receipt-upload-section" className="bg-slate-50 p-4 rounded-2xl border-2 border-[#cc040a]/20 text-xs space-y-3 mb-6 transition-all shadow-sm">
                 <div className="font-extrabold text-slate-900 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <CreditCard className="w-4 h-4 text-[#cc040a]" />
@@ -1132,10 +1132,10 @@ export const GameTopupPage = () => {
             )}
           </div>
 
-          {/* 100% SECURE PAYMENTS BANNER (Matching Screenshot 4) */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-8 text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs mb-3 border border-emerald-200">
-              <Shield className="w-4 h-4 text-emerald-600" />
+          {/* 100% SECURE PAYMENTS BANNER */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 sm:p-8 text-center mb-12">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-50 text-[#cc040a] font-bold text-xs mb-3 border border-red-100">
+              <Shield className="w-4 h-4 text-[#cc040a]" />
               <span>100% Secure Payments</span>
             </div>
 
@@ -1143,29 +1143,14 @@ export const GameTopupPage = () => {
               We accept a wide range of secure payment methods:
             </p>
 
-            {/* Payment Method Badges Row */}
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              <div className="px-4 py-2 bg-slate-50 rounded-xl border border-slate-200 font-black text-xs text-blue-800 font-mono tracking-wider">
-                VISA
-              </div>
-              <div className="px-4 py-2 bg-slate-50 rounded-xl border border-slate-200 font-black text-xs text-red-600 font-mono tracking-wider">
-                MasterCard
-              </div>
-              <div className="px-4 py-2 bg-slate-50 rounded-xl border border-slate-200 font-black text-xs text-cyan-600 font-mono tracking-wider">
-                AMEX
-              </div>
-              <div className="px-4 py-2 bg-slate-50 rounded-xl border border-slate-200 font-black text-xs text-amber-600 font-mono tracking-wider">
-                BINANCE PAY
-              </div>
-              <div className="px-4 py-2 bg-slate-50 rounded-xl border border-slate-200 font-black text-xs text-red-500 font-mono tracking-wider">
-                LankaPay
-              </div>
-              <div className="px-4 py-2 bg-slate-50 rounded-xl border border-slate-200 font-black text-xs text-emerald-600 font-mono tracking-wider">
-                eZ Cash
-              </div>
-              <div className="px-4 py-2 bg-slate-50 rounded-xl border border-slate-200 font-black text-xs text-amber-500 font-mono tracking-wider">
-                mCash
-              </div>
+            {/* Real Payment Logos Image */}
+            <div className="flex items-center justify-center">
+              <img
+                src="/uploads/index_page/payment_logos.jpg"
+                alt="VISA, Mastercard, Binance Pay, LankaPay, eZ Cash, mCash"
+                className="max-w-full h-auto object-contain"
+                style={{ maxHeight: '60px' }}
+              />
             </div>
           </div>
         </>
