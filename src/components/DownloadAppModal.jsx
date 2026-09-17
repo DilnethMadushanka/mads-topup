@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import {
   X, Smartphone, ShieldCheck, Zap, ArrowRight, Share2,
-  Sparkles, PlusSquare, MoreVertical, Download, Apple, Chrome
+  Sparkles, PlusSquare, MoreVertical, Download, Apple, Globe
 } from 'lucide-react';
 
 export const DownloadAppModal = () => {
@@ -151,7 +151,7 @@ export const DownloadAppModal = () => {
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              <Chrome className="w-4 h-4" />
+              <Globe className="w-4 h-4" />
               <span>Android / Chrome</span>
             </button>
           </div>
@@ -162,7 +162,7 @@ export const DownloadAppModal = () => {
             <div className="text-[11px] font-black text-[#cc040a] uppercase tracking-widest flex items-center gap-1.5">
               {activeTab === 'ios'
                 ? <><Apple className="w-3.5 h-3.5" /> How to Add on iPhone / iPad (Safari)</>
-                : <><Chrome className="w-3.5 h-3.5" /> How to Add on Android (Chrome / Samsung)</>
+                : <><Globe className="w-3.5 h-3.5" /> How to Add on Android (Chrome / Samsung)</>
               }
             </div>
 
