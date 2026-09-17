@@ -177,30 +177,16 @@ export const HeroSection = () => {
         </div>
 
         {/* Hero Title: White MADS + Red TOPUP — single h1 for SEO */}
-        <div className="space-y-0 relative">
-          {/* Frosted glass blur backdrop behind text */}
-          <div
-            className="absolute inset-x-0 inset-y-0 rounded-3xl pointer-events-none"
-            style={{
-              background: 'linear-gradient(135deg, rgba(0,0,0,0.38) 0%, rgba(10,0,0,0.32) 100%)',
-              backdropFilter: 'blur(14px)',
-              WebkitBackdropFilter: 'blur(14px)',
-              borderRadius: '28px',
-              padding: '10px 32px',
-              margin: '-10px -24px',
-              border: '1px solid rgba(255,255,255,0.07)',
-              boxShadow: '0 8px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)',
-            }}
-          />
-          <h1 className="font-black font-heading tracking-tighter uppercase leading-none relative z-10 px-6 py-2">
+        <div className="space-y-0">
+          <h1 className="font-black font-heading tracking-tighter uppercase leading-none">
 
-            {/* MADS — bigger, white with entrance + glow */}
+            {/* MADS — bigger, white with strong text-shadow highlight */}
             <span className="block text-6xl sm:text-9xl lg:text-[10rem] text-white hero-mads-text">
               MADS
             </span>
 
-            {/* TOPUP — smaller than MADS, red with entrance + glow pulse */}
-            <span className="block text-4xl sm:text-6xl lg:text-8xl text-[#cc040a] hero-topup-text" style={{ marginTop: '-0.1em' }}>
+            {/* TOPUP — smaller than MADS, red with strong text-shadow highlight */}
+            <span className="block text-4xl sm:text-6xl lg:text-8xl text-[#cc040a] hero-topup-text" style={{ marginTop: '-0.05em' }}>
               TOPUP
             </span>
           </h1>
@@ -209,7 +195,7 @@ export const HeroSection = () => {
         <style>{`
           /* ── MADS: entrance then white glow breathe ─────── */
           .hero-mads-text {
-            -webkit-text-stroke: 1px rgba(255,255,255,0.12);
+            -webkit-text-stroke: 2px rgba(255,255,255,0.15);
             animation: hero-mads-enter 0.7s cubic-bezier(0.34,1.56,0.64,1) 0.3s both,
                        hero-mads-glow  4s ease-in-out 1s infinite;
           }
@@ -222,24 +208,26 @@ export const HeroSection = () => {
           @keyframes hero-mads-glow {
             0%, 100% {
               text-shadow:
-                0 2px 4px rgba(0,0,0,0.92),
-                0 6px 20px rgba(0,0,0,0.85),
-                0 14px 40px rgba(0,0,0,0.7),
-                0 0 55px rgba(255,255,255,0.18);
+                2px 2px 0px rgba(0,0,0,1),
+                0 4px 8px rgba(0,0,0,1),
+                0 8px 24px rgba(0,0,0,0.95),
+                0 16px 48px rgba(0,0,0,0.85),
+                0 0 60px rgba(255,255,255,0.22);
             }
             50% {
               text-shadow:
-                0 2px 4px rgba(0,0,0,0.92),
-                0 6px 20px rgba(0,0,0,0.85),
-                0 14px 40px rgba(0,0,0,0.7),
-                0 0 80px rgba(255,255,255,0.38),
-                0 0 130px rgba(255,255,255,0.14);
+                2px 2px 0px rgba(0,0,0,1),
+                0 4px 8px rgba(0,0,0,1),
+                0 8px 24px rgba(0,0,0,0.95),
+                0 16px 48px rgba(0,0,0,0.85),
+                0 0 90px rgba(255,255,255,0.45),
+                0 0 140px rgba(255,255,255,0.18);
             }
           }
 
           /* ── TOPUP: entrance then red glow pulse ────────── */
           .hero-topup-text {
-            -webkit-text-stroke: 1px rgba(180,0,0,0.2);
+            -webkit-text-stroke: 1px rgba(120,0,0,0.4);
             animation: hero-topup-enter 0.7s cubic-bezier(0.34,1.56,0.64,1) 0.45s both,
                        hero-topup-pulse 3s ease-in-out 1.2s infinite;
           }
@@ -252,20 +240,22 @@ export const HeroSection = () => {
           @keyframes hero-topup-pulse {
             0%, 100% {
               text-shadow:
-                0 2px 4px rgba(0,0,0,0.95),
-                0 6px 22px rgba(0,0,0,0.88),
-                0 14px 40px rgba(0,0,0,0.78),
-                0 0 38px rgba(204,4,10,0.65),
-                0 0 75px rgba(204,4,10,0.38);
+                2px 2px 0px rgba(0,0,0,1),
+                0 4px 10px rgba(0,0,0,1),
+                0 10px 28px rgba(0,0,0,0.95),
+                0 20px 50px rgba(0,0,0,0.85),
+                0 0 40px rgba(204,4,10,0.7),
+                0 0 80px rgba(204,4,10,0.4);
             }
             50% {
               text-shadow:
-                0 2px 4px rgba(0,0,0,0.95),
-                0 6px 22px rgba(0,0,0,0.88),
-                0 14px 40px rgba(0,0,0,0.78),
-                0 0 60px rgba(204,4,10,0.95),
-                0 0 110px rgba(204,4,10,0.65),
-                0 0 180px rgba(204,4,10,0.28);
+                2px 2px 0px rgba(0,0,0,1),
+                0 4px 10px rgba(0,0,0,1),
+                0 10px 28px rgba(0,0,0,0.95),
+                0 20px 50px rgba(0,0,0,0.85),
+                0 0 65px rgba(204,4,10,1),
+                0 0 120px rgba(204,4,10,0.7),
+                0 0 200px rgba(204,4,10,0.3);
             }
           }
         `}</style>
