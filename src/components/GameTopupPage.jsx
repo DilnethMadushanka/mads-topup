@@ -457,9 +457,9 @@ export const GameTopupPage = () => {
             {/* Background Cover Image with Gradient Overlay */}
             <div className="absolute inset-0 z-0">
               <img 
-                src={selectedGame.banner} 
+                src={selectedGame.heroBanner || selectedGame.banner} 
                 alt={selectedGame.name} 
-                className="w-full h-full object-cover opacity-40 blur-[1px] scale-105"
+                className="w-full h-full object-cover opacity-50 scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-slate-950/30"></div>
             </div>

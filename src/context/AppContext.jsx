@@ -25,7 +25,24 @@ export const AppProvider = ({ children }) => {
   const [currency, setCurrency] = useState('LKR'); // 'LKR' | 'USD'
   const [exchangeRate] = useState(340); // 1 USD = 340 LKR
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedGame, setSelectedGame] = useState(null);
+  const [selectedGame, setSelectedGameRaw] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('mads_selected_game_id');
+      if (saved) {
+        const found = GAMES_DATA.find(g => g.id === saved);
+        if (found) return found;
+      }
+    } catch {}
+    return null;
+  });
+
+  const setSelectedGame = (game) => {
+    setSelectedGameRaw(game);
+    try {
+      if (game?.id) sessionStorage.setItem('mads_selected_game_id', game.id);
+      else sessionStorage.removeItem('mads_selected_game_id');
+    } catch {}
+  };
   const [isTopupModalOpen, setIsTopupModalOpen] = useState(false);
   const [isUserProfileOpen, setIsUserProfileOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(() => {
