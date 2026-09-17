@@ -1815,5 +1815,108 @@ export const subscribePopupAdConfigFromFirestore = (callback) => {
   };
 };
 
+/* ================================================================
+   SUPPORT TICKET SYSTEM — Firestore + RTDB dual-sync
+   ================================================================ */
 
+/**
+ * Save or update a full support ticket document in both RTDB and Firestore.
+ * ticketId is used as the document / RTDB node key.
+ */
+export const saveSupportTicketToFirestore = async (ticket) => {
+  if (!ticket || !ticket.id) return false;
+  const key = String(ticket.id).replace(/[.#$[\]]/g, '_');
 
+  if (rtdb) {
+    try {
+      const tRef = dbRef(rtdb, `supportTickets/${key}`);
+      await rtdbSet(tRef, ticket);
+    } catch (e) { console.warn('[firestoreService] RTDB ticket save note:', e); }
+  }
+
+  if (db) {
+    try {
+      const tDocRef = doc(db, 'supportTickets', key);
+      await setDoc(tDocRef, ticket, { merge: true });
+    } catch (e) { console.warn('[firestoreService] Firestore ticket save note:', e); }
+  }
+  return true;
+};
+
+/**
+ * Merge a partial update into an existing support ticket (status, priority, messages array).
+ */
+export const updateSupportTicketInFirestore = async (ticketId, updates) => {
+  if (!ticketId || !updates) return false;
+  const key = String(ticketId).replace(/[.#$[\]]/g, '_');
+
+  if (rtdb) {
+    try {
+      const tRef = dbRef(rtdb, `supportTickets/${key}`);
+      await rtdbUpdate(tRef, updates);
+    } catch (e) { console.warn('[firestoreService] RTDB ticket update note:', e); }
+  }
+
+  if (db) {
+    try {
+      const tDocRef = doc(db, 'supportTickets', key);
+      await setDoc(tDocRef, updates, { merge: true });
+    } catch (e) { console.warn('[firestoreService] Firestore ticket update note:', e); }
+  }
+  return true;
+};
+
+/**
+ * Real-time subscription to all support tickets.
+ * Fires callback(ticketsArray) immediately from localStorage cache, then from live DB.
+ * Returns an unsubscribe function.
+ */
+export const subscribeSupportTicketsFromFirestore = (callback) => {
+  if (typeof callback !== 'function') return () => {};
+
+  // Seed from localStorage immediately so the UI shows previous data on mount
+  try {
+    const cached = localStorage.getItem('mads_support_tickets');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length > 0) callback(parsed);
+    }
+  } catch (e) {}
+
+  let unsubRtdb = null;
+  let unsubDb = null;
+
+  if (rtdb) {
+    try {
+      const tRef = dbRef(rtdb, 'supportTickets');
+      unsubRtdb = rtdbOnValue(tRef, (snap) => {
+        if (snap.exists()) {
+          const val = snap.val();
+          const tickets = Object.values(val || {}).filter(Boolean);
+          if (tickets.length > 0) {
+            try { localStorage.setItem('mads_support_tickets', JSON.stringify(tickets)); } catch (e) {}
+            callback(tickets);
+          }
+        }
+      });
+    } catch (e) {}
+  }
+
+  if (db) {
+    try {
+      const tCol = collection(db, 'supportTickets');
+      unsubDb = onSnapshot(tCol, (snapshot) => {
+        const tickets = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).filter(Boolean);
+        if (tickets.length > 0) {
+          try { localStorage.setItem('mads_support_tickets', JSON.stringify(tickets)); } catch (e) {}
+          callback(tickets);
+        }
+      });
+    } catch (e) {}
+  }
+
+  return () => {
+    if (typeof unsubRtdb === 'function') unsubRtdb();
+    if (typeof unsubDb === 'function') unsubDb();
+  };
+};

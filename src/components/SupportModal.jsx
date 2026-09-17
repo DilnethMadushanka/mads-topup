@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { uploadToR2Storage } from '../services/storageService';
 import { 
@@ -33,8 +33,16 @@ export const SupportModal = () => {
   const [attachmentUrl, setAttachmentUrl] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
-  // Active Ticket Object
-  const currentTicket = (supportTickets || []).find(t => t.id === activeTicketId) || (supportTickets || [])[0];
+  // Active Ticket Object — Bug 3: no [0] fallback; null if no match
+  const currentTicket = (supportTickets || []).find(t => t.id === activeTicketId) || null;
+
+  // Bug 2: auto-scroll chat to newest message
+  const messagesEndRef = useRef(null);
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [currentTicket?.messages?.length, activeTicketId]);
 
   const handleOpenChat = (ticketId) => {
     setActiveTicketId(ticketId);
@@ -72,6 +80,7 @@ export const SupportModal = () => {
     });
 
     setSubject('');
+    setCategory('Order Issue'); // Bug 6: reset category to default
     setInitialMessage('');
     setSelectedOrderId('');
     setAttachmentUrl('');
@@ -105,9 +114,13 @@ export const SupportModal = () => {
     }
   };
 
-  const userTickets = (supportTickets || []).filter(t => 
-    !userProfile?.email || t.userEmail?.toLowerCase() === userProfile?.email?.toLowerCase() || t.userId === userProfile?.uid
-  );
+  // Bug 1: Return empty array when not logged in — prevents data leak to unauthenticated users
+  const userTickets = !isLoggedIn
+    ? []
+    : (supportTickets || []).filter(t =>
+        t.userEmail?.toLowerCase() === userProfile?.email?.toLowerCase() ||
+        t.userId === userProfile?.uid
+      );
 
   return (
     <>
@@ -409,6 +422,8 @@ export const SupportModal = () => {
                         </div>
                       );
                     })}
+                  {/* Bug 2: scroll anchor */}
+                  <div ref={messagesEndRef} />
                   </div>
 
                   {/* Chat Reply Input Bar */}

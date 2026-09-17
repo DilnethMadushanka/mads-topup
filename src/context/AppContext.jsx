@@ -11,7 +11,8 @@ import {
   saveCustomGamePricesToFirestore, subscribeCustomGamePricesFromFirestore, generateUniqueSecurityKey, ensureResellerCredentials,
   saveManualPaymentToFirestore, updateManualPaymentStatusInFirestore, subscribeManualPaymentsFromFirestore, creditUserWalletInDatabase, setUserExactBalanceInDatabase,
   saveVouchersToFirestore, subscribeVouchersFromFirestore, redeemVoucherInDatabase,
-  savePopupAdConfigToFirestore, subscribePopupAdConfigFromFirestore, DEFAULT_POPUP_AD_CONFIG
+  savePopupAdConfigToFirestore, subscribePopupAdConfigFromFirestore, DEFAULT_POPUP_AD_CONFIG,
+  saveSupportTicketToFirestore, updateSupportTicketInFirestore, subscribeSupportTicketsFromFirestore
 } from '../services/firestoreService';
 
 
@@ -1196,6 +1197,22 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem('mads_support_tickets', JSON.stringify(supportTickets));
   }, [supportTickets]);
 
+  // Real-time Firestore sync for support tickets (connects admin ↔ customer)
+  useEffect(() => {
+    const unsub = subscribeSupportTicketsFromFirestore((liveTickets) => {
+      if (!Array.isArray(liveTickets) || liveTickets.length === 0) return;
+      setSupportTickets(prev => {
+        const map = new Map();
+        (prev || []).forEach(t => { if (t?.id) map.set(t.id, t); });
+        liveTickets.forEach(t => {
+          if (t?.id) map.set(t.id, { ...map.get(t.id), ...t });
+        });
+        return Array.from(map.values());
+      });
+    });
+    return () => unsub();
+  }, []);
+
   const createSupportTicket = ({ subject, category, message, orderId, attachmentUrl }) => {
     const newTicket = {
       id: 'TCK-' + Math.floor(1000 + Math.random() * 9000),
@@ -1222,6 +1239,8 @@ export const AppProvider = ({ children }) => {
     };
     setSupportTickets(prev => [newTicket, ...prev]);
     setActiveTicketId(newTicket.id);
+    // Persist to Firestore so admin sees ticket immediately
+    saveSupportTicketToFirestore(newTicket);
     showToast('Support ticket submitted! Our 24/7 team will respond shortly.');
     return newTicket;
   };
@@ -1237,12 +1256,15 @@ export const AppProvider = ({ children }) => {
           attachmentUrl: attachmentUrl || null,
           timestamp: new Date().toISOString()
         };
-        return {
+        const updated = {
           ...tck,
           status: senderRole === 'admin' ? (tck.status === 'OPEN' ? 'IN_PROGRESS' : tck.status) : 'OPEN',
           updatedAt: new Date().toISOString(),
           messages: [...tck.messages, newMessage]
         };
+        // Persist full updated ticket to Firestore
+        saveSupportTicketToFirestore(updated);
+        return updated;
       }
       return tck;
     }));
@@ -1251,7 +1273,9 @@ export const AppProvider = ({ children }) => {
   const updateTicketStatus = (ticketId, newStatus) => {
     setSupportTickets(prev => prev.map(tck => {
       if (tck.id === ticketId) {
-        return { ...tck, status: newStatus, updatedAt: new Date().toISOString() };
+        const updated = { ...tck, status: newStatus, updatedAt: new Date().toISOString() };
+        updateSupportTicketInFirestore(ticketId, { status: newStatus, updatedAt: updated.updatedAt });
+        return updated;
       }
       return tck;
     }));
@@ -1261,7 +1285,9 @@ export const AppProvider = ({ children }) => {
   const updateTicketPriority = (ticketId, newPriority) => {
     setSupportTickets(prev => prev.map(tck => {
       if (tck.id === ticketId) {
-        return { ...tck, priority: newPriority, updatedAt: new Date().toISOString() };
+        const updated = { ...tck, priority: newPriority, updatedAt: new Date().toISOString() };
+        updateSupportTicketInFirestore(ticketId, { priority: newPriority, updatedAt: updated.updatedAt });
+        return updated;
       }
       return tck;
     }));
