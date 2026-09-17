@@ -98,7 +98,7 @@ export const Navbar = () => {
     { label: 'Download App', icon: Smartphone, color: 'text-sky-500', bg: 'bg-sky-50', action: () => { setIsDownloadAppModalOpen(true); setIsMobileMenuOpen(false); }, badge: 'NEW' },
     isReseller
       ? { label: 'Reseller Dashboard', icon: Crown, color: 'text-amber-500', bg: 'bg-amber-50', action: () => { openResellerDashboard(); setIsMobileMenuOpen(false); }, badge: 'PARTNER', active: isResellerDashboardOpen }
-      : { label: 'Reseller Program', icon: Crown, color: 'text-cyan-500', bg: 'bg-cyan-50', action: () => { openResellerPage(); setIsMobileMenuOpen(false); }, active: isResellerPageOpen },
+      : { label: 'Referral', icon: Gift, color: 'text-[#cc040a]', bg: 'bg-red-50', action: () => { openReferralPage(); setIsMobileMenuOpen(false); }, active: isReferralPageOpen },
     { label: '24/7 Support', icon: Headset, color: 'text-[#cc040a]', bg: 'bg-red-50', action: () => { openContactPage(); setIsMobileMenuOpen(false); } },
     { label: 'My Orders', icon: ShoppingBag, color: 'text-indigo-500', bg: 'bg-indigo-50', action: () => { if (isUserLoggedIn) { openUserProfilePage(); } else { openAuth('login'); } setIsMobileMenuOpen(false); }, count: isUserLoggedIn ? (orders || []).length || 0 : 0 },
   ];
@@ -146,7 +146,7 @@ export const Navbar = () => {
               </button>
             ))}
 
-            {/* Reseller */}
+            {/* Referral */}
             {isReseller ? (
               <button onClick={() => openResellerDashboard()}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black text-xs hover:from-amber-400 hover:to-yellow-300 shadow-sm transition-all cursor-pointer shrink-0 mx-1 ${isResellerDashboardOpen ? 'ring-2 ring-amber-400' : ''}`}>
@@ -154,12 +154,12 @@ export const Navbar = () => {
                 <span className="whitespace-nowrap">RESELLER</span>
               </button>
             ) : (
-              <button onClick={() => openResellerPage()}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all cursor-pointer group ${isResellerPageOpen ? 'text-cyan-600 bg-cyan-50 font-black' : 'hover:bg-cyan-50 hover:text-cyan-600'}`}>
-                <span className="w-5 h-5 rounded-md bg-cyan-100 text-cyan-600 flex items-center justify-center shrink-0">
-                  <Crown className="w-3 h-3" />
+              <button onClick={() => openReferralPage()}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all cursor-pointer group ${isReferralPageOpen ? 'text-[#cc040a] bg-red-50 font-black' : 'hover:bg-red-50 hover:text-[#cc040a]'}`}>
+                <span className="w-5 h-5 rounded-md bg-red-50 text-[#cc040a] flex items-center justify-center shrink-0">
+                  <Gift className="w-3 h-3" />
                 </span>
-                <span className="whitespace-nowrap">Reseller</span>
+                <span className="whitespace-nowrap">Referral</span>
               </button>
             )}
 
