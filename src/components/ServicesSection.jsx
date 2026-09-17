@@ -48,49 +48,31 @@ export const ServicesSection = () => {
           </p>
         </div>
 
-        {/* Electric Glow Keyframes */}
-        <style>{`
-          @keyframes redElectricPulse {
-            0%   { box-shadow: 0 0 0 0 rgba(204,4,10,0), 0 0 0 0 rgba(204,4,10,0), 0 8px 32px rgba(204,4,10,0.08); }
-            30%  { box-shadow: 0 0 12px 3px rgba(204,4,10,0.55), 0 0 30px 8px rgba(204,4,10,0.25), 0 8px 48px rgba(204,4,10,0.18); }
-            60%  { box-shadow: 0 0 20px 6px rgba(204,4,10,0.75), 0 0 50px 16px rgba(204,4,10,0.35), 0 0 80px 24px rgba(204,4,10,0.15); }
-            80%  { box-shadow: 0 0 14px 4px rgba(204,4,10,0.6),  0 0 36px 10px rgba(204,4,10,0.28), 0 8px 48px rgba(204,4,10,0.16); }
-            100% { box-shadow: 0 0 20px 6px rgba(204,4,10,0.75), 0 0 50px 16px rgba(204,4,10,0.35), 0 0 80px 24px rgba(204,4,10,0.15); }
-          }
-          .service-card-electric:hover {
-            animation: redElectricPulse 1.2s ease-in-out infinite;
-            border-color: rgba(204,4,10,0.6) !important;
-          }
-          .service-card-electric:hover .card-icon-glow {
-            filter: drop-shadow(0 0 18px rgba(204,4,10,0.5)) drop-shadow(0 0 40px rgba(204,4,10,0.25));
-          }
-        `}</style>
-
-        {/* 3 Cards Grid */}
+        {/* 3 Cards Grid matching screenshot layout & hover effects */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto">
           {services.map((service) => (
             <div
               key={service.id}
               onClick={service.comingSoon ? undefined : service.action}
-              className={`service-card-electric bg-white rounded-3xl p-6 sm:p-8 flex flex-col justify-between items-center text-center border border-slate-200/80 shadow-md hover:-translate-y-2.5 transition-all duration-300 group min-h-[390px] relative overflow-hidden reveal reveal-${service.id === 'topup' ? '1' : service.id === 'cards' ? '2' : '3'} ${service.comingSoon ? 'opacity-80 cursor-default' : 'cursor-pointer'}`}
+              className={`bg-white rounded-3xl p-6 sm:p-8 flex flex-col justify-between items-center text-center border border-slate-200/80 shadow-md hover:shadow-2xl hover:shadow-red-500/15 hover:border-[#cc040a]/40 hover:-translate-y-2.5 transition-all duration-300 group cursor-pointer min-h-[390px] relative overflow-hidden reveal reveal-${service.id === 'topup' ? '1' : service.id === 'cards' ? '2' : '3'} ${service.comingSoon ? 'opacity-80 cursor-default' : ''}`}
             >
-              {/* Top electric accent bar */}
-              <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-transparent via-[#cc040a] to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-t-3xl" />
+              {/* Top Border Indicator Bar (Matching Screenshot Hover Effect) */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-[#cc040a] rounded-t-3xl opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
 
               {/* Coming Soon Badge */}
               {service.comingSoon && (
                 <div className="absolute top-4 right-4 z-20 flex items-center gap-1 bg-[#cc040a] text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-md shadow-red-600/30">
-                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse inline-block" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse inline-block"></span>
                   Coming Soon
                 </div>
               )}
 
-              {/* Icon with glow on hover */}
+              {/* 3D App Icon Container (Direct 3D Icon - Large Size) */}
               <div className="relative w-36 h-36 sm:w-44 sm:h-44 my-3 flex items-center justify-center">
-                <img
-                  src={service.image}
-                  alt={service.title}
-                  className={`card-icon-glow w-full h-full object-contain filter drop-shadow-xl group-hover:scale-[1.08] transition-all duration-300 rounded-3xl ${service.comingSoon ? 'grayscale-[20%]' : ''}`}
+                <img 
+                  src={service.image} 
+                  alt={service.title} 
+                  className={`w-full h-full object-contain filter drop-shadow-xl group-hover:scale-108 transition-transform duration-300 rounded-3xl ${service.comingSoon ? 'grayscale-[20%]' : ''}`}
                 />
               </div>
 
@@ -104,16 +86,22 @@ export const ServicesSection = () => {
                 </p>
               </div>
 
-              {/* Button */}
+              {/* Red Theme Action Button (Matching Screenshot) */}
               <button
                 type="button"
                 disabled={service.comingSoon}
-                onClick={(e) => { e.stopPropagation(); if (!service.comingSoon) service.action(); }}
-                className={`btn-cyan-pill px-7 py-2.5 sm:py-3 text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 group-hover:shadow-lg group-hover:shadow-red-600/40 group-hover:scale-105 active:scale-95 transition-all duration-200 relative z-10 border-0 outline-none ${service.comingSoon ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!service.comingSoon) service.action();
+                }}
+                className={`btn-cyan-pill px-7 py-2.5 sm:py-3 text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 group-hover:shadow-lg group-hover:shadow-red-600/40 group-hover:scale-105 active:scale-95 transition-all duration-200 relative z-10 border-0 outline-none ${
+                  service.comingSoon ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'
+                }`}
               >
                 <span>{service.comingSoon ? 'Coming Soon' : service.buttonText}</span>
                 {!service.comingSoon && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
               </button>
+
             </div>
           ))}
         </div>
