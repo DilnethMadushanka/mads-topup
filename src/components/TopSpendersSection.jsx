@@ -81,7 +81,7 @@ function useCountUp(target, duration = 1200, started = false) {
 /* ─── Avatar ─────────────────────────────────────────── */
 function Avatar({ name, src, size = 64, ring }) {
   const [err, setErr] = useState(false);
-  const initials = (name || '?').trim().split(/\s+/).map(p => p[0]).join('').slice(0, 2).toUpperCase();
+  const initials = (name || '?').trim().split(/\s+/).map(p => p.replace(/[^a-zA-Z]/g, '') || p[0] || '?').filter(Boolean).map(p => p[0]).join('').slice(0, 2).toUpperCase() || (name || '?')[0].toUpperCase();
   const palettes = ['#cc040a,#ff6b6b','#f97316,#fb923c','#7c3aed,#a78bfa','#059669,#34d399','#0284c7,#38bdf8','#db2777,#f472b6','#d97706,#fbbf24'].map(s => s.split(','));
   const [c1, c2] = palettes[(name || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0) % palettes.length];
 
