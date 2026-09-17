@@ -766,7 +766,12 @@ export const AdminDashboard = () => {
     });
     const success = await updateGamePrices(fullPriceMap);
     setIsSavingPrices(false);
-    if (success) showToast('⚡ ALL PACKAGE PRICES SAVED & PUBLISHED LIVE TO DATABASE!');
+    if (success) {
+      setEditedPricesMap({}); // Clear edited state after successful publish
+      showToast('⚡ ALL PACKAGE PRICES SAVED & PUBLISHED LIVE TO DATABASE!');
+    } else {
+      showToast('❌ Failed to save prices. Check connection and try again.', 'error');
+    }
   };
 
   const handleAdImageFileUpload = async (e) => {
@@ -1754,7 +1759,7 @@ export const AdminDashboard = () => {
                               const currentPrice = editedPricesMap[pkg.id] !== undefined ? editedPricesMap[pkg.id] : pkg.priceLkr;
                               const isChanged = editedPricesMap[pkg.id] !== undefined && editedPricesMap[pkg.id] !== pkg.priceLkr;
                               const wholesalePrice = Math.round(currentPrice * 0.95);
-                              const usdPrice = (currentPrice / 305).toFixed(2);
+                              const usdPrice = (currentPrice / 340).toFixed(2);
                               return (
                                 <tr key={pkg.id} className="hover:bg-[var(--adm-surface-hover)] transition-colors">
                                   <td className="p-3 font-bold" style={{ color: 'var(--adm-text)' }}>

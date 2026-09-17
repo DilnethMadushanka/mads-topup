@@ -262,21 +262,25 @@ export const AppProvider = ({ children }) => {
     const unsub = subscribeCustomGamePricesFromFirestore((customPricesMap) => {
       if (!customPricesMap || typeof customPricesMap !== 'object') return;
 
-      GAMES_DATA.forEach(game => {
-        if (game.packages) {
-          game.packages.forEach(pkg => {
-            if (customPricesMap[pkg.id] !== undefined && customPricesMap[pkg.id] !== null) {
-              const newPrice = Number(customPricesMap[pkg.id]);
-              if (!isNaN(newPrice) && newPrice > 0) {
-                pkg.priceLkr = newPrice;
-                pkg.priceUsd = Number((newPrice / 340).toFixed(2));
-              }
+      // Build updated catalog immutably — do not rely on GAMES_DATA mutation for React state
+      const updatedCatalog = GAMES_DATA.map(game => ({
+        ...game,
+        packages: (game.packages || []).map(pkg => {
+          const override = customPricesMap[pkg.id];
+          if (override !== undefined && override !== null) {
+            const newPrice = Number(override);
+            if (!isNaN(newPrice) && newPrice > 0) {
+              // Also patch GAMES_DATA so getVerifiedPackagePriceLkr stays in sync
+              pkg.priceLkr = newPrice;
+              pkg.priceUsd = Number((newPrice / 340).toFixed(2));
+              return { ...pkg, priceLkr: newPrice, priceUsd: Number((newPrice / 340).toFixed(2)) };
             }
-          });
-        }
-      });
+          }
+          return { ...pkg };
+        })
+      }));
 
-      setGamesCatalog(GAMES_DATA.map(g => ({ ...g, packages: [...g.packages] })));
+      setGamesCatalog(updatedCatalog);
     });
 
     return () => unsub();
