@@ -342,8 +342,16 @@ export const dispatchMoongoldOrder = async (orderData) => {
   const idLabel = (orderData.idLabel || orderData.game?.idLabel || '').toLowerCase();
 
   const productId = orderData.package?.moongoldProductId || '215570';
+
+  // Use the game's moongoldCategoryId if available (e.g. Free Fire = '50', MLBB = '1')
+  // Fallback: detect from gameId string
+  const categoryId = orderData.game?.moongoldCategoryId ||
+    (gameId.includes('freefire') ? '50' :
+     gameId.includes('pubg') ? '4' :
+     '1');
+
   const dataPayload = {
-    category: '1',
+    category: String(categoryId),
     'product-id': productId,
     quantity: String(orderData.quantity || 1)
   };
@@ -351,7 +359,8 @@ export const dispatchMoongoldOrder = async (orderData) => {
   if (gameId.includes('pubg') || idLabel.includes('character')) {
     dataPayload['Character ID'] = orderData.playerId || '';
   } else if (gameId.includes('freefire')) {
-    dataPayload['Player ID'] = orderData.playerId || '';
+    // MooGold Free Fire API requires 'User ID' field (not 'Player ID')
+    dataPayload['User ID'] = orderData.playerId || '';
   } else {
     dataPayload['User ID'] = orderData.playerId || '';
     if (orderData.zoneId) {

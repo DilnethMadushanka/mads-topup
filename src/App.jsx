@@ -78,6 +78,24 @@ const MainContent = () => {
     <div className="min-h-screen bg-[#F8FAFF] flex flex-col justify-between pb-0 font-sans text-[#0f172a] overflow-x-hidden">
       <div>
         <Navbar />
+
+        {/* ── Third-Party Reseller Disclaimer Bar (required for brand compliance) ── */}
+        <div id="reseller-disclaimer-bar" style={{
+          background: 'linear-gradient(90deg, #0f172a 0%, #1a0a0a 50%, #0f172a 100%)',
+          borderBottom: '1px solid rgba(204,4,10,0.3)',
+          padding: '6px 16px',
+          textAlign: 'center',
+          fontSize: 10,
+          fontWeight: 600,
+          color: 'rgba(255,255,255,0.45)',
+          letterSpacing: '0.04em',
+          lineHeight: 1.5
+        }}>
+          <span style={{ color: 'rgba(204,4,10,0.8)', fontWeight: 800 }}>⚠️ INDEPENDENT THIRD-PARTY RESELLER</span>
+          {' — '}
+          MADS TOPUP is <strong style={{ color: 'rgba(255,255,255,0.6)' }}>NOT affiliated with, endorsed by, or sponsored by</strong> Garena, Tencent Games, Moonton, NetEase, or any official game publisher.
+          {' All game trademarks belong to their respective owners.'}
+        </div>
         {selectedGame ? (
           <GameTopupPage />
         ) : isUserProfileOpen ? (
@@ -235,10 +253,15 @@ const MainContent = () => {
           </div>
 
           {/* ── Legal disclaimer ──────────────────────────── */}
-          <div style={{ padding: '20px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-            <p style={{ fontSize: 9, fontWeight: 800, color: 'rgba(204,4,10,0.8)', textTransform: 'uppercase', letterSpacing: '0.14em', margin: '0 0 6px' }}>Legal Disclaimer & Trademark Notice</p>
-            <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)', lineHeight: 1.7, margin: 0, fontWeight: 500 }}>
-              MADS TOPUP is an independent 24/7 digital service platform and is not affiliated with, sponsored by, or endorsed by Garena, Tencent Games, Moonton, NetEase Games, or any other official game publisher. All game titles, registered trademarks, logos, and artwork (including Free Fire, PUBG Mobile, Mobile Legends, Blood Strike, Delta Force) belong strictly to their respective copyright holders. Used strictly for identification and digital top-up delivery purposes. DMCA &amp; Copyright Takedown Contact:{' '}
+          <div id="legal-disclaimer" style={{ padding: '20px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', borderTop: '1px solid rgba(204,4,10,0.15)' }}>
+            <p style={{ fontSize: 9, fontWeight: 800, color: 'rgba(204,4,10,0.9)', textTransform: 'uppercase', letterSpacing: '0.14em', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
+              ⚠️ Third-Party Reseller Disclaimer &amp; Trademark Notice
+            </p>
+            <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', lineHeight: 1.8, margin: 0, fontWeight: 500 }}>
+              <strong style={{ color: 'rgba(255,255,255,0.6)' }}>MADS TOPUP is an independent third-party digital top-up reseller and is NOT affiliated with, sponsored by, endorsed by, or officially connected to Garena, Tencent Games, Moonton, NetEase Games, TiMi Studio Group, or any other official game publisher.</strong>{' '}
+              We do not collect any game account passwords or login credentials — only Player UIDs are required for top-up delivery. All top-ups are delivered via the official MooGold reseller API.
+              All game titles, trademarks, logos, and artwork (including Free Fire®, PUBG Mobile®, Mobile Legends: Bang Bang®, Blood Strike®, Delta Force®, Garena Shells®) are registered trademarks of their respective copyright holders and are used strictly for product identification and digital top-up delivery purposes only.
+              DMCA &amp; Copyright Contact:{' '}
               <a href="mailto:info@trivextit.com" style={{ color: '#ff6b6b', fontWeight: 700 }}>info@trivextit.com</a>.
             </p>
           </div>
