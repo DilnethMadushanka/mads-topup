@@ -285,7 +285,9 @@ export const TopSpendersSection = () => {
         {/* Bottom CTA (always visible) */}
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: 20 }}>
           <button className="ts-btn ts-btn-bottom">
-            <Sparkles size={12} /> View Full Leaderboard <ChevronRight size={13} />
+            <span className="ts-btn-dot"></span>
+            View Full Leaderboard
+            <span className="ts-btn-chevron"><ChevronRight size={14} /></span>
           </button>
         </div>
       </div>
@@ -344,21 +346,53 @@ export const TopSpendersSection = () => {
 
         /* ── Buttons ──────────────────────────────────────── */
         .ts-btn {
-          display: flex; align-items: center; gap: 6px;
-          padding: 10px 20px; border-radius: 13px;
-          background: linear-gradient(135deg, #cc040a 0%, #ff4d4f 100%);
-          color: #fff; border: none; cursor: pointer;
-          font-weight: 800; font-size: 12px;
-          box-shadow: 0 6px 20px rgba(204,4,10,0.38);
-          transition: transform 0.2s, box-shadow 0.2s;
+          display: inline-flex; align-items: center; gap: 8px;
+          padding: 11px 28px; border-radius: 14px;
+          background: #ffffff;
+          color: #cc040a;
+          border: 2px solid rgba(204,4,10,0.22);
+          cursor: pointer;
+          font-weight: 900; font-size: 12.5px; letter-spacing: 0.03em;
+          box-shadow: 0 2px 12px rgba(204,4,10,0.10), 0 1px 0 rgba(255,255,255,0.9);
+          transition: all 0.22s cubic-bezier(.22,1,.36,1);
           white-space: nowrap; font-family: inherit;
+          position: relative; overflow: hidden;
+          text-transform: uppercase; letter-spacing: 0.06em;
         }
+        /* shimmer sweep on hover */
+        .ts-btn::before {
+          content: '';
+          position: absolute; inset: 0;
+          background: linear-gradient(110deg, transparent 30%, rgba(204,4,10,0.06) 50%, transparent 70%);
+          transform: translateX(-100%);
+          transition: transform 0.45s ease;
+        }
+        .ts-btn:hover::before { transform: translateX(100%); }
         .ts-btn:hover {
+          background: #cc040a;
+          color: #ffffff;
+          border-color: #cc040a;
           transform: translateY(-2px);
-          box-shadow: 0 10px 28px rgba(204,4,10,0.45);
+          box-shadow: 0 8px 28px rgba(204,4,10,0.38), 0 2px 0 rgba(255,255,255,0.15) inset;
+        }
+        .ts-btn:hover .ts-btn-dot { background: #ffffff; box-shadow: 0 0 0 0 rgba(255,255,255,0.5); }
+        .ts-btn:hover .ts-btn-chevron { color: #ffffff; transform: translateX(3px); }
+        .ts-btn-dot {
+          width: 7px; height: 7px; border-radius: 50%;
+          background: #cc040a;
+          flex-shrink: 0;
+          animation: ts-pulse-dot 1.8s ease-in-out infinite;
+        }
+        .ts-btn-chevron {
+          transition: transform 0.2s; color: #cc040a;
+          display: flex; align-items: center;
+        }
+        @keyframes ts-pulse-dot {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(204,4,10,0.45); }
+          50%       { box-shadow: 0 0 0 5px rgba(204,4,10,0); }
         }
         .ts-btn-desktop { flex-shrink: 0; }
-        .ts-btn-bottom { padding: 11px 28px; }
+        .ts-btn-bottom { padding: 12px 32px; font-size: 13px; }
 
         /* ── Podium panel ─────────────────────────────────── */
         .ts-panel {
