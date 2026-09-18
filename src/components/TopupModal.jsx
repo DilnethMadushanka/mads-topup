@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { PAYMENT_METHODS, getVerifiedPackagePriceLkr } from '../data/games';
 import { checkPlayerIGN, dispatchMoongoldOrder } from '../services/moongoldApi';
 import { uploadToR2Storage } from '../services/storageService';
+import { auth } from '../services/firebaseAuth';
 import confetti from 'canvas-confetti';
 import { 
   X, Check, ShieldCheck, Zap, AlertCircle, RefreshCw, 
@@ -540,7 +541,7 @@ export const TopupModal = () => {
 
                         <div className="mt-3 pt-2 border-t border-slate-200 flex items-center justify-between">
                           <span className="text-sm font-black text-[#cc040a] font-heading">
-                            {formatPrice(pkg.priceLkr)}
+                            {formatLkr(pkg.priceLkr)}
                           </span>
                           <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
                             isSelected ? 'bg-[#cc040a] border-[#cc040a] text-white' : 'border-slate-300'

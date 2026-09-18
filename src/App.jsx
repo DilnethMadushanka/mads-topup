@@ -28,11 +28,12 @@ import { ResellerBannerSection } from './components/ResellerBannerSection';
 import { PopupAdModal } from './components/PopupAdModal';
 import { PolicyModal } from './components/PolicyModal';
 import { ToastNotification } from './components/ToastNotification';
+import { BlogPage } from './components/BlogPage';
 import { ScrollReveal } from './hooks/useScrollReveal';
 import { Flame } from 'lucide-react';
 
 const MainContent = () => {
-  const { setIsAdminOpen, isUserProfileOpen, isWalletModalOpen, openUserProfilePage, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, isReferralPageOpen, isResellerPageOpen, isResellerLoginPageOpen, isResellerDashboardOpen, openResellerPage, openContactPage, openPolicyModal, selectedGame } = useApp();
+  const { setIsAdminOpen, isUserProfileOpen, isWalletModalOpen, openUserProfilePage, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, isReferralPageOpen, isResellerPageOpen, isResellerLoginPageOpen, isResellerDashboardOpen, openResellerPage, openContactPage, openPolicyModal, selectedGame, isBlogPageOpen, openBlogPage } = useApp();
 
   // Security: Prevent Right-Click Inspect Element & DevTools Keyboard Shortcuts
   React.useEffect(() => {
@@ -94,6 +95,8 @@ const MainContent = () => {
           <ContactPage />
         ) : isReviewsPageOpen ? (
           <ReviewsPage />
+        ) : isBlogPageOpen ? (
+          <BlogPage />
         ) : isGameCatalogOpen ? (
           <GameGrid />
         ) : (
@@ -140,7 +143,7 @@ const MainContent = () => {
       </div>
 
       {/* Footer: Only visible on the main home page, not on sub-pages */}
-      {!selectedGame && !isUserProfileOpen && !isWalletModalOpen && !isResellerDashboardOpen && !isResellerLoginPageOpen && !isResellerPageOpen && !isReferralPageOpen && !isContactPageOpen && !isReviewsPageOpen && !isGameCatalogOpen && (
+      {!selectedGame && !isUserProfileOpen && !isWalletModalOpen && !isResellerDashboardOpen && !isResellerLoginPageOpen && !isResellerPageOpen && !isReferralPageOpen && !isContactPageOpen && !isReviewsPageOpen && !isGameCatalogOpen && !isBlogPageOpen && (
       <footer className="bg-gray-950 text-[#ffffff] border-t border-gray-800 pt-16 pb-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 pb-12 border-b border-gray-800">

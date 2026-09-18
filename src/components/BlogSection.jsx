@@ -4,7 +4,7 @@ import { BookOpen, Calendar, User, ArrowRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export const BlogSection = () => {
-  const { showToast } = useApp();
+  const { openBlogPage } = useApp();
 
   return (
     <section id="blog-section" className="py-24 bg-[#F8FAFF] border-t border-slate-200/80">
@@ -29,6 +29,7 @@ export const BlogSection = () => {
           {BLOG_POSTS.map((post) => (
             <div 
               key={post.id}
+              onClick={openBlogPage}
               className="mads-card flex flex-col justify-between group cursor-pointer"
             >
               {/* Image Container */}
@@ -73,7 +74,7 @@ export const BlogSection = () => {
 
                 <div className="pt-4 border-t border-slate-200">
                   <button
-                    onClick={() => showToast(`Reading article: ${post.title}`)}
+                    onClick={(e) => { e.stopPropagation(); openBlogPage(); }}
                     className="text-xs font-bold text-[#cc040a] group-hover:text-[#990207] flex items-center gap-2 cursor-pointer transition-colors"
                   >
                     <span>Read Article</span>
@@ -86,6 +87,18 @@ export const BlogSection = () => {
               <div className="mads-card-glow-bar"></div>
             </div>
           ))}
+        </div>
+
+        {/* View All CTA */}
+        <div className="text-center mt-10">
+          <button
+            onClick={openBlogPage}
+            className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#cc040a] hover:bg-[#990207] text-white font-black text-sm rounded-full transition-all shadow-lg shadow-red-500/25 hover:shadow-red-500/40 cursor-pointer group"
+          >
+            <BookOpen className="w-4 h-4" />
+            <span>View All Articles</span>
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </button>
         </div>
 
       </div>

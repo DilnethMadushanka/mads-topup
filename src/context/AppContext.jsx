@@ -44,7 +44,7 @@ export const AppProvider = ({ children }) => {
     } catch {}
   };
   const [isTopupModalOpen, setIsTopupModalOpen] = useState(false);
-  const [isUserProfileOpen, setIsUserProfileOpen] = useState(false);
+  const [isUserProfileOpen, setIsUserProfileOpen] = useState(() => { try { return sessionStorage.getItem('mads_page') === 'profile'; } catch { return false; } });
   const [isAdminOpen, setIsAdminOpen] = useState(() => {
     if (typeof window !== 'undefined') {
       const path = window.location.pathname.toLowerCase();
@@ -54,13 +54,17 @@ export const AppProvider = ({ children }) => {
     }
     return false;
   });
-  const [isGameCatalogOpen, setIsGameCatalogOpen] = useState(false);
-  const [isReviewsPageOpen, setIsReviewsPageOpen] = useState(false);
-  const [isContactPageOpen, setIsContactPageOpen] = useState(false);
-  const [isReferralPageOpen, setIsReferralPageOpen] = useState(false);
-  const [isResellerPageOpen, setIsResellerPageOpen] = useState(false);
-  const [isResellerLoginPageOpen, setIsResellerLoginPageOpen] = useState(false);
-  const [isResellerDashboardOpen, setIsResellerDashboardOpen] = useState(false);
+  const [isGameCatalogOpen, setIsGameCatalogOpen] = useState(() => { try { return sessionStorage.getItem('mads_page') === 'catalog'; } catch { return false; } });
+  const [isReviewsPageOpen, setIsReviewsPageOpen] = useState(() => { try { return sessionStorage.getItem('mads_page') === 'reviews'; } catch { return false; } });
+  const [isContactPageOpen, setIsContactPageOpen] = useState(() => { try { return sessionStorage.getItem('mads_page') === 'contact'; } catch { return false; } });
+  const [isReferralPageOpen, setIsReferralPageOpen] = useState(() => { try { return sessionStorage.getItem('mads_page') === 'referral'; } catch { return false; } });
+  const [isResellerPageOpen, setIsResellerPageOpen] = useState(() => { try { return sessionStorage.getItem('mads_page') === 'reseller'; } catch { return false; } });
+  const [isResellerLoginPageOpen, setIsResellerLoginPageOpen] = useState(() => { try { return sessionStorage.getItem('mads_page') === 'reseller-login'; } catch { return false; } });
+  const [isResellerDashboardOpen, setIsResellerDashboardOpen] = useState(() => { try { return sessionStorage.getItem('mads_page') === 'reseller-dashboard'; } catch { return false; } });
+  const [isBlogPageOpen, setIsBlogPageOpen] = useState(() => {
+    try { return sessionStorage.getItem('mads_page') === 'blog'; } catch { return false; }
+  });
+
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
@@ -91,7 +95,9 @@ export const AppProvider = ({ children }) => {
     setIsReferralPageOpen(false);
     setIsResellerPageOpen(false);
     setIsGameCatalogOpen(false);
+    setIsBlogPageOpen(false);
     setSelectedGame(null);
+    _savePage(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -100,140 +106,92 @@ export const AppProvider = ({ children }) => {
     setIsAuthModalOpen(true);
   };
 
+  // ── Page persistence helpers ──────────────────────────────────────────────
+  const _savePage = (name) => { try { if (name) sessionStorage.setItem('mads_page', name); else sessionStorage.removeItem('mads_page'); } catch {} };
+  const _clearAllPages = () => {
+    setIsGameCatalogOpen(false); setIsReviewsPageOpen(false); setIsContactPageOpen(false);
+    setIsReferralPageOpen(false); setIsResellerPageOpen(false); setIsResellerLoginPageOpen(false);
+    setIsResellerDashboardOpen(false); setIsBlogPageOpen(false); setIsUserProfileOpen(false);
+    setIsWalletModalOpen(false); setSelectedGame(null);
+  };
+
+  const openBlogPage = () => {
+    _clearAllPages();
+    setIsBlogPageOpen(true);
+    _savePage('blog');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const closeBlogPage = () => { setIsBlogPageOpen(false); _savePage(null); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+
   const openCatalog = () => {
     if (!isLoggedIn && (!auth || !auth.currentUser)) {
       openAuth('login');
       showToast('🔒 Please log in or register an account to access the game catalog!', 'error');
       return;
     }
+    _clearAllPages();
     setIsGameCatalogOpen(true);
-    setIsUserProfileOpen(false);
-    setIsContactPageOpen(false);
-    setIsReviewsPageOpen(false);
-    setIsReferralPageOpen(false);
-    setIsResellerPageOpen(false);
+    _savePage('catalog');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const closeCatalog = () => {
-    setIsGameCatalogOpen(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const closeCatalog = () => { setIsGameCatalogOpen(false); _savePage(null); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
   const openReviewsPage = () => {
+    _clearAllPages();
     setIsReviewsPageOpen(true);
-    setIsUserProfileOpen(false);
-    setIsContactPageOpen(false);
-    setIsReferralPageOpen(false);
-    setIsResellerPageOpen(false);
-    setIsGameCatalogOpen(false);
-    setSelectedGame(null);
+    _savePage('reviews');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  const closeReviewsPage = () => {
-    setIsReviewsPageOpen(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const closeReviewsPage = () => { setIsReviewsPageOpen(false); _savePage(null); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
   const openContactPage = () => {
+    _clearAllPages();
     setIsContactPageOpen(true);
-    setIsUserProfileOpen(false);
-    setIsReviewsPageOpen(false);
-    setIsReferralPageOpen(false);
-    setIsResellerPageOpen(false);
-    setIsGameCatalogOpen(false);
-    setSelectedGame(null);
+    _savePage('contact');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  const closeContactPage = () => {
-    setIsContactPageOpen(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const closeContactPage = () => { setIsContactPageOpen(false); _savePage(null); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
   const openReferralPage = () => {
+    _clearAllPages();
     setIsReferralPageOpen(true);
-    setIsUserProfileOpen(false);
-    setIsContactPageOpen(false);
-    setIsReviewsPageOpen(false);
-    setIsResellerPageOpen(false);
-    setIsGameCatalogOpen(false);
-    setSelectedGame(null);
+    _savePage('referral');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  const closeReferralPage = () => {
-    setIsReferralPageOpen(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const closeReferralPage = () => { setIsReferralPageOpen(false); _savePage(null); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
   const openResellerPage = () => {
+    _clearAllPages();
     setIsResellerPageOpen(true);
-    setIsResellerLoginPageOpen(false);
-    setIsReferralPageOpen(false);
-    setIsUserProfileOpen(false);
-    setIsContactPageOpen(false);
-    setIsReviewsPageOpen(false);
-    setIsGameCatalogOpen(false);
-    setSelectedGame(null);
+    _savePage('reseller');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  const closeResellerPage = () => {
-    setIsResellerPageOpen(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const closeResellerPage = () => { setIsResellerPageOpen(false); _savePage(null); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
   const openResellerLoginPage = () => {
+    _clearAllPages();
     setIsResellerLoginPageOpen(true);
-    setIsResellerPageOpen(false);
-    setIsReferralPageOpen(false);
-    setIsUserProfileOpen(false);
-    setIsContactPageOpen(false);
-    setIsReviewsPageOpen(false);
-    setIsGameCatalogOpen(false);
-    setSelectedGame(null);
+    _savePage('reseller-login');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  const closeResellerLoginPage = () => {
-    setIsResellerLoginPageOpen(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const closeResellerLoginPage = () => { setIsResellerLoginPageOpen(false); _savePage(null); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
   const openResellerDashboard = () => {
+    _clearAllPages();
     setIsResellerDashboardOpen(true);
-    setIsResellerLoginPageOpen(false);
-    setIsResellerPageOpen(false);
-    setIsReferralPageOpen(false);
-    setIsUserProfileOpen(false);
-    setIsContactPageOpen(false);
-    setIsReviewsPageOpen(false);
-    setIsGameCatalogOpen(false);
-    setSelectedGame(null);
+    _savePage('reseller-dashboard');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  const closeResellerDashboard = () => {
-    setIsResellerDashboardOpen(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const closeResellerDashboard = () => { setIsResellerDashboardOpen(false); _savePage(null); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
   const openUserProfilePage = () => {
+    _clearAllPages();
     setIsUserProfileOpen(true);
-    setIsContactPageOpen(false);
-    setIsReviewsPageOpen(false);
-    setIsReferralPageOpen(false);
-    setIsGameCatalogOpen(false);
-    setSelectedGame(null);
+    _savePage('profile');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  const closeUserProfilePage = () => {
-    setIsUserProfileOpen(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const closeUserProfilePage = () => { setIsUserProfileOpen(false); _savePage(null); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
   const [userReviews, setUserReviews] = useState(() => {
     const saved = localStorage.getItem('mads_user_reviews');
@@ -1607,6 +1565,9 @@ export const AppProvider = ({ children }) => {
       setIsResellerDashboardOpen,
       openResellerDashboard,
       closeResellerDashboard,
+      isBlogPageOpen,
+      openBlogPage,
+      closeBlogPage,
       resellerApplications,
       addResellerApplication,
       updateResellerApplicationStatus,

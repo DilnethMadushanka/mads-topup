@@ -452,7 +452,8 @@ export const GameTopupPage = () => {
           </div>
         </div>
       ) : (
-        <>          {/* HERO BANNER (Matching Image 2) */}
+        <>
+          {/* HERO BANNER (Matching Image 2) */}
           <div className="relative rounded-3xl overflow-hidden shadow-2xl mb-8 min-h-[340px] sm:min-h-[400px] md:min-h-[460px] bg-slate-950 flex flex-col justify-center items-center p-6 sm:p-10 border border-slate-800/80">
             {/* Background Cover Image with Gradient Overlay */}
             <div className="absolute inset-0 z-0">
@@ -794,15 +795,15 @@ export const GameTopupPage = () => {
                       {isApprovedReseller ? (
                         <div className="flex flex-col items-center">
                           <span className="font-black text-base sm:text-lg text-emerald-600 font-heading tracking-tight leading-none">
-                            {formatPrice(effectivePrice)}
+                            {formatLkr(effectivePrice)}
                           </span>
                           <span className="text-[10px] text-slate-400 line-through font-bold mt-0.5">
-                            {formatPrice(pkg.priceLkr)}
+                            {formatLkr(pkg.priceLkr)}
                           </span>
                         </div>
                       ) : (
                         <div className="font-black text-base sm:text-lg text-[#cc040a] font-heading tracking-tight">
-                          {formatPrice(pkg.priceLkr)}
+                          {formatLkr(pkg.priceLkr)}
                         </div>
                       )}
                     </div>
