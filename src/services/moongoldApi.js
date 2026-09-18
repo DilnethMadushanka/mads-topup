@@ -343,15 +343,10 @@ export const dispatchMoongoldOrder = async (orderData) => {
 
   const productId = orderData.package?.moongoldProductId || '215570';
 
-  // Use the game's moongoldCategoryId if available (e.g. Free Fire = '50', MLBB = '1')
-  // Fallback: detect from gameId string
-  const categoryId = orderData.game?.moongoldCategoryId ||
-    (gameId.includes('freefire') ? '50' :
-     gameId.includes('pubg') ? '4' :
-     '1');
-
+  // MooGold API: category is always '1' for all games (confirmed by MooGold support)
+  // The moongoldCategoryId on the game object is used for product browsing, NOT for order creation
   const dataPayload = {
-    category: String(categoryId),
+    category: '1',
     'product-id': productId,
     quantity: String(orderData.quantity || 1)
   };
