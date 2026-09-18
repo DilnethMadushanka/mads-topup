@@ -300,11 +300,11 @@ async function sendMoongoldLiveOrder(game, pkg, playerId, zoneId, orderRef) {
   const baseUrl = 'https://moogold.com/wp-json/v1/api';
   const apiPath = 'order/create_order';
 
-  const categoryId = game.moongoldCategoryId || (game.id === 'freefire_sg' ? '50' : '1');
+  // MooGold API: category is always '1' for all games (confirmed by MooGold support Erin)
   const productId = pkg.moongoldProductId || '15972928';
 
   const dataPayload = {
-    category: categoryId,
+    category: '1',
     'product-id': productId,
     quantity: '1'
   };
@@ -313,7 +313,8 @@ async function sendMoongoldLiveOrder(game, pkg, playerId, zoneId, orderRef) {
   if (gId.includes('pubg')) {
     dataPayload['Character ID'] = playerId;
   } else if (gId.includes('freefire') || gId.includes('ff')) {
-    dataPayload['Player ID'] = playerId;
+    // MooGold requires 'User ID' for Free Fire (confirmed by support)
+    dataPayload['User ID'] = playerId;
   } else {
     dataPayload['User ID'] = playerId;
     if (zoneId) {
