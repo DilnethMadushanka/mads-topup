@@ -9,7 +9,7 @@ import {
   ArrowLeft, Check, ShieldCheck, Zap, AlertCircle, RefreshCw, 
   CreditCard, ChevronRight, BookmarkPlus, CheckCircle2, Copy, UploadCloud, Cloud,
   Clipboard, Plus, Minus, ChevronUp, ChevronDown, HelpCircle, Shield, Edit3, Crown,
-  ArrowUpDown, ArrowUp, ArrowDown
+  ArrowUpDown, ArrowUp, ArrowDown, Headphones
 } from 'lucide-react';
 
 export const GameTopupPage = () => {
@@ -29,7 +29,8 @@ export const GameTopupPage = () => {
     setIsWalletModalOpen,
     openWalletModal,
     isLoggedIn,
-    openAuth
+    openAuth,
+    setIsSupportOpen
   } = useApp();
 
   const [playerId, setPlayerId] = useState('');
@@ -358,7 +359,7 @@ export const GameTopupPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFF] py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    <div className={`min-h-screen bg-[#F8FAFF] py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto${totalItemsCount > 0 ? ' pb-24' : ''}`}>
       
       {/* Top Navigation Bar */}
       <div className="flex items-center justify-between mb-6">
@@ -1030,21 +1031,115 @@ export const GameTopupPage = () => {
             </div>
           </div>
 
-          {/* STICKY MOBILE CART SUMMARY BAR */}
+          {/* STICKY BOTTOM CART BAR — visible on all screen sizes when cart has items */}
           {totalItemsCount > 0 && (
-            <div className="sm:hidden fixed bottom-0 left-0 right-0 z-30 bg-slate-900/95 text-white backdrop-blur-md px-4 py-3 border-t border-slate-800 shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom">
-              <div>
-                <span className="text-[10px] text-slate-400 font-bold uppercase block">Total ({totalItemsCount} item)</span>
-                <span className="text-lg font-black text-red-500 font-heading">{formatLkr(totalLkr)}</span>
+            <div
+              style={{
+                position: 'fixed',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                zIndex: 50,
+                background: 'linear-gradient(135deg, rgba(10,10,18,0.97) 0%, rgba(20,10,15,0.98) 100%)',
+                borderTop: '1.5px solid rgba(204,4,10,0.35)',
+                boxShadow: '0 -4px 40px rgba(204,4,10,0.18), 0 -1px 0 rgba(255,255,255,0.04)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                padding: '10px 16px 12px',
+                animation: 'slideUpBar 0.3s cubic-bezier(.22,1,.36,1) both',
+              }}
+            >
+              {/* Animated top glow line */}
+              <div style={{
+                position: 'absolute', top: 0, left: '10%', right: '10%', height: '1px',
+                background: 'linear-gradient(90deg, transparent, rgba(204,4,10,0.7), transparent)',
+                borderRadius: '1px'
+              }} />
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', maxWidth: '680px', margin: '0 auto', width: '100%' }}>
+
+                {/* LEFT — total info */}
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                  <span style={{ fontSize: '9px', fontWeight: 800, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1 }}>
+                    Total ({totalItemsCount} {totalItemsCount === 1 ? 'item' : 'items'})
+                  </span>
+                  <span style={{
+                    fontSize: '22px', fontWeight: 900, lineHeight: 1.1, marginTop: '2px',
+                    background: 'linear-gradient(135deg, #ff4444 0%, #cc040a 60%, #ff6b35 100%)',
+                    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text', fontFamily: 'inherit',
+                    filter: 'drop-shadow(0 0 8px rgba(204,4,10,0.5))'
+                  }}>
+                    {formatLkr(totalLkr)}
+                  </span>
+                </div>
+
+                {/* RIGHT — support button + top up button */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+
+                  {/* Support Icon Button */}
+                  <button
+                    type="button"
+                    onClick={() => setIsSupportOpen(true)}
+                    title="Live Support"
+                    style={{
+                      width: '42px', height: '42px', borderRadius: '12px', border: 'none',
+                      background: 'rgba(255,255,255,0.07)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: 'rgba(255,255,255,0.75)', cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      outline: '1.5px solid rgba(255,255,255,0.1)',
+                      flexShrink: 0,
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(204,4,10,0.2)'; e.currentTarget.style.color = '#ff4444'; e.currentTarget.style.outline = '1.5px solid rgba(204,4,10,0.5)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.75)'; e.currentTarget.style.outline = '1.5px solid rgba(255,255,255,0.1)'; }}
+                  >
+                    <Headphones style={{ width: '18px', height: '18px' }} />
+                  </button>
+
+                  {/* Top Up CTA */}
+                  <button
+                    type="button"
+                    onClick={handleCompleteOrder}
+                    disabled={isSubmitting}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '7px',
+                      padding: '0 20px', height: '42px', borderRadius: '13px',
+                      border: 'none', cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                      background: isSubmitting
+                        ? 'rgba(150,0,0,0.5)'
+                        : 'linear-gradient(135deg, #e8060c 0%, #cc040a 50%, #a00208 100%)',
+                      boxShadow: isSubmitting ? 'none' : '0 4px 20px rgba(204,4,10,0.55), inset 0 1px 0 rgba(255,255,255,0.15)',
+                      color: '#fff', fontWeight: 900, fontSize: '13px',
+                      letterSpacing: '0.02em', whiteSpace: 'nowrap',
+                      transition: 'all 0.2s',
+                      flexShrink: 0,
+                      opacity: isSubmitting ? 0.7 : 1,
+                    }}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <RefreshCw style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} />
+                        <span>Processing…</span>
+                      </>
+                    ) : (
+                      <>
+                        <Zap style={{ width: '15px', height: '15px', fill: '#fff' }} />
+                        <span>Top Up</span>
+                      </>
+                    )}
+                  </button>
+
+                </div>
               </div>
-              <button
-                onClick={handleCompleteOrder}
-                disabled={isSubmitting}
-                className="px-6 py-2.5 bg-[#cc040a] hover:bg-[#990207] text-white font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-md shadow-red-600/30 cursor-pointer"
-              >
-                <Zap className="w-3.5 h-3.5 fill-white" />
-                <span>Top Up Now</span>
-              </button>
+
+              {/* Slide-up keyframes injected once */}
+              <style>{`
+                @keyframes slideUpBar {
+                  from { transform: translateY(100%); opacity: 0; }
+                  to   { transform: translateY(0);    opacity: 1; }
+                }
+              `}</style>
             </div>
           )}
 
