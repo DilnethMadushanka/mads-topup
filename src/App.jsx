@@ -78,24 +78,6 @@ const MainContent = () => {
     <div className="min-h-screen bg-[#F8FAFF] flex flex-col justify-between pb-0 font-sans text-[#0f172a] overflow-x-hidden">
       <div>
         <Navbar />
-
-        {/* ── Third-Party Reseller Disclaimer Bar (required for brand compliance) ── */}
-        <div id="reseller-disclaimer-bar" style={{
-          background: 'linear-gradient(90deg, #0f172a 0%, #1a0a0a 50%, #0f172a 100%)',
-          borderBottom: '1px solid rgba(204,4,10,0.3)',
-          padding: '6px 16px',
-          textAlign: 'center',
-          fontSize: 10,
-          fontWeight: 600,
-          color: 'rgba(255,255,255,0.45)',
-          letterSpacing: '0.04em',
-          lineHeight: 1.5
-        }}>
-          <span style={{ color: 'rgba(204,4,10,0.8)', fontWeight: 800 }}>⚠️ INDEPENDENT THIRD-PARTY RESELLER</span>
-          {' — '}
-          MADS TOPUP is <strong style={{ color: 'rgba(255,255,255,0.6)' }}>NOT affiliated with, endorsed by, or sponsored by</strong> Garena, Tencent Games, Moonton, NetEase, or any official game publisher.
-          {' All game trademarks belong to their respective owners.'}
-        </div>
         {selectedGame ? (
           <GameTopupPage />
         ) : isUserProfileOpen ? (
