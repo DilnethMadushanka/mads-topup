@@ -84,6 +84,9 @@ export const SupportModal = () => {
     setSelectedOrderId('');
     setAttachmentUrl('');
     setAttachmentFile(null);
+    if (created?.id) {
+      setActiveTicketId(created.id);
+    }
     setView('chat');
   };
 
@@ -119,6 +122,15 @@ export const SupportModal = () => {
     : (supportTickets || []).filter(t =>
         t.userEmail?.toLowerCase() === userProfile?.email?.toLowerCase() ||
         t.userId === userProfile?.uid
+      );
+
+  // Filter orders strictly for current user
+  const userOrders = !isLoggedIn
+    ? []
+    : (orders || []).filter(o =>
+        o.userId === userProfile?.uid ||
+        o.userEmail?.toLowerCase() === userProfile?.email?.toLowerCase() ||
+        (userProfile?.phone && o.phone === userProfile?.phone)
       );
 
   return (
@@ -250,12 +262,12 @@ export const SupportModal = () => {
                       ))}
                     </div>
                   </div>
-                  {orders && orders.length > 0 && (
+                  {userOrders && userOrders.length > 0 && (
                     <div>
                       <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: '#475569', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Link Related Order</label>
                       <select value={selectedOrderId} onChange={e => setSelectedOrderId(e.target.value)} style={{ width: '100%', background: '#fff', border: '2px solid #e2e8f0', borderRadius: 14, padding: '10px 14px', fontSize: 12, outline: 'none' }} onFocus={e => e.target.style.borderColor = '#cc040a'} onBlur={e => e.target.style.borderColor = '#e2e8f0'}>
                         <option value="">— No specific order —</option>
-                        {orders.map(o => <option key={o.id} value={o.id}>{o.id} · {o.gameName} ({o.packageName})</option>)}
+                        {userOrders.map(o => <option key={o.id} value={o.id}>{o.id} · {o.gameName} ({o.packageName})</option>)}
                       </select>
                     </div>
                   )}
@@ -346,6 +358,20 @@ export const SupportModal = () => {
                       </button>
                     </div>
                   </form>
+                </div>
+              )}
+
+              {/* CHAT VIEW FALLBACK (If ticket not found) */}
+              {view === 'chat' && !currentTicket && (
+                <div style={{ textAlign: 'center', padding: '48px 16px' }}>
+                  <div style={{ width: 64, height: 64, borderRadius: 20, background: '#fff0f0', border: '1.5px solid #fecaca', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                    <AlertCircle style={{ width: 28, height: 28, color: '#cc040a' }} />
+                  </div>
+                  <h4 style={{ margin: '0 0 8px', fontWeight: 900, fontSize: 15, color: '#0f172a' }}>Ticket Not Found</h4>
+                  <p style={{ margin: '0 0 20px', fontSize: 12, color: '#64748b', lineHeight: 1.6, maxWidth: 280, marginLeft: 'auto', marginRight: 'auto' }}>This ticket could not be loaded or may have been closed.</p>
+                  <button onClick={() => setView('list')} style={{ background: 'linear-gradient(135deg,#cc040a,#ff3b41)', border: 'none', borderRadius: 14, padding: '10px 24px', color: '#fff', fontWeight: 800, fontSize: 12, cursor: 'pointer', boxShadow: '0 4px 16px rgba(204,4,10,0.3)' }}>
+                    Back to Tickets
+                  </button>
                 </div>
               )}
             </div>
