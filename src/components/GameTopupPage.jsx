@@ -9,7 +9,7 @@ import {
   ArrowLeft, Check, ShieldCheck, Zap, AlertCircle, RefreshCw, 
   CreditCard, ChevronRight, BookmarkPlus, CheckCircle2, Copy, UploadCloud, Cloud,
   Clipboard, Plus, Minus, ChevronUp, ChevronDown, HelpCircle, Shield, Edit3, Crown,
-  ArrowUpDown, ArrowUp, ArrowDown, Headphones
+  ArrowUpDown, ArrowUp, ArrowDown
 } from 'lucide-react';
 
 export const GameTopupPage = () => {
@@ -29,8 +29,7 @@ export const GameTopupPage = () => {
     setIsWalletModalOpen,
     openWalletModal,
     isLoggedIn,
-    openAuth,
-    setIsSupportOpen
+    openAuth
   } = useApp();
 
   const [playerId, setPlayerId] = useState('');
@@ -1074,63 +1073,39 @@ export const GameTopupPage = () => {
                   </span>
                 </div>
 
-                {/* RIGHT — support button + top up button */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                {/* Top Up CTA */}
+                <button
+                  type="button"
+                  onClick={handleCompleteOrder}
+                  disabled={isSubmitting}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '7px',
+                    padding: '0 20px', height: '42px', borderRadius: '13px',
+                    border: 'none', cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                    background: isSubmitting
+                      ? 'rgba(150,0,0,0.5)'
+                      : 'linear-gradient(135deg, #e8060c 0%, #cc040a 50%, #a00208 100%)',
+                    boxShadow: isSubmitting ? 'none' : '0 4px 20px rgba(204,4,10,0.55), inset 0 1px 0 rgba(255,255,255,0.15)',
+                    color: '#fff', fontWeight: 900, fontSize: '13px',
+                    letterSpacing: '0.02em', whiteSpace: 'nowrap',
+                    transition: 'all 0.2s',
+                    flexShrink: 0,
+                    opacity: isSubmitting ? 0.7 : 1,
+                  }}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <RefreshCw style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} />
+                      <span>Processing…</span>
+                    </>
+                  ) : (
+                    <>
+                      <Zap style={{ width: '15px', height: '15px', fill: '#fff' }} />
+                      <span>Top Up</span>
+                    </>
+                  )}
+                </button>
 
-                  {/* Support Icon Button */}
-                  <button
-                    type="button"
-                    onClick={() => setIsSupportOpen(true)}
-                    title="Live Support"
-                    style={{
-                      width: '42px', height: '42px', borderRadius: '12px', border: 'none',
-                      background: 'rgba(255,255,255,0.07)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: 'rgba(255,255,255,0.75)', cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      outline: '1.5px solid rgba(255,255,255,0.1)',
-                      flexShrink: 0,
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(204,4,10,0.2)'; e.currentTarget.style.color = '#ff4444'; e.currentTarget.style.outline = '1.5px solid rgba(204,4,10,0.5)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.75)'; e.currentTarget.style.outline = '1.5px solid rgba(255,255,255,0.1)'; }}
-                  >
-                    <Headphones style={{ width: '18px', height: '18px' }} />
-                  </button>
-
-                  {/* Top Up CTA */}
-                  <button
-                    type="button"
-                    onClick={handleCompleteOrder}
-                    disabled={isSubmitting}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '7px',
-                      padding: '0 20px', height: '42px', borderRadius: '13px',
-                      border: 'none', cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                      background: isSubmitting
-                        ? 'rgba(150,0,0,0.5)'
-                        : 'linear-gradient(135deg, #e8060c 0%, #cc040a 50%, #a00208 100%)',
-                      boxShadow: isSubmitting ? 'none' : '0 4px 20px rgba(204,4,10,0.55), inset 0 1px 0 rgba(255,255,255,0.15)',
-                      color: '#fff', fontWeight: 900, fontSize: '13px',
-                      letterSpacing: '0.02em', whiteSpace: 'nowrap',
-                      transition: 'all 0.2s',
-                      flexShrink: 0,
-                      opacity: isSubmitting ? 0.7 : 1,
-                    }}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <RefreshCw style={{ width: '15px', height: '15px', animation: 'spin 1s linear infinite' }} />
-                        <span>Processing…</span>
-                      </>
-                    ) : (
-                      <>
-                        <Zap style={{ width: '15px', height: '15px', fill: '#fff' }} />
-                        <span>Top Up</span>
-                      </>
-                    )}
-                  </button>
-
-                </div>
               </div>
 
               {/* Slide-up keyframes injected once */}
