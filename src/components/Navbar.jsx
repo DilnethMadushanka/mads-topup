@@ -30,7 +30,9 @@ export const Navbar = () => {
     isResellerDashboardOpen,
     openReferralPage,
     isReferralPageOpen,
-    handleLogout
+    handleLogout,
+    openBlogPage,
+    isBlogPageOpen
   } = useApp();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -96,7 +98,7 @@ export const Navbar = () => {
     { label: 'Home', icon: Home, color: 'text-[#cc040a]', bg: 'bg-red-50', action: () => { setSelectedGame(null); closeCatalog(); setIsMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); } },
     { label: 'Game List', icon: Gamepad2, color: 'text-violet-500', bg: 'bg-violet-50', action: () => { setSelectedGame(null); openCatalog(); setIsMobileMenuOpen(false); }, active: isGameCatalogOpen },
     { label: 'Gift Cards', icon: Gift, color: 'text-emerald-500', bg: 'bg-emerald-50', action: () => handleNavClick('services-section') },
-    { label: 'Blog', icon: BookOpen, color: 'text-amber-500', bg: 'bg-amber-50', action: () => handleNavClick('why-choose-us') },
+    { label: 'Blog', icon: BookOpen, color: 'text-amber-500', bg: 'bg-amber-50', action: () => { openBlogPage(); setIsMobileMenuOpen(false); }, active: isBlogPageOpen },
     { label: 'Download App', icon: Smartphone, color: 'text-sky-500', bg: 'bg-sky-50', action: () => { setIsDownloadAppModalOpen(true); setIsMobileMenuOpen(false); }, badge: 'NEW' },
     isReseller
       ? { label: 'Reseller Dashboard', icon: Crown, color: 'text-amber-500', bg: 'bg-amber-50', action: () => { openResellerDashboard(); setIsMobileMenuOpen(false); }, badge: 'PARTNER', active: isResellerDashboardOpen }
@@ -135,7 +137,7 @@ export const Navbar = () => {
             {[
               { label: 'Game List', icon: Gamepad2, action: () => { setSelectedGame(null); openCatalog(); }, active: isGameCatalogOpen, iconCls: 'text-[#cc040a] bg-red-50' },
               { label: 'Gift Cards', icon: Gift, action: () => handleNavClick('services-section'), iconCls: 'text-emerald-600 bg-emerald-50' },
-              { label: 'Blog', icon: BookOpen, action: () => handleNavClick('why-choose-us'), iconCls: 'text-amber-500 bg-amber-50' },
+              { label: 'Blog', icon: BookOpen, action: () => { openBlogPage(); }, active: isBlogPageOpen, iconCls: 'text-amber-500 bg-amber-50' },
               { label: 'Download App', icon: Download, action: () => setIsDownloadAppModalOpen(true), iconCls: 'text-slate-600 bg-slate-100' },
             ].map(item => (
               <button key={item.label} onClick={item.action}
