@@ -147,65 +147,115 @@ const MainContent = () => {
 
       {/* Footer: Only visible on the main home page, not on sub-pages */}
       {!selectedGame && !isUserProfileOpen && !isWalletModalOpen && !isResellerDashboardOpen && !isResellerLoginPageOpen && !isResellerPageOpen && !isReferralPageOpen && !isContactPageOpen && !isReviewsPageOpen && !isLeaderboardPageOpen && !isGameCatalogOpen && !isBlogPageOpen && (
-      <footer className="bg-gray-950 text-[#ffffff] border-t border-gray-800 pt-16 pb-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 pb-12 border-b border-gray-800">
-            
-            {/* Col 1: About Us */}
-            <div className="space-y-4">
-              <h4 className="font-extrabold text-sm text-white uppercase tracking-wider font-heading">About Us</h4>
-              <p className="text-xs text-gray-400 leading-relaxed font-medium">
-                MADS TOPUP IS THE PREMIER AUTOMATED PLATFORM IN SRI LANKA FOR INSTANT TOP-UP FOR POPULAR GAMES STRIKE, GARENA SHELLS, AND MORE. WE ARE COMMITTED TO PROVIDING THE BEST SERVICE FOR OUR PARTNERS.
+      <footer style={{ background: 'linear-gradient(180deg,#0d0a0b 0%,#0a0608 60%,#080408 100%)', color: '#fff', borderTop: '1px solid rgba(204,4,10,0.25)', position: 'relative', overflow: 'hidden' }}>
+
+        {/* Red top glow line */}
+        <div style={{ position: 'absolute', top: 0, left: '15%', right: '15%', height: '1px', background: 'linear-gradient(90deg,transparent,rgba(204,4,10,0.8),transparent)' }} />
+        {/* Subtle red radial glow top-right */}
+        <div style={{ position: 'absolute', top: -120, right: -80, width: 360, height: 360, borderRadius: '50%', background: 'radial-gradient(circle,rgba(204,4,10,0.07) 0%,transparent 70%)', pointerEvents: 'none' }} />
+        {/* Subtle red radial glow bottom-left */}
+        <div style={{ position: 'absolute', bottom: -80, left: -60, width: 260, height: 260, borderRadius: '50%', background: 'radial-gradient(circle,rgba(204,4,10,0.05) 0%,transparent 70%)', pointerEvents: 'none' }} />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ position: 'relative', zIndex: 1 }}>
+
+          {/* ── Top brand bar ─────────────────────────────── */}
+          <div style={{ padding: '48px 0 36px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexWrap: 'wrap', gap: 32, alignItems: 'flex-start', justifyContent: 'space-between' }}>
+
+            {/* Brand block */}
+            <div style={{ maxWidth: 300 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg,#cc040a,#ff4444)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 18px rgba(204,4,10,0.5)', flexShrink: 0 }}>
+                  <Flame size={18} color="#fff" />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 900, fontSize: 15, letterSpacing: '-0.2px', color: '#fff' }}>MADS TOPUP</div>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: '#cc040a', letterSpacing: '0.14em', textTransform: 'uppercase' }}>Enterprise · Sri Lanka</div>
+                </div>
+              </div>
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', lineHeight: 1.7, fontWeight: 500, margin: '0 0 14px' }}>
+                Premier automated game top-up platform in Sri Lanka. Instant delivery for PUBG Mobile, Free Fire, Mobile Legends, and more.
               </p>
-              <div className="flex items-center gap-2 pt-1 text-xs font-bold text-gray-300 font-mono">
-                <span>🇱🇰</span>
-                <span>MADS TOPUP ENTERPRISE SRI LANKA</span>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 99, background: 'rgba(204,4,10,0.1)', border: '1px solid rgba(204,4,10,0.25)', fontSize: 9, fontWeight: 800, color: '#cc040a', letterSpacing: '0.12em' }}>
+                🇱🇰 SRI LANKA OFFICIAL STORE
               </div>
             </div>
 
-            {/* Col 2: Quick Links */}
+            {/* Quick Links */}
             <div>
-              <h4 className="font-extrabold text-sm text-white uppercase tracking-wider mb-4 font-heading">Quick Links</h4>
-              <ul className="space-y-2.5 text-xs text-slate-400 font-bold uppercase tracking-wide font-mono">
-                <li onClick={openResellerPage} className="hover:text-cyan-400 cursor-pointer transition-colors text-cyan-400 font-black flex items-center gap-1">RESELLER PROGRAM 👑</li>
-                <li onClick={openContactPage} className="hover:text-[#cc040a] cursor-pointer transition-colors">ABOUT US</li>
-                <li onClick={openContactPage} className="hover:text-[#cc040a] cursor-pointer transition-colors">CONTACT</li>
-                <li onClick={openUserProfilePage} className="hover:text-[#cc040a] cursor-pointer transition-colors">MY ORDERS</li>
-                <li onClick={() => openPolicyModal('refund')} className="hover:text-[#cc040a] cursor-pointer transition-colors">REFUND POLICY</li>
-                <li onClick={() => openPolicyModal('privacy')} className="hover:text-[#cc040a] cursor-pointer transition-colors">PRIVACY POLICY</li>
-                <li onClick={() => openPolicyModal('terms')} className="hover:text-[#cc040a] cursor-pointer transition-colors">TERMS OF SERVICE</li>
+              <h4 style={{ margin: '0 0 16px', fontSize: 10, fontWeight: 900, color: '#cc040a', textTransform: 'uppercase', letterSpacing: '0.18em' }}>Quick Links</h4>
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <li onClick={openResellerPage} style={{ fontSize: 11, fontWeight: 800, color: '#fbbf24', cursor: 'pointer', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: 5, transition: 'color 0.15s' }}
+                  onMouseEnter={e => e.currentTarget.style.color='#fde68a'} onMouseLeave={e => e.currentTarget.style.color='#fbbf24'}>
+                  👑 Reseller Program
+                </li>
+                {[
+                  { label: 'About Us',        action: openContactPage },
+                  { label: 'Contact',         action: openContactPage },
+                  { label: 'My Orders',       action: openUserProfilePage },
+                  { label: 'Refund Policy',   action: () => openPolicyModal('refund') },
+                  { label: 'Privacy Policy',  action: () => openPolicyModal('privacy') },
+                  { label: 'Terms of Service',action: () => openPolicyModal('terms') },
+                ].map(({ label, action }) => (
+                  <li key={label} onClick={action}
+                    style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.5)', cursor: 'pointer', transition: 'color 0.15s' }}
+                    onMouseEnter={e => e.currentTarget.style.color='#cc040a'}
+                    onMouseLeave={e => e.currentTarget.style.color='rgba(255,255,255,0.5)'}>
+                    {label}
+                  </li>
+                ))}
               </ul>
             </div>
 
-            {/* Col 3: Contact Us */}
+            {/* Contact */}
             <div>
-              <h4 className="font-extrabold text-sm text-[#ffffff] uppercase tracking-wider mb-4 font-heading">Contact Us</h4>
-              <div className="space-y-2 text-xs text-gray-400 font-medium">
-                <p>Support Hotline / WhatsApp: <a href="https://wa.me/94740436276" target="_blank" rel="noreferrer" className="text-red-400 font-bold hover:underline">+94 74 043 6276</a></p>
-                <p>Email: support@madstopup.com</p>
-                <p>Address: Colombo Fort, Sri Lanka</p>
-                <p>Operating Hours: 24 Hours / 7 Days Automated</p>
+              <h4 style={{ margin: '0 0 16px', fontSize: 10, fontWeight: 900, color: '#cc040a', textTransform: 'uppercase', letterSpacing: '0.18em' }}>Contact Us</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {[
+                  { icon: '📞', label: 'WhatsApp', value: '+94 74 043 6276', href: 'https://wa.me/94740436276', highlight: true },
+                  { icon: '✉️', label: 'Email',    value: 'info@trivextit.com', href: 'mailto:info@trivextit.com', highlight: true },
+                  { icon: '📍', label: 'Address',  value: 'Colombo Fort, Sri Lanka', highlight: false },
+                  { icon: '🕐', label: 'Hours',    value: '24 / 7 Automated', highlight: false },
+                ].map(({ icon, label, value, href, highlight }) => (
+                  <div key={label} style={{ display: 'flex', alignItems: 'flex-start', gap: 9 }}>
+                    <span style={{ fontSize: 12, flexShrink: 0, marginTop: 1 }}>{icon}</span>
+                    <div>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 1 }}>{label}</div>
+                      {href
+                        ? <a href={href} target="_blank" rel="noreferrer" style={{ fontSize: 11, fontWeight: 700, color: highlight ? '#ff6b6b' : 'rgba(255,255,255,0.6)', textDecoration: 'none' }}
+                            onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
+                            onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>{value}</a>
+                        : <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.55)' }}>{value}</span>
+                      }
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
           </div>
 
-          {/* Legal Trademark & DMCA Disclaimer Notice */}
-          <div className="mt-8 pt-6 border-t border-gray-800 text-[10px] text-gray-400 leading-relaxed font-normal">
-            <p className="font-bold text-gray-300 uppercase tracking-wider mb-1 font-mono">LEGAL DISCLAIMER & TRADEMARK NOTICE:</p>
-            <p>
-              MADS TOPUP is an independent 24/7 digital service platform and is not affiliated with, sponsored by, or endorsed by Garena, Tencent Games, Moonton, NetEase Games, or any other official game publisher. All game titles, registered trademarks, logos, and artwork (including Free Fire, PUBG Mobile, Mobile Legends, Blood Strike, Delta Force) belong strictly to their respective copyright holders. Used strictly for identification and digital top-up delivery purposes. DMCA & Copyright Takedown Contact: <a href="mailto:support@madstopup.com" className="text-red-400 hover:underline font-bold">support@madstopup.com</a>.
+          {/* ── Legal disclaimer ──────────────────────────── */}
+          <div style={{ padding: '20px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <p style={{ fontSize: 9, fontWeight: 800, color: 'rgba(204,4,10,0.8)', textTransform: 'uppercase', letterSpacing: '0.14em', margin: '0 0 6px' }}>Legal Disclaimer & Trademark Notice</p>
+            <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)', lineHeight: 1.7, margin: 0, fontWeight: 500 }}>
+              MADS TOPUP is an independent 24/7 digital service platform and is not affiliated with, sponsored by, or endorsed by Garena, Tencent Games, Moonton, NetEase Games, or any other official game publisher. All game titles, registered trademarks, logos, and artwork (including Free Fire, PUBG Mobile, Mobile Legends, Blood Strike, Delta Force) belong strictly to their respective copyright holders. Used strictly for identification and digital top-up delivery purposes. DMCA &amp; Copyright Takedown Contact:{' '}
+              <a href="mailto:info@trivextit.com" style={{ color: '#ff6b6b', fontWeight: 700 }}>info@trivextit.com</a>.
             </p>
           </div>
 
-          {/* Bottom Copyright Bar */}
-          <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-gray-500 font-semibold border-t border-gray-900 mt-6">
-            <p>© 2026 MADS TOPUP. All rights reserved.</p>
-            <p className="text-gray-500">POWERED BY MADS AUTOMATED ENGINE • SRI LANKA OFFICIAL STORE</p>
+          {/* ── Copyright bar ─────────────────────────────── */}
+          <div style={{ padding: '16px 0', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <p style={{ margin: 0, fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>© 2026 MADS TOPUP. All rights reserved.</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e', display: 'inline-block', boxShadow: '0 0 6px #22c55e' }} />
+              <p style={{ margin: 0, fontSize: 10, color: 'rgba(255,255,255,0.25)', fontWeight: 600, letterSpacing: '0.04em' }}>POWERED BY MADS AUTOMATED ENGINE</p>
+            </div>
           </div>
+
         </div>
       </footer>
       )}
+
 
       {/* Modals & Popups */}
       <PopupAdModal />
