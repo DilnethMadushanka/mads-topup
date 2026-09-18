@@ -64,7 +64,9 @@ export const AppProvider = ({ children }) => {
   const [isBlogPageOpen, setIsBlogPageOpen] = useState(() => {
     try { return sessionStorage.getItem('mads_page') === 'blog'; } catch { return false; }
   });
-
+  const [isLeaderboardPageOpen, setIsLeaderboardPageOpen] = useState(() => {
+    try { return sessionStorage.getItem('mads_page') === 'leaderboard'; } catch { return false; }
+  });
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
@@ -112,7 +114,7 @@ export const AppProvider = ({ children }) => {
     setIsGameCatalogOpen(false); setIsReviewsPageOpen(false); setIsContactPageOpen(false);
     setIsReferralPageOpen(false); setIsResellerPageOpen(false); setIsResellerLoginPageOpen(false);
     setIsResellerDashboardOpen(false); setIsBlogPageOpen(false); setIsUserProfileOpen(false);
-    setIsWalletModalOpen(false); setSelectedGame(null);
+    setIsWalletModalOpen(false); setSelectedGame(null); setIsLeaderboardPageOpen(false);
   };
 
   const openBlogPage = () => {
@@ -122,6 +124,14 @@ export const AppProvider = ({ children }) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const closeBlogPage = () => { setIsBlogPageOpen(false); _savePage(null); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+
+  const openLeaderboardPage = () => {
+    _clearAllPages();
+    setIsLeaderboardPageOpen(true);
+    _savePage('leaderboard');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const closeLeaderboardPage = () => { setIsLeaderboardPageOpen(false); _savePage(null); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
   const openCatalog = () => {
     if (!isLoggedIn && (!auth || !auth.currentUser)) {
@@ -1557,6 +1567,10 @@ export const AppProvider = ({ children }) => {
       setIsResellerPageOpen,
       openResellerPage,
       closeResellerPage,
+      isLeaderboardPageOpen,
+      setIsLeaderboardPageOpen,
+      openLeaderboardPage,
+      closeLeaderboardPage,
       isResellerLoginPageOpen,
       setIsResellerLoginPageOpen,
       openResellerLoginPage,

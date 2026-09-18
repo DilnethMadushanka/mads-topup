@@ -212,7 +212,7 @@ function SkeletonCard({ rank }) {
 
 /* ─── Main section ────────────────────────────────────── */
 export const TopSpendersSection = () => {
-  const { openReviewsPage } = useApp();
+  const { openLeaderboardPage } = useApp();
   const [topSpenders, setTopSpenders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [visible, setVisible] = useState(false);
@@ -256,7 +256,7 @@ export const TopSpendersSection = () => {
             </div>
           </div>
 
-          <button className="ts-btn ts-btn-desktop" onClick={openReviewsPage}>
+          <button className="ts-btn ts-btn-desktop" onClick={openLeaderboardPage}>
             <TrendingUp size={13} /> View Leaderboard <ChevronRight size={13} />
           </button>
         </div>
@@ -286,7 +286,7 @@ export const TopSpendersSection = () => {
 
         {/* Bottom CTA (always visible) */}
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: 20 }}>
-          <button className="ts-btn ts-btn-bottom" onClick={openReviewsPage}>
+          <button className="ts-btn ts-btn-bottom" onClick={openLeaderboardPage}>
             <span className="ts-btn-dot"></span>
             View Full Leaderboard
             <span className="ts-btn-chevron"><ChevronRight size={14} /></span>
