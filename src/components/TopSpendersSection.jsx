@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Trophy, Crown, ChevronRight, Flame, Sparkles, TrendingUp } from 'lucide-react';
+import { useApp } from '../context/AppContext';
 
 const RTDB_URL = 'https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app';
 
@@ -211,6 +212,7 @@ function SkeletonCard({ rank }) {
 
 /* ─── Main section ────────────────────────────────────── */
 export const TopSpendersSection = () => {
+  const { openReviewsPage } = useApp();
   const [topSpenders, setTopSpenders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [visible, setVisible] = useState(false);
@@ -254,7 +256,7 @@ export const TopSpendersSection = () => {
             </div>
           </div>
 
-          <button className="ts-btn ts-btn-desktop">
+          <button className="ts-btn ts-btn-desktop" onClick={openReviewsPage}>
             <TrendingUp size={13} /> View Leaderboard <ChevronRight size={13} />
           </button>
         </div>
@@ -284,7 +286,7 @@ export const TopSpendersSection = () => {
 
         {/* Bottom CTA (always visible) */}
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: 20 }}>
-          <button className="ts-btn ts-btn-bottom">
+          <button className="ts-btn ts-btn-bottom" onClick={openReviewsPage}>
             <span className="ts-btn-dot"></span>
             View Full Leaderboard
             <span className="ts-btn-chevron"><ChevronRight size={14} /></span>
