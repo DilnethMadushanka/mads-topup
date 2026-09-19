@@ -212,8 +212,7 @@ export const GAMES_DATA = [
     moongoldCode: 'GARENA_SHELLS',
     packages: [
       { id: 'gs-33', name: '33 Shells', amount: 33, bonus: 'Instant PIN', priceLkr: 290, moongoldCost: 245, priceUsd: 0.95, image: '/gift_cards/shell.png', isPopular: false },
-      { id: 'gs-100', name: '100 Shells', amount: 100, bonus: 'Instant PIN', priceLkr: 860, moongoldCost: 740, priceUsd: 2.80, image: '/gift_cards/shell.png', isPopular: true },
-      { id: 'gs-bot', name: 'Shell Bot Automated Topup', amount: 300, bonus: 'Direct Auto Credit', priceLkr: 2500, moongoldCost: 2180, priceUsd: 8.20, image: '/gift_cards/shellbot.png', isPopular: true, isSpecial: true }
+      { id: 'gs-100', name: '100 Shells', amount: 100, bonus: 'Instant PIN', priceLkr: 860, moongoldCost: 740, priceUsd: 2.80, image: '/gift_cards/shell.png', isPopular: true }
     ]
   }
 ];
