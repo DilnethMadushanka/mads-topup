@@ -999,9 +999,28 @@ export const setUserExactBalanceInDatabase = async (identifier, exactLkr, exactU
         const usersCol = collection(db, 'users');
         const qEmail = query(usersCol, where('email', '==', cleanIdLower));
         const qSnap = await getDocs(qEmail);
-        qSnap.forEach(async (d) => {
+        for (const d of qSnap.docs) {
+          const curData = d.data();
           await setDoc(doc(db, 'users', d.id), { walletBalance: targetLkr, walletUsdt: targetUsdt, updatedAt: new Date().toISOString() }, { merge: true });
-        });
+          // Also write to RTDB using the Firestore doc ID as the UID,
+          // so the serverless API (which reads RTDB at /users/{uid}) can see the balance.
+          if (rtdb) {
+            try {
+              const userRtdbRef = dbRef(rtdb, `users/${d.id}`);
+              await rtdbUpdate(userRtdbRef, {
+                walletBalance: targetLkr,
+                walletUsdt: targetUsdt,
+                email: curData.email || cleanIdLower,
+                uid: d.id,
+                updatedAt: new Date().toISOString()
+              });
+              targetUid = d.id; // mark found
+            } catch (rtdbErr) {
+              console.warn('RTDB sync from Firestore email exact-balance:', rtdbErr.message);
+            }
+          }
+          break; // Only process the first matching document
+        }
       }
     } catch (err) {
       console.warn('Firestore exact wallet balance note:', err.message);
