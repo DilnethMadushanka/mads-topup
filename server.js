@@ -89,6 +89,77 @@ function rateLimiter(maxRequests = 30, windowMs = 60000) {
   };
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// Real server-side Admin session authentication.
+//
+// The Admin Dashboard's existing login form (AdminDashboard.jsx) only ever
+// checked credentials client-side against hash constants embedded in the
+// shipped JS bundle — those constants are plainly readable by anyone via
+// devtools, so they can never be a real secret. That check is left exactly
+// as-is (it still gates the dashboard UI so nothing about that flow
+// changes), but it cannot be trusted to gate SERVER endpoints, because
+// nothing stops a request being sent directly to the server without ever
+// loading the dashboard UI at all.
+//
+// This adds a second, genuine check: the same raw credentials the admin
+// types are ALSO verified here, server-side, against the identical hash
+// target constants (mirrored from AdminDashboard.jsx — not a new secret,
+// so nothing new is exposed by this file). On success the server issues a
+// cryptographically random, unguessable session token that is NEVER
+// derivable from the client bundle. Admin-only endpoints then require that
+// real token, closing the "just curl the endpoint" exploit class even
+// though the underlying credential hash itself remains weak (a deeper fix
+// to the credential scheme is a separate, larger change).
+// ─────────────────────────────────────────────────────────────────────────
+function _adminHash(s) {
+  return [...s].reduce((a, c) => Math.imul(31, a) + c.charCodeAt(0) | 0, 0x811c9dc5).toString(16);
+}
+const ADMIN_VALID_EMAIL_HASH = '6c24b307';
+const ADMIN_VALID_PASSWORD_HASH = '-4d18553';
+const ADMIN_VALID_CODE_HASHES = ['-77f0b15c', '5881e801'];
+
+const adminSessions = new Map(); // token -> expiresAt (ms)
+const ADMIN_SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
+
+function pruneExpiredAdminSessions() {
+  const now = Date.now();
+  for (const [token, expiresAt] of adminSessions.entries()) {
+    if (expiresAt <= now) adminSessions.delete(token);
+  }
+}
+
+function requireAdminSession(req, res, next) {
+  pruneExpiredAdminSessions();
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+  const expiresAt = token && adminSessions.get(token);
+  if (!expiresAt || expiresAt <= Date.now()) {
+    return res.status(401).json({ error: 'Admin session required or expired. Please log in to the Admin Dashboard again.' });
+  }
+  next();
+}
+
+app.post('/api/admin/login', rateLimiter(8, 300000), (req, res) => {
+  const cleanEmail = String(req.body?.email || '').trim().toLowerCase().replace(/['"`;=\-]/g, '');
+  const cleanPassword = String(req.body?.password || '').trim();
+  const cleanCode = String(req.body?.securityCode || '').trim().toUpperCase();
+
+  const validEmail = _adminHash(cleanEmail) === ADMIN_VALID_EMAIL_HASH;
+  const validPassword = _adminHash(cleanPassword) === ADMIN_VALID_PASSWORD_HASH;
+  const validCode = ADMIN_VALID_CODE_HASHES.includes(_adminHash(cleanCode));
+
+  if (!validEmail || !validPassword || !validCode) {
+    return res.status(401).json({ error: 'Invalid admin credentials.' });
+  }
+
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = Date.now() + ADMIN_SESSION_TTL_MS;
+  adminSessions.set(token, expiresAt);
+  pruneExpiredAdminSessions();
+
+  res.json({ success: true, token, expiresAt });
+});
+
 // Direct OTP Email sending API endpoint with rate limiter & sanitization
 app.post('/api/send-otp', rateLimiter(10, 60000), async (req, res) => {
   try {
@@ -195,9 +266,21 @@ app.post('/api/send-otp', rateLimiter(10, 60000), async (req, res) => {
 });
 
 // Reseller Approval Email Endpoint
-app.post('/api/send-reseller-approval', async (req, res) => {
+app.post('/api/send-reseller-approval', rateLimiter(10, 60000), requireAdminSession, async (req, res) => {
   try {
-    const { email, name, resellerCode, securityKey } = req.body || {};
+    const rawEmail = req.body?.email;
+    const rawName = req.body?.name;
+    const rawResellerCode = req.body?.resellerCode;
+    const rawSecurityKey = req.body?.securityKey;
+
+    // Sanitize before HTML interpolation below — matches the pattern already
+    // used in /api/send-otp. Without this, any caller can inject arbitrary
+    // HTML/markup into an email sent from the site's real sending domain.
+    const email = sanitizeString(rawEmail, 100);
+    const name = sanitizeString(rawName, 100);
+    const resellerCode = sanitizeString(rawResellerCode, 50);
+    const securityKey = sanitizeString(rawSecurityKey, 100);
+
     if (!email || !resellerCode || !securityKey) {
       return res.status(400).json({ error: 'Missing email, resellerCode, or securityKey' });
     }
@@ -855,7 +938,7 @@ app.post('/api/ezcash/webhook', (req, res) => {
 });
 
 // Admin API: Retrieve all received EZ Cash Webhook SMS logs
-app.get('/api/ezcash/webhook-logs', (req, res) => {
+app.get('/api/ezcash/webhook-logs', requireAdminSession, (req, res) => {
   try {
     const logs = Array.from(receivedEzCashSmsLog.values()).sort((a, b) => new Date(b.receivedAt) - new Date(a.receivedAt));
     res.json({

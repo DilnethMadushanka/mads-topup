@@ -441,7 +441,14 @@ export const AdminDashboard = () => {
   const fetchEzcashLogs = async () => {
     try {
       setIsEzcashLogsLoading(true);
-      const res = await fetch('/api/ezcash/webhook-logs');
+      const sessionToken = localStorage.getItem('mads_admin_session_token') || '';
+      const res = await fetch('/api/ezcash/webhook-logs', {
+        headers: sessionToken ? { 'Authorization': `Bearer ${sessionToken}` } : {}
+      });
+      if (res.status === 401) {
+        showToast('Admin session expired — please log out and log back in to view EZ Cash logs.', 'error');
+        return;
+      }
       const data = await res.json();
       if (data && data.success) setEzcashLogs(data.logs || []);
     } catch (err) {
@@ -538,6 +545,31 @@ export const AdminDashboard = () => {
       setAdminLockoutUntil(null);
       showToast('Admin Authentication Successful! Welcome Super Admin.');
       setAdminAuthError('');
+
+      // Also establish a REAL server-side admin session (a random, unguessable
+      // token the server issues only after independently re-verifying these
+      // same credentials) — this is what actually gates admin-only server
+      // endpoints like the EZ Cash webhook logs, since the client-side check
+      // above only gates this UI and can't be trusted by the server on its
+      // own. Fire-and-forget: if the server is unreachable this never blocks
+      // or breaks the dashboard UI itself, only the specific endpoints that
+      // require the token (which will show a clear error if called without it).
+      const loginPayload = JSON.stringify({ email: cleanEmail, password: cleanPass, securityCode: cleanCode });
+      const tryAdminLogin = (endpoint) => fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: loginPayload
+      }).then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)));
+
+      Promise.any([tryAdminLogin('/api/admin/login'), tryAdminLogin('https://madstopup.com/api/admin/login')])
+        .then(data => {
+          if (data?.success && data?.token) {
+            localStorage.setItem('mads_admin_session_token', data.token);
+            localStorage.setItem('mads_admin_session_expires', String(data.expiresAt || ''));
+          }
+        })
+        .catch(err => console.warn('[Admin Session] Server-side session could not be established:', err.message));
+
       setAdminAuthPassword('');
       setAdminAuthSecurityCode('');
     } else {
@@ -557,6 +589,8 @@ export const AdminDashboard = () => {
 
   const handleAdminLogout = () => {
     localStorage.removeItem('mads_admin_authenticated');
+    localStorage.removeItem('mads_admin_session_token');
+    localStorage.removeItem('mads_admin_session_expires');
     setIsAdminAuthenticated(false);
     setIsAdminOpen(false);
     showToast('Logged out from Admin Portal.');

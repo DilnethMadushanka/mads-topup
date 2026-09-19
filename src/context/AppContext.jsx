@@ -1454,9 +1454,13 @@ export const AppProvider = ({ children }) => {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 45000);
 
+            const sessionToken = localStorage.getItem('mads_admin_session_token') || '';
             const res = await fetch(endpoint, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: {
+                'Content-Type': 'application/json',
+                ...(sessionToken ? { 'Authorization': `Bearer ${sessionToken}` } : {})
+              },
               body: JSON.stringify({
                 email: targetEmail,
                 name: targetName,
@@ -1467,7 +1471,9 @@ export const AppProvider = ({ children }) => {
             });
             clearTimeout(timeoutId);
 
-            if (res.ok) {
+            if (res.status === 401) {
+              showToast('Admin session expired — reseller was approved, but you need to log out/in to Admin Dashboard to resend the approval email.', 'error');
+            } else if (res.ok) {
               const data = await res.json();
               if (data && data.success && !data.simulated) {
                 sentSuccess = true;
