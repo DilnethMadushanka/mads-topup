@@ -387,6 +387,9 @@ export const AppProvider = ({ children }) => {
   // a plain ref (not React state) so it's checked/set synchronously and
   // can't be raced by two Approve clicks firing before a re-render commits.
   const approvingPaymentIdsRef = React.useRef(new Set());
+
+  // Debounce map for updateUserBalance — see its own comment for why.
+  const balanceUpdateDebounceRef = React.useRef(new Map());
   useEffect(() => {
     if (!auth) return;
 
@@ -979,16 +982,25 @@ export const AppProvider = ({ children }) => {
 
   const verifyUserAccount = async (uid) => {
     setUsersList(prev => prev.map(u => u.uid === uid ? { ...u, isVerified: true } : u));
+    // RTDB first — it's the real backend of record. Firestore is disabled
+    // for this project, so awaiting it BEFORE the RTDB write (the previous
+    // order) meant a rejected setDoc threw straight into the catch block
+    // and skipped the RTDB update entirely — "Verify" appeared to succeed
+    // (toast + optimistic UI) but never actually persisted anywhere.
     try {
-      const { db, rtdb } = await import('../services/firebaseAuth');
-      const { doc, setDoc } = await import('firebase/firestore');
-      // Correct collection: 'users' (not 'resellerApplications')
-      await setDoc(doc(db, 'users', uid), { isVerified: true }, { merge: true });
+      const { rtdb } = await import('../services/firebaseAuth');
       if (rtdb) {
         const rtdbMod = await import('firebase/database');
         await rtdbMod.update(rtdbMod.ref(rtdb, `users/${uid}`), { isVerified: true });
       }
-    } catch (e) { console.warn('verifyUserAccount DB note:', e); }
+    } catch (e) { console.warn('verifyUserAccount RTDB note:', e); }
+    // Best-effort Firestore mirror — not awaited, so it can never block or
+    // abort the RTDB write above.
+    import('../services/firebaseAuth').then(({ db }) => {
+      import('firebase/firestore').then(({ doc, setDoc }) => {
+        setDoc(doc(db, 'users', uid), { isVerified: true }, { merge: true }).catch(() => {});
+      });
+    });
     showToast('User account verified & badge granted!');
   };
 
@@ -1001,16 +1013,20 @@ export const AppProvider = ({ children }) => {
       }
       return u;
     }));
+    // RTDB first — same reasoning as verifyUserAccount above.
     try {
-      const { db, rtdb } = await import('../services/firebaseAuth');
-      const { doc, setDoc } = await import('firebase/firestore');
-      // Correct collection: 'users' (not 'resellerApplications')
-      await setDoc(doc(db, 'users', uid), { status: newStatus }, { merge: true });
+      const { rtdb } = await import('../services/firebaseAuth');
       if (rtdb) {
         const rtdbMod = await import('firebase/database');
         await rtdbMod.update(rtdbMod.ref(rtdb, `users/${uid}`), { status: newStatus });
       }
-    } catch (e) { console.warn('toggleBlockUser DB note:', e); }
+    } catch (e) { console.warn('toggleBlockUser RTDB note:', e); }
+    // Best-effort Firestore mirror — not awaited.
+    import('../services/firebaseAuth').then(({ db }) => {
+      import('firebase/firestore').then(({ doc, setDoc }) => {
+        setDoc(doc(db, 'users', uid), { status: newStatus }, { merge: true }).catch(() => {});
+      });
+    });
     showToast(`User account status updated to ${newStatus}.`);
   };
 
@@ -1018,6 +1034,22 @@ export const AppProvider = ({ children }) => {
     if (!userEmailOrId) return;
     const cleanId = String(userEmailOrId).trim();
     const cleanIdLower = cleanId.toLowerCase();
+
+    // Debounce guard against a rapid double-click applying the same admin
+    // credit twice — the quick "+Rs.1,000"/"+$10" buttons and the Credit
+    // tab form have no loading/disabled state, so two clicks fired close
+    // together would otherwise both call creditUserWalletInDatabase and
+    // double-credit the user. A short window is enough to absorb a double
+    // click while still allowing a deliberate second credit of the exact
+    // same amount moments later.
+    const debounceKey = `${cleanIdLower}:${lkrAmount}:${usdtAmount}`;
+    const now = Date.now();
+    const lastCall = balanceUpdateDebounceRef.current.get(debounceKey);
+    if (lastCall && now - lastCall < 2000) {
+      showToast('Please wait a moment before repeating that credit.', 'error');
+      return;
+    }
+    balanceUpdateDebounceRef.current.set(debounceKey, now);
 
     // 1. Write balance adjustment to DB (RTDB & Firestore) across UID, Email, Reseller Code, or Security Key
     await creditUserWalletInDatabase(cleanId, lkrAmount, usdtAmount);

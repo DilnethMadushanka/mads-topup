@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { dispatchMoongoldOrder, checkMoongoldBalance } from '../services/moongoldApi';
 import { uploadToR2Storage } from '../services/storageService';
@@ -412,6 +412,12 @@ export const AdminDashboard = () => {
   const [showSecret, setShowSecret] = useState(false);
   const [isCheckingBalance, setIsCheckingBalance] = useState(false);
   const [retryingOrderId, setRetryingOrderId] = useState(null);
+  // Synchronous ref (not just the retryingOrderId state) so a genuine
+  // double-click on the same order's "Moongold" retry button can't fire
+  // dispatchMoongoldOrder twice before React commits the disabled state —
+  // a real supplier dispatch call, so a double-fire would send the top-up
+  // twice and burn double supplier credit for one order.
+  const retryingOrderIdsRef = useRef(new Set());
 
   const [r2UrlInput, setR2UrlInput] = useState(r2Config?.bucketUrl || 'https://bfda3f43ac31b00be80bcb82772eb8fa.r2.cloudflarestorage.com/mads-topup');
   const [r2BucketName, setR2BucketName] = useState(r2Config?.bucketName || 'mads-topup');
@@ -851,15 +857,21 @@ export const AdminDashboard = () => {
   };
 
   const handleRetryMoongold = async (order) => {
+    if (retryingOrderIdsRef.current.has(order.id)) return;
+    retryingOrderIdsRef.current.add(order.id);
     setRetryingOrderId(order.id);
-    const game = gamesCatalog.find(g => g.id === order.gameId);
-    const result = await dispatchMoongoldOrder({ game: game || { moongoldCode: 'GENERIC' }, playerId: order.playerId, zoneId: order.zoneId, package: { id: order.packageName } });
-    setRetryingOrderId(null);
-    if (result.success) {
-      updateOrderStatus(order.id, 'COMPLETED', result.moongoldRef);
-      showToast(`Order ${order.id} synced with Moongold successfully!`);
-    } else {
-      showToast(`Moongold Sync Failed: ${result.message}`, 'error');
+    try {
+      const game = gamesCatalog.find(g => g.id === order.gameId);
+      const result = await dispatchMoongoldOrder({ game: game || { moongoldCode: 'GENERIC' }, playerId: order.playerId, zoneId: order.zoneId, package: { id: order.packageName } });
+      if (result.success) {
+        updateOrderStatus(order.id, 'COMPLETED', result.moongoldRef);
+        showToast(`Order ${order.id} synced with Moongold successfully!`);
+      } else {
+        showToast(`Moongold Sync Failed: ${result.message}`, 'error');
+      }
+    } finally {
+      retryingOrderIdsRef.current.delete(order.id);
+      setRetryingOrderId(null);
     }
   };
 

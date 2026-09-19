@@ -95,7 +95,16 @@ export const ResellerDashboard = () => {
 
   const completedResellerOrders = resellerOrders.filter(o => o.status === 'COMPLETED' || o.status === 'DELIVERED');
   const totalWholesaleTurnover = resellerOrders.reduce((sum, o) => sum + (o.priceLkr || 0), 0);
-  const totalWholesaleSavings = resellerOrders.reduce((sum, o) => sum + Math.round((o.priceLkr || 0) * 0.05), 0);
+  // True saving is originalPrice - wholesalePrice (5% of the ORIGINAL catalog
+  // price), not 5% of the already-discounted wholesale price (0.95P * 0.05 =
+  // 0.0475P, undercounting every order's saving). originalPriceLkr is set at
+  // dispatch time (below); fall back to reconstructing it from the wholesale
+  // price for any order that predates that field.
+  const totalWholesaleSavings = resellerOrders.reduce((sum, o) => {
+    const wholesale = o.priceLkr || 0;
+    const original = o.originalPriceLkr || (wholesale / 0.95);
+    return sum + Math.round(Math.max(0, original - wholesale));
+  }, 0);
 
   const handleCopyResellerId = () => {
     navigator.clipboard.writeText(resellerWalletId);
@@ -690,7 +699,7 @@ export const ResellerDashboard = () => {
 
                       <div className="flex items-center justify-between sm:justify-end gap-6">
                         <div className="text-right">
-                          <span className="font-black text-emerald-400 text-sm block">Rs. {ord.priceLkr.toLocaleString()}</span>
+                          <span className="font-black text-emerald-400 text-sm block">Rs. {(ord.priceLkr || 0).toLocaleString()}</span>
                           <span className="text-[10px] text-slate-500 font-mono">{new Date(ord.createdAt).toLocaleString()}</span>
                         </div>
 
