@@ -384,7 +384,11 @@ export const dispatchMoongoldOrder = async (orderData) => {
     partnerOrderId,
     priceLkr,
     paymentId,
-    clientProfile
+    clientProfile,
+    // Only ever WIDENS the server's price-tolerance check after it
+    // independently re-verifies the caller is a real approved reseller —
+    // this flag alone grants nothing.
+    isResellerOrder: Boolean(orderData.isResellerOrder)
   };
 
   // Dispatch ONLY through secure backend proxy with Bearer Auth Token

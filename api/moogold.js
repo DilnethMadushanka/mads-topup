@@ -4,8 +4,10 @@ import { GAMES_DATA } from '../src/data/games.js';
 // The largest discount any legitimate promo code (TopupModal.jsx WELCOME50 /
 // LAUNCH100) can knock off a package's catalog price. Promo codes aren't sent
 // to this endpoint, so this is used as a tolerance band around the catalog
-// price rather than validating a specific code.
+// price rather than validating a specific code. Approved resellers get a
+// wider band — see isApprovedReseller below.
 const MAX_PROMO_DISCOUNT_LKR = 100;
+const RESELLER_WHOLESALE_DISCOUNT_RATE = 0.05;
 
 // Recompute the official price server-side from the catalog using the MooGold
 // product-id the client is actually asking us to order — the client-sent
@@ -19,6 +21,36 @@ function getCatalogPriceLkr(productId) {
     if (pkg && pkg.priceLkr > 0) return pkg.priceLkr;
   }
   return null;
+}
+
+// Confirms the authenticated caller is a real, admin-approved reseller —
+// never trust a client-sent "isResellerOrder" flag on its own.
+async function isApprovedReseller(uid, email) {
+  try {
+    if (uid) {
+      const res = await fetch(`${FIREBASE_RTDB_URL}/users/${encodeURIComponent(uid)}.json`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.isReseller && data.resellerStatus === 'APPROVED') return true;
+      }
+    }
+    if (email) {
+      const allRes = await fetch(`${FIREBASE_RTDB_URL}/users.json`);
+      if (allRes.ok) {
+        const allUsers = await allRes.json();
+        if (allUsers && typeof allUsers === 'object') {
+          for (const userData of Object.values(allUsers)) {
+            if (!userData) continue;
+            const emailMatch = userData.email && String(userData.email).toLowerCase() === String(email).toLowerCase();
+            if (emailMatch && userData.isReseller && userData.resellerStatus === 'APPROVED') return true;
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[isApprovedReseller check warning]:', e.message);
+  }
+  return false;
 }
 
 async function verifyFirebaseIdToken(idToken) {
@@ -415,14 +447,26 @@ export default async function handler(req, res) {
 
       // Price-tampering guard: the client-supplied priceLkr must fall within a
       // narrow band of the catalog price for the product it's actually
-      // ordering (the band only covers the largest known promo discount).
-      // A tampered/replayed request quoting a far lower price is rejected.
+      // ordering. A tampered/replayed request quoting a far lower price is
+      // rejected. The band is wider for a confirmed, admin-approved reseller
+      // (their wholesale price is a genuine 5% off catalog, which can exceed
+      // the ordinary promo tolerance on larger packages) — but a client-sent
+      // isResellerOrder flag is NEVER trusted on its own; it only widens the
+      // band after independently verifying the authenticated caller really
+      // is an approved reseller.
       const requestedProductId = bodyObj?.data?.['product-id'];
       const catalogPriceLkr = getCatalogPriceLkr(requestedProductId);
       if (catalogPriceLkr === null) {
         return res.status(400).json({ error: 'Unrecognized product. Order rejected.' });
       }
-      if (numPriceLkr > catalogPriceLkr || numPriceLkr < catalogPriceLkr - MAX_PROMO_DISCOUNT_LKR) {
+      let maxDiscountLkr = MAX_PROMO_DISCOUNT_LKR;
+      if (bodyObj?.isResellerOrder) {
+        const verifiedReseller = await isApprovedReseller(authenticatedUser.uid, authenticatedUser.email);
+        if (verifiedReseller) {
+          maxDiscountLkr = Math.ceil(catalogPriceLkr * RESELLER_WHOLESALE_DISCOUNT_RATE) + 5;
+        }
+      }
+      if (numPriceLkr > catalogPriceLkr || numPriceLkr < catalogPriceLkr - maxDiscountLkr) {
         return res.status(400).json({ error: 'Price mismatch detected. Order rejected.' });
       }
 

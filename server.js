@@ -9,6 +9,7 @@ import { Resend } from 'resend';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { initTelegramBot, getTelegramBotHealthStatus, forceTelegramBotRefresh } from './src/services/telegramBotService.js';
 import { lookupFreePlayerIgn } from './src/services/playerLookup.js';
+import { GAMES_DATA } from './src/data/games.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -537,6 +538,59 @@ async function verifyFirebaseIdToken(idToken) {
 // User Wallet Database Helpers (Realtime Database REST Integration)
 const FIREBASE_RTDB_URL = process.env.FIREBASE_DATABASE_URL || process.env.VITE_FIREBASE_DATABASE_URL || "https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app";
 
+// The largest discount any legitimate promo code (TopupModal.jsx WELCOME50 /
+// LAUNCH100) can knock off a package's catalog price. Approved resellers get
+// a wider band (see isApprovedReseller below) since their wholesale price is
+// a genuine 5% off catalog, which can exceed this on larger packages.
+const MAX_PROMO_DISCOUNT_LKR = 100;
+const RESELLER_WHOLESALE_DISCOUNT_RATE = 0.05;
+
+// Recompute the official price server-side from the catalog using the MooGold
+// product-id the client is actually asking us to order — the client-sent
+// priceLkr can never be trusted (it can be freely edited in devtools/replayed
+// requests), so it's only used to sanity-check against this value below.
+function getCatalogPriceLkr(productId) {
+  if (!productId) return null;
+  const productIdStr = String(productId);
+  for (const game of GAMES_DATA) {
+    const pkg = (game.packages || []).find(p => String(p.moongoldProductId) === productIdStr);
+    if (pkg && pkg.priceLkr > 0) return pkg.priceLkr;
+  }
+  return null;
+}
+
+// Confirms the authenticated caller is a real, admin-approved reseller —
+// never trust a client-sent "isResellerOrder" flag on its own, since that
+// alone would let anyone claim reseller pricing. Mirrors resolveUserWalletKey's
+// uid-then-email lookup strategy.
+async function isApprovedReseller(uid, email) {
+  try {
+    if (uid) {
+      const res = await fetch(`${FIREBASE_RTDB_URL}/users/${encodeURIComponent(uid)}.json`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.isReseller && data.resellerStatus === 'APPROVED') return true;
+      }
+    }
+    if (email) {
+      const allRes = await fetch(`${FIREBASE_RTDB_URL}/users.json`);
+      if (allRes.ok) {
+        const allUsers = await allRes.json();
+        if (allUsers && typeof allUsers === 'object') {
+          for (const userData of Object.values(allUsers)) {
+            if (!userData) continue;
+            const emailMatch = userData.email && String(userData.email).toLowerCase() === String(email).toLowerCase();
+            if (emailMatch && userData.isReseller && userData.resellerStatus === 'APPROVED') return true;
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[isApprovedReseller check warning]:', e.message);
+  }
+  return false;
+}
+
 /**
  * Resolve the actual RTDB key for a user — tries uid directly, then scans by email.
  * Returns { rtdbKey, walletBalance, walletUsdt } or null if not found.
@@ -826,6 +880,31 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
     if (isOrderCreation) {
       if (numPriceLkr <= 0) {
         return res.status(400).json({ error: 'Invalid order price specified.' });
+      }
+
+      // Price-tampering guard: the client-supplied priceLkr must fall within
+      // a narrow band of the catalog price for the product it's actually
+      // ordering. A tampered/replayed request quoting a far lower price is
+      // rejected. Wider band for a confirmed, admin-approved reseller (their
+      // wholesale price is a genuine 5% off catalog) — but a client-sent
+      // isResellerOrder flag is never trusted on its own; it only widens the
+      // band after independently verifying the authenticated caller really
+      // is an approved reseller. This check previously only existed on the
+      // Vercel fallback (api/moogold.js), not here on the primary VPS path.
+      const requestedProductId = bodyObj?.data?.['product-id'];
+      const catalogPriceLkr = getCatalogPriceLkr(requestedProductId);
+      if (catalogPriceLkr === null) {
+        return res.status(400).json({ error: 'Unrecognized product. Order rejected.' });
+      }
+      let maxDiscountLkr = MAX_PROMO_DISCOUNT_LKR;
+      if (bodyObj?.isResellerOrder) {
+        const verifiedReseller = await isApprovedReseller(authenticatedUser.uid, authenticatedUser.email);
+        if (verifiedReseller) {
+          maxDiscountLkr = Math.ceil(catalogPriceLkr * RESELLER_WHOLESALE_DISCOUNT_RATE) + 5;
+        }
+      }
+      if (numPriceLkr > catalogPriceLkr || numPriceLkr < catalogPriceLkr - maxDiscountLkr) {
+        return res.status(400).json({ error: 'Price mismatch detected. Order rejected.' });
       }
 
       // Idempotency check — reject an in-flight duplicate outright, and

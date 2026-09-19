@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { GAMES_DATA, getVerifiedPackagePriceLkr } from '../data/games';
 import { generateUniqueSecurityKey, ensureResellerCredentials, getResellerProfileByKeyAsync, updateUserProfileInFirestore } from '../services/firestoreService';
+import { dispatchMoongoldOrder } from '../services/moongoldApi';
 import { orderBelongsToUser } from '../utils/ownership';
 import confetti from 'canvas-confetti';
 import { 
@@ -20,7 +21,6 @@ export const ResellerDashboard = () => {
     formatPrice, 
     showToast, 
     closeResellerDashboard,
-    creditUserWallet,
     openWalletModal,
     gamesCatalog
   } = useApp();
@@ -133,7 +133,11 @@ export const ResellerDashboard = () => {
 
     setIsFulfilling(true);
 
-    // Live Database check for Reseller Wallet Balance before dispatching order
+    // Live Database check for Reseller Wallet Balance before dispatching order.
+    // This is only a fast UX pre-check — the server (deductUserWallet inside
+    // /api/moogold order/create_order below) is the real, atomic gate; it
+    // will reject the order if the balance has actually run out even if this
+    // check passes on stale data.
     let availBalanceLkr = userProfile?.walletBalance || 0;
     const keyToQuery = userProfile?.securityKey || userProfile?.resellerCode || userProfile?.uid || userProfile?.email;
     if (keyToQuery) {
@@ -154,12 +158,37 @@ export const ResellerDashboard = () => {
       return;
     }
 
-    setTimeout(() => {
-      // Deduct Wholesale Price from Reseller Wallet
-      creditUserWallet(-currentWholesalePrice, 0);
+    // Real dispatch through the same secure /api/moogold proxy customer
+    // top-ups use — the server atomically deducts the reseller's wallet
+    // (using the wholesale priceLkr below, verified server-side against the
+    // catalog price with a reseller-specific tolerance) and actually sends
+    // the order to MooGold. The previous version of this flow never called
+    // MooGold at all and never persisted the wallet deduction — it just
+    // faked a delay and marked the order COMPLETED locally.
+    const orderPayload = {
+      game: currentGame,
+      gameId: currentGame.id,
+      playerId: customerUid.trim(),
+      zoneId: customerZoneId.trim(),
+      package: selectedPackage,
+      priceLkr: currentWholesalePrice,
+      ign: customerIgn.trim() || 'Reseller Customer',
+      userId: userProfile?.uid || '',
+      userEmail: userProfile?.email || '',
+      userProfile,
+      isResellerOrder: true
+    };
 
-      // Create Order
-      const newOrder = {
+    let moongoldResult;
+    try {
+      moongoldResult = await dispatchMoongoldOrder(orderPayload);
+    } catch (err) {
+      moongoldResult = { success: false, status: 'FAILED', message: err.message || 'Gateway connection error' };
+    }
+
+    if (!moongoldResult.success) {
+      setIsFulfilling(false);
+      const failedOrder = {
         id: 'ORD-RS-' + Math.floor(10000 + Math.random() * 90000),
         userId: userProfile?.uid || 'usr-reseller',
         userEmail: userProfile?.email || 'reseller@madstopup.com',
@@ -173,29 +202,64 @@ export const ResellerDashboard = () => {
         paymentMethod: '👑 Reseller Partner Wallet',
         priceLkr: currentWholesalePrice,
         originalPriceLkr: selectedPackage.priceLkr,
-        status: 'COMPLETED',
+        status: 'FAILED',
         isResellerOrder: true,
+        moongoldRef: moongoldResult.moongoldRef || 'GATEWAY_FAILED',
+        failureReason: moongoldResult.message || 'Provider dispatch failed',
         createdAt: new Date().toISOString()
       };
+      addOrder(failedOrder);
+      showToast(`❌ Dispatch Failed: ${moongoldResult.message || 'Provider error'}.`, 'error');
+      return;
+    }
 
-      addOrder(newOrder);
+    // Sync local profile with the exact server-deducted balance (prevents
+    // double deduction — never compute the new balance client-side here).
+    if (moongoldResult?.newBalanceLkr !== undefined) {
+      setUserProfile(prev => ({
+        ...prev,
+        walletBalance: moongoldResult.newBalanceLkr,
+        walletUsdt: moongoldResult.newBalanceUsdt !== undefined ? moongoldResult.newBalanceUsdt : prev.walletUsdt
+      }));
+    }
 
-      setIsFulfilling(false);
-      showToast(`⚡ TOPUP DISPATCHED! ${selectedPackage.name} sent to UID: ${customerUid.trim()}`);
+    const newOrder = {
+      id: 'ORD-RS-' + Math.floor(10000 + Math.random() * 90000),
+      userId: userProfile?.uid || 'usr-reseller',
+      userEmail: userProfile?.email || 'reseller@madstopup.com',
+      gameId: currentGame.id,
+      gameName: currentGame.name,
+      packageName: selectedPackage.name,
+      amount: selectedPackage.amount || 1,
+      playerId: customerUid.trim(),
+      zoneId: customerZoneId.trim(),
+      ign: customerIgn.trim() || 'Reseller Customer',
+      paymentMethod: '👑 Reseller Partner Wallet',
+      priceLkr: currentWholesalePrice,
+      originalPriceLkr: selectedPackage.priceLkr,
+      status: 'COMPLETED',
+      isResellerOrder: true,
+      moongoldRef: moongoldResult.moongoldRef,
+      createdAt: new Date().toISOString()
+    };
 
-      try {
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#ef4444', '#f59e0b', '#10b981', '#3b82f6']
-        });
-      } catch (err) {}
+    addOrder(newOrder);
 
-      setCustomerUid('');
-      setCustomerZoneId('');
-      setCustomerIgn('');
-    }, 1000);
+    setIsFulfilling(false);
+    showToast(`⚡ TOPUP DISPATCHED! ${selectedPackage.name} sent to UID: ${customerUid.trim()}`);
+
+    try {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#ef4444', '#f59e0b', '#10b981', '#3b82f6']
+      });
+    } catch (err) {}
+
+    setCustomerUid('');
+    setCustomerZoneId('');
+    setCustomerIgn('');
   };
 
   const handleSaveStoreProfile = async (e) => {
