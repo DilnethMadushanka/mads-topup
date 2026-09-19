@@ -496,14 +496,24 @@ export default async function handler(req, res) {
     const secretKey = process.env.MOONGOLD_SECRET_KEY || process.env.VITE_MOONGOLD_SECRET_KEY || 'PM67SGqyed';
     const baseUrl = 'https://moogold.com/wp-json/v1/api';
 
+    // MooGold's documented request shape is { path, data } — the client's
+    // `bodyObj` is our internal wrapper (also carries partnerOrderId,
+    // priceLkr, paymentId, clientProfile with the customer's wallet balance,
+    // isResellerOrder), which MooGold never should receive. Previously the
+    // whole wrapper was forwarded verbatim.
+    const moongoldPayload = { path: apiPath, data: bodyObj?.data };
     const timestamp = Math.floor(Date.now() / 1000);
-    const payloadStr = JSON.stringify(bodyObj);
+    const payloadStr = JSON.stringify(moongoldPayload);
     const stringToSign = payloadStr + timestamp + apiPath;
 
     const hmac = crypto.createHmac('sha256', secretKey);
     hmac.update(stringToSign);
     const authSignature = hmac.digest('hex');
     const basicAuth = 'Basic ' + Buffer.from(`${partnerId}:${secretKey}`).toString('base64');
+
+    const logTag = isOrderCreation ? `ORDER product-id=${moongoldPayload.data?.['product-id']} category=${moongoldPayload.data?.category}` : apiPath;
+    console.log(`[MooGold Proxy Request - Vercel] Path: ${apiPath} | ${logTag}`);
+    console.log(`[MooGold Proxy Request Payload - Vercel]:`, payloadStr);
 
     const apiRes = await fetch(`${baseUrl}/${apiPath}`, {
       method: 'POST',
@@ -519,6 +529,9 @@ export default async function handler(req, res) {
     });
 
     const text = await apiRes.text();
+    console.log(`[MooGold Proxy Response - Vercel] HTTP ${apiRes.status} | ${logTag}`);
+    console.log(`[MooGold Proxy Response Body - Vercel]:`, text);
+
     let jsonResult = null;
     try {
       jsonResult = JSON.parse(text);
@@ -527,6 +540,7 @@ export default async function handler(req, res) {
     const isSuccess = apiRes.ok && jsonResult && (jsonResult.status === 'processing' || jsonResult.status === 'true' || jsonResult.status === true || jsonResult.status === 1 || jsonResult.order_id);
 
     if (isOrderCreation && !isSuccess) {
+      console.error(`[MOOGOLD ORDER REJECTED - Vercel] product-id=${moongoldPayload.data?.['product-id']} category=${moongoldPayload.data?.category} reason="${jsonResult?.message || jsonResult?.error || text}"`);
       await refundUserWallet(authenticatedUser.uid, numPriceLkr, deductResult?.usedCurrency || 'LKR', authenticatedUser.email, deductResult?.rtdbKey);
     }
 

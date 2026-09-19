@@ -945,8 +945,17 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
     const secretKey = process.env.MOONGOLD_SECRET_KEY || process.env.VITE_MOONGOLD_SECRET_KEY || 'PM67SGqyed';
     const baseUrl = 'https://moogold.com/wp-json/v1/api';
 
+    // MooGold's documented request shape is { path, data } (see the
+    // product/validate and user/check_id calls in moongoldApi.js, which
+    // already follow this). The client's `bodyObj` is OUR internal wrapper —
+    // it also carries partnerOrderId, priceLkr, paymentId, clientProfile
+    // (including the customer's wallet balance) and isResellerOrder, which
+    // this server needs but MooGold never should. Previously the ENTIRE
+    // wrapper was sent to MooGold verbatim, leaking wallet balance data to a
+    // third party and sending fields outside their documented schema.
+    const moongoldPayload = { path: apiPath, data: bodyObj?.data };
     const timestamp = Math.floor(Date.now() / 1000);
-    const payloadStr = JSON.stringify(bodyObj);
+    const payloadStr = JSON.stringify(moongoldPayload);
     const stringToSign = payloadStr + timestamp + apiPath;
 
     const hmac = crypto.createHmac('sha256', secretKey);
@@ -954,9 +963,13 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
     const authSignature = hmac.digest('hex');
     const basicAuth = 'Basic ' + Buffer.from(`${partnerId}:${secretKey}`).toString('base64');
 
+    // Robust request/response logging — for order/create_order this
+    // pinpoints exactly which game/package/product-id MooGold rejected and
+    // why, without having to reconstruct it from a raw JSON blob.
+    const logTag = isOrderCreation ? `ORDER product-id=${moongoldPayload.data?.['product-id']} category=${moongoldPayload.data?.category}` : apiPath;
     console.log(`\n========================================`);
-    console.log(`[MooGold Proxy Request] Path: ${apiPath}`);
-    console.log(`[Payload]:`, payloadStr);
+    console.log(`[MooGold Proxy Request] Path: ${apiPath} | ${logTag}`);
+    console.log(`[MooGold Proxy Request Payload]:`, payloadStr);
 
     const apiRes = await fetch(`${baseUrl}/${apiPath}`, {
       method: 'POST',
@@ -972,7 +985,8 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
     });
 
     const text = await apiRes.text();
-    console.log(`[MooGold Proxy Response] HTTP ${apiRes.status}:`, text);
+    console.log(`[MooGold Proxy Response] HTTP ${apiRes.status} | ${logTag}`);
+    console.log(`[MooGold Proxy Response Body]:`, text);
     console.log(`========================================\n`);
 
     let jsonResult = null;
@@ -981,6 +995,10 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
     } catch (e) {}
 
     const isSuccess = apiRes.ok && jsonResult && (jsonResult.status === 'processing' || jsonResult.status === 'true' || jsonResult.status === true || jsonResult.status === 1 || jsonResult.order_id);
+
+    if (isOrderCreation && !isSuccess) {
+      console.error(`[MOOGOLD ORDER REJECTED] product-id=${moongoldPayload.data?.['product-id']} category=${moongoldPayload.data?.category} reason="${jsonResult?.message || jsonResult?.error || text}"`);
+    }
 
     // 4. REFUND USER IF MOOGOLD ORDER FAILED — refund to the same wallet they paid from
     if (isOrderCreation && !isSuccess) {
