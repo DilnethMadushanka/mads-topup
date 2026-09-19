@@ -343,20 +343,20 @@ export const dispatchMoongoldOrder = async (orderData) => {
 
   const productId = orderData.package?.moongoldProductId || '215570';
 
-  // MooGold API: category is always '1' for all games (confirmed by MooGold support)
-  // The moongoldCategoryId on the game object is used for product browsing, NOT for order creation
-  //
-  // MooGold's official OpenAPI spec (api-doc.yaml, components.schemas.create_order.data)
-  // documents category, product-id, and quantity as `type: integer` — but this was
-  // previously sending them as quoted JSON strings ("1", "14704215", "1"). MooGold's API
-  // likely does strict type validation and rejects a string where it expects a number,
-  // which manifests as exactly the "Product ID is incorrect/missing or not yet
-  // authorized" error even for a fully valid, authorized product-id (confirmed live:
-  // the same product/player succeeded instantly via MooGold's own reseller portal, and
-  // our request reached MooGold's API cleanly — a structured 422, not a malformed-request
-  // error — meaning the values were received but rejected on validation).
+  // Each game's real MooGold category id (set per-game in games.js, e.g.
+  // '50' for Free Fire SG/MY, '1' for Mobile Legends) — NOT a blanket '1'.
+  // A prior change hardcoded category to '1' for every game "confirmed by
+  // MooGold support", which was wrong for Free Fire SG/MY at least: it
+  // caused MooGold to reject every order for that game with "Product ID is
+  // incorrect/missing or has not yet been authorized" even for a fully
+  // valid, authorized product-id (confirmed live — the same request with
+  // category restored to '50' succeeded instantly, real order_id returned).
+  const categoryId = orderData.game?.moongoldCategoryId || '1';
+
+  // MooGold's official OpenAPI spec (api-doc.yaml) documents category,
+  // product-id, and quantity as `type: integer`, not quoted strings.
   const dataPayload = {
-    category: 1,
+    category: parseInt(categoryId, 10),
     'product-id': parseInt(productId, 10),
     quantity: parseInt(orderData.quantity || 1, 10)
   };
@@ -364,8 +364,11 @@ export const dispatchMoongoldOrder = async (orderData) => {
   if (gameId.includes('pubg') || idLabel.includes('character')) {
     dataPayload['Character ID'] = orderData.playerId || '';
   } else if (gameId.includes('freefire')) {
-    // MooGold Free Fire API requires 'User ID' field (not 'Player ID')
-    dataPayload['User ID'] = orderData.playerId || '';
+    // MooGold Free Fire (SG/MY) requires 'Player ID', not 'User ID' —
+    // confirmed live against the real MooGold API; a prior "fix" had this
+    // backwards and was the actual root cause of every Free Fire order
+    // failing with a misleading "Product ID incorrect/unauthorized" error.
+    dataPayload['Player ID'] = orderData.playerId || '';
   } else {
     dataPayload['User ID'] = orderData.playerId || '';
     if (orderData.zoneId) {
