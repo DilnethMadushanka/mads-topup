@@ -35,6 +35,14 @@
     "moogoldProcessedOrders": {
       ".read": true,
       ".write": true
+    },
+    "supportTickets": {
+      ".read": true,
+      ".write": true
+    },
+    "reviews": {
+      ".read": true,
+      ".write": true
     }
   }
 }
