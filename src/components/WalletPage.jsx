@@ -39,19 +39,32 @@ export const WalletPage = () => {
     const txnId = urlParams.get('txnId') || urlParams.get('id') || urlParams.get('transactionId');
     if (genieStatus && txnId) {
       showToast('Verifying Genie payment...');
+      // The server (webhook or this same verify-status call, whichever runs
+      // first) is what actually credits the wallet in RTDB — idempotently, so
+      // this call is safe to retry. We only display feedback here and let the
+      // real-time user listener reflect the true server balance; we must NOT
+      // also call creditUserWallet() locally, or a payment already credited
+      // by the webhook would be double-added.
       fetch('/api/genie/verify-status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ transactionId: txnId }) })
         .then(r => r.json())
         .then(data => {
           if (data.success && data.isPaid) {
-            let amt = parseFloat(data.amount || 0);
-            if (amt > 1000) amt = amt / 100;
-            if (amt > 0) {
-              creditUserWallet(amt, 0);
+            const amt = parseFloat(data.amount || 0);
+            if (data.credited) {
               addManualPayment({ id: 'PAY-GENIE-' + Math.floor(1000 + Math.random() * 9000), userId: userProfile?.uid || '', userEmail: userProfile?.email || 'guest@madstopup.com', userName: userProfile?.name || 'Gamer', method: 'Online Card / eZ Cash', referenceNumber: `Txn: ${txnId}`, amount: amt, currency: 'LKR', slipUrl: '', status: 'VERIFIED', createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16) });
               showToast(`⚡ CARD PAYMENT VERIFIED! +LKR ${amt.toLocaleString()} credited!`);
+            } else if (data.alreadyCredited) {
+              showToast(`⚡ Payment already verified — Rs. ${amt.toLocaleString()} is in your wallet!`);
+            } else {
+              showToast('Payment verified! Wallet balance is syncing...');
             }
-          } else { showToast(`Genie transaction: ${data.state || 'Pending'}`); }
-        }).catch(err => console.warn('Genie verify error:', err.message));
+          } else {
+            showToast(`Genie transaction: ${data.state || 'Pending'}. If you were charged, your wallet will be credited automatically once payment is confirmed.`);
+          }
+        }).catch(err => {
+          console.warn('Genie verify error:', err.message);
+          showToast('Could not confirm payment status right now. If you were charged, your wallet will still be credited automatically — check back shortly.', 'error');
+        });
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
@@ -63,10 +76,11 @@ export const WalletPage = () => {
     if (!amt || amt < 50) { showToast('Minimum deposit is Rs. 50!', 'error'); return; }
     setIsGenieLoading(true);
     try {
+      const userId = userProfile?.uid || auth?.currentUser?.uid || '';
       const userEmail = userProfile?.email || auth?.currentUser?.email || 'customer@madstopup.com';
       const userName = userProfile?.name || auth?.currentUser?.displayName || 'Gamer';
       const returnUrl = `${window.location.origin}/wallet?genie=success`;
-      const response = await fetch('/api/genie/create-transaction', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: amt, userEmail, userName, redirectUrl: returnUrl, orderRef: 'DEP-GENIE-' + Date.now() }) });
+      const response = await fetch('/api/genie/create-transaction', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: amt, userId, userEmail, userName, redirectUrl: returnUrl, orderRef: 'DEP-GENIE-' + Date.now() }) });
       const resData = await response.json();
       if (resData.success && resData.redirectUrl) {
         showToast('Redirecting to payment gateway...');

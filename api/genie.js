@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { saveGenieTransactionRecord } from './_genieWallet.js';
 
 const GENIE_DEFAULT_APP_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBJZCI6ImM5OWI0NTBkLTM4ZTktNDU1Ny04OWYxLTVjZGM5MWZkN2EwZiIsImNvbXBhbnlJZCI6IjY5OWMyOTRiZWM5YWFlMDAwMjA2NjAxNiIsImlhdCI6MTc3MTg0MjE0OSwiZXhwIjo0OTI3NTE1NzQ5fQ.LutDa2obyzXY6MsCGtrK3bPZHMrNpxI-T8Q4cCtKZo4';
 const GENIE_DEFAULT_BASE_URL = 'https://api.geniebiz.lk';
@@ -53,7 +54,7 @@ export default async function handler(req, res) {
       try { body = JSON.parse(body); } catch (e) { body = {}; }
     }
 
-    const { amount, userEmail, userName, redirectUrl, orderRef, transactionId } = body || {};
+    const { amount, userId, userEmail, userName, redirectUrl, orderRef, transactionId } = body || {};
 
     let appKey = (process.env.GENIE_APP_KEY || process.env.VITE_GENIE_APP_KEY || GENIE_DEFAULT_APP_KEY).replace(/[\r\n\s]/g, '');
     if (!appKey.includes('699c294bec9aae0002066016')) {
@@ -108,6 +109,23 @@ export default async function handler(req, res) {
       try { resJson = JSON.parse(resText); } catch (e) {}
 
       if (apiRes.ok && resJson && (resJson.url || resJson.shortUrl)) {
+        // Persist who this transaction belongs to and the real amount BEFORE
+        // redirecting the customer to checkout, so the webhook/verify-status
+        // can credit the right wallet even if the browser never comes back.
+        if (resJson.id) {
+          await saveGenieTransactionRecord(resJson.id, {
+            uid: userId || '',
+            email: cleanEmail,
+            userName: cleanName,
+            amountLkr: numAmount,
+            localId,
+            status: 'PENDING',
+            createdAt: new Date().toISOString()
+          });
+        } else {
+          console.error(`[Genie Create Warning] No transaction id returned by Genie for localId=${localId} — wallet cannot be auto-credited for this attempt.`);
+        }
+
         return res.json({
           success: true,
           transactionId: resJson.id,

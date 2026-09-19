@@ -572,6 +572,39 @@ async function refundUserWallet(uid, priceLkr, usedCurrency = 'LKR', email, rtdb
   }
 }
 
+/**
+ * Credit a user's wallet server-side. Mirrors deductUserWallet but adds instead
+ * of subtracts. Used by payment webhooks/IPN callbacks so a successful deposit
+ * is never dependent on the customer's browser staying open.
+ */
+async function creditUserWalletServer(uid, amountLkr, email, clientProfile) {
+  if (!uid || !(amountLkr > 0)) return { success: false, reason: 'Invalid amount' };
+  try {
+    const resolved = await resolveUserWalletKey(uid, email, clientProfile);
+    if (!resolved) return { success: false, reason: 'User wallet not found' };
+
+    const { rtdbKey } = resolved;
+    const newLkr = parseFloat((resolved.walletBalance + amountLkr).toFixed(2));
+    const newUsdt = resolved.walletUsdt;
+
+    await fetch(`${FIREBASE_RTDB_URL}/users/${encodeURIComponent(rtdbKey)}.json`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        walletBalance: newLkr,
+        walletUsdt: newUsdt,
+        updatedAt: new Date().toISOString()
+      })
+    });
+
+    console.log(`[Backend Wallet Credit] +Rs. ${amountLkr} to user ${uid} (key: ${rtdbKey}). New LKR balance: ${newLkr}`);
+    return { success: true, newBalanceLkr: newLkr, newBalanceUsdt: newUsdt, rtdbKey };
+  } catch (e) {
+    console.error('[Backend Wallet Credit Error]:', e.message);
+    return { success: false, reason: 'Database update failed' };
+  }
+}
+
 // MooGold Reseller API Secure Proxy Endpoint (Server-Side Authentication & Balance Enforcement)
 app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
   try {
@@ -840,10 +873,147 @@ const GENIE_DEFAULT_APP_ID = 'c99b450d-38e9-4557-89f1-5cdc91fd7a0f';
 const GENIE_DEFAULT_APP_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBJZCI6ImM5OWI0NTBkLTM4ZTktNDU1Ny04OWYxLTVjZGM5MWZkN2EwZiIsImNvbXBhbnlJZCI6IjY5OWMyOTRiZWM5YWFlMDAwMjA2NjAxNiIsImlhdCI6MTc3MTg0MjE0OSwiZXhwIjo0OTI3NTE1NzQ5fQ.LutDa2obyzXY6MsCGtrK3bPZHMrNpxI-T8Q4cCtKZo4';
 const GENIE_DEFAULT_BASE_URL = 'https://api.geniebiz.lk';
 
+// Same-process lock to stop the webhook and the client's redirect-triggered
+// verify-status poll from both crediting the same transaction if they land
+// at (almost) the same instant. The RTDB status field below is the durable
+// idempotency guard that also survives process restarts.
+const genieCreditLocks = new Set();
+
+async function saveGenieTransactionRecord(transactionId, record) {
+  try {
+    await fetch(`${FIREBASE_RTDB_URL}/genieTransactions/${encodeURIComponent(transactionId)}.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(record)
+    });
+    if (record.localId) {
+      await fetch(`${FIREBASE_RTDB_URL}/genieLocalIdIndex/${encodeURIComponent(record.localId)}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(transactionId)
+      });
+    }
+  } catch (e) {
+    console.error('[Genie Transaction Save Error]:', e.message);
+  }
+}
+
+async function getGenieTransactionRecord(transactionId) {
+  try {
+    const res = await fetch(`${FIREBASE_RTDB_URL}/genieTransactions/${encodeURIComponent(transactionId)}.json`);
+    if (res.ok) return (await res.json()) || null;
+  } catch (e) {
+    console.warn('[Genie Transaction Read Warning]:', e.message);
+  }
+  return null;
+}
+
+async function resolveGenieTransactionIdByLocalId(localId) {
+  try {
+    const res = await fetch(`${FIREBASE_RTDB_URL}/genieLocalIdIndex/${encodeURIComponent(localId)}.json`);
+    if (res.ok) return (await res.json()) || null;
+  } catch (e) { /* not found */ }
+  return null;
+}
+
+/**
+ * Idempotently verify (against Genie's OWN status API — a webhook body or
+ * client claim is never trusted on its own) and credit a Genie transaction's
+ * wallet. Safe to call repeatedly for the same transaction: the webhook (IPN)
+ * and the client's redirect-triggered verify-status poll both call this, and
+ * whichever gets there first performs the credit; the other sees status
+ * CREDITED and becomes a no-op. This is what makes crediting NOT depend
+ * solely on the customer's browser completing the redirect flow.
+ */
+async function verifyAndCreditGenieTransaction(transactionId) {
+  if (!transactionId) return { success: false, error: 'Missing transactionId' };
+
+  if (genieCreditLocks.has(transactionId)) {
+    return { success: true, isPaid: true, pending: true };
+  }
+
+  const record = await getGenieTransactionRecord(transactionId);
+  if (!record) {
+    console.error(`[Genie Credit Error] No transaction record found for txn=${transactionId} — cannot identify which user to credit.`);
+    return { success: false, error: 'Unknown transaction (no pending record on file)' };
+  }
+  if (record.status === 'CREDITED') {
+    return {
+      success: true, isPaid: true, alreadyCredited: true,
+      amount: record.amountLkr, newBalanceLkr: record.newBalanceLkr, newBalanceUsdt: record.newBalanceUsdt
+    };
+  }
+
+  const appKey = (process.env.GENIE_APP_KEY || process.env.VITE_GENIE_APP_KEY || GENIE_DEFAULT_APP_KEY).replace(/[\r\n\s]/g, '');
+  const baseUrl = (process.env.GENIE_BASE_URL || process.env.VITE_GENIE_BASE_URL || GENIE_DEFAULT_BASE_URL).replace(/[\r\n\s\/]+$/, '');
+
+  let state = '';
+  try {
+    const apiRes = await fetch(`${baseUrl}/public/transactions/${transactionId}`, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json', 'Authorization': appKey }
+    });
+    const resText = await apiRes.text();
+    let resJson = null;
+    try { resJson = JSON.parse(resText); } catch (e) {}
+    if (apiRes.ok && resJson) {
+      state = String(resJson.state || '').toUpperCase();
+    } else {
+      console.warn(`[Genie Status Re-check Failed] txn=${transactionId} HTTP ${apiRes.status}: ${resText.substring(0, 200)}`);
+    }
+  } catch (e) {
+    console.error(`[Genie Status Re-check Error] txn=${transactionId}:`, e.message);
+    return { success: false, error: 'Could not verify transaction with Dialog Genie' };
+  }
+
+  const isPaid = state === 'SUCCESS' || state === 'COMPLETED' || state === 'CONFIRMED' || state === 'CAPTURED';
+  if (!isPaid) {
+    return { success: true, isPaid: false, state };
+  }
+
+  genieCreditLocks.add(transactionId);
+  try {
+    // Re-fetch immediately before writing to shrink the race window against a
+    // concurrent request that read the record just before this one locked it.
+    const freshRecord = await getGenieTransactionRecord(transactionId);
+    if (freshRecord && freshRecord.status === 'CREDITED') {
+      return {
+        success: true, isPaid: true, alreadyCredited: true,
+        amount: freshRecord.amountLkr, newBalanceLkr: freshRecord.newBalanceLkr, newBalanceUsdt: freshRecord.newBalanceUsdt
+      };
+    }
+
+    // Credit using the amount WE stored at transaction-creation time, never a
+    // value read back from Genie/webhook — same anti-tampering principle as
+    // the MooGold order-price check.
+    const creditResult = await creditUserWalletServer(record.uid, record.amountLkr, record.email, null);
+    if (!creditResult.success) {
+      console.error(`[Genie Credit Failed] txn=${transactionId} user=${record.uid || record.email} reason=${creditResult.reason}`);
+      return { success: false, error: creditResult.reason || 'Wallet credit failed', isPaid: true };
+    }
+
+    await saveGenieTransactionRecord(transactionId, {
+      ...record,
+      status: 'CREDITED',
+      creditedAt: new Date().toISOString(),
+      newBalanceLkr: creditResult.newBalanceLkr,
+      newBalanceUsdt: creditResult.newBalanceUsdt
+    });
+
+    console.log(`[Genie Wallet Credited] txn=${transactionId} user=${record.uid || record.email} amount=Rs.${record.amountLkr} newBalance=Rs.${creditResult.newBalanceLkr}`);
+    return {
+      success: true, isPaid: true, credited: true,
+      amount: record.amountLkr, newBalanceLkr: creditResult.newBalanceLkr, newBalanceUsdt: creditResult.newBalanceUsdt
+    };
+  } finally {
+    genieCreditLocks.delete(transactionId);
+  }
+}
+
 // Create Genie Business IPG Transaction
 app.post('/api/genie/create-transaction', rateLimiter(15, 60000), async (req, res) => {
   try {
-    const { amount, userEmail, userName, redirectUrl, orderRef } = req.body || {};
+    const { amount, userId, userEmail, userName, redirectUrl, orderRef } = req.body || {};
     const numAmount = parseFloat(amount);
 
     if (!numAmount || numAmount <= 0) {
@@ -900,6 +1070,23 @@ app.post('/api/genie/create-transaction', rateLimiter(15, 60000), async (req, re
     console.log(`[Geniebiz IPG Create Response] HTTP ${apiRes.status}:`, resText.substring(0, 300));
 
     if (apiRes.ok && resJson && (resJson.url || resJson.shortUrl)) {
+      // Persist who this transaction belongs to and the real amount BEFORE
+      // redirecting the customer to checkout, so the webhook/verify-status
+      // can credit the right wallet even if the browser never comes back.
+      if (resJson.id) {
+        await saveGenieTransactionRecord(resJson.id, {
+          uid: userId || '',
+          email: cleanEmail,
+          userName: cleanName,
+          amountLkr: numAmount,
+          localId,
+          status: 'PENDING',
+          createdAt: new Date().toISOString()
+        });
+      } else {
+        console.error(`[Genie Create Warning] No transaction id returned by Genie for localId=${localId} — wallet cannot be auto-credited for this attempt.`);
+      }
+
       return res.json({
         success: true,
         transactionId: resJson.id,
@@ -924,7 +1111,12 @@ app.post('/api/genie/create-transaction', rateLimiter(15, 60000), async (req, re
   }
 });
 
-// Verify Genie Business IPG Transaction Status
+// Verify Genie Business IPG Transaction Status — this is the customer's browser
+// polling us right after the redirect back from checkout. It performs the SAME
+// server-side credit as the webhook (idempotent), so a successful payment is
+// credited here immediately without waiting for Dialog's async IPN — but it is
+// NOT the only path that can credit it (see webhook below), so a closed tab
+// or dropped connection right after payment doesn't lose the deposit.
 app.post('/api/genie/verify-status', rateLimiter(30, 60000), async (req, res) => {
   try {
     const { transactionId } = req.body || {};
@@ -932,56 +1124,51 @@ app.post('/api/genie/verify-status', rateLimiter(30, 60000), async (req, res) =>
       return res.status(400).json({ error: 'Missing transactionId' });
     }
 
-    const appKey = (process.env.GENIE_APP_KEY || process.env.VITE_GENIE_APP_KEY || GENIE_DEFAULT_APP_KEY).replace(/[\r\n\s]/g, '');
-    const baseUrl = (process.env.GENIE_BASE_URL || process.env.VITE_GENIE_BASE_URL || GENIE_DEFAULT_BASE_URL).replace(/[\r\n\s\/]+$/, '');
-
-    const apiRes = await fetch(`${baseUrl}/public/transactions/${transactionId}`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': appKey
-      }
-    });
-
-    const resText = await apiRes.text();
-    let resJson = null;
-    try { resJson = JSON.parse(resText); } catch (e) {}
-
-    if (apiRes.ok && resJson) {
-      const state = String(resJson.state || '').toUpperCase();
-      const isPaid = state === 'SUCCESS' || state === 'COMPLETED' || state === 'CONFIRMED' || state === 'CAPTURED';
-      const rawAmt = parseFloat(resJson.amount || resJson.payAmount || 0);
-      const amtLkr = rawAmt > 1000 ? rawAmt / 100 : rawAmt;
-
-      return res.json({
-        success: true,
-        isPaid,
-        state,
-        transactionId: resJson.id,
-        amount: amtLkr,
-        currency: resJson.currency || 'LKR',
-        localId: resJson.localId,
-        details: resJson
-      });
-    } else {
-      return res.status(apiRes.status || 400).json({
-        success: false,
-        error: resJson?.message || 'Failed to retrieve transaction status'
-      });
+    const result = await verifyAndCreditGenieTransaction(transactionId);
+    if (!result.success) {
+      console.error(`[Genie Verify-Status Error] txn=${transactionId}:`, result.error);
+      return res.status(400).json(result);
     }
+    return res.json({ ...result, transactionId });
   } catch (err) {
     console.error('[Geniebiz Verify Error]:', err);
     return res.status(500).json({ error: err.message });
   }
 });
 
-// Genie Business Webhook (IPN Callback)
-app.post('/api/genie/webhook', (req, res) => {
+// Genie Business Webhook (IPN Callback) — the authoritative, server-to-server
+// confirmation from Dialog Genie. This does NOT depend on the customer's
+// browser at all, so it's what guarantees a successful card/eZ Cash payment
+// always credits the wallet even if the customer never sees the redirect
+// (closed tab, crashed app, network drop). Field names for the transaction id
+// aren't guaranteed by Dialog's docs, so we defensively check the common
+// shapes; if none match we still ack (so Genie doesn't retry-storm us) but log
+// loudly for manual follow-up.
+app.post('/api/genie/webhook', async (req, res) => {
+  const body = req.body || {};
+  console.log('[Genie Business IPG Webhook Received]:', body);
+
+  let transactionId = body.id || body.transactionId || body.data?.id || null;
+  if (!transactionId && body.localId) {
+    transactionId = await resolveGenieTransactionIdByLocalId(body.localId);
+  }
+
+  if (!transactionId) {
+    console.error('[Genie Webhook Error] Could not determine transaction id from webhook payload:', JSON.stringify(body).substring(0, 500));
+    return res.json({ success: true, message: 'Webhook received (no matching transaction id — logged for manual follow-up)' });
+  }
+
   try {
-    console.log(`[Genie Business IPG Webhook Received]:`, req.body);
-    res.json({ success: true, message: 'Webhook received successfully' });
+    const result = await verifyAndCreditGenieTransaction(transactionId);
+    if (!result.success) {
+      console.error(`[Genie Webhook Credit Failed] txn=${transactionId}:`, result.error);
+    }
+    // Always ack 200 so Dialog doesn't endlessly retry — failures are logged
+    // above for admin follow-up/manual credit rather than silently dropped.
+    return res.json({ success: true, message: 'Webhook processed', result });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    console.error(`[Genie Webhook Error] txn=${transactionId}:`, e.message);
+    return res.json({ success: true, message: 'Webhook received (processing error logged)' });
   }
 });
 
