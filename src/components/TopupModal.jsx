@@ -92,7 +92,7 @@ export const TopupModal = () => {
       setReceiptR2Url(result.url);
       showToast('Payment receipt uploaded to Cloudflare R2 Bucket!');
     } else {
-      showToast('Failed to upload receipt', 'error');
+      showToast(result.error || 'Failed to upload receipt', 'error');
     }
   };
 

@@ -43,24 +43,64 @@ export const getR2AssetUrl = (fileName) => {
   return `${baseUrl}/${cleanPath}`;
 };
 
-export const uploadToR2Storage = async (file, folder = 'receipts') => {
-  const config = getR2Config();
-  
-  // Direct Cloudflare R2 S3 API upload simulation / protocol execution
-  await new Promise(res => setTimeout(res, 900));
-  
-  const timestamp = Date.now();
-  const safeName = file.name ? file.name.replace(/[^a-zA-Z0-9._-]/g, '_') : 'file';
-  const filePath = `${folder}/${timestamp}_${safeName}`;
-  const fullUrl = getR2AssetUrl(filePath);
+const R2_UPLOAD_MAX_BYTES = 5 * 1024 * 1024; // 5MB
 
-  return {
-    success: true,
-    key: filePath,
-    url: fullUrl,
-    bucket: config.bucketName,
-    accessKeyId: config.accessKeyId,
-    size: file.size || 0,
-    message: 'File successfully uploaded to Cloudflare R2 bucket!'
+const fileToBase64 = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(reader.result);
+  reader.onerror = () => reject(reader.error || new Error('Failed to read file'));
+  reader.readAsDataURL(file);
+});
+
+// Uploads a file to the Cloudflare R2 bucket via the server's /api/upload-file
+// proxy (the R2 write credentials only ever live server-side — they must
+// never be shipped in the client bundle). Returns a real success/failure
+// result; unlike the previous stub implementation, a failed or unreachable
+// upload is reported as a failure rather than a fabricated success with a
+// URL that points to nothing.
+export const uploadToR2Storage = async (file, folder = 'receipts') => {
+  if (!file) {
+    return { success: false, error: 'No file provided.' };
+  }
+  if (file.size > R2_UPLOAD_MAX_BYTES) {
+    return { success: false, error: 'File is too large. Maximum size is 5MB.' };
+  }
+
+  let dataUrl;
+  try {
+    dataUrl = await fileToBase64(file);
+  } catch (e) {
+    return { success: false, error: 'Could not read the selected file.' };
+  }
+
+  const payload = {
+    fileName: file.name || 'file',
+    fileType: file.type || 'application/octet-stream',
+    fileDataBase64: dataUrl,
+    folder
   };
+
+  const endpoints = ['/api/upload-file', 'https://madstopup.com/api/upload-file'];
+  for (const endpoint of endpoints) {
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.success) {
+        return data;
+      }
+      if (data?.error) {
+        // A definitive server-side rejection (too large, bad type, storage
+        // not configured) — no point trying the other endpoint.
+        return { success: false, error: data.error };
+      }
+    } catch (e) {
+      console.warn(`[R2 Upload] ${endpoint} unreachable:`, e.message);
+    }
+  }
+
+  return { success: false, error: 'Upload failed. Please check your connection and try again.' };
 };

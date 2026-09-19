@@ -146,7 +146,7 @@ export const GameTopupPage = () => {
       setReceiptR2Url(result.url);
       showToast('Payment receipt uploaded to Cloudflare R2 Storage!');
     } else {
-      showToast('Failed to upload receipt', 'error');
+      showToast(result.error || 'Failed to upload receipt', 'error');
     }
   };
 

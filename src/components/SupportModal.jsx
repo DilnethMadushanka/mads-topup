@@ -60,7 +60,7 @@ export const SupportModal = () => {
       setAttachmentUrl(res.url);
       showToast('Image screenshot uploaded to support system!');
     } else {
-      showToast('Upload failed', 'error');
+      showToast(res.error || 'Upload failed', 'error');
     }
   };
 

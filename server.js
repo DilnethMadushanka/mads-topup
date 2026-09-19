@@ -6,6 +6,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { initTelegramBot, getTelegramBotHealthStatus, forceTelegramBotRefresh } from './src/services/telegramBotService.js';
 import { lookupFreePlayerIgn } from './src/services/playerLookup.js';
 
@@ -88,6 +89,80 @@ function rateLimiter(maxRequests = 30, windowMs = 60000) {
     next();
   };
 }
+
+// ─────────────────────────────────────────────────────────────────────────
+// Cloudflare R2 file storage (S3-compatible API).
+//
+// storageService.js's uploadToR2Storage() used to be a pure stub — it never
+// made any network request at all, just faked a delay and fabricated a
+// plausible-looking { success: true, url } response. Every receipt/screenshot
+// "uploaded" through it (payment receipts, support ticket attachments) was
+// never actually persisted anywhere; the returned URL pointed to an object
+// that was never created, so admins reviewing a payment or support ticket
+// would see a broken image. This performs the real upload via R2's
+// S3-compatible API, using credentials that only ever live server-side
+// (R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY / R2_ENDPOINT env vars — never
+// the VITE_-prefixed client-bundle equivalents, which would expose the
+// bucket's write credentials to anyone reading the JS bundle).
+const R2_UPLOAD_MAX_BYTES = 5 * 1024 * 1024; // 5MB — matches the client's own limit
+const R2_ALLOWED_FOLDERS = new Set(['receipts', 'support-attachments', 'popup_ads']);
+
+let r2Client = null;
+if (process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY && process.env.R2_ENDPOINT) {
+  r2Client = new S3Client({
+    region: 'auto',
+    endpoint: process.env.R2_ENDPOINT,
+    credentials: {
+      accessKeyId: process.env.R2_ACCESS_KEY_ID,
+      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY
+    }
+  });
+} else {
+  console.warn('[R2 Storage] R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY / R2_ENDPOINT not fully configured — file uploads will fail until set.');
+}
+
+app.post('/api/upload-file', rateLimiter(20, 60000), express.json({ limit: '8mb' }), async (req, res) => {
+  try {
+    if (!r2Client) {
+      return res.status(503).json({ success: false, error: 'File storage is not configured on the server.' });
+    }
+
+    const { fileName, fileType, fileDataBase64, folder } = req.body || {};
+    if (!fileDataBase64 || typeof fileDataBase64 !== 'string') {
+      return res.status(400).json({ success: false, error: 'Missing file data.' });
+    }
+    const cleanFolder = R2_ALLOWED_FOLDERS.has(folder) ? folder : 'receipts';
+
+    const base64Data = fileDataBase64.includes(',') ? fileDataBase64.split(',').pop() : fileDataBase64;
+    const buffer = Buffer.from(base64Data, 'base64');
+    if (buffer.length === 0) {
+      return res.status(400).json({ success: false, error: 'Empty file.' });
+    }
+    if (buffer.length > R2_UPLOAD_MAX_BYTES) {
+      return res.status(413).json({ success: false, error: 'File is too large. Maximum size is 5MB.' });
+    }
+
+    const safeName = sanitizeString(String(fileName || 'file'), 100).replace(/[^a-zA-Z0-9._-]/g, '_') || 'file';
+    const key = `${cleanFolder}/${Date.now()}_${safeName}`;
+    const bucketName = process.env.VITE_R2_BUCKET_NAME || process.env.R2_BUCKET_NAME || 'mads-topup';
+
+    await r2Client.send(new PutObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+      Body: buffer,
+      ContentType: fileType || 'application/octet-stream'
+    }));
+
+    const bucketUrl = (process.env.VITE_R2_BUCKET_URL || process.env.R2_BUCKET_URL || `${process.env.R2_ENDPOINT}/${bucketName}`).replace(/\/$/, '');
+    const url = `${bucketUrl}/${key}`;
+
+    console.log(`[R2 Upload Success] key=${key} size=${buffer.length}B bucket=${bucketName}`);
+    res.json({ success: true, key, url, bucket: bucketName, size: buffer.length });
+  } catch (err) {
+    console.error('[R2 Upload Error]:', err.message);
+    res.status(500).json({ success: false, error: 'Upload failed. Please try again.' });
+  }
+});
 
 // ─────────────────────────────────────────────────────────────────────────
 // Real server-side Admin session authentication.
