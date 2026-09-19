@@ -345,10 +345,20 @@ export const dispatchMoongoldOrder = async (orderData) => {
 
   // MooGold API: category is always '1' for all games (confirmed by MooGold support)
   // The moongoldCategoryId on the game object is used for product browsing, NOT for order creation
+  //
+  // MooGold's official OpenAPI spec (api-doc.yaml, components.schemas.create_order.data)
+  // documents category, product-id, and quantity as `type: integer` — but this was
+  // previously sending them as quoted JSON strings ("1", "14704215", "1"). MooGold's API
+  // likely does strict type validation and rejects a string where it expects a number,
+  // which manifests as exactly the "Product ID is incorrect/missing or not yet
+  // authorized" error even for a fully valid, authorized product-id (confirmed live:
+  // the same product/player succeeded instantly via MooGold's own reseller portal, and
+  // our request reached MooGold's API cleanly — a structured 422, not a malformed-request
+  // error — meaning the values were received but rejected on validation).
   const dataPayload = {
-    category: '1',
-    'product-id': productId,
-    quantity: String(orderData.quantity || 1)
+    category: 1,
+    'product-id': parseInt(productId, 10),
+    quantity: parseInt(orderData.quantity || 1, 10)
   };
 
   if (gameId.includes('pubg') || idLabel.includes('character')) {

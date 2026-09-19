@@ -303,10 +303,14 @@ async function sendMoongoldLiveOrder(game, pkg, playerId, zoneId, orderRef) {
   // MooGold API: category is always '1' for all games (confirmed by MooGold support Erin)
   const productId = pkg.moongoldProductId || '15972928';
 
+  // MooGold's OpenAPI spec (api-doc.yaml) documents category, product-id and
+  // quantity as `type: integer` for create_order — sending them as quoted
+  // strings gets rejected by MooGold's validation as if the product-id were
+  // invalid/unauthorized, even for a fully valid, authorized product.
   const dataPayload = {
-    category: '1',
-    'product-id': productId,
-    quantity: '1'
+    category: 1,
+    'product-id': parseInt(productId, 10),
+    quantity: 1
   };
 
   const gId = (game.id || '').toLowerCase();
