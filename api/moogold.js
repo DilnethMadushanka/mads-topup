@@ -1,4 +1,25 @@
 import crypto from 'crypto';
+import { GAMES_DATA } from '../src/data/games.js';
+
+// The largest discount any legitimate promo code (TopupModal.jsx WELCOME50 /
+// LAUNCH100) can knock off a package's catalog price. Promo codes aren't sent
+// to this endpoint, so this is used as a tolerance band around the catalog
+// price rather than validating a specific code.
+const MAX_PROMO_DISCOUNT_LKR = 100;
+
+// Recompute the official price server-side from the catalog using the MooGold
+// product-id the client is actually asking us to order — the client-sent
+// priceLkr can never be trusted (it can be freely edited in devtools/replayed
+// requests), so it's only used to sanity-check against this value below.
+function getCatalogPriceLkr(productId) {
+  if (!productId) return null;
+  const productIdStr = String(productId);
+  for (const game of GAMES_DATA) {
+    const pkg = (game.packages || []).find(p => String(p.moongoldProductId) === productIdStr);
+    if (pkg && pkg.priceLkr > 0) return pkg.priceLkr;
+  }
+  return null;
+}
 
 async function verifyFirebaseIdToken(idToken) {
   if (!idToken || typeof idToken !== 'string') return null;
@@ -358,6 +379,19 @@ export default async function handler(req, res) {
     if (isOrderCreation) {
       if (numPriceLkr <= 0) {
         return res.status(400).json({ error: 'Invalid order price specified.' });
+      }
+
+      // Price-tampering guard: the client-supplied priceLkr must fall within a
+      // narrow band of the catalog price for the product it's actually
+      // ordering (the band only covers the largest known promo discount).
+      // A tampered/replayed request quoting a far lower price is rejected.
+      const requestedProductId = bodyObj?.data?.['product-id'];
+      const catalogPriceLkr = getCatalogPriceLkr(requestedProductId);
+      if (catalogPriceLkr === null) {
+        return res.status(400).json({ error: 'Unrecognized product. Order rejected.' });
+      }
+      if (numPriceLkr > catalogPriceLkr || numPriceLkr < catalogPriceLkr - MAX_PROMO_DISCOUNT_LKR) {
+        return res.status(400).json({ error: 'Price mismatch detected. Order rejected.' });
       }
 
       deductResult = await deductUserWallet(authenticatedUser.uid, numPriceLkr, authenticatedUser.email, clientProfile);

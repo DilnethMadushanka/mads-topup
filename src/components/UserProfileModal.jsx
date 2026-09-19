@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { GAMES_DATA } from '../data/games';
+import { filterUserOrders } from '../utils/ownership';
 import { 
   X, User, ShoppingBag, Bookmark, Wallet, RefreshCw, 
   CheckCircle2, Clock, Zap, Trash2, ArrowRight, ShieldCheck,
@@ -53,12 +54,7 @@ export const UserProfileModal = () => {
   const savedIds = userProfile?.savedIds || [];
 
   // Filter orders strictly belonging to the logged-in user
-  const userOrders = (orders || []).filter(o => {
-    if (!userProfile || (!userProfile.uid && !userProfile.email)) return false;
-    const matchUid = userProfile.uid && o.userId && o.userId === userProfile.uid;
-    const matchEmail = userProfile.email && o.userEmail && o.userEmail.toLowerCase() === userProfile.email.toLowerCase();
-    return matchUid || matchEmail;
-  });
+  const userOrders = filterUserOrders(orders, userProfile);
 
   const completedOrders = userOrders.filter(o => o.status === 'COMPLETED');
   const totalSpentLkr = completedOrders.reduce((sum, o) => sum + (o.priceLkr || 0), 0);

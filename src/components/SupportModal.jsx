@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { uploadToR2Storage } from '../services/storageService';
+import { orderBelongsToUser, filterUserOrders } from '../utils/ownership';
 import { 
   MessageSquare, X, Send, Paperclip, Plus, AlertCircle,
   ShieldCheck, ChevronLeft, RefreshCw, Image, Headset, ChevronRight
@@ -70,7 +71,7 @@ export const SupportModal = () => {
       return;
     }
 
-    const created = createSupportTicket({
+    createSupportTicket({
       subject: subject.trim() || `${category} Support Request`,
       category,
       message: initialMessage.trim(),
@@ -84,9 +85,7 @@ export const SupportModal = () => {
     setSelectedOrderId('');
     setAttachmentUrl('');
     setAttachmentFile(null);
-    if (created?.id) {
-      setActiveTicketId(created.id);
-    }
+    // createSupportTicket() already calls setActiveTicketId(newTicket.id) internally
     setView('chat');
   };
 
@@ -119,19 +118,10 @@ export const SupportModal = () => {
   // Bug 1: Return empty array when not logged in — prevents data leak to unauthenticated users
   const userTickets = !isLoggedIn
     ? []
-    : (supportTickets || []).filter(t =>
-        t.userEmail?.toLowerCase() === userProfile?.email?.toLowerCase() ||
-        t.userId === userProfile?.uid
-      );
+    : (supportTickets || []).filter(t => orderBelongsToUser(t, userProfile));
 
   // Filter orders strictly for current user
-  const userOrders = !isLoggedIn
-    ? []
-    : (orders || []).filter(o =>
-        o.userId === userProfile?.uid ||
-        o.userEmail?.toLowerCase() === userProfile?.email?.toLowerCase() ||
-        (userProfile?.phone && o.phone === userProfile?.phone)
-      );
+  const userOrders = !isLoggedIn ? [] : filterUserOrders(orders, userProfile);
 
   return (
     <>

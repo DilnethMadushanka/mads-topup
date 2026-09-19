@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { filterUserOrders } from '../utils/ownership';
 import {
   Gamepad2, Gift, BookOpen, Download, User, Wallet, ChevronDown,
   Headset, Menu, X, LogIn, UserPlus, Home, ShoppingBag, Smartphone,
@@ -104,7 +105,7 @@ export const Navbar = () => {
       ? { label: 'Reseller Dashboard', icon: Crown, color: 'text-amber-500', bg: 'bg-amber-50', action: () => { openResellerDashboard(); setIsMobileMenuOpen(false); }, badge: 'PARTNER', active: isResellerDashboardOpen }
       : { label: 'Referral', icon: Gift, color: 'text-[#cc040a]', bg: 'bg-red-50', action: () => { openReferralPage(); setIsMobileMenuOpen(false); }, active: isReferralPageOpen },
     { label: '24/7 Support', icon: Headset, color: 'text-[#cc040a]', bg: 'bg-red-50', action: () => { openContactPage(); setIsMobileMenuOpen(false); } },
-    { label: 'My Orders', icon: ShoppingBag, color: 'text-indigo-500', bg: 'bg-indigo-50', action: () => { if (isUserLoggedIn) { openUserProfilePage(); } else { openAuth('login'); } setIsMobileMenuOpen(false); }, count: isUserLoggedIn ? (orders || []).filter(o => o.userId === userProfile?.uid || o.userEmail === userProfile?.email || o.userId === userProfile?.email).length : 0 },
+    { label: 'My Orders', icon: ShoppingBag, color: 'text-indigo-500', bg: 'bg-indigo-50', action: () => { if (isUserLoggedIn) { openUserProfilePage(); } else { openAuth('login'); } setIsMobileMenuOpen(false); }, count: isUserLoggedIn ? filterUserOrders(orders, userProfile).length : 0 },
   ];
 
   return (

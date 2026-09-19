@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { GAMES_DATA, getVerifiedPackagePriceLkr } from '../data/games';
 import { generateUniqueSecurityKey, ensureResellerCredentials, getResellerProfileByKeyAsync, updateUserProfileInFirestore } from '../services/firestoreService';
+import { orderBelongsToUser } from '../utils/ownership';
 import confetti from 'canvas-confetti';
 import { 
   Crown, Wallet, Zap, Copy, Check, ArrowLeft, Send, ShieldCheck, 
@@ -86,11 +87,10 @@ export const ResellerDashboard = () => {
   // Filter orders fulfilled by this reseller
   const resellerOrders = (orders || []).filter(o => {
     if (!userProfile) return false;
-    const matchUid = userProfile.uid && o.userId === userProfile.uid;
-    const matchEmail = userProfile.email && o.userEmail?.toLowerCase() === userProfile.email.toLowerCase();
+    const matchIdentity = orderBelongsToUser(o, userProfile);
     const matchCode = userProfile.resellerCode && (o.resellerCode === userProfile.resellerCode || o.paymentMethod?.includes(userProfile.resellerCode));
     const matchReseller = o.isResellerOrder || o.paymentMethod?.toLowerCase().includes('reseller');
-    return (matchUid || matchEmail || matchCode) && matchReseller;
+    return (matchIdentity || matchCode) && matchReseller;
   });
 
   const completedResellerOrders = resellerOrders.filter(o => o.status === 'COMPLETED' || o.status === 'DELIVERED');

@@ -5,6 +5,7 @@ import {
   ShieldCheck, TrendingUp, Users, LogIn, Zap
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { filterUserOrders } from '../utils/ownership';
 
 export const ReferralProgramPage = () => {
   const {
@@ -22,12 +23,7 @@ export const ReferralProgramPage = () => {
   const [avgTopupLkr, setAvgTopupLkr] = useState(2500);
 
   // ── Filter orders for logged-in user ──────────────────────────────
-  const userOrders = (orders || []).filter(o => {
-    if (!userProfile || (!userProfile.uid && !userProfile.email)) return false;
-    const matchUid   = userProfile.uid   && o.userId    && o.userId === userProfile.uid;
-    const matchEmail = userProfile.email && o.userEmail && o.userEmail.toLowerCase() === userProfile.email.toLowerCase();
-    return matchUid || matchEmail;
-  });
+  const userOrders = filterUserOrders(orders, userProfile);
 
   const completedOrders    = userOrders.filter(o => o.status === 'COMPLETED');
   const userCompletedCount = completedOrders.length;
