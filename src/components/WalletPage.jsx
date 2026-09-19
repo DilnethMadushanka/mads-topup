@@ -28,6 +28,8 @@ export const WalletPage = () => {
   const [bankRef, setBankRef] = useState('');
   const [bankSlipPreview, setBankSlipPreview] = useState('');
   const [bankSlipFileName, setBankSlipFileName] = useState('');
+  const [isSubmittingBank, setIsSubmittingBank] = useState(false);
+  const isSubmittingBankRef = React.useRef(false);
   const [isEzCashVerifying, setIsEzCashVerifying] = useState(false);
   const [isRedeemingVoucher, setIsRedeemingVoucher] = useState(false);
   const [activePanel, setActivePanel] = useState(null);
@@ -106,12 +108,20 @@ export const WalletPage = () => {
 
   const handleBankDepositSubmit = (e) => {
     e.preventDefault();
+    // Synchronous ref guard (not just the isSubmittingBank state) so a rapid
+    // double-click can't both pass the check before either click's own
+    // handler finishes — state alone can't be relied on within this file's
+    // fully synchronous handler.
+    if (isSubmittingBankRef.current) return;
     if (!bankAmount || parseFloat(bankAmount) <= 0) { showToast('Please enter a valid amount!', 'error'); return; }
     if (!bankRef.trim()) { showToast('Please enter your name or reference!', 'error'); return; }
     if (!bankSlipPreview) { showToast('Please upload your deposit receipt!', 'error'); return; }
+    isSubmittingBankRef.current = true;
+    setIsSubmittingBank(true);
     addManualPayment({ id: 'PAY-' + Math.floor(1000 + Math.random() * 9000), userEmail: userProfile?.email || 'guest@madstopup.com', userName: userProfile?.name || 'Gamer', method: 'Bank Deposit', referenceNumber: bankRef.trim(), amount: parseFloat(bankAmount), currency: 'LKR', slipUrl: bankSlipPreview, receiptUrl: bankSlipPreview, status: 'PENDING', createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16) });
     showToast('🏦 Bank receipt submitted! Admin will verify shortly.');
     setBankRef(''); setBankSlipPreview(''); setBankSlipFileName(''); setActivePanel(null);
+    setTimeout(() => { isSubmittingBankRef.current = false; setIsSubmittingBank(false); }, 1000);
   };
 
   const binanceMerchantId = '547785111';
@@ -554,10 +564,10 @@ export const WalletPage = () => {
                     </label>
                   </div>
 
-                  <button type="submit"
-                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 transition-all active:scale-[0.98] cursor-pointer">
+                  <button type="submit" disabled={isSubmittingBank}
+                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">
                     <Building2 className="w-4 h-4" />
-                    <span>Submit Bank Receipt</span>
+                    <span>{isSubmittingBank ? 'Submitting...' : 'Submit Bank Receipt'}</span>
                   </button>
                 </form>
               )}

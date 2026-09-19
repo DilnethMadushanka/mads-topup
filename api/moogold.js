@@ -206,6 +206,36 @@ async function getUserWalletData(uid, email, clientProfile) {
   return { walletBalance: res.walletBalance, walletUsdt: res.walletUsdt };
 }
 
+// Durable idempotency record (shared RTDB path with server.js's identical
+// check) so a duplicate order/create_order request for the same
+// partnerOrderId — a double-click, a network retry, or a request that
+// happens to fall back to this Vercel function after server.js already
+// processed it — never deducts the wallet or dispatches the real product a
+// second time. Serverless functions can't hold an in-memory lock across
+// invocations, so this durable record is the only guard here (no in-memory
+// lock like server.js's — RTDB is the single source of truth either way).
+async function getMoogoldOrderRecord(partnerOrderId) {
+  try {
+    const res = await fetch(`${FIREBASE_RTDB_URL}/moogoldProcessedOrders/${encodeURIComponent(partnerOrderId)}.json`);
+    if (res.ok) return (await res.json()) || null;
+  } catch (e) {
+    console.warn('[MooGold Order Record Read Warning]:', e.message);
+  }
+  return null;
+}
+
+async function saveMoogoldOrderRecord(partnerOrderId, record) {
+  try {
+    await fetch(`${FIREBASE_RTDB_URL}/moogoldProcessedOrders/${encodeURIComponent(partnerOrderId)}.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(record)
+    });
+  } catch (e) {
+    console.error('[MooGold Order Record Save Error]:', e.message);
+  }
+}
+
 async function deductUserWallet(uid, priceLkr, email, clientProfile) {
   if (!uid || priceLkr <= 0) return { success: false, reason: 'Invalid amount' };
   try {
@@ -299,6 +329,7 @@ async function refundUserWallet(uid, priceLkr, usedCurrency = 'LKR', email, rtdb
 }
 
 export default async function handler(req, res) {
+  let partnerOrderId = null;
   try {
     // CORS headers for frontend
     res.setHeader('Access-Control-Allow-Credentials', true);
@@ -330,6 +361,7 @@ export default async function handler(req, res) {
 
     const { path: apiPath, bodyObj, priceLkr, paymentId, clientProfile: rawClientProfile } = body || {};
     const clientProfile = rawClientProfile || bodyObj?.clientProfile || body?.userProfile || null;
+    partnerOrderId = bodyObj?.partnerOrderId || null;
 
     if (!apiPath || !bodyObj) {
       res.status(400).json({ error: 'Missing path or bodyObj', received: req.body });
@@ -394,8 +426,24 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Price mismatch detected. Order rejected.' });
       }
 
+      // Idempotency check — a duplicate request for the same partnerOrderId
+      // (double-click, retry, or one that already completed via server.js)
+      // must never deduct or dispatch a second time.
+      if (partnerOrderId) {
+        const existingRecord = await getMoogoldOrderRecord(partnerOrderId);
+        if (existingRecord) {
+          console.warn(`[MooGold Duplicate Order Blocked] partnerOrderId=${partnerOrderId} already ${existingRecord.status} — replaying original result instead of reprocessing.`);
+          if (existingRecord.status === 'COMPLETED') {
+            return res.status(200).json(existingRecord.response || { success: true, message: 'Order already completed.' });
+          }
+          return res.status(409).json({ error: 'This order has already been submitted.' });
+        }
+        await saveMoogoldOrderRecord(partnerOrderId, { status: 'PROCESSING', uid: authenticatedUser.uid, priceLkr: numPriceLkr, createdAt: new Date().toISOString() });
+      }
+
       deductResult = await deductUserWallet(authenticatedUser.uid, numPriceLkr, authenticatedUser.email, clientProfile);
       if (!deductResult.success) {
+        if (partnerOrderId) await saveMoogoldOrderRecord(partnerOrderId, { status: 'FAILED', uid: authenticatedUser.uid, priceLkr: numPriceLkr, reason: deductResult.reason, createdAt: new Date().toISOString() });
         return res.status(403).json({ error: deductResult.reason || 'Insufficient wallet balance.' });
       }
     }
@@ -441,18 +489,34 @@ export default async function handler(req, res) {
     res.status(apiRes.status);
     if (jsonResult) {
       if (isOrderCreation && deductResult?.success) {
-        return res.json({
+        const responseBody = {
           ...jsonResult,
           newBalanceLkr: deductResult.newBalanceLkr,
           newBalanceUsdt: deductResult.newBalanceUsdt
-        });
+        };
+        if (partnerOrderId) {
+          await saveMoogoldOrderRecord(partnerOrderId, {
+            status: isSuccess ? 'COMPLETED' : 'FAILED',
+            uid: authenticatedUser.uid,
+            priceLkr: numPriceLkr,
+            response: isSuccess ? responseBody : undefined,
+            createdAt: new Date().toISOString()
+          });
+        }
+        return res.json(responseBody);
       }
       res.json(jsonResult);
     } else {
+      if (isOrderCreation && partnerOrderId) {
+        await saveMoogoldOrderRecord(partnerOrderId, { status: isSuccess ? 'COMPLETED' : 'FAILED', uid: authenticatedUser.uid, priceLkr: numPriceLkr, createdAt: new Date().toISOString() });
+      }
       res.send(text);
     }
   } catch (err) {
     console.error('Serverless function error:', err);
+    if (partnerOrderId) {
+      await saveMoogoldOrderRecord(partnerOrderId, { status: 'FAILED', reason: err.message, createdAt: new Date().toISOString() }).catch(() => {});
+    }
     res.status(500).json({ error: err.message, stack: err.stack });
   }
 }

@@ -689,7 +689,39 @@ async function creditUserWalletServer(uid, amountLkr, email, clientProfile) {
 }
 
 // MooGold Reseller API Secure Proxy Endpoint (Server-Side Authentication & Balance Enforcement)
+// Same-process lock + durable RTDB record so a duplicate order/create_order
+// request for the same partnerOrderId (double-click before the client's
+// isSubmitting guard commits, a network-retry resending the same request,
+// or two tabs) can never deduct the wallet or dispatch the real product
+// twice. A fresh retry always generates a brand-new partnerOrderId
+// client-side, so this only ever affects genuine duplicates of the exact
+// same attempt.
+const moogoldProcessingLocks = new Set();
+
+async function getMoogoldOrderRecord(partnerOrderId) {
+  try {
+    const res = await fetch(`${FIREBASE_RTDB_URL}/moogoldProcessedOrders/${encodeURIComponent(partnerOrderId)}.json`);
+    if (res.ok) return (await res.json()) || null;
+  } catch (e) {
+    console.warn('[MooGold Order Record Read Warning]:', e.message);
+  }
+  return null;
+}
+
+async function saveMoogoldOrderRecord(partnerOrderId, record) {
+  try {
+    await fetch(`${FIREBASE_RTDB_URL}/moogoldProcessedOrders/${encodeURIComponent(partnerOrderId)}.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(record)
+    });
+  } catch (e) {
+    console.error('[MooGold Order Record Save Error]:', e.message);
+  }
+}
+
 app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
+  const partnerOrderId = req.body?.bodyObj?.partnerOrderId || null;
   try {
     const { path: apiPath, bodyObj, priceLkr, paymentId, clientProfile: rawClientProfile } = req.body || {};
     const clientProfile = rawClientProfile || bodyObj?.clientProfile || req.body?.userProfile || null;
@@ -721,11 +753,31 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
         return res.status(400).json({ error: 'Invalid order price specified.' });
       }
 
+      // Idempotency check — reject an in-flight duplicate outright, and
+      // replay the original result for a duplicate that already finished,
+      // instead of deducting/dispatching a second time.
+      if (partnerOrderId) {
+        if (moogoldProcessingLocks.has(partnerOrderId)) {
+          return res.status(409).json({ error: 'This order is already being processed. Please wait.' });
+        }
+        const existingRecord = await getMoogoldOrderRecord(partnerOrderId);
+        if (existingRecord) {
+          console.warn(`[MooGold Duplicate Order Blocked] partnerOrderId=${partnerOrderId} already ${existingRecord.status} — replaying original result instead of reprocessing.`);
+          if (existingRecord.status === 'COMPLETED') {
+            return res.status(200).json(existingRecord.response || { success: true, message: 'Order already completed.' });
+          }
+          return res.status(409).json({ error: 'This order has already been submitted.' });
+        }
+        moogoldProcessingLocks.add(partnerOrderId);
+        await saveMoogoldOrderRecord(partnerOrderId, { status: 'PROCESSING', uid: authenticatedUser.uid, priceLkr: numPriceLkr, createdAt: new Date().toISOString() });
+      }
+
       // Perform atomic backend wallet deduction BEFORE calling MooGold
       // Pass uid, email and clientProfile so resolveUserWalletKey can find the correct balance
       deductResult = await deductUserWallet(authenticatedUser.uid, numPriceLkr, authenticatedUser.email, clientProfile);
       if (!deductResult.success) {
         console.warn(`[INSUFFICIENT BALANCE BLOCKED] User ${authenticatedUser.uid} (${authenticatedUser.email}) attempted order without balance. Required: Rs. ${numPriceLkr}`);
+        if (partnerOrderId) await saveMoogoldOrderRecord(partnerOrderId, { status: 'FAILED', uid: authenticatedUser.uid, priceLkr: numPriceLkr, reason: deductResult.reason, createdAt: new Date().toISOString() });
         return res.status(403).json({
           error: deductResult.reason || 'Insufficient wallet balance. Please top up your wallet first.'
         });
@@ -785,19 +837,41 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
     res.status(apiRes.status);
     if (jsonResult) {
       if (isOrderCreation && deductResult?.success) {
-        return res.json({
+        const responseBody = {
           ...jsonResult,
           newBalanceLkr: deductResult.newBalanceLkr,
           newBalanceUsdt: deductResult.newBalanceUsdt
-        });
+        };
+        if (partnerOrderId) {
+          await saveMoogoldOrderRecord(partnerOrderId, {
+            status: isSuccess ? 'COMPLETED' : 'FAILED',
+            uid: authenticatedUser.uid,
+            priceLkr: numPriceLkr,
+            response: isSuccess ? responseBody : undefined,
+            createdAt: new Date().toISOString()
+          });
+        }
+        return res.json(responseBody);
       }
       return res.json(jsonResult);
     } else {
+      if (isOrderCreation && partnerOrderId) {
+        await saveMoogoldOrderRecord(partnerOrderId, { status: isSuccess ? 'COMPLETED' : 'FAILED', uid: authenticatedUser.uid, priceLkr: numPriceLkr, createdAt: new Date().toISOString() });
+      }
       return res.send(text);
     }
   } catch (err) {
     console.error('MooGold Serverless Proxy Error:', err);
+    if (partnerOrderId) {
+      // Don't leave a permanently-stuck PROCESSING record on an unexpected
+      // error — remove it so a genuine retry with the same id isn't blocked
+      // forever (the in-flight lock release below still prevents a
+      // concurrent duplicate during this same failure).
+      await saveMoogoldOrderRecord(partnerOrderId, { status: 'FAILED', reason: err.message, createdAt: new Date().toISOString() }).catch(() => {});
+    }
     res.status(500).json({ error: err.message });
+  } finally {
+    if (partnerOrderId) moogoldProcessingLocks.delete(partnerOrderId);
   }
 });
 

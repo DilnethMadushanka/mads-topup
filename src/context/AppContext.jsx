@@ -382,6 +382,11 @@ export const AppProvider = ({ children }) => {
 
   // Sync Firebase Auth & Firestore live profile/wallet data
   const lastSyncedUidRef = React.useRef(null); // { uid, ts } — deduplicates double-sync after Google auth
+
+  // Payment ids currently being approved or already approved this session —
+  // a plain ref (not React state) so it's checked/set synchronously and
+  // can't be raced by two Approve clicks firing before a re-render commits.
+  const approvingPaymentIdsRef = React.useRef(new Set());
   useEffect(() => {
     if (!auth) return;
 
@@ -1092,6 +1097,13 @@ export const AppProvider = ({ children }) => {
   const approveManualPayment = async (paymentId) => {
     const pay = manualPayments.find(p => p.id === paymentId);
     if (!pay) return;
+    // Idempotency guard against double-crediting: checked/set synchronously
+    // via a ref (not React state) so two Approve clicks fired back-to-back —
+    // before either state update re-renders and hides the button — can't
+    // both pass this check. React state (pay.status === 'VERIFIED') alone
+    // isn't enough here because both calls would read the same stale value.
+    if (approvingPaymentIdsRef.current.has(paymentId) || pay.status === 'VERIFIED') return;
+    approvingPaymentIdsRef.current.add(paymentId);
 
     setManualPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status: 'VERIFIED' } : p));
     updateManualPaymentStatusInFirestore(paymentId, 'VERIFIED');

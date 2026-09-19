@@ -23,6 +23,18 @@
     "settings": {
       ".read": true,
       ".write": true
+    },
+    "genieTransactions": {
+      ".read": true,
+      ".write": true
+    },
+    "genieLocalIdIndex": {
+      ".read": true,
+      ".write": true
+    },
+    "moogoldProcessedOrders": {
+      ".read": true,
+      ".write": true
     }
   }
 }
