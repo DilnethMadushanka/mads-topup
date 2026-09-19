@@ -43,6 +43,10 @@
     "reviews": {
       ".read": true,
       ".write": true
+    },
+    "vouchers_log": {
+      ".read": true,
+      ".write": true
     }
   }
 }

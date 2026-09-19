@@ -1,6 +1,6 @@
 import { db, rtdb } from './firebaseAuth.js';
 import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, query, where, getDocs } from 'firebase/firestore';
-import { ref as dbRef, get as rtdbGet, set as rtdbSet, update as rtdbUpdate, onValue as rtdbOnValue } from 'firebase/database';
+import { ref as dbRef, get as rtdbGet, set as rtdbSet, update as rtdbUpdate, onValue as rtdbOnValue, runTransaction as rtdbRunTransaction } from 'firebase/database';
 
 /**
  * SHA-256 password hashing using Web Crypto API (runs in browser & Node).
@@ -675,28 +675,36 @@ export const verifyUserLoginAsync = async (identifier, passwordInput) => {
         }
 
         if (matchedUser && matchedUid) {
-          // Check password if set in user profile — support both hashed (sha256:...) and legacy plain text
-          if (matchedUser.password) {
-            const storedPw = String(matchedUser.password);
-            const isHashed = storedPw.startsWith('sha256:');
-            if (isHashed) {
-              // Compare hashed vs hashed
-              const inputHash = await hashPassword(passwordInput);
-              if (inputHash !== storedPw) {
-                return { success: false, message: 'Incorrect password! Please enter your updated password.' };
-              }
-            } else {
-              // Legacy plain text — compare, then auto-migrate to hash
-              if (storedPw !== String(passwordInput)) {
-                return { success: false, message: 'Incorrect password! Please enter your updated password.' };
-              }
-              // Auto-migrate: save hashed version silently
-              const hashed = await hashPassword(passwordInput);
-              updateUserProfileInFirestore(matchedUid, { password: hashed });
-            }
-          }
-          // If no password set yet, bind hashed password to profile
+          // Accounts created via Google Sign-In never have a password field
+          // (see AuthModal.jsx handleGoogleAuth / syncUserProfileToFirestore).
+          // This branch used to silently BIND whatever password was typed here
+          // to any such account on its first login attempt — meaning anyone
+          // who merely knew a Google-authenticated user's email could type it
+          // into this form with an arbitrary password and permanently gain
+          // password-based access to that real account. There is no
+          // legitimate flow that creates an account without a password and
+          // expects it to be set this way (regular signup always sets one —
+          // see AuthModal.jsx handleRegisterSubmit), so this must be a hard
+          // failure, not an auto-bind.
           if (!matchedUser.password) {
+            return { success: false, message: 'This account has no password set (it may use Google Sign-In). Please use "Sign in with Google" or reset your password.' };
+          }
+
+          // Check password if set in user profile — support both hashed (sha256:...) and legacy plain text
+          const storedPw = String(matchedUser.password);
+          const isHashed = storedPw.startsWith('sha256:');
+          if (isHashed) {
+            // Compare hashed vs hashed
+            const inputHash = await hashPassword(passwordInput);
+            if (inputHash !== storedPw) {
+              return { success: false, message: 'Incorrect password! Please enter your updated password.' };
+            }
+          } else {
+            // Legacy plain text — compare, then auto-migrate to hash
+            if (storedPw !== String(passwordInput)) {
+              return { success: false, message: 'Incorrect password! Please enter your updated password.' };
+            }
+            // Auto-migrate: save hashed version silently
             const hashed = await hashPassword(passwordInput);
             updateUserProfileInFirestore(matchedUid, { password: hashed });
           }
@@ -708,8 +716,12 @@ export const verifyUserLoginAsync = async (identifier, passwordInput) => {
     console.warn('Verify login note:', err);
   }
 
-  // Fallback if user profile doesn't exist yet in DB
-  return { success: true, user: null };
+  // No matching account found (or the lookup failed) — this must be a hard
+  // failure. It used to return success: true with a null user, which let
+  // AuthModal.jsx log the caller in as a freshly fabricated identity for ANY
+  // username/password that didn't match a real account — no registration,
+  // no password check, at all.
+  return { success: false, message: 'No account found with that username or email. Please check your details or register.' };
 };
 
 /**
@@ -1598,9 +1610,32 @@ export const subscribeVouchersFromFirestore = (callback) => {
   };
 };
 
+const DEFAULT_VOUCHERS_LIST = [
+  { code: 'MADS-GIFT-500', value: 500, currency: 'LKR', maxUses: 100, usedCount: 14, active: true, usedByUsers: [] },
+  { code: 'WELCOME100', value: 100, currency: 'LKR', maxUses: 500, usedCount: 88, active: true, usedByUsers: [] },
+  { code: 'BINANCE-USDT-5', value: 5, currency: 'USDT', maxUses: 50, usedCount: 12, active: true, usedByUsers: [] }
+];
+
+const VOUCHER_REJECT_MESSAGES = {
+  invalid: 'Invalid or non-existent voucher code!',
+  inactive: 'This voucher code is inactive or expired!',
+  maxed: 'This voucher code has reached its maximum usage limit!',
+  already_used: 'You have already redeemed this voucher code!'
+};
+
 /**
  * Atomic & Anti-Exploit Voucher Redemption function
  * Verifies code, checks max uses, enforces one redemption per user, updates database, and credits user wallet.
+ *
+ * Runs the read-check-write as a single Firebase RTDB transaction (not a
+ * plain get-then-set) — a plain get-then-set here is a classic
+ * check-then-act race: two requests for the same voucher (two tabs, two
+ * devices, or just a fast double-click) can both read the "not yet used /
+ * under max uses" state before either write commits, so both would pass
+ * validation and both credit the wallet, bypassing the one-per-user guard
+ * and the global maxUses cap. RTDB's transaction() re-runs this callback
+ * against the live server value if it changed since the read, guaranteeing
+ * only one concurrent caller can win any given voucher slot.
  */
 export const redeemVoucherInDatabase = async (voucherCode, userProfile) => {
   if (!voucherCode || !userProfile) {
@@ -1615,93 +1650,96 @@ export const redeemVoucherInDatabase = async (voucherCode, userProfile) => {
     return { success: false, message: 'User identification missing. Please re-login.' };
   }
 
-  let vouchersList = [];
+  if (!rtdb) {
+    return { success: false, message: 'Voucher system is unavailable right now. Please try again shortly.' };
+  }
 
-  // Fetch current vouchers from RTDB
-  if (rtdb) {
-    try {
-      const vRef = dbRef(rtdb, 'settings/vouchers');
-      const snap = await rtdbGet(vRef);
-      if (snap.exists()) {
-        const val = snap.val();
-        if (Array.isArray(val)) vouchersList = val;
-        else if (typeof val === 'object') vouchersList = Object.values(val);
+  // Populated by the transaction callback below — the ONLY reliable way to
+  // know why/whether THIS caller's attempt actually redeemed the voucher,
+  // since the callback may re-run multiple times against fresher server
+  // state before committing (or aborting).
+  let outcome = { status: 'invalid' };
+
+  let txResult;
+  try {
+    const vRef = dbRef(rtdb, 'settings/vouchers');
+    txResult = await rtdbRunTransaction(vRef, (currentVal) => {
+      let vouchersList;
+      if (Array.isArray(currentVal)) vouchersList = currentVal.slice();
+      else if (currentVal && typeof currentVal === 'object') vouchersList = Object.values(currentVal);
+      else vouchersList = DEFAULT_VOUCHERS_LIST.map(v => ({ ...v, usedByUsers: [...v.usedByUsers] }));
+
+      const voucherIndex = vouchersList.findIndex(v => v && v.code && String(v.code).toUpperCase() === cleanCode);
+      if (voucherIndex === -1) {
+        outcome = { status: 'invalid' };
+        return; // abort — nothing to write
       }
-    } catch (e) {
-      console.warn('RTDB vouchers fetch note:', e);
-    }
-  }
 
-  // Fallback to Firestore if RTDB was empty
-  if (vouchersList.length === 0 && db) {
-    try {
-      const docRef = doc(db, 'settings', 'vouchers');
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists() && docSnap.data()?.list) {
-        vouchersList = docSnap.data().list;
+      const voucher = vouchersList[voucherIndex];
+      if (!voucher.active) {
+        outcome = { status: 'inactive' };
+        return;
       }
-    } catch (e) {
-      console.warn('Firestore vouchers fetch note:', e);
-    }
+      if (voucher.maxUses && (voucher.usedCount || 0) >= voucher.maxUses) {
+        outcome = { status: 'maxed' };
+        return;
+      }
+
+      const usedBy = voucher.usedByUsers || [];
+      const hasUsedBefore = usedBy.some(id =>
+        (userEmail && String(id).toLowerCase() === userEmail) ||
+        (userId && String(id) === String(userId))
+      );
+      if (hasUsedBefore) {
+        outcome = { status: 'already_used' };
+        return;
+      }
+
+      const newUsedCount = (voucher.usedCount || 0) + 1;
+      const updatedUsedBy = [...usedBy, userId, userEmail].filter(Boolean);
+      const updatedActive = voucher.maxUses ? newUsedCount < voucher.maxUses : true;
+      const updatedVoucher = { ...voucher, usedCount: newUsedCount, usedByUsers: updatedUsedBy, active: updatedActive };
+      vouchersList[voucherIndex] = updatedVoucher;
+
+      outcome = { status: 'redeemed', voucher };
+      return vouchersList;
+    });
+  } catch (e) {
+    console.warn('Voucher redemption transaction error:', e);
+    return { success: false, message: 'Could not redeem this voucher right now. Please try again.' };
   }
 
-  // Fallback default list if no vouchers saved yet
-  if (vouchersList.length === 0) {
-    vouchersList = [
-      { code: 'MADS-GIFT-500', value: 500, currency: 'LKR', maxUses: 100, usedCount: 14, active: true, usedByUsers: [] },
-      { code: 'WELCOME100', value: 100, currency: 'LKR', maxUses: 500, usedCount: 88, active: true, usedByUsers: [] },
-      { code: 'BINANCE-USDT-5', value: 5, currency: 'USDT', maxUses: 50, usedCount: 12, active: true, usedByUsers: [] }
-    ];
+  if (!txResult?.committed || outcome.status !== 'redeemed') {
+    return { success: false, message: VOUCHER_REJECT_MESSAGES[outcome.status] || 'Could not redeem this voucher. Please try again.' };
   }
 
-  const voucherIndex = vouchersList.findIndex(v => v.code && String(v.code).toUpperCase() === cleanCode);
-  if (voucherIndex === -1) {
-    return { success: false, message: 'Invalid or non-existent voucher code!' };
-  }
+  const voucher = outcome.voucher;
 
-  const voucher = vouchersList[voucherIndex];
-
-  if (!voucher.active) {
-    return { success: false, message: 'This voucher code is inactive or expired!' };
-  }
-
-  if (voucher.maxUses && voucher.usedCount >= voucher.maxUses) {
-    return { success: false, message: 'This voucher code has reached its maximum usage limit!' };
-  }
-
-  const usedBy = voucher.usedByUsers || [];
-  const hasUsedBefore = usedBy.some(id => 
-    (userEmail && String(id).toLowerCase() === userEmail) || 
-    (userId && String(id) === String(userId))
-  );
-
-  if (hasUsedBefore) {
-    return { success: false, message: 'You have already redeemed this voucher code!' };
-  }
-
-  // Redeem voucher & update properties
-  const newUsedCount = (voucher.usedCount || 0) + 1;
-  const updatedUsedBy = [...usedBy, userId, userEmail].filter(Boolean);
-  const updatedActive = voucher.maxUses ? newUsedCount < voucher.maxUses : true;
-
-  const updatedVoucher = {
-    ...voucher,
-    usedCount: newUsedCount,
-    usedByUsers: updatedUsedBy,
-    active: updatedActive
-  };
-
-  vouchersList[voucherIndex] = updatedVoucher;
-
-  // 1. Save updated vouchers list back to RTDB & Firestore
-  await saveVouchersToFirestore(vouchersList);
-
-  // 2. Credit User Wallet in Database
+  // Credit User Wallet in Database FIRST — only reached if the transaction
+  // above actually committed THIS caller's redemption. This must not be
+  // blocked by anything best-effort below it (see note on the Firestore
+  // mirror write just below).
   const lkrAmount = voucher.currency === 'USDT' ? 0 : parseFloat(voucher.value || 0);
   const usdtAmount = voucher.currency === 'USDT' ? parseFloat(voucher.value || 0) : 0;
   await creditUserWalletInDatabase(userId || userEmail, lkrAmount, usdtAmount);
 
-  // 3. Save voucher redemption audit log
+  // Mirror the final committed list to Firestore for admin visibility only
+  // (best-effort — RTDB's transaction above is the source of truth). This is
+  // intentionally NOT awaited: Cloud Firestore is disabled for this Firebase
+  // project (confirmed — every Firestore call here fails/hangs), and an
+  // awaited call that never resolves would block the wallet credit above
+  // (which is exactly what happened when this was awaited and placed before
+  // the credit call — the voucher redeemed but the wallet was never
+  // credited because this call hung indefinitely).
+  if (db && txResult.snapshot?.exists()) {
+    const finalList = txResult.snapshot.val();
+    const asList = Array.isArray(finalList) ? finalList : Object.values(finalList || {});
+    const vDocRef = doc(db, 'settings', 'vouchers');
+    setDoc(vDocRef, { list: asList, updatedAt: new Date().toISOString() }, { merge: true })
+      .catch(e => console.warn('Firestore vouchers mirror note:', e));
+  }
+
+  // Save voucher redemption audit log
   const logRecord = {
     userId: userId || 'N/A',
     userEmail: userEmail || 'N/A',
@@ -1720,10 +1758,11 @@ export const redeemVoucherInDatabase = async (voucherCode, userProfile) => {
   }
 
   if (db) {
-    try {
-      const logsCol = collection(db, 'vouchers_log');
-      await addDoc(logsCol, logRecord);
-    } catch (e) {}
+    // Not awaited — Firestore is disabled for this project, so an awaited
+    // call here would hang the whole function indefinitely (the user's
+    // wallet was already credited above; this is a best-effort audit copy).
+    const logsCol = collection(db, 'vouchers_log');
+    addDoc(logsCol, logRecord).catch(() => {});
   }
 
   return {
