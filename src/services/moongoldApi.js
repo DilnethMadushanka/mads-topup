@@ -343,20 +343,17 @@ export const dispatchMoongoldOrder = async (orderData) => {
 
   const productId = orderData.package?.moongoldProductId || '215570';
 
-  // Each game's real MooGold category id (set per-game in games.js, e.g.
-  // '50' for Free Fire SG/MY, '1' for Mobile Legends) — NOT a blanket '1'.
-  // A prior change hardcoded category to '1' for every game "confirmed by
-  // MooGold support", which was wrong for Free Fire SG/MY at least: it
-  // caused MooGold to reject every order for that game with "Product ID is
-  // incorrect/missing or has not yet been authorized" even for a fully
-  // valid, authorized product-id (confirmed live — the same request with
-  // category restored to '50' succeeded instantly, real order_id returned).
-  const categoryId = orderData.game?.moongoldCategoryId || '1';
-
+  // MooGold API: category is always 1 (Direct Top Up) for order creation,
+  // for every game — confirmed live against the real API (category:1 with
+  // the correct 'Player ID' field below succeeded, order_id 46748036).
+  // moongoldCategoryId on the game object (e.g. '50' for Free Fire SG/MY)
+  // is for a DIFFERENT endpoint (product listing/browsing), not order
+  // creation — an earlier fix attempt conflated the two.
+  //
   // MooGold's official OpenAPI spec (api-doc.yaml) documents category,
   // product-id, and quantity as `type: integer`, not quoted strings.
   const dataPayload = {
-    category: parseInt(categoryId, 10),
+    category: 1,
     'product-id': parseInt(productId, 10),
     quantity: parseInt(orderData.quantity || 1, 10)
   };

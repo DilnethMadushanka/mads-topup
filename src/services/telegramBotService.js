@@ -300,20 +300,16 @@ async function sendMoongoldLiveOrder(game, pkg, playerId, zoneId, orderRef) {
   const baseUrl = 'https://moogold.com/wp-json/v1/api';
   const apiPath = 'order/create_order';
 
-  // Each game's real MooGold category id (e.g. '50' for Free Fire SG/MY,
-  // '1' for Mobile Legends) — NOT a blanket '1'. Hardcoding '1' for every
-  // game caused MooGold to reject every Free Fire order with "Product ID is
-  // incorrect/missing or has not yet been authorized" even for a fully
-  // valid, authorized product-id (confirmed live — restoring category '50'
-  // for this game fixed it instantly, real order_id returned).
-  const categoryId = game.moongoldCategoryId || '1';
+  // MooGold API: category is always 1 (Direct Top Up) for order creation,
+  // for every game — confirmed live against the real API. game.moongoldCategoryId
+  // is for a different endpoint (product listing/browsing), not order creation.
   const productId = pkg.moongoldProductId || '15972928';
 
   // MooGold's OpenAPI spec (api-doc.yaml) documents category, product-id and
   // quantity as `type: integer` for create_order — sending them as quoted
   // strings gets rejected by MooGold's validation.
   const dataPayload = {
-    category: parseInt(categoryId, 10),
+    category: 1,
     'product-id': parseInt(productId, 10),
     quantity: 1
   };
