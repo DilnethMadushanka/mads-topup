@@ -38,8 +38,12 @@ export const WalletPage = () => {
   React.useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const genieStatus = urlParams.get('genie');
-    const txnId = urlParams.get('txnId') || urlParams.get('id') || urlParams.get('transactionId');
-    if (genieStatus && txnId) {
+    const storedTxnId = sessionStorage.getItem('mads_pending_genie_txnid');
+    const storedOrderRef = sessionStorage.getItem('mads_pending_genie_orderref');
+    const txnId = urlParams.get('txnId') || urlParams.get('id') || urlParams.get('transactionId') || storedTxnId;
+    const orderRef = urlParams.get('orderRef') || urlParams.get('localId') || storedOrderRef;
+
+    if (genieStatus && (txnId || orderRef)) {
       showToast('Verifying Genie payment...');
       // The server (webhook or this same verify-status call, whichever runs
       // first) is what actually credits the wallet in RTDB — idempotently, so
@@ -47,13 +51,31 @@ export const WalletPage = () => {
       // real-time user listener reflect the true server balance; we must NOT
       // also call creditUserWallet() locally, or a payment already credited
       // by the webhook would be double-added.
-      fetch('/api/genie/verify-status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ transactionId: txnId }) })
+      fetch('/api/genie/verify-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactionId: txnId || '', orderRef: orderRef || '' })
+      })
         .then(r => r.json())
         .then(data => {
+          sessionStorage.removeItem('mads_pending_genie_txnid');
+          sessionStorage.removeItem('mads_pending_genie_orderref');
           if (data.success && data.isPaid) {
             const amt = parseFloat(data.amount || 0);
             if (data.credited) {
-              addManualPayment({ id: 'PAY-GENIE-' + Math.floor(1000 + Math.random() * 9000), userId: userProfile?.uid || '', userEmail: userProfile?.email || 'guest@madstopup.com', userName: userProfile?.name || 'Gamer', method: 'Online Card / eZ Cash', referenceNumber: `Txn: ${txnId}`, amount: amt, currency: 'LKR', slipUrl: '', status: 'VERIFIED', createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16) });
+              addManualPayment({
+                id: 'PAY-GENIE-' + (data.transactionId ? String(data.transactionId).slice(-6).toUpperCase() : Math.floor(1000 + Math.random() * 9000)),
+                userId: userProfile?.uid || '',
+                userEmail: userProfile?.email || 'guest@madstopup.com',
+                userName: userProfile?.name || 'Gamer',
+                method: 'Online Card / eZ Cash',
+                referenceNumber: `Txn: ${data.transactionId || txnId || orderRef}`,
+                amount: amt,
+                currency: 'LKR',
+                slipUrl: '',
+                status: 'VERIFIED',
+                createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
+              });
               showToast(`⚡ CARD PAYMENT VERIFIED! +LKR ${amt.toLocaleString()} credited!`);
             } else if (data.alreadyCredited) {
               showToast(`⚡ Payment already verified — Rs. ${amt.toLocaleString()} is in your wallet!`);
@@ -81,10 +103,19 @@ export const WalletPage = () => {
       const userId = userProfile?.uid || auth?.currentUser?.uid || '';
       const userEmail = userProfile?.email || auth?.currentUser?.email || 'customer@madstopup.com';
       const userName = userProfile?.name || auth?.currentUser?.displayName || 'Gamer';
-      const returnUrl = `${window.location.origin}/wallet?genie=success`;
-      const response = await fetch('/api/genie/create-transaction', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: amt, userId, userEmail, userName, redirectUrl: returnUrl, orderRef: 'DEP-GENIE-' + Date.now() }) });
+      const localId = 'DEP-GENIE-' + Date.now();
+      const returnUrl = `${window.location.origin}/wallet?genie=success&orderRef=${encodeURIComponent(localId)}`;
+      const response = await fetch('/api/genie/create-transaction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: amt, userId, userEmail, userName, redirectUrl: returnUrl, orderRef: localId })
+      });
       const resData = await response.json();
       if (resData.success && resData.redirectUrl) {
+        if (resData.transactionId) {
+          sessionStorage.setItem('mads_pending_genie_txnid', resData.transactionId);
+        }
+        sessionStorage.setItem('mads_pending_genie_orderref', localId);
         showToast('Redirecting to payment gateway...');
         const sep = resData.redirectUrl.includes('?') ? '&' : '?';
         window.location.href = resData.transactionId ? `${resData.redirectUrl}${sep}txnId=${resData.transactionId}` : resData.redirectUrl;

@@ -1,4 +1,4 @@
-import { verifyAndCreditGenieTransaction } from '../_genieWallet.js';
+import { verifyAndCreditGenieTransaction, resolveGenieTransactionIdByLocalId } from '../_genieWallet.js';
 
 // Called by the customer's browser right after the redirect back from Genie
 // checkout. Performs the same idempotent server-side credit as the webhook —
@@ -24,9 +24,12 @@ export default async function handler(req, res) {
     try { body = JSON.parse(body); } catch (e) { body = {}; }
   }
 
-  const { transactionId } = body || {};
+  let { transactionId, orderRef, localId } = body || {};
+  if (!transactionId && (orderRef || localId)) {
+    transactionId = await resolveGenieTransactionIdByLocalId(orderRef || localId);
+  }
   if (!transactionId) {
-    res.status(400).json({ error: 'Missing transactionId' });
+    res.status(400).json({ error: 'Missing transactionId or orderRef' });
     return;
   }
 

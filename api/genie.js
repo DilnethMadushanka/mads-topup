@@ -77,6 +77,8 @@ export default async function handler(req, res) {
       if (!returnUrl.startsWith('https://')) {
         returnUrl = 'https://madstopup.com/wallet?genie=success';
       }
+      const sep = returnUrl.includes('?') ? '&' : '?';
+      returnUrl = `${returnUrl}${sep}orderRef=${encodeURIComponent(localId)}`;
 
       const payload = {
         amount: Math.round(numAmount * 100),

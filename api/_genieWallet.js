@@ -110,6 +110,33 @@ export async function resolveGenieTransactionIdByLocalId(localId) {
   return null;
 }
 
+export async function recordGenieManualPaymentToRtdb(transactionId, record) {
+  try {
+    const payId = 'PAY-GENIE-' + String(transactionId).slice(-6).toUpperCase();
+    const payload = {
+      id: payId,
+      userId: record.uid || '',
+      userEmail: record.email || '',
+      userName: record.userName || 'Gamer',
+      method: 'Online Card / eZ Cash',
+      referenceNumber: `Txn: ${transactionId}`,
+      amount: record.amountLkr,
+      currency: 'LKR',
+      slipUrl: '',
+      status: 'VERIFIED',
+      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      timestamp: new Date().toISOString()
+    };
+    await fetch(`${FIREBASE_RTDB_URL}/manual_payments/${encodeURIComponent(payId)}.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  } catch (e) {
+    console.error('[Genie Manual Payment Save Error]:', e.message);
+  }
+}
+
 /**
  * Idempotently verify (against Genie's own status API) and credit a Genie
  * transaction's wallet. Serverless functions are stateless between
@@ -175,6 +202,9 @@ export async function verifyAndCreditGenieTransaction(transactionId) {
     newBalanceUsdt: creditResult.newBalanceUsdt
   });
 
+  await recordGenieManualPaymentToRtdb(transactionId, record);
+
   console.log(`[Genie Wallet Credited] txn=${transactionId} user=${record.uid || record.email} amount=Rs.${record.amountLkr} newBalance=Rs.${creditResult.newBalanceLkr}`);
   return { success: true, isPaid: true, credited: true, amount: record.amountLkr, newBalanceLkr: creditResult.newBalanceLkr, newBalanceUsdt: creditResult.newBalanceUsdt };
 }
+

@@ -1321,6 +1321,33 @@ async function verifyAndCreditGenieTransaction(transactionId) {
       return { success: false, error: creditResult.reason || 'Wallet credit failed', isPaid: true };
     }
 
+async function recordGenieManualPaymentToRtdb(transactionId, record) {
+  try {
+    const payId = 'PAY-GENIE-' + String(transactionId).slice(-6).toUpperCase();
+    const payload = {
+      id: payId,
+      userId: record.uid || '',
+      userEmail: record.email || '',
+      userName: record.userName || 'Gamer',
+      method: 'Online Card / eZ Cash',
+      referenceNumber: `Txn: ${transactionId}`,
+      amount: record.amountLkr,
+      currency: 'LKR',
+      slipUrl: '',
+      status: 'VERIFIED',
+      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      timestamp: new Date().toISOString()
+    };
+    await fetch(`${FIREBASE_RTDB_URL}/manual_payments/${encodeURIComponent(payId)}.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  } catch (e) {
+    console.error('[Genie Manual Payment Save Error]:', e.message);
+  }
+}
+
     await saveGenieTransactionRecord(transactionId, {
       ...record,
       status: 'CREDITED',
@@ -1328,6 +1355,8 @@ async function verifyAndCreditGenieTransaction(transactionId) {
       newBalanceLkr: creditResult.newBalanceLkr,
       newBalanceUsdt: creditResult.newBalanceUsdt
     });
+
+    await recordGenieManualPaymentToRtdb(transactionId, record);
 
     console.log(`[Genie Wallet Credited] txn=${transactionId} user=${record.uid || record.email} amount=Rs.${record.amountLkr} newBalance=Rs.${creditResult.newBalanceLkr}`);
     return {
@@ -1363,6 +1392,8 @@ app.post('/api/genie/create-transaction', rateLimiter(15, 60000), async (req, re
     if (!returnUrl.startsWith('https://')) {
       returnUrl = 'https://madstopup.com/wallet?genie=success';
     }
+    const sep = returnUrl.includes('?') ? '&' : '?';
+    returnUrl = `${returnUrl}${sep}orderRef=${encodeURIComponent(localId)}`;
 
     const payload = {
       amount: Math.round(numAmount * 100),
@@ -1448,9 +1479,12 @@ app.post('/api/genie/create-transaction', rateLimiter(15, 60000), async (req, re
 // or dropped connection right after payment doesn't lose the deposit.
 app.post('/api/genie/verify-status', rateLimiter(30, 60000), async (req, res) => {
   try {
-    const { transactionId } = req.body || {};
+    let { transactionId, orderRef, localId } = req.body || {};
+    if (!transactionId && (orderRef || localId)) {
+      transactionId = await resolveGenieTransactionIdByLocalId(orderRef || localId);
+    }
     if (!transactionId) {
-      return res.status(400).json({ error: 'Missing transactionId' });
+      return res.status(400).json({ error: 'Missing transactionId or orderRef' });
     }
 
     const result = await verifyAndCreditGenieTransaction(transactionId);
@@ -1580,4 +1614,25 @@ app.listen(PORT, () => {
   } catch (e) {
     console.warn('[Telegram Bot Init Note]:', e.message);
   }
+
+  // Periodic background check (every 60s) for recent PENDING Genie transactions
+  setInterval(async () => {
+    try {
+      const res = await fetch(`${FIREBASE_RTDB_URL}/genieTransactions.json`);
+      if (!res.ok) return;
+      const allTxns = await res.json();
+      if (!allTxns || typeof allTxns !== 'object') return;
+
+      const twoHoursAgo = Date.now() - (2 * 60 * 60 * 1000);
+      for (const [txnId, record] of Object.entries(allTxns)) {
+        if (!record || record.status !== 'PENDING') continue;
+        const createdTime = new Date(record.createdAt || 0).getTime();
+        if (createdTime >= twoHoursAgo) {
+          await verifyAndCreditGenieTransaction(txnId);
+        }
+      }
+    } catch (e) {
+      console.warn('[Genie Sync Note]:', e.message);
+    }
+  }, 60000);
 });
