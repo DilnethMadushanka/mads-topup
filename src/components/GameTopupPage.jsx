@@ -783,8 +783,8 @@ export const GameTopupPage = () => {
                       {pkg.name}
                     </div>
 
-                    {/* Bonus Tag */}
-                    {pkg.bonus && (
+                    {/* Bonus Tag — hidden for Free Fire since additional diamonds are not delivered */}
+                    {pkg.bonus && selectedGame?.id !== 'freefire_sg' && (
                       <span className="text-[10px] font-bold text-[#cc040a] bg-red-50 border border-red-100 px-2 py-0.5 rounded-full mb-1">
                         {pkg.bonus}
                       </span>

@@ -532,7 +532,8 @@ export const TopupModal = () => {
                               {pkg.name}
                             </span>
                           </div>
-                          {pkg.bonus && (
+                          {/* Bonus Tag — hidden for Free Fire since additional diamonds are not delivered */}
+                          {pkg.bonus && selectedGame?.id !== 'freefire_sg' && (
                             <span className="text-[10px] text-[#cc040a] font-bold bg-[#cc040a]/15 px-1.5 py-0.5 rounded inline-block">
                               {pkg.bonus}
                             </span>
