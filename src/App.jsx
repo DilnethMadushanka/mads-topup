@@ -30,12 +30,11 @@ import { PolicyModal } from './components/PolicyModal';
 import { ToastNotification } from './components/ToastNotification';
 import { BlogPage } from './components/BlogPage';
 import { LeaderboardPage } from './components/LeaderboardPage';
-import { FreefireCheckerPage } from './components/FreefireCheckerPage';
 import { ScrollReveal } from './hooks/useScrollReveal';
 import { Flame } from 'lucide-react';
 
 const MainContent = () => {
-  const { setIsAdminOpen, isUserProfileOpen, isWalletModalOpen, openUserProfilePage, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, isReferralPageOpen, isResellerPageOpen, isResellerLoginPageOpen, isResellerDashboardOpen, openResellerPage, openContactPage, openPolicyModal, selectedGame, isBlogPageOpen, openBlogPage, isLeaderboardPageOpen, isFreefireCheckerOpen } = useApp();
+  const { setIsAdminOpen, isUserProfileOpen, isWalletModalOpen, openUserProfilePage, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, isReferralPageOpen, isResellerPageOpen, isResellerLoginPageOpen, isResellerDashboardOpen, openResellerPage, openContactPage, openPolicyModal, selectedGame, isBlogPageOpen, openBlogPage, isLeaderboardPageOpen } = useApp();
 
   // Security: Prevent Right-Click Inspect Element & DevTools Keyboard Shortcuts
   React.useEffect(() => {
@@ -99,8 +98,6 @@ const MainContent = () => {
           <ReviewsPage />
         ) : isLeaderboardPageOpen ? (
           <LeaderboardPage />
-        ) : isFreefireCheckerOpen ? (
-          <FreefireCheckerPage />
         ) : isBlogPageOpen ? (
           <BlogPage />
         ) : isGameCatalogOpen ? (
@@ -149,7 +146,7 @@ const MainContent = () => {
       </div>
 
       {/* Footer: Only visible on the main home page, not on sub-pages */}
-      {!selectedGame && !isUserProfileOpen && !isWalletModalOpen && !isResellerDashboardOpen && !isResellerLoginPageOpen && !isResellerPageOpen && !isReferralPageOpen && !isContactPageOpen && !isReviewsPageOpen && !isLeaderboardPageOpen && !isGameCatalogOpen && !isBlogPageOpen && !isFreefireCheckerOpen && (
+      {!selectedGame && !isUserProfileOpen && !isWalletModalOpen && !isResellerDashboardOpen && !isResellerLoginPageOpen && !isResellerPageOpen && !isReferralPageOpen && !isContactPageOpen && !isReviewsPageOpen && !isLeaderboardPageOpen && !isGameCatalogOpen && !isBlogPageOpen && (
       <footer style={{ background: 'linear-gradient(180deg,#0d0a0b 0%,#0a0608 60%,#080408 100%)', color: '#fff', borderTop: '1px solid rgba(204,4,10,0.25)', position: 'relative', overflow: 'hidden' }}>
 
         {/* Red top glow line */}
