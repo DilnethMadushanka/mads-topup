@@ -1134,14 +1134,19 @@ export const AppProvider = ({ children }) => {
       return u;
     }));
 
-    // 3. Update self userProfile if applicable
+    // 3. Update self userProfile locally if applicable (DB write is already handled above by creditUserWalletInDatabase)
+    // Do NOT call creditUserWallet() here as that writes to DB a second time and doubles the credit.
     if (userProfile) {
       const matchSelfEmail = userProfile.email && String(userProfile.email).toLowerCase() === cleanIdLower;
       const matchSelfUid = userProfile.uid && String(userProfile.uid).toLowerCase() === cleanIdLower;
       const matchSelfCode = userProfile.resellerCode && String(userProfile.resellerCode).toLowerCase() === cleanIdLower;
 
       if (matchSelfEmail || matchSelfUid || matchSelfCode) {
-        creditUserWallet(lkrAmount, usdtAmount);
+        setUserProfileState(prev => ({
+          ...prev,
+          walletBalance: Math.max(0, (prev.walletBalance || 0) + lkrAmount),
+          walletUsdt: Math.max(0, (prev.walletUsdt || 0) + usdtAmount)
+        }));
       }
     }
   };
