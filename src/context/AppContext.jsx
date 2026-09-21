@@ -13,7 +13,8 @@ import {
   saveVouchersToFirestore, subscribeVouchersFromFirestore, redeemVoucherInDatabase,
   savePopupAdConfigToFirestore, subscribePopupAdConfigFromFirestore, DEFAULT_POPUP_AD_CONFIG,
   saveSupportTicketToFirestore, updateSupportTicketInFirestore, subscribeSupportTicketsFromFirestore,
-  saveReviewToFirestore, subscribeReviewsFromFirestore
+  saveReviewToFirestore, subscribeReviewsFromFirestore,
+  saveReferralClick, lookupReferrerByCode, processReferralCashback
 } from '../services/firestoreService';
 
 
@@ -558,6 +559,27 @@ export const AppProvider = ({ children }) => {
     setTimeout(() => setToast(null), 4000);
   };
 
+  // ── Referral URL capture (runs once on mount) ─────────────────────
+  // Detects /ref/:code or ?ref=:code in the URL, saves it to localStorage
+  // so it survives until the user registers / logs in.
+  useEffect(() => {
+    try {
+      let refCode = '';
+      const path = window.location.pathname; // e.g. /ref/MADS-DIL1234
+      const search = new URLSearchParams(window.location.search);
+      const pathMatch = path.match(/\/ref\/([^/?#]+)/i);
+      if (pathMatch) refCode = pathMatch[1].toUpperCase();
+      else if (search.get('ref')) refCode = search.get('ref').toUpperCase();
+
+      if (refCode && !localStorage.getItem('mads_ref_used')) {
+        // Store the pending referral code
+        localStorage.setItem('mads_pending_ref', refCode);
+        // Save click record to DB (anonymous — user not yet logged in)
+        saveReferralClick(refCode, `anon-${Date.now()}`).catch(() => {});
+      }
+    } catch (_) {}
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     localStorage.setItem('mads_user_profile', JSON.stringify(userProfile));
 
@@ -707,9 +729,49 @@ export const AppProvider = ({ children }) => {
 
   const addOrder = (newOrder) => {
     setOrders(prev => [newOrder, ...prev]);
-    // Bug 5: Use best available identifier so reseller orders don't save under 'guest'
+    // Use best available identifier so reseller orders don't save under 'guest'
     const saveKey = userProfile?.uid || userProfile?.resellerCode || userProfile?.email || 'guest';
     saveOrderToFirestore(saveKey, newOrder);
+
+    // ── Referral cashback: credit referrer 1.5% on this user's first order ──
+    // Only runs if a pending referral code was captured from the URL on load,
+    // and has not yet been paid out (guarded by 'mads_ref_used' localStorage flag).
+    const pendingRef = (() => { try { return localStorage.getItem('mads_pending_ref'); } catch(_) { return null; } })();
+    const refAlreadyPaid = (() => { try { return !!localStorage.getItem('mads_ref_used'); } catch(_) { return true; } })();
+
+    if (pendingRef && !refAlreadyPaid && newOrder.priceLkr && newOrder.status !== 'FAILED') {
+      // Mark as paid first (optimistic) to prevent double-credit on rapid re-renders
+      try { localStorage.setItem('mads_ref_used', '1'); localStorage.removeItem('mads_pending_ref'); } catch(_) {}
+
+      // Async — does not block order placement
+      (async () => {
+        try {
+          const referrer = await lookupReferrerByCode(pendingRef);
+          if (referrer) {
+            const cashback = await processReferralCashback(
+              referrer.uid,
+              referrer.email,
+              newOrder.priceLkr,
+              pendingRef,
+              userProfile?.email || saveKey
+            );
+            if (cashback > 0) {
+              // Update the referrer's balance in the local usersList if they are in it
+              setUsersList(prev => prev.map(u => {
+                if ((referrer.uid && u.uid === referrer.uid) || (referrer.email && u.email && u.email.toLowerCase() === referrer.email.toLowerCase())) {
+                  return { ...u, walletBalance: (u.walletBalance || 0) + cashback };
+                }
+                return u;
+              }));
+            }
+          }
+        } catch (e) {
+          console.warn('[referral] cashback processing error:', e);
+          // If something fails, revert the paid flag so it can retry
+          try { localStorage.removeItem('mads_ref_used'); localStorage.setItem('mads_pending_ref', pendingRef); } catch(_) {}
+        }
+      })();
+    }
   };
 
   const updateOrderStatus = (orderId, newStatus, moongoldRef = null) => {

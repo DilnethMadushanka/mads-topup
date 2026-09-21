@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { GAMES_DATA } from '../data/games';
 import { filterUserOrders } from '../utils/ownership';
@@ -48,6 +48,27 @@ export const UserProfileModal = () => {
       setEditPhone(userProfile.phone || '');
     }
   }, [userProfile]);
+
+  // ── Dynamic referral code (same algorithm as ReferralProgramPage) ────
+  const modalReferralCode = useMemo(() => {
+    const namePart = (userProfile?.displayName || userProfile?.name || 'USER')
+      .replace(/\s+/g, '').slice(0, 3).toUpperCase();
+    if (userProfile?.uid) {
+      return `MADS-${namePart}${userProfile.uid.slice(-4)}`;
+    }
+    // Fallback: stable localStorage suffix so it doesn't change on every render
+    let deviceSuffix = '';
+    try {
+      deviceSuffix = localStorage.getItem('mads_ref_suffix') || '';
+      if (!deviceSuffix) {
+        deviceSuffix = String(Math.floor(1000 + Math.random() * 9000));
+        localStorage.setItem('mads_ref_suffix', deviceSuffix);
+      }
+    } catch (_) { deviceSuffix = '0000'; }
+    return `MADS-${namePart}${deviceSuffix}`;
+  }, [userProfile?.uid, userProfile?.displayName, userProfile?.name]);
+
+  const modalReferralLink = `${window.location.origin}/ref/${modalReferralCode}`;
 
   if (!isUserProfileOpen) return null;
 
@@ -378,18 +399,24 @@ Thank you for using MADS TOPUP Sri Lanka!
                 <span>Referral Program & Earnings</span>
               </h3>
               <p className="text-xs text-slate-600 font-medium">
-                Share your referral link with friends and earn 2% cashback on every top-up they make!
+                Share your referral link with friends and earn 1.5% cashback on every top-up they make!
               </p>
 
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex items-center justify-between">
                 <div>
                   <span className="text-[10px] text-slate-400 font-bold block uppercase">Your Referral Code</span>
-                  <span className="font-mono font-black text-sm text-emerald-600">MADS-REF-9821</span>
+                  {/* Dynamic referral code: uses real uid/name, falls back to localStorage-stable random */}
+                  <span className="font-mono font-black text-sm text-emerald-600">
+                    {modalReferralCode}
+                  </span>
                 </div>
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText('https://madstopup.com/ref/MADS-REF-9821');
-                    showToast('Referral link copied to clipboard!');
+                    navigator.clipboard.writeText(modalReferralLink).then(() => {
+                      showToast('✅ Referral link copied to clipboard!');
+                    }).catch(() => {
+                      showToast('❌ Could not copy — please copy manually.');
+                    });
                   }}
                   className="px-4 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl hover:bg-emerald-700 transition-colors"
                 >

@@ -2067,3 +2067,138 @@ export const subscribeReviewsFromFirestore = (callback) => {
     if (typeof unsubDb === 'function') unsubDb();
   };
 };
+
+/* ================================================================
+   REFERRAL TRACKING SYSTEM
+   ================================================================
+   - saveReferralClick      : called when a new user lands via /ref/:code
+   - lookupReferrerByCode   : resolves a referral code → referrer uid/email
+   - processReferralCashback: credits 1.5% cashback to referrer on COMPLETED order
+   ================================================================ */
+
+/**
+ * Store a referral attribution when someone visits /ref/:code.
+ * Stored in RTDB at referrals/{referralCode}/{timestamp} for admin visibility.
+ */
+export const saveReferralClick = async (referralCode, newUserIdentifier) => {
+  if (!referralCode || !newUserIdentifier) return false;
+  const cleanCode = String(referralCode).trim().toUpperCase();
+
+  const record = {
+    referralCode: cleanCode,
+    newUser: String(newUserIdentifier).trim(),
+    clickedAt: new Date().toISOString(),
+    cashbackPaid: false,
+    cashbackAmount: 0
+  };
+
+  if (rtdb) {
+    try {
+      const refKey = cleanCode.replace(/[.#$[\]]/g, '_');
+      const clickRef = dbRef(rtdb, `referrals/${refKey}/${Date.now()}`);
+      await rtdbSet(clickRef, record);
+    } catch (e) {
+      console.warn('[referral] RTDB save click:', e.message);
+    }
+  }
+
+  // Firestore mirror (best-effort)
+  if (db) {
+    addDoc(collection(db, 'referrals'), record).catch(() => {});
+  }
+
+  return true;
+};
+
+/**
+ * Resolve a referral code to the referrer's UID and email by scanning
+ * all users in RTDB/Firestore whose profile matches the code algorithm
+ * (MADS-{NAME3}{UID_LAST4}).
+ * Returns { uid, email } or null if not found.
+ */
+export const lookupReferrerByCode = async (referralCode) => {
+  if (!referralCode) return null;
+  const cleanCode = String(referralCode).trim().toUpperCase();
+
+  // Search RTDB users node
+  if (rtdb) {
+    try {
+      const usersRef = dbRef(rtdb, 'users');
+      const snapshot = await rtdbGet(usersRef);
+      if (snapshot.exists()) {
+        for (const [uidKey, userObj] of Object.entries(snapshot.val() || {})) {
+          if (!userObj) continue;
+          const namePart = (userObj.displayName || userObj.name || 'USER')
+            .replace(/\s+/g, '').slice(0, 3).toUpperCase();
+          const uidSuffix = (userObj.uid || uidKey).slice(-4);
+          if (`MADS-${namePart}${uidSuffix}` === cleanCode) {
+            return { uid: userObj.uid || uidKey, email: userObj.email || '' };
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[referral] RTDB lookup referrer:', e.message);
+    }
+  }
+
+  // Fallback: Firestore users collection
+  if (db) {
+    try {
+      const snap = await getDocs(collection(db, 'users'));
+      for (const d of snap.docs) {
+        const userObj = d.data();
+        const namePart = (userObj.displayName || userObj.name || 'USER')
+          .replace(/\s+/g, '').slice(0, 3).toUpperCase();
+        const uidSuffix = (userObj.uid || d.id).slice(-4);
+        if (`MADS-${namePart}${uidSuffix}` === cleanCode) {
+          return { uid: userObj.uid || d.id, email: userObj.email || '' };
+        }
+      }
+    } catch (e) {
+      console.warn('[referral] Firestore lookup referrer:', e.message);
+    }
+  }
+
+  return null;
+};
+
+/**
+ * Credit 1.5% of the completed order's priceLkr to the referrer's wallet.
+ * @param {string} referrerUid     - UID of the user who shared the link
+ * @param {string} referrerEmail   - Email of the referrer (fallback identifier)
+ * @param {number} orderPriceLkr   - The completed order amount in LKR
+ * @param {string} referralCode    - The referral code used (for logging)
+ * @param {string} newUserEmail    - Email of the friend who placed the order
+ * @returns {number} cashback amount credited (0 if not processed)
+ */
+export const processReferralCashback = async (
+  referrerUid, referrerEmail, orderPriceLkr, referralCode, newUserEmail
+) => {
+  if ((!referrerUid && !referrerEmail) || !orderPriceLkr) return 0;
+
+  const cashback = Math.round(parseFloat(orderPriceLkr) * 0.015); // 1.5%
+  if (cashback <= 0) return 0;
+
+  const identifier = referrerUid || referrerEmail;
+  await creditUserWalletInDatabase(identifier, cashback, 0);
+
+  // Audit log in RTDB
+  if (rtdb) {
+    try {
+      const logRef = dbRef(rtdb, `referrals_cashback/${Date.now()}`);
+      await rtdbSet(logRef, {
+        referrerUid: referrerUid || '',
+        referrerEmail: referrerEmail || '',
+        referralCode: referralCode || '',
+        newUserEmail: newUserEmail || '',
+        cashbackLkr: cashback,
+        orderAmountLkr: orderPriceLkr,
+        creditedAt: new Date().toISOString()
+      });
+    } catch (e) {
+      console.warn('[referral] RTDB cashback log:', e.message);
+    }
+  }
+
+  return cashback;
+};

@@ -41,7 +41,18 @@ export const ReferralProgramPage = () => {
       .replace(/\s+/g, '').slice(0, 3).toUpperCase();
     const uidPart = userProfile?.uid
       ? userProfile.uid.slice(-4)
-      : String(Math.floor(1000 + Math.random() * 9000)); // stable per mount
+      : (() => {
+          // Stable fallback — persisted in localStorage so code never
+          // changes across re-opens or re-mounts of this page.
+          try {
+            let s = localStorage.getItem('mads_ref_suffix') || '';
+            if (!s) {
+              s = String(Math.floor(1000 + Math.random() * 9000));
+              localStorage.setItem('mads_ref_suffix', s);
+            }
+            return s;
+          } catch (_) { return '0000'; }
+        })();
     return `MADS-${namePart}${uidPart}`;
   }, [userProfile?.uid, userProfile?.displayName, userProfile?.name]);
 
