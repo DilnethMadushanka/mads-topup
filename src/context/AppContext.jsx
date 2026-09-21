@@ -68,6 +68,9 @@ export const AppProvider = ({ children }) => {
   const [isLeaderboardPageOpen, setIsLeaderboardPageOpen] = useState(() => {
     try { return sessionStorage.getItem('mads_page') === 'leaderboard'; } catch { return false; }
   });
+  const [isFreefireCheckerOpen, setIsFreefireCheckerOpen] = useState(() => {
+    try { return sessionStorage.getItem('mads_page') === 'ff-checker'; } catch { return false; }
+  });
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
@@ -116,6 +119,7 @@ export const AppProvider = ({ children }) => {
     setIsReferralPageOpen(false); setIsResellerPageOpen(false); setIsResellerLoginPageOpen(false);
     setIsResellerDashboardOpen(false); setIsBlogPageOpen(false); setIsUserProfileOpen(false);
     setIsWalletModalOpen(false); setSelectedGame(null); setIsLeaderboardPageOpen(false);
+    setIsFreefireCheckerOpen(false);
   };
 
   const openBlogPage = () => {
@@ -133,6 +137,14 @@ export const AppProvider = ({ children }) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const closeLeaderboardPage = () => { setIsLeaderboardPageOpen(false); _savePage(null); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+
+  const openFreefireChecker = () => {
+    _clearAllPages();
+    setIsFreefireCheckerOpen(true);
+    _savePage('ff-checker');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const closeFreefireChecker = () => { setIsFreefireCheckerOpen(false); _savePage(null); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
   const openCatalog = () => {
     if (!isLoggedIn && (!auth || !auth.currentUser)) {
@@ -1683,6 +1695,9 @@ export const AppProvider = ({ children }) => {
       setIsLeaderboardPageOpen,
       openLeaderboardPage,
       closeLeaderboardPage,
+      isFreefireCheckerOpen,
+      openFreefireChecker,
+      closeFreefireChecker,
       isResellerLoginPageOpen,
       setIsResellerLoginPageOpen,
       openResellerLoginPage,

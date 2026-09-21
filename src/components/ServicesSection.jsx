@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { ArrowRight } from 'lucide-react';
 
 export const ServicesSection = () => {
-  const { showToast, openCatalog, setIsSupportOpen } = useApp();
+  const { showToast, openCatalog, setIsSupportOpen, openFreefireChecker } = useApp();
 
   const services = [
     {
@@ -25,11 +25,10 @@ export const ServicesSection = () => {
     {
       id: 'other',
       title: 'Other Services',
-      description: 'Explore our growing catalog of free & premium digital services',
-      buttonText: 'VIEW MORE',
+      description: 'Free Fire Player Profile Checker — look up any player by UID instantly',
+      buttonText: 'TRY NOW',
       image: '/uploads/index_page/other_service.png',
-      action: openCatalog,
-      comingSoon: true
+      action: openFreefireChecker,
     }
   ];
 
