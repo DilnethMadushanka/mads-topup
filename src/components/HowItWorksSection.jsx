@@ -1,4 +1,4 @@
-﻿import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import { Play, Pause, Volume2, VolumeX, Maximize2, Gamepad2, UserCheck, Zap } from "lucide-react";
 
 /* ─── CONFIG ──────────────────────────────────────────────────────────────
@@ -166,13 +166,13 @@ export const HowItWorksSection = () => {
             position: "relative", borderRadius: 24, overflow: "hidden",
             background: "#0a0a0f",
             boxShadow: "0 32px 80px rgba(0,0,0,0.22), 0 0 0 1px rgba(255,255,255,0.06)",
-            maxWidth: 860, margin: "0 auto 56px", outline: "none",
+            maxWidth: 380, margin: "0 auto 56px", outline: "none",
           }}
         >
           <video
             ref={videoRef}
             src={VIDEO_SRC}
-            style={{ display: "block", width: "100%", aspectRatio: "16/9", objectFit: "cover" }}
+            style={{ display: "block", width: "100%", aspectRatio: "9/16", objectFit: "cover" }}
             preload="metadata"
             playsInline
             onTimeUpdate={handleTimeUpdate}
