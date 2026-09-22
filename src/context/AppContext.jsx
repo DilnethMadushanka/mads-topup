@@ -615,7 +615,10 @@ export const AppProvider = ({ children }) => {
           walletUsdt: userProfile.walletUsdt || 0,
           isVerified: true,
           status: 'ACTIVE',
-          joinedAt: new Date().toISOString().split('T')[0],
+          createdAt: userProfile.createdAt || new Date().toISOString(),
+          joinedAt: userProfile.createdAt
+            ? new Date(userProfile.createdAt).toISOString().split('T')[0]
+            : new Date().toISOString().split('T')[0],
           totalOrders: 0,
           lifetimeSpendLkr: 0
         };
@@ -644,7 +647,10 @@ export const AppProvider = ({ children }) => {
                 walletUsdt: ru.walletUsdt || 0,
                 isVerified: ru.isVerified || false,
                 status: ru.status || 'ACTIVE',
-                joinedAt: ru.createdAt ? ru.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
+                createdAt: ru.createdAt || (ru.joinedAt ? new Date(ru.joinedAt).toISOString() : null),
+                joinedAt: ru.createdAt
+                  ? new Date(ru.createdAt).toISOString().split('T')[0]
+                  : (ru.joinedAt || new Date().toISOString().split('T')[0]),
                 totalOrders: 0,
                 lifetimeSpendLkr: 0
               });
@@ -937,6 +943,7 @@ export const AppProvider = ({ children }) => {
         walletUsdt: 0.00,
         isVerified: true,
         status: 'ACTIVE',
+        createdAt: '2026-09-01T00:00:00.000Z',
         joinedAt: '2026-09-01',
         totalOrders: 12,
         lifetimeSpendLkr: 18500
@@ -950,6 +957,7 @@ export const AppProvider = ({ children }) => {
         walletUsdt: 0.00,
         isVerified: false,
         status: 'ACTIVE',
+        createdAt: '2026-09-05T00:00:00.000Z',
         joinedAt: '2026-09-05',
         totalOrders: 4,
         lifetimeSpendLkr: 4800
@@ -963,6 +971,7 @@ export const AppProvider = ({ children }) => {
         walletUsdt: 0.00,
         isVerified: false,
         status: 'BLOCKED',
+        createdAt: '2026-09-08T00:00:00.000Z',
         joinedAt: '2026-09-08',
         totalOrders: 1,
         lifetimeSpendLkr: 1580

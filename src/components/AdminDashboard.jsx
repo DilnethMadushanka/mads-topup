@@ -389,6 +389,7 @@ export const AdminDashboard = () => {
 
   const [userSearch, setUserSearch] = useState('');
   const [userStatusFilter, setUserStatusFilter] = useState('ALL');
+  const [userSortOrder, setUserSortOrder] = useState('newest');
   const [selectedInspectUser, setSelectedInspectUser] = useState(null);
   const [editLkrVal, setEditLkrVal] = useState('');
   const [editUsdtVal, setEditUsdtVal] = useState('');
@@ -715,6 +716,10 @@ export const AdminDashboard = () => {
       (userStatusFilter === 'UNVERIFIED' && !usr.isVerified) ||
       (userStatusFilter === 'BLOCKED' && usr.status === 'BLOCKED');
     return matchesSearch && matchesStatus;
+  }).sort((a, b) => {
+    const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return userSortOrder === 'oldest' ? ta - tb : tb - ta;
   });
 
   const filteredPayments = safePayments.filter(pay => {
@@ -1534,6 +1539,10 @@ export const AdminDashboard = () => {
                   <option value="UNVERIFIED">Unverified Accounts</option>
                   <option value="BLOCKED">Blocked Accounts</option>
                 </select>
+                <select value={userSortOrder} onChange={(e) => setUserSortOrder(e.target.value)} className={fieldCls} style={{ ...fieldStyle, maxWidth: 200 }}>
+                  <option value="newest">⬇ Newest First</option>
+                  <option value="oldest">⬆ Oldest First</option>
+                </select>
               </FilterBar>
 
               <DataTable
@@ -1553,6 +1562,16 @@ export const AdminDashboard = () => {
                   { key: 'status', label: 'Account Status', sortable: true, sortValue: u => u.status || '', render: u => <StatusPill status={u.status} /> },
                   { key: 'lkr', label: 'EZ Wallet LKR', sortable: true, sortValue: u => u.walletBalance || 0, render: u => <span className="font-mono font-bold" style={{ color: 'var(--adm-text)' }}>Rs. {(u.walletBalance || 0).toLocaleString()}</span> },
                   { key: 'usdt', label: 'Binance USDT', sortable: true, sortValue: u => u.walletUsdt || 0, render: u => <span className="font-mono font-bold text-emerald-400">${(u.walletUsdt || 0).toFixed(2)}</span> },
+                  { key: 'createdAt', label: 'Joined', sortable: false, sortValue: u => { const t = u.createdAt ? new Date(u.createdAt).getTime() : 0; return isNaN(t) ? 0 : t; }, render: u => (
+                    <div className="text-[11px] font-mono" style={mutedStyle}>
+                      {u.createdAt ? (
+                        <>
+                          <div>{new Date(u.createdAt).toLocaleDateString()}</div>
+                          <div className="text-[10px]" style={{ color: 'var(--adm-text-faint)' }}>{timeAgo(u.createdAt)}</div>
+                        </>
+                      ) : <span style={{ color: 'var(--adm-text-faint)' }}>—</span>}
+                    </div>
+                  )},
                   { key: 'actions', label: 'Actions', align: 'right', render: u => (
                     <div className="flex justify-end gap-1.5 flex-wrap">
                       {!u.isVerified && <button onClick={() => verifyUserAccount(u.uid)} className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[10px] rounded-lg cursor-pointer">Verify</button>}
