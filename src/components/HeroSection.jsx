@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { Zap, Layers, MessageCircle } from 'lucide-react';
+import { Zap, Layers, Play } from 'lucide-react';
 
 export const HeroSection = () => {
   const { openCatalog, setIsSupportOpen } = useApp();
@@ -21,6 +21,11 @@ export const HeroSection = () => {
 
   const scrollToServices = () => {
     const el = document.getElementById('services-section');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const scrollToHowItWorks = () => {
+    const el = document.getElementById('how-it-works-section');
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -265,21 +270,30 @@ export const HeroSection = () => {
           Premium game top-ups at <strong className="text-white font-extrabold">unbeatable prices</strong> — instant delivery, trusted by thousands of Sri Lankan gamers.
         </p>
 
-        {/* Action Buttons (Signature Red Theme) */}
+        {/* Action Buttons */}
         <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4 animate-pop-in delay-800">
           <button
             onClick={scrollToServices}
-            className="btn-dark-pill w-full sm:w-auto px-8 py-3.5 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 cursor-pointer shadow-md hover:-translate-y-0.5 transition-all"
+            className="btn-dark-pill w-full sm:w-auto px-10 py-4 text-white font-black text-xs uppercase tracking-[0.18em] flex items-center justify-center gap-3 cursor-pointer transition-all group"
           >
-            <Layers className="w-4 h-4 text-white" />
+            <Layers className="w-4 h-4 text-indigo-300 group-hover:rotate-12 transition-transform duration-300" />
             <span>EXPLORE SERVICES</span>
+          </button>
+
+          {/* HOW IT WORKS — golden pill */}
+          <button
+            onClick={scrollToHowItWorks}
+            className="btn-hiw-pill w-full sm:w-auto px-10 py-4 text-white font-black text-xs uppercase tracking-[0.18em] flex items-center justify-center gap-3 cursor-pointer transition-all group"
+          >
+            <Play className="w-3.5 h-3.5 fill-amber-300 text-amber-300 group-hover:scale-125 transition-transform duration-300" />
+            <span>HOW IT WORKS</span>
           </button>
 
           <button
             onClick={openCatalog}
-            className="btn-cyan-pill w-full sm:w-auto px-8 py-3.5 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 cursor-pointer shadow-lg shadow-red-600/30 hover:shadow-red-600/50 hover:-translate-y-0.5 transition-all"
+            className="btn-cyan-pill w-full sm:w-auto px-10 py-4 text-white font-black text-xs uppercase tracking-[0.18em] flex items-center justify-center gap-3 cursor-pointer transition-all group"
           >
-            <Zap className="w-4 h-4 text-white fill-white" />
+            <Zap className="w-4 h-4 text-yellow-300 fill-yellow-300 group-hover:scale-125 group-hover:rotate-12 transition-transform duration-300" />
             <span>TOP UP NOW</span>
           </button>
         </div>
