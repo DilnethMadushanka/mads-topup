@@ -269,7 +269,7 @@ export const HeroSection = () => {
         <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4 animate-pop-in delay-800">
           <button
             onClick={scrollToServices}
-            className="btn-cyan-pill w-full sm:w-auto px-8 py-3.5 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 cursor-pointer shadow-lg shadow-red-600/30 hover:shadow-red-600/50 hover:-translate-y-0.5 transition-all"
+            className="btn-dark-pill w-full sm:w-auto px-8 py-3.5 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 cursor-pointer shadow-md hover:-translate-y-0.5 transition-all"
           >
             <Layers className="w-4 h-4 text-white" />
             <span>EXPLORE SERVICES</span>
@@ -277,7 +277,7 @@ export const HeroSection = () => {
 
           <button
             onClick={openCatalog}
-            className="btn-dark-pill w-full sm:w-auto px-8 py-3.5 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 cursor-pointer border border-white/20 hover:border-white/40 shadow-md"
+            className="btn-cyan-pill w-full sm:w-auto px-8 py-3.5 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 cursor-pointer shadow-lg shadow-red-600/30 hover:shadow-red-600/50 hover:-translate-y-0.5 transition-all"
           >
             <Zap className="w-4 h-4 text-white fill-white" />
             <span>TOP UP NOW</span>
