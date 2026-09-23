@@ -501,7 +501,7 @@ export default async function handler(req, res) {
     // priceLkr, paymentId, clientProfile with the customer's wallet balance,
     // isResellerOrder), which MooGold never should receive. Previously the
     // whole wrapper was forwarded verbatim.
-    const moongoldPayload = { path: apiPath, data: bodyObj?.data };
+    const moongoldPayload = { path: apiPath, data: bodyObj?.data, ...(partnerOrderId ? { partnerOrderId } : {}) };
     const timestamp = Math.floor(Date.now() / 1000);
     const payloadStr = JSON.stringify(moongoldPayload);
     const stringToSign = payloadStr + timestamp + apiPath;
@@ -553,10 +553,15 @@ export default async function handler(req, res) {
           newBalanceUsdt: deductResult.newBalanceUsdt
         };
         if (partnerOrderId) {
+          const moongoldOrderId = jsonResult?.order_id || jsonResult?.account_details?.order_id || null;
           await saveMoogoldOrderRecord(partnerOrderId, {
             status: isSuccess ? 'COMPLETED' : 'FAILED',
             uid: authenticatedUser.uid,
+            email: authenticatedUser.email || null,
             priceLkr: numPriceLkr,
+            usedCurrency: deductResult?.usedCurrency || 'LKR',
+            rtdbKey: deductResult?.rtdbKey || null,
+            moongoldOrderId: moongoldOrderId ? String(moongoldOrderId) : null,
             response: isSuccess ? responseBody : undefined,
             createdAt: new Date().toISOString()
           });
@@ -566,7 +571,7 @@ export default async function handler(req, res) {
       res.json(jsonResult);
     } else {
       if (isOrderCreation && partnerOrderId) {
-        await saveMoogoldOrderRecord(partnerOrderId, { status: isSuccess ? 'COMPLETED' : 'FAILED', uid: authenticatedUser.uid, priceLkr: numPriceLkr, createdAt: new Date().toISOString() });
+        await saveMoogoldOrderRecord(partnerOrderId, { status: isSuccess ? 'COMPLETED' : 'FAILED', uid: authenticatedUser.uid, email: authenticatedUser.email || null, priceLkr: numPriceLkr, usedCurrency: deductResult?.usedCurrency || 'LKR', rtdbKey: deductResult?.rtdbKey || null, createdAt: new Date().toISOString() });
       }
       res.send(text);
     }
