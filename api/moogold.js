@@ -500,12 +500,8 @@ export default async function handler(req, res) {
     // `bodyObj` is our internal wrapper (also carries partnerOrderId,
     // priceLkr, paymentId, clientProfile with the customer's wallet balance,
     // isResellerOrder), which MooGold never should receive. Previously the
-    const effectivePartnerOrderId = partnerOrderId || (isOrderCreation ? (crypto.randomUUID ? crypto.randomUUID() : `ORD-${Date.now()}`) : null);
-    const moongoldPayload = {
-      path: apiPath,
-      data: bodyObj?.data,
-      ...(effectivePartnerOrderId ? { partnerOrderId: effectivePartnerOrderId } : {})
-    };
+    // whole wrapper was forwarded verbatim.
+    const moongoldPayload = { path: apiPath, data: bodyObj?.data };
     const timestamp = Math.floor(Date.now() / 1000);
     const payloadStr = JSON.stringify(moongoldPayload);
     const stringToSign = payloadStr + timestamp + apiPath;
