@@ -952,8 +952,12 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
     // (including the customer's wallet balance) and isResellerOrder, which
     // this server needs but MooGold never should. Previously the ENTIRE
     // wrapper was sent to MooGold verbatim, leaking wallet balance data to a
-    // third party and sending fields outside their documented schema.
-    const moongoldPayload = { path: apiPath, data: bodyObj?.data };
+    const effectivePartnerOrderId = partnerOrderId || (isOrderCreation ? (crypto.randomUUID ? crypto.randomUUID() : `ORD-${Date.now()}`) : null);
+    const moongoldPayload = {
+      path: apiPath,
+      data: bodyObj?.data,
+      ...(effectivePartnerOrderId ? { partnerOrderId: effectivePartnerOrderId } : {})
+    };
     const timestamp = Math.floor(Date.now() / 1000);
     const payloadStr = JSON.stringify(moongoldPayload);
     const stringToSign = payloadStr + timestamp + apiPath;
