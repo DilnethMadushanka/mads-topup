@@ -361,10 +361,10 @@ export const dispatchMoongoldOrder = async (orderData) => {
   if (gameId.includes('pubg') || idLabel.includes('character')) {
     dataPayload['Character ID'] = orderData.playerId || '';
   } else if (gameId.includes('freefire')) {
-    // ⚠️ REMINDER (confirmed by tech team, 24 Sep 2026):
-    // Free Fire MUST use 'Player ID' — NOT 'User ID'.
-    // Sending 'User ID' causes MooGold to return 'incorrect-details'
-    // and the top-up is never delivered. Do NOT change this field name.
+    // MooGold Free Fire (SG/MY) requires 'Player ID', not 'User ID' —
+    // confirmed live against the real MooGold API; a prior "fix" had this
+    // backwards and was the actual root cause of every Free Fire order
+    // failing with a misleading "Product ID incorrect/unauthorized" error.
     dataPayload['Player ID'] = orderData.playerId || '';
   } else {
     dataPayload['User ID'] = orderData.playerId || '';

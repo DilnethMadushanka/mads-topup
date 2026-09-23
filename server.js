@@ -953,7 +953,7 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
     // this server needs but MooGold never should. Previously the ENTIRE
     // wrapper was sent to MooGold verbatim, leaking wallet balance data to a
     // third party and sending fields outside their documented schema.
-    const moongoldPayload = { path: apiPath, data: bodyObj?.data, ...(partnerOrderId ? { partnerOrderId } : {}) };
+    const moongoldPayload = { path: apiPath, data: bodyObj?.data };
     const timestamp = Math.floor(Date.now() / 1000);
     const payloadStr = JSON.stringify(moongoldPayload);
     const stringToSign = payloadStr + timestamp + apiPath;
@@ -1015,15 +1015,10 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
           newBalanceUsdt: deductResult.newBalanceUsdt
         };
         if (partnerOrderId) {
-          const moongoldOrderId = jsonResult?.order_id || jsonResult?.account_details?.order_id || null;
           await saveMoogoldOrderRecord(partnerOrderId, {
             status: isSuccess ? 'COMPLETED' : 'FAILED',
             uid: authenticatedUser.uid,
-            email: authenticatedUser.email || null,
             priceLkr: numPriceLkr,
-            usedCurrency: deductResult?.usedCurrency || 'LKR',
-            rtdbKey: deductResult?.rtdbKey || null,
-            moongoldOrderId: moongoldOrderId ? String(moongoldOrderId) : null,
             response: isSuccess ? responseBody : undefined,
             createdAt: new Date().toISOString()
           });
@@ -1033,7 +1028,7 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
       return res.json(jsonResult);
     } else {
       if (isOrderCreation && partnerOrderId) {
-        await saveMoogoldOrderRecord(partnerOrderId, { status: isSuccess ? 'COMPLETED' : 'FAILED', uid: authenticatedUser.uid, email: authenticatedUser.email || null, priceLkr: numPriceLkr, usedCurrency: deductResult?.usedCurrency || 'LKR', rtdbKey: deductResult?.rtdbKey || null, createdAt: new Date().toISOString() });
+        await saveMoogoldOrderRecord(partnerOrderId, { status: isSuccess ? 'COMPLETED' : 'FAILED', uid: authenticatedUser.uid, priceLkr: numPriceLkr, createdAt: new Date().toISOString() });
       }
       return res.send(text);
     }
@@ -1052,121 +1047,7 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
   }
 });
 
-// ─────────────────────────────────────────────────────────────────────────
-// MooGold Order Status Callback Webhook
-//
-// MooGold fires this endpoint (registered via your account manager) whenever
-// an order status changes to 'completed', 'incorrect-details', or 'refunded'.
-// Without this, a Free Fire (or any game) order that MooGold marks as
-// 'incorrect-details' due to a wrong Player ID would leave the user's wallet
-// permanently deducted with no recourse.
-//
-// Per MooGold docs: the callback retries every minute for up to 100 times
-// until it receives a success response — so we ALWAYS ack 200, and log any
-// processing errors for manual follow-up rather than letting retries storm us.
-// ─────────────────────────────────────────────────────────────────────────
-app.post('/api/moogold/callback', async (req, res) => {
-  // Always ack immediately so MooGold stops retrying
-  res.json({ status: 'ok' });
-
-  const body = req.body || {};
-  console.log('[MooGold Callback Received]:', JSON.stringify(body).substring(0, 500));
-
-  const orderId = body.order_id ? String(body.order_id) : null;
-  const callbackStatus = String(body.status || '').toLowerCase();
-  const accountDetails = body.account_details || {};
-
-  if (!orderId) {
-    console.warn('[MooGold Callback] Missing order_id in callback body — logged for manual review.');
-    return;
-  }
-
-  // 'incorrect-details' or 'refunded' → find the matching internal record and refund user wallet
-  const shouldRefund = callbackStatus === 'incorrect-details' || callbackStatus === 'refunded';
-
-  if (!shouldRefund && callbackStatus !== 'completed') {
-    console.log(`[MooGold Callback] Informational status="${callbackStatus}" for order_id=${orderId} — no action needed.`);
-    return;
-  }
-
-  try {
-    // Look up our internal record by MooGold order_id stored in moogoldProcessedOrders.
-    // The record keyed by partnerOrderId so we scan for the matching moogold order_id.
-    let matchedRecord = null;
-    let matchedPartnerOrderId = null;
-    try {
-      const allRes = await fetch(`${FIREBASE_RTDB_URL}/moogoldProcessedOrders.json`);
-      if (allRes.ok) {
-        const allRecords = await allRes.json();
-        if (allRecords && typeof allRecords === 'object') {
-          for (const [pid, rec] of Object.entries(allRecords)) {
-            if (!rec) continue;
-            // Match either by stored moongold order_id or by the response embedded in the record
-            const recOrderId = rec.moongoldOrderId || rec.response?.order_id || rec.response?.account_details?.order_id;
-            if (recOrderId && String(recOrderId) === orderId) {
-              matchedRecord = rec;
-              matchedPartnerOrderId = pid;
-              break;
-            }
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('[MooGold Callback RTDB Scan Warning]:', e.message);
-    }
-
-    if (!matchedRecord) {
-      console.warn(`[MooGold Callback] No internal record found for MooGold order_id=${orderId} status="${callbackStatus}" — logged for manual review. Account: ${JSON.stringify(accountDetails)}`);
-      return;
-    }
-
-    const uid = matchedRecord.uid;
-    const priceLkr = parseFloat(matchedRecord.priceLkr || 0);
-    const usedCurrency = matchedRecord.usedCurrency || 'LKR';
-
-    if (callbackStatus === 'completed') {
-      console.log(`[MooGold Callback] Order ${orderId} (partner: ${matchedPartnerOrderId}) COMPLETED — no wallet action needed.`);
-      // Update the record status to COMPLETED if it wasn't already
-      if (matchedRecord.status !== 'COMPLETED') {
-        await saveMoogoldOrderRecord(matchedPartnerOrderId, {
-          ...matchedRecord,
-          status: 'COMPLETED',
-          moongoldOrderId: orderId,
-          completedAt: new Date().toISOString()
-        });
-      }
-      return;
-    }
-
-    // shouldRefund — incorrect-details or refunded
-    if (matchedRecord.status === 'REFUNDED_BY_CALLBACK') {
-      console.log(`[MooGold Callback] Order ${orderId} already refunded — skipping duplicate callback.`);
-      return;
-    }
-
-    if (!uid || priceLkr <= 0) {
-      console.error(`[MooGold Callback] Cannot refund: uid="${uid}" priceLkr=${priceLkr} for order_id=${orderId}`);
-      return;
-    }
-
-    console.warn(`[MooGold Callback] Order ${orderId} status="${callbackStatus}" — issuing wallet refund of Rs. ${priceLkr} (${usedCurrency}) to uid=${uid}`);
-    await refundUserWallet(uid, priceLkr, usedCurrency, matchedRecord.email || null, matchedRecord.rtdbKey || null);
-
-    // Mark the internal record as refunded so duplicate callbacks are ignored
-    await saveMoogoldOrderRecord(matchedPartnerOrderId, {
-      ...matchedRecord,
-      status: 'REFUNDED_BY_CALLBACK',
-      moongoldOrderId: orderId,
-      callbackStatus,
-      refundedAt: new Date().toISOString()
-    });
-
-    console.log(`[MooGold Callback] Refund complete for uid=${uid} Rs.${priceLkr} — order_id=${orderId} status="${callbackStatus}"`);
-  } catch (e) {
-    console.error('[MooGold Callback Processing Error]:', e.message);
-  }
-});
-
+// Diagnostic IP Endpoint
 app.get('/api/ip', async (req, res) => {
   try {
     const ipRes = await fetch('https://api.ipify.org?format=json');

@@ -213,7 +213,7 @@ const DataTable = ({ columns, rows, rowKey = 'id', pageSize = 8, emptyMessage = 
   const [sortDir, setSortDir] = useState('asc');
   const [page, setPage] = useState(0);
 
-  useEffect(() => { setPage(0); }, [rows]);
+  useEffect(() => { setPage(0); }, [rows.length]);
 
   let sortedRows = rows;
   if (sortKey) {

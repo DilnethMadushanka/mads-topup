@@ -119,7 +119,6 @@ export const HowItWorksSection = () => {
 
   return (
     <section
-      id="how-it-works-section"
       style={{
         background: "linear-gradient(180deg, #f8faff 0%, #ffffff 60%, #f1f5ff 100%)",
         borderTop: "1px solid rgba(203,213,225,0.6)",
