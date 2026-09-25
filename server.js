@@ -193,7 +193,15 @@ function _adminHash(s) {
 const ADMIN_VALID_EMAIL_HASH = '6c24b307';
 const ADMIN_VALID_PASSWORD_HASH = '-4d18553';
 // RFC 6238 TOTP Authenticator for Admin (Google Authenticator, Microsoft Authenticator, Authy)
-const ADMIN_TOTP_SECRET = process.env.ADMIN_TOTP_SECRET || 'YHYWPRT263LERQ67JHR4PI3FUWCMR473';
+// The TOTP secret is loaded EXCLUSIVELY from backend environment variables (process.env.ADMIN_TOTP_SECRET).
+// Hardcoded secrets and fallback keys have been completely removed from all source code.
+function getAdminTotpSecret() {
+  const secret = process.env.ADMIN_TOTP_SECRET;
+  if (!secret || typeof secret !== 'string' || !secret.trim()) {
+    return null;
+  }
+  return secret.trim();
+}
 
 function base32Decode(base32) {
   const clean = String(base32 || '').toUpperCase().replace(/[\s=-]/g, '');
@@ -251,20 +259,26 @@ function pruneConsumedTotpSteps() {
 }
 
 function verifyAdminTOTP(code) {
+  const secret = getAdminTotpSecret();
+  if (!secret) {
+    console.error('[Admin Auth] CRITICAL: ADMIN_TOTP_SECRET is not configured in backend environment variables (.env). Login blocked.');
+    return { valid: false, reason: 'NOT_CONFIGURED' };
+  }
+
   pruneConsumedTotpSteps();
   const cleanCode = String(code || '').trim().replace(/\D/g, '');
   if (cleanCode.length !== 6) {
     return { valid: false, reason: 'INVALID_FORMAT' };
   }
 
-  // Tolerance window: -1, 0, +1 (±30s drift compensation)
+  // Drift tolerance window: -1, 0, +1 (drift window of ±1 step, 30s drift compensation)
   for (let step = -1; step <= 1; step++) {
-    const { code: expectedCode, counter } = generateTOTP(ADMIN_TOTP_SECRET, step);
+    const { code: expectedCode, counter } = generateTOTP(secret, step);
     if (expectedCode === cleanCode) {
       if (consumedTotpSteps.has(counter)) {
         return { valid: false, reason: 'ALREADY_CONSUMED' };
       }
-      // Consume the step so the same code cannot be replayed
+      // Consume the step so the same code cannot be replayed within the window
       consumedTotpSteps.set(counter, Date.now());
       return { valid: true, counter };
     }
@@ -308,6 +322,9 @@ app.post('/api/admin/login', rateLimiter(8, 300000), (req, res) => {
 
   const totpResult = verifyAdminTOTP(cleanCode);
   if (!totpResult.valid) {
+    if (totpResult.reason === 'NOT_CONFIGURED') {
+      return res.status(500).json({ error: 'Server configuration error: ADMIN_TOTP_SECRET is missing from backend environment variables (.env).' });
+    }
     if (totpResult.reason === 'ALREADY_CONSUMED') {
       return res.status(401).json({ error: 'This 2FA code was already used. Please wait for the next 30-second code from your Authenticator app.' });
     }
