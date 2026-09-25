@@ -46,17 +46,22 @@ const PORT = process.env.PORT || 3000;
 // kept only in script-src for the oncontextmenu="return false" on <body>.
 //
 // Firebase services used by this project and their required origins:
-//   Firebase Auth       → identitytoolkit.googleapis.com, securetoken.googleapis.com
-//   Firestore           → firestore.googleapis.com
-//   Realtime Database   → mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app
-//                         + wss:// of same host
-//   Firebase Storage    → firebasestorage.googleapis.com
-//   Firebase SDK CDN    → apis.google.com, www.gstatic.com
+//   Firebase Auth (popup)  → mads-topup-76445.firebaseapp.com  ← OAuth handler page
+//                            identitytoolkit.googleapis.com     ← Auth REST
+//                            securetoken.googleapis.com         ← Token refresh
+//                            accounts.google.com                ← Google IdP
+//   Firestore              → firestore.googleapis.com
+//   Realtime Database      → mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app
+//   Firebase Storage       → firebasestorage.googleapis.com
+//                            mads-topup-76445.firebasestorage.app  ← newer bucket domain
+//   Firebase SDK CDN       → apis.google.com, www.gstatic.com
 const PRODUCTION_CSP = [
   "default-src 'self'",
 
-  // Scripts: only our own bundle + Google Identity SDK (needed for Google Sign-In popup)
-  "script-src 'self' 'unsafe-inline' https://apis.google.com https://www.gstatic.com",
+  // Scripts: our bundle + Google Identity SDK + Firebase auth handler
+  // mads-topup-76445.firebaseapp.com hosts the OAuth redirect/popup handler page
+  // that Firebase's signInWithPopup() loads as a script source.
+  "script-src 'self' 'unsafe-inline' https://apis.google.com https://www.gstatic.com https://mads-topup-76445.firebaseapp.com",
 
   // Styles: our bundle + Google Fonts CSS
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com",
@@ -64,36 +69,41 @@ const PRODUCTION_CSP = [
   // Fonts: Google Fonts binary files only
   "font-src 'self' https://fonts.gstatic.com data:",
 
-  // Images: self + data URIs + blob (receipt previews) + any https image CDN
-  "img-src 'self' data: blob: https:",
+  // Images: self + data URIs + blob (receipt previews) + Google profile photos
+  "img-src 'self' data: blob: https: https://lh3.googleusercontent.com",
 
   // XHR / fetch / WebSocket — every external host named explicitly, no wildcards
   [
     "connect-src 'self'",
     "https://madstopup.com",
-    // Firebase Auth REST
+    // Firebase Auth popup handler page (fetched by Firebase SDK during signInWithPopup)
+    "https://mads-topup-76445.firebaseapp.com",
+    // Firebase Auth REST API
     "https://identitytoolkit.googleapis.com",
     "https://securetoken.googleapis.com",
-    // Firestore REST
+    // Firestore REST API
     "https://firestore.googleapis.com",
     // Firebase Realtime Database (REST + WebSocket)
     "https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app",
     "wss://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app",
-    // Firebase Storage
+    // Firebase Storage (both legacy and new bucket domain)
     "https://firebasestorage.googleapis.com",
-    // Google Sign-In / token refresh
+    "https://mads-topup-76445.firebasestorage.app",
+    // Google Sign-In / token refresh / OAuth2
     "https://accounts.google.com",
     "https://oauth2.googleapis.com",
     // MooGold reseller API
     "https://moogold.com",
     // Genie Business IPG (Dialog payment gateway)
     "https://genie.dialog.lk",
-    // Resend transactional email (called from server-side only, but kept for CSP completeness)
-    "https://api.resend.com",
+    // Cloudflare R2 storage (uploaded receipts)
+    "https://mads-topup.r2.dev",
   ].join(' '),
 
-  // Frames: Genie payment iframe + Google Sign-In popup
-  "frame-src 'self' https://genie.dialog.lk https://accounts.google.com",
+  // Frames: Genie payment iframe + Google Sign-In popup + Firebase auth handler
+  // mads-topup-76445.firebaseapp.com is the iframe Firebase uses for the
+  // signInWithPopup OAuth handshake — without it the popup silently fails.
+  "frame-src 'self' https://genie.dialog.lk https://accounts.google.com https://mads-topup-76445.firebaseapp.com",
 
   // Block all plugins (Flash, Java applets, etc.)
   "object-src 'none'",
@@ -101,7 +111,7 @@ const PRODUCTION_CSP = [
   // Prevent <base> tag injection attacks
   "base-uri 'self'",
 
-  // Restrict where forms can submit to
+  // Forms: allow Google OAuth form submissions
   "form-action 'self' https://accounts.google.com",
 ].join('; ');
 
@@ -114,6 +124,12 @@ app.use((req, res, next) => {
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   res.setHeader('Content-Security-Policy', PRODUCTION_CSP);
+  // same-origin-allow-popups (not same-origin) — required so the Google Sign-In
+  // popup window can post its OAuth token back to the opener (main tab).
+  // With plain same-origin, Chrome severs the BrowsingContext group between
+  // the popup and the opener, causing signInWithPopup() to hang silently.
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
   next();
 });
 
