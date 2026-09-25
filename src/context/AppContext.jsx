@@ -1178,83 +1178,111 @@ export const AppProvider = ({ children }) => {
     }
     balanceUpdateDebounceRef.current.set(debounceKey, now);
 
-    // 1. Write balance adjustment to DB (RTDB & Firestore) across UID, Email, Reseller Code, or Security Key
-    await creditUserWalletInDatabase(cleanId, lkrAmount, usdtAmount);
+    // 1. OPTIMISTIC UPDATE FIRST: Immediately update usersList in React state & localStorage
+    setUsersList(prev => {
+      const next = prev.map(u => {
+        const uEmailLower = u.email ? String(u.email).toLowerCase() : '';
+        const uUidLower = u.uid ? String(u.uid).toLowerCase() : '';
+        const uIdLower = u.id ? String(u.id).toLowerCase() : '';
+        const uCodeLower = u.resellerCode ? String(u.resellerCode).toLowerCase() : '';
 
-    // 2. Update local usersList state
-    setUsersList(prev => prev.map(u => {
-      const matchEmail = u.email && String(u.email).toLowerCase() === cleanIdLower;
-      const matchUid = u.uid && String(u.uid).toLowerCase() === cleanIdLower;
-      const matchCode = u.resellerCode && String(u.resellerCode).toLowerCase() === cleanIdLower;
+        const matchEmail = (cleanIdLower && uEmailLower === cleanIdLower) || (cleanSecEmail && uEmailLower === cleanSecEmail);
+        const matchUid = cleanIdLower && (uUidLower === cleanIdLower || uIdLower === cleanIdLower);
+        const matchCode = cleanIdLower && uCodeLower === cleanIdLower;
 
-      if (matchEmail || matchUid || matchCode) {
-        const newLkr = Math.max(0, (u.walletBalance || 0) + lkrAmount);
-        const newUsdt = Math.max(0, (u.walletUsdt || 0) + usdtAmount);
-        return {
-          ...u,
-          walletBalance: newLkr,
-          walletUsdt: newUsdt
-        };
-      }
-      return u;
-    }));
+        if (matchEmail || matchUid || matchCode) {
+          const newLkr = Math.max(0, (parseFloat(u.walletBalance) || 0) + lkrDiff);
+          const newUsdt = Math.max(0, (parseFloat(u.walletUsdt) || 0) + usdtDiff);
+          return {
+            ...u,
+            walletBalance: newLkr,
+            walletUsdt: newUsdt
+          };
+        }
+        return u;
+      });
+      try {
+        localStorage.setItem('mads_users_list', JSON.stringify(next));
+      } catch (_) {}
+      return next;
+    });
 
-    // 3. Update self userProfile locally if applicable (DB write is already handled above by creditUserWalletInDatabase)
-    // Do NOT call creditUserWallet() here as that writes to DB a second time and doubles the credit.
+    // Update self userProfile locally if applicable
     if (userProfile) {
-      const matchSelfEmail = userProfile.email && String(userProfile.email).toLowerCase() === cleanIdLower;
-      const matchSelfUid = userProfile.uid && String(userProfile.uid).toLowerCase() === cleanIdLower;
-      const matchSelfCode = userProfile.resellerCode && String(userProfile.resellerCode).toLowerCase() === cleanIdLower;
-
-      if (matchSelfEmail || matchSelfUid || matchSelfCode) {
+      const pEmailLower = userProfile.email ? String(userProfile.email).toLowerCase() : '';
+      const pUidLower = userProfile.uid ? String(userProfile.uid).toLowerCase() : '';
+      const matchSelf = (cleanIdLower && (pEmailLower === cleanIdLower || pUidLower === cleanIdLower)) || (cleanSecEmail && pEmailLower === cleanSecEmail);
+      if (matchSelf) {
         setUserProfileState(prev => ({
           ...prev,
-          walletBalance: Math.max(0, (prev.walletBalance || 0) + lkrAmount),
-          walletUsdt: Math.max(0, (prev.walletUsdt || 0) + usdtAmount)
+          walletBalance: Math.max(0, (parseFloat(prev?.walletBalance) || 0) + lkrDiff),
+          walletUsdt: Math.max(0, (parseFloat(prev?.walletUsdt) || 0) + usdtDiff)
         }));
       }
     }
+
+    // 2. Persist to DB (direct REST PATCH)
+    try {
+      await creditUserWalletInDatabase(cleanId || cleanSecEmail, lkrDiff, usdtDiff);
+    } catch (err) {
+      console.warn('updateUserBalance note:', err);
+    }
   };
 
-  const setUserExactBalance = async (userEmailOrId, exactLkr, exactUsdt) => {
-    if (!userEmailOrId) return;
-    const cleanId = String(userEmailOrId).trim();
+  const setUserExactBalance = async (userEmailOrId, exactLkr, exactUsdt, secondaryEmail = null) => {
+    if (!userEmailOrId && !secondaryEmail) return;
+    const cleanId = String(userEmailOrId || '').trim();
     const cleanIdLower = cleanId.toLowerCase();
+    const cleanSecEmail = String(secondaryEmail || '').trim().toLowerCase();
     const newLkr = Math.max(0, parseFloat(exactLkr) || 0);
     const newUsdt = Math.max(0, parseFloat(exactUsdt) || 0);
 
-    // 1. Write exact balance to DB (RTDB & Firestore)
-    await setUserExactBalanceInDatabase(cleanId, newLkr, newUsdt);
+    // 1. OPTIMISTIC UPDATE FIRST: Immediately update usersList in React state & localStorage
+    setUsersList(prev => {
+      const next = prev.map(u => {
+        const uEmailLower = u.email ? String(u.email).toLowerCase() : '';
+        const uUidLower = u.uid ? String(u.uid).toLowerCase() : '';
+        const uIdLower = u.id ? String(u.id).toLowerCase() : '';
+        const uCodeLower = u.resellerCode ? String(u.resellerCode).toLowerCase() : '';
 
-    // 2. Update local usersList state
-    setUsersList(prev => prev.map(u => {
-      const matchEmail = u.email && String(u.email).toLowerCase() === cleanIdLower;
-      const matchUid = u.uid && String(u.uid).toLowerCase() === cleanIdLower;
-      const matchCode = u.resellerCode && String(u.resellerCode).toLowerCase() === cleanIdLower;
+        const matchEmail = (cleanIdLower && uEmailLower === cleanIdLower) || (cleanSecEmail && uEmailLower === cleanSecEmail);
+        const matchUid = cleanIdLower && (uUidLower === cleanIdLower || uIdLower === cleanIdLower);
+        const matchCode = cleanIdLower && uCodeLower === cleanIdLower;
 
-      if (matchEmail || matchUid || matchCode) {
-        return {
-          ...u,
-          walletBalance: newLkr,
-          walletUsdt: newUsdt
-        };
-      }
-      return u;
-    }));
+        if (matchEmail || matchUid || matchCode) {
+          return {
+            ...u,
+            walletBalance: newLkr,
+            walletUsdt: newUsdt
+          };
+        }
+        return u;
+      });
+      try {
+        localStorage.setItem('mads_users_list', JSON.stringify(next));
+      } catch (_) {}
+      return next;
+    });
 
-    // 3. Update self userProfile if applicable
+    // Update self userProfile if applicable
     if (userProfile) {
-      const matchSelfEmail = userProfile.email && String(userProfile.email).toLowerCase() === cleanIdLower;
-      const matchSelfUid = userProfile.uid && String(userProfile.uid).toLowerCase() === cleanIdLower;
-      const matchSelfCode = userProfile.resellerCode && String(userProfile.resellerCode).toLowerCase() === cleanIdLower;
-
-      if (matchSelfEmail || matchSelfUid || matchSelfCode) {
+      const pEmailLower = userProfile.email ? String(userProfile.email).toLowerCase() : '';
+      const pUidLower = userProfile.uid ? String(userProfile.uid).toLowerCase() : '';
+      const matchSelf = (cleanIdLower && (pEmailLower === cleanIdLower || pUidLower === cleanIdLower)) || (cleanSecEmail && pEmailLower === cleanSecEmail);
+      if (matchSelf) {
         setUserProfile(prev => ({
           ...prev,
           walletBalance: newLkr,
           walletUsdt: newUsdt
         }));
       }
+    }
+
+    // 2. Persist to DB (direct REST PATCH)
+    try {
+      await setUserExactBalanceInDatabase(cleanId || cleanSecEmail, newLkr, newUsdt);
+    } catch (err) {
+      console.warn('setUserExactBalance note:', err);
     }
   };
 

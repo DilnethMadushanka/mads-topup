@@ -809,6 +809,26 @@ export const updateUserPasswordInFirestore = async (identifier, newPassword) => 
   return true;
 };
 
+const RTDB_BASE_URL = "https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app";
+
+/**
+ * Direct REST PATCH to RTDB user node (guaranteed to complete without hanging)
+ */
+export const patchUserInRtdbRest = async (uid, data) => {
+  if (!uid || !data) return false;
+  try {
+    const res = await fetch(`${RTDB_BASE_URL}/users/${encodeURIComponent(uid)}.json`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn('[patchUserInRtdbRest Note]:', err.message);
+    return false;
+  }
+};
+
 /**
  * Credit user or reseller wallet balance in Realtime Database & Firestore by UID, Email, or Reseller Code
  */
@@ -819,6 +839,7 @@ export const creditUserWalletInDatabase = async (identifier, lkrAmount, usdtAmou
   const cleanIdLower = cleanId.toLowerCase();
 
   let targetUid = null;
+  let existingUser = null;
 
   // 1. Check in-memory registry first
   for (const [key, profile] of activeResellerRegistry.entries()) {
@@ -829,97 +850,94 @@ export const creditUserWalletInDatabase = async (identifier, lkrAmount, usdtAmou
     const matchSecKey = profile.securityKey && String(profile.securityKey).toUpperCase() === cleanIdUpper;
 
     if (matchUid || matchEmail || matchCode || matchSecKey) {
-      targetUid = profile.uid;
+      targetUid = profile.uid || key;
+      existingUser = profile;
       break;
     }
   }
 
-  // 2. Search & Update Realtime Database (RTDB) users node
-  if (rtdb) {
+  // 2. Direct UID probe if cleanId is formatted like an RTDB/Firestore UID
+  if (!targetUid && !cleanId.includes('@') && cleanId.length > 10) {
     try {
-      const usersRef = dbRef(rtdb, 'users');
-      const snapshot = await rtdbGet(usersRef);
-      if (snapshot.exists()) {
-        const usersData = snapshot.val();
-        for (const [uidKey, userObj] of Object.entries(usersData)) {
-          if (!userObj) continue;
-          const matchUid = uidKey.toUpperCase() === cleanIdUpper || (userObj.uid && String(userObj.uid).toUpperCase() === cleanIdUpper);
-          const matchEmail = userObj.email && String(userObj.email).toLowerCase() === cleanIdLower;
-          const matchCode = userObj.resellerCode && String(userObj.resellerCode).toUpperCase() === cleanIdUpper;
-          const matchSecKey = userObj.securityKey && String(userObj.securityKey).toUpperCase() === cleanIdUpper;
+      const directRes = await fetch(`${RTDB_BASE_URL}/users/${encodeURIComponent(cleanId)}.json`);
+      if (directRes.ok) {
+        const uData = await directRes.json();
+        if (uData && typeof uData === 'object') {
+          targetUid = cleanId;
+          existingUser = uData;
+        }
+      }
+    } catch (_) {}
+  }
 
-          if (matchUid || matchEmail || matchCode || matchSecKey) {
-            targetUid = userObj.uid || uidKey;
-            const curLkr = parseFloat(userObj.walletBalance || 0);
-            const curUsdt = parseFloat(userObj.walletUsdt || 0);
-            const newLkr = Math.max(0, curLkr + (lkrAmount || 0));
-            const newUsdt = Math.max(0, curUsdt + (usdtAmount || 0));
+  // 3. Fallback: Query RTDB /users.json with AbortController timeout safeguard
+  if (!targetUid || !existingUser) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
+      const res = await fetch(`${RTDB_BASE_URL}/users.json`, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        const usersData = await res.json();
+        if (usersData) {
+          for (const [uidKey, userObj] of Object.entries(usersData)) {
+            if (!userObj) continue;
+            const matchUid = uidKey.toUpperCase() === cleanIdUpper || (userObj.uid && String(userObj.uid).toUpperCase() === cleanIdUpper);
+            const matchEmail = userObj.email && String(userObj.email).toLowerCase() === cleanIdLower;
+            const matchCode = userObj.resellerCode && String(userObj.resellerCode).toUpperCase() === cleanIdUpper;
+            const matchSecKey = userObj.securityKey && String(userObj.securityKey).toUpperCase() === cleanIdUpper;
 
-            const userRtdbRef = dbRef(rtdb, `users/${targetUid}`);
-            await rtdbUpdate(userRtdbRef, {
-              walletBalance: newLkr,
-              walletUsdt: newUsdt,
-              updatedAt: new Date().toISOString()
-            });
-
-            // Update in-memory userObj & registry
-            userObj.walletBalance = newLkr;
-            userObj.walletUsdt = newUsdt;
-            registerResellerInRegistry(userObj);
-            break;
+            if (matchUid || matchEmail || matchCode || matchSecKey) {
+              targetUid = userObj.uid || uidKey;
+              existingUser = userObj;
+              break;
+            }
           }
         }
       }
     } catch (e) {
-      console.warn('RTDB wallet credit note:', e.message);
+      console.warn('RTDB wallet credit lookup note:', e.message);
     }
   }
 
-  // 3. Search & Update Firestore users collection
-  if (db) {
-    try {
-      if (targetUid) {
-        const userRef = doc(db, 'users', targetUid);
-        const docSnap = await getDoc(userRef);
-        const curData = docSnap.exists() ? docSnap.data() : {};
-        const curLkr = parseFloat(curData.walletBalance || 0);
-        const curUsdt = parseFloat(curData.walletUsdt || 0);
-        const newLkr = Math.max(0, curLkr + (lkrAmount || 0));
-        const newUsdt = Math.max(0, curUsdt + (usdtAmount || 0));
-        await setDoc(userRef, { walletBalance: newLkr, walletUsdt: newUsdt, updatedAt: new Date().toISOString() }, { merge: true });
-      } else {
-        const usersCol = collection(db, 'users');
-        const qEmail = query(usersCol, where('email', '==', cleanIdLower));
-        const qSnap = await getDocs(qEmail);
-        for (const d of qSnap.docs) {
-          const curData = d.data();
-          const curLkr = parseFloat(curData.walletBalance || 0);
-          const curUsdt = parseFloat(curData.walletUsdt || 0);
-          const newLkr = Math.max(0, curLkr + (lkrAmount || 0));
-          const newUsdt = Math.max(0, curUsdt + (usdtAmount || 0));
-          await setDoc(doc(db, 'users', d.id), { walletBalance: newLkr, walletUsdt: newUsdt, updatedAt: new Date().toISOString() }, { merge: true });
-          // CRITICAL FIX: Also write to RTDB using the Firestore doc ID as the UID,
-          // so the serverless API (which reads RTDB at /users/{uid}) can see the balance.
-          if (rtdb) {
-            try {
-              const userRtdbRef = dbRef(rtdb, `users/${d.id}`);
-              await rtdbUpdate(userRtdbRef, {
-                walletBalance: newLkr,
-                walletUsdt: newUsdt,
-                email: curData.email || cleanIdLower,
-                uid: d.id,
-                updatedAt: new Date().toISOString()
-              });
-              targetUid = d.id; // mark found
-            } catch (rtdbErr) {
-              console.warn('RTDB sync from Firestore email credit:', rtdbErr.message);
-            }
-          }
-          break; // Only process the first matching document
-        }
-      }
-    } catch (err) {
-      console.warn('Firestore wallet credit note:', err.message);
+  // 4. Calculate new balances and patch RTDB via REST
+  if (targetUid) {
+    const curLkr = parseFloat(existingUser?.walletBalance || 0);
+    const curUsdt = parseFloat(existingUser?.walletUsdt || 0);
+    const newLkr = Math.max(0, curLkr + (lkrAmount || 0));
+    const newUsdt = Math.max(0, curUsdt + (usdtAmount || 0));
+
+    await patchUserInRtdbRest(targetUid, {
+      walletBalance: newLkr,
+      walletUsdt: newUsdt,
+      updatedAt: new Date().toISOString()
+    });
+
+    // Update in-memory registry
+    if (existingUser) {
+      existingUser.walletBalance = newLkr;
+      existingUser.walletUsdt = newUsdt;
+      registerResellerInRegistry(existingUser);
+    }
+
+    // Fire-and-forget background sync to SDK RTDB & Firestore without blocking
+    if (rtdb) {
+      try {
+        rtdbUpdate(dbRef(rtdb, `users/${targetUid}`), {
+          walletBalance: newLkr,
+          walletUsdt: newUsdt,
+          updatedAt: new Date().toISOString()
+        }).catch(() => {});
+      } catch (_) {}
+    }
+    if (db) {
+      try {
+        setDoc(doc(db, 'users', targetUid), {
+          walletBalance: newLkr,
+          walletUsdt: newUsdt,
+          updatedAt: new Date().toISOString()
+        }, { merge: true }).catch(() => {});
+      } catch (_) {}
     }
   }
 
@@ -939,8 +957,9 @@ export const setUserExactBalanceInDatabase = async (identifier, exactLkr, exactU
   const targetUsdt = Math.max(0, parseFloat(exactUsdt) || 0);
 
   let targetUid = null;
+  let existingUser = null;
 
-  // 1. Check in-memory registry first
+  // 1. Check in-memory activeResellerRegistry first
   for (const [key, profile] of activeResellerRegistry.entries()) {
     if (!profile) continue;
     const matchUid = profile.uid && String(profile.uid).toUpperCase() === cleanIdUpper;
@@ -949,81 +968,88 @@ export const setUserExactBalanceInDatabase = async (identifier, exactLkr, exactU
     const matchSecKey = profile.securityKey && String(profile.securityKey).toUpperCase() === cleanIdUpper;
 
     if (matchUid || matchEmail || matchCode || matchSecKey) {
-      targetUid = profile.uid;
+      targetUid = profile.uid || key;
+      existingUser = profile;
       break;
     }
   }
 
-  // 2. Realtime Database
-  if (rtdb) {
+  // 2. Direct UID probe if cleanId is formatted like an RTDB/Firestore UID
+  if (!targetUid && !cleanId.includes('@') && cleanId.length > 10) {
     try {
-      const usersRef = dbRef(rtdb, 'users');
-      const snapshot = await rtdbGet(usersRef);
-      if (snapshot.exists()) {
-        const usersData = snapshot.val();
-        for (const [uidKey, userObj] of Object.entries(usersData)) {
-          if (!userObj) continue;
-          const matchUid = uidKey.toUpperCase() === cleanIdUpper || (userObj.uid && String(userObj.uid).toUpperCase() === cleanIdUpper);
-          const matchEmail = userObj.email && String(userObj.email).toLowerCase() === cleanIdLower;
-          const matchCode = userObj.resellerCode && String(userObj.resellerCode).toUpperCase() === cleanIdUpper;
-          const matchSecKey = userObj.securityKey && String(userObj.securityKey).toUpperCase() === cleanIdUpper;
+      const directRes = await fetch(`${RTDB_BASE_URL}/users/${encodeURIComponent(cleanId)}.json`);
+      if (directRes.ok) {
+        const uData = await directRes.json();
+        if (uData && typeof uData === 'object') {
+          targetUid = cleanId;
+          existingUser = uData;
+        }
+      }
+    } catch (_) {}
+  }
 
-          if (matchUid || matchEmail || matchCode || matchSecKey) {
-            targetUid = userObj.uid || uidKey;
-            const userRtdbRef = dbRef(rtdb, `users/${targetUid}`);
-            await rtdbUpdate(userRtdbRef, {
-              walletBalance: targetLkr,
-              walletUsdt: targetUsdt,
-              updatedAt: new Date().toISOString()
-            });
+  // 3. Fallback: Query RTDB /users.json with AbortController timeout safeguard
+  if (!targetUid || !existingUser) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
+      const res = await fetch(`${RTDB_BASE_URL}/users.json`, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        const usersData = await res.json();
+        if (usersData) {
+          for (const [uidKey, userObj] of Object.entries(usersData)) {
+            if (!userObj) continue;
+            const matchUid = uidKey.toUpperCase() === cleanIdUpper || (userObj.uid && String(userObj.uid).toUpperCase() === cleanIdUpper);
+            const matchEmail = userObj.email && String(userObj.email).toLowerCase() === cleanIdLower;
+            const matchCode = userObj.resellerCode && String(userObj.resellerCode).toUpperCase() === cleanIdUpper;
+            const matchSecKey = userObj.securityKey && String(userObj.securityKey).toUpperCase() === cleanIdUpper;
 
-            userObj.walletBalance = targetLkr;
-            userObj.walletUsdt = targetUsdt;
-            registerResellerInRegistry(userObj);
-            break;
+            if (matchUid || matchEmail || matchCode || matchSecKey) {
+              targetUid = userObj.uid || uidKey;
+              existingUser = userObj;
+              break;
+            }
           }
         }
       }
     } catch (e) {
-      console.warn('RTDB exact wallet balance note:', e.message);
+      console.warn('RTDB exact wallet balance lookup note:', e.message);
     }
   }
 
-  // 3. Firestore
-  if (db) {
-    try {
-      if (targetUid) {
-        const userRef = doc(db, 'users', targetUid);
-        await setDoc(userRef, { walletBalance: targetLkr, walletUsdt: targetUsdt, updatedAt: new Date().toISOString() }, { merge: true });
-      } else {
-        const usersCol = collection(db, 'users');
-        const qEmail = query(usersCol, where('email', '==', cleanIdLower));
-        const qSnap = await getDocs(qEmail);
-        for (const d of qSnap.docs) {
-          const curData = d.data();
-          await setDoc(doc(db, 'users', d.id), { walletBalance: targetLkr, walletUsdt: targetUsdt, updatedAt: new Date().toISOString() }, { merge: true });
-          // Also write to RTDB using the Firestore doc ID as the UID,
-          // so the serverless API (which reads RTDB at /users/{uid}) can see the balance.
-          if (rtdb) {
-            try {
-              const userRtdbRef = dbRef(rtdb, `users/${d.id}`);
-              await rtdbUpdate(userRtdbRef, {
-                walletBalance: targetLkr,
-                walletUsdt: targetUsdt,
-                email: curData.email || cleanIdLower,
-                uid: d.id,
-                updatedAt: new Date().toISOString()
-              });
-              targetUid = d.id; // mark found
-            } catch (rtdbErr) {
-              console.warn('RTDB sync from Firestore email exact-balance:', rtdbErr.message);
-            }
-          }
-          break; // Only process the first matching document
-        }
-      }
-    } catch (err) {
-      console.warn('Firestore exact wallet balance note:', err.message);
+  // 4. Update via direct REST PATCH
+  if (targetUid) {
+    await patchUserInRtdbRest(targetUid, {
+      walletBalance: targetLkr,
+      walletUsdt: targetUsdt,
+      updatedAt: new Date().toISOString()
+    });
+
+    if (existingUser) {
+      existingUser.walletBalance = targetLkr;
+      existingUser.walletUsdt = targetUsdt;
+      registerResellerInRegistry(existingUser);
+    }
+
+    // Fire-and-forget background sync
+    if (rtdb) {
+      try {
+        rtdbUpdate(dbRef(rtdb, `users/${targetUid}`), {
+          walletBalance: targetLkr,
+          walletUsdt: targetUsdt,
+          updatedAt: new Date().toISOString()
+        }).catch(() => {});
+      } catch (_) {}
+    }
+    if (db) {
+      try {
+        setDoc(doc(db, 'users', targetUid), {
+          walletBalance: targetLkr,
+          walletUsdt: targetUsdt,
+          updatedAt: new Date().toISOString()
+        }, { merge: true }).catch(() => {});
+      } catch (_) {}
     }
   }
 

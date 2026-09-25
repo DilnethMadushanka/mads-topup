@@ -2132,8 +2132,8 @@ export const AdminDashboard = () => {
           <div className="space-y-3 pt-2 border-t" style={{ borderColor: 'var(--adm-border)' }}>
             <h4 className="text-xs font-bold" style={mutedStyle}>Manual Wallet Balance Editor</h4>
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => { updateUserBalance(selectedInspectUser.email, 1000, 0); showToast(`Added +1,000 LKR to ${selectedInspectUser.name}`); setSelectedInspectUser(null); }} className="py-2 bg-emerald-500/15 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 rounded-xl text-xs font-bold cursor-pointer">+ Rs. 1,000 LKR</button>
-              <button onClick={() => { updateUserBalance(selectedInspectUser.email, 0, 10); showToast(`Added +$10 USDT to ${selectedInspectUser.name}`); setSelectedInspectUser(null); }} className="py-2 bg-amber-500/15 hover:bg-amber-600 text-amber-400 hover:text-white border border-amber-500/30 rounded-xl text-xs font-bold cursor-pointer">+ $10 USDT</button>
+              <button onClick={() => { updateUserBalance(selectedInspectUser.uid || selectedInspectUser.email, 1000, 0, selectedInspectUser.email); showToast(`Added +1,000 LKR to ${selectedInspectUser.name}`); setSelectedInspectUser(null); }} className="py-2 bg-emerald-500/15 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 rounded-xl text-xs font-bold cursor-pointer">+ Rs. 1,000 LKR</button>
+              <button onClick={() => { updateUserBalance(selectedInspectUser.uid || selectedInspectUser.email, 0, 10, selectedInspectUser.email); showToast(`Added +$10 USDT to ${selectedInspectUser.name}`); setSelectedInspectUser(null); }} className="py-2 bg-amber-500/15 hover:bg-amber-600 text-amber-400 hover:text-white border border-amber-500/30 rounded-xl text-xs font-bold cursor-pointer">+ $10 USDT</button>
             </div>
 
             <div className="rounded-2xl border p-3.5 space-y-3" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
@@ -2164,7 +2164,7 @@ export const AdminDashboard = () => {
                     const usdt = editUsdtVal !== '' ? parseFloat(editUsdtVal) : 0;
                     const targetId = selectedInspectUser.uid || selectedInspectUser.email || selectedInspectUser.resellerCode || selectedInspectUser.securityKey;
                     if (!window.confirm(`SET balance for ${selectedInspectUser.name} to:\nRs. ${lkr.toLocaleString()} LKR / $${usdt.toFixed(2)} USDT\n\nThis REPLACES the current balance. Are you sure?`)) return;
-                    setUserExactBalance(targetId, lkr, usdt);
+                    setUserExactBalance(targetId, lkr, usdt, selectedInspectUser.email);
                     showToast(`✅ Set ${selectedInspectUser.name} balance → Rs.${lkr.toLocaleString()} LKR / $${usdt} USDT`);
                     setEditLkrVal(''); setEditUsdtVal(''); setSelectedInspectUser(null);
                   }}
@@ -2185,7 +2185,7 @@ export const AdminDashboard = () => {
                     const newUsdt = (selectedInspectUser.walletUsdt || 0) + usdt;
                     const targetId = selectedInspectUser.uid || selectedInspectUser.email || selectedInspectUser.resellerCode || selectedInspectUser.securityKey;
                     if (!window.confirm(`ADD funds to ${selectedInspectUser.name}:\n+Rs.${lkr.toLocaleString()} LKR / +$${usdt} USDT\nNew total: Rs.${newLkr.toLocaleString()} LKR / $${newUsdt.toFixed(2)} USDT`)) return;
-                    updateUserBalance(targetId, lkr, usdt);
+                    updateUserBalance(targetId, lkr, usdt, selectedInspectUser.email);
                     showToast(`✅ Added +Rs.${lkr.toLocaleString()} LKR / +$${usdt} USDT to ${selectedInspectUser.name}`);
                     setEditLkrVal(''); setEditUsdtVal(''); setSelectedInspectUser(null);
                   }}
