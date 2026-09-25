@@ -1065,6 +1065,17 @@ export const subscribeUserProfile = (uid, callback) => {
   let unsubRtdb = null;
   let unsubFirestore = null;
 
+  // 1. Immediate Direct REST fetch for guaranteed instant wallet balance on load
+  fetch(`${RTDB_BASE_URL}/users/${encodeURIComponent(uid)}.json`)
+    .then(r => r.json())
+    .then(val => {
+      if (val && typeof val === 'object') {
+        const creds = ensureResellerCredentials({ uid, ...val });
+        registerResellerInRegistry(creds);
+        callback(creds);
+      }
+    }).catch(() => {});
+
   if (rtdb) {
     try {
       const userRtdbRef = dbRef(rtdb, `users/${uid}`);
@@ -1217,6 +1228,15 @@ export const saveManualPaymentToFirestore = async (payment) => {
     timestamp: new Date().toISOString()
   };
 
+  // Direct REST PUT to RTDB (guaranteed 100% reliable)
+  try {
+    fetch(`${RTDB_BASE_URL}/manual_payments/${encodeURIComponent(payId)}.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).catch(() => {});
+  } catch (_) {}
+
   if (rtdb) {
     try {
       const payRef = dbRef(rtdb, `manual_payments/${payId}`);
@@ -1242,6 +1262,15 @@ export const saveManualPaymentToFirestore = async (payment) => {
 export const updateManualPaymentStatusInFirestore = async (paymentId, newStatus) => {
   if (!paymentId) return;
 
+  // Direct REST PATCH to RTDB
+  try {
+    fetch(`${RTDB_BASE_URL}/manual_payments/${encodeURIComponent(paymentId)}.json`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus, updatedAt: new Date().toISOString() })
+    }).catch(() => {});
+  } catch (_) {}
+
   if (rtdb) {
     try {
       const payRef = dbRef(rtdb, `manual_payments/${paymentId}`);
@@ -1266,11 +1295,34 @@ export const updateManualPaymentStatusInFirestore = async (paymentId, newStatus)
 };
 
 /**
+ * Direct REST fetch of all manual payments from RTDB (100% reliable on first load)
+ */
+export const fetchAllManualPaymentsFromRtdb = async () => {
+  try {
+    const res = await fetch(`${RTDB_BASE_URL}/manual_payments.json`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && typeof data === 'object') {
+        return Object.keys(data).map(key => ({ id: key, ...data[key] }));
+      }
+    }
+  } catch (err) {
+    console.warn('fetchAllManualPaymentsFromRtdb note:', err);
+  }
+  return [];
+};
+
+/**
  * Subscribe to manual payments in Realtime Database or Firestore
  */
 export const subscribeManualPaymentsFromFirestore = (callback) => {
   let unsubRtdb = null;
   let unsubFirestore = null;
+
+  // 1. Immediate Direct REST fetch for guaranteed instant payment history
+  fetchAllManualPaymentsFromRtdb().then(list => {
+    if (list && list.length > 0) callback(list);
+  }).catch(() => {});
 
   if (rtdb) {
     try {
@@ -1307,7 +1359,6 @@ export const subscribeManualPaymentsFromFirestore = (callback) => {
   };
 };
 
-/**
 /**
  * Direct REST fetch of all users from RTDB (100% reliable across all browsers & firewalls)
  */

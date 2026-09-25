@@ -256,7 +256,19 @@ export const WalletPage = () => {
   };
 
   const goHome = () => { setIsWalletModalOpen(false); setSelectedGame(null); closeCatalog(); window.scrollTo({ top: 0, behavior: 'smooth' }); };
-  const userPayments = (manualPayments || []).filter(p => !userProfile?.email || (p.userEmail && p.userEmail.toLowerCase() === userProfile.email.toLowerCase()));
+  const userPayments = (manualPayments || []).filter(p => {
+    if (!userProfile?.email && !userProfile?.uid) return false;
+    const myEmail = userProfile?.email ? String(userProfile.email).trim().toLowerCase() : '';
+    const myUid = userProfile?.uid ? String(userProfile.uid).trim() : '';
+    const pEmail = p.userEmail ? String(p.userEmail).trim().toLowerCase() : '';
+    const pUid = p.userId ? String(p.userId).trim() : '';
+
+    return (myEmail && pEmail && pEmail === myEmail) || (myUid && pUid && pUid === myUid);
+  }).sort((a, b) => {
+    const tA = new Date(a.timestamp || a.createdAt).getTime() || 0;
+    const tB = new Date(b.timestamp || b.createdAt).getTime() || 0;
+    return tB - tA;
+  });
   const isApprovedReseller = Boolean(userProfile?.isReseller || userProfile?.role === 'reseller');
   const resellerWalletId = `RS-${(userProfile?.uid || '882104').slice(-6).toUpperCase()}`;
   const QUICK_LKR = ['500', '1000', '2000', '5000'];
