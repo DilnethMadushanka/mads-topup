@@ -1282,12 +1282,42 @@ export const subscribeManualPaymentsFromFirestore = (callback) => {
 };
 
 /**
+/**
+ * Direct REST fetch of all users from RTDB (100% reliable across all browsers & firewalls)
+ */
+export const fetchAllUsersFromRtdb = async () => {
+  const RTDB_URL = "https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app";
+  try {
+    const res = await fetch(`${RTDB_URL}/users.json`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && typeof data === 'object') {
+        return Object.keys(data).map(key => {
+          const creds = ensureResellerCredentials({ uid: key, ...data[key] });
+          registerResellerInRegistry(creds);
+          return creds;
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('[fetchAllUsersFromRtdb Note]:', e.message);
+  }
+  return [];
+};
+
+/**
  * Subscribe to all registered users in Firestore or Realtime Database
  */
 export const subscribeAllUsersFromFirestore = (callback) => {
   let unsubRtdb = null;
   let unsubFirestore = null;
 
+  // 1. Immediate Direct REST fetch for instant guaranteed data on initial load
+  fetchAllUsersFromRtdb().then(list => {
+    if (list && list.length > 0) callback(list);
+  }).catch(() => {});
+
+  // 2. Realtime Database SDK Listener (Live updates)
   if (rtdb) {
     try {
       const usersRtdbRef = dbRef(rtdb, 'users');
@@ -1307,21 +1337,24 @@ export const subscribeAllUsersFromFirestore = (callback) => {
     }
   }
 
+  // 3. Firestore fallback
   if (db) {
     try {
       const usersCol = collection(db, 'users');
       unsubFirestore = onSnapshot(usersCol, (snapshot) => {
-        const list = snapshot.docs.map(docSnap => {
-          const creds = ensureResellerCredentials({ uid: docSnap.id, ...docSnap.data() });
-          registerResellerInRegistry(creds);
-          return creds;
-        });
-        if (list.length > 0) callback(list);
+        if (snapshot.docs && snapshot.docs.length > 0) {
+          const list = snapshot.docs.map(docSnap => {
+            const creds = ensureResellerCredentials({ uid: docSnap.id, ...docSnap.data() });
+            registerResellerInRegistry(creds);
+            return creds;
+          });
+          if (list.length > 0) callback(list);
+        }
       }, (err) => {
-        console.warn('Firestore users permission notice:', err.code);
+        // Silently ignore expected permission error on Firestore users collection
       });
     } catch (err) {
-      console.warn('Firestore users listener note:', err);
+      // Ignored
     }
   }
 

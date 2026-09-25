@@ -7,7 +7,7 @@ import { getR2Config, saveR2Config } from '../services/storageService';
 import { auth, onAuthStateChanged, logoutGoogle, getRedirectResult } from '../services/firebaseAuth';
 import { 
   syncUserProfileToFirestore, updateUserProfileInFirestore, subscribeUserProfile, 
-  saveOrderToFirestore, subscribeAllUsersFromFirestore, subscribeOrdersFromFirestore, updateOrderStatusInFirestore,
+  saveOrderToFirestore, subscribeAllUsersFromFirestore, fetchAllUsersFromRtdb, subscribeOrdersFromFirestore, updateOrderStatusInFirestore,
   saveResellerApplicationToFirestore, subscribeResellerApplicationsFromFirestore, updateResellerApplicationStatusInFirestore,
   saveCustomGamePricesToFirestore, subscribeCustomGamePricesFromFirestore, generateUniqueSecurityKey, ensureResellerCredentials,
   saveManualPaymentToFirestore, updateManualPaymentStatusInFirestore, subscribeManualPaymentsFromFirestore, creditUserWalletInDatabase, setUserExactBalanceInDatabase,
@@ -629,9 +629,52 @@ export const AppProvider = ({ children }) => {
     }
   }, [userProfile]);
 
+  // Admin: Refresh all users list directly from RTDB
+  const [isUsersRefreshing, setIsUsersRefreshing] = useState(false);
+  const refreshUsersList = async () => {
+    setIsUsersRefreshing(true);
+    try {
+      const remoteUsers = await fetchAllUsersFromRtdb();
+      if (remoteUsers && remoteUsers.length > 0) {
+        setUsersList(prev => {
+          const merged = [...prev];
+          remoteUsers.forEach(ru => {
+            const index = merged.findIndex(u => (ru.uid && u.uid === ru.uid) || (ru.email && u.email && u.email.toLowerCase() === ru.email.toLowerCase()));
+            if (index >= 0) {
+              merged[index] = { ...merged[index], ...ru };
+            } else {
+              merged.push({
+                uid: ru.uid || `USR-${Math.floor(10000 + Math.random() * 90000)}`,
+                name: ru.name || 'Gamer',
+                email: ru.email || '',
+                phone: ru.phone || '',
+                walletBalance: ru.walletBalance || 0,
+                walletUsdt: ru.walletUsdt || 0,
+                isVerified: ru.isVerified || false,
+                status: ru.status || 'ACTIVE',
+                createdAt: ru.createdAt || (ru.joinedAt ? new Date(ru.joinedAt).toISOString() : null),
+                joinedAt: ru.createdAt
+                  ? new Date(ru.createdAt).toISOString().split('T')[0]
+                  : (ru.joinedAt || new Date().toISOString().split('T')[0]),
+                totalOrders: ru.totalOrders || 0,
+                lifetimeSpendLkr: ru.lifetimeSpendLkr || 0
+              });
+            }
+          });
+          return merged;
+        });
+      }
+    } catch (err) {
+      console.warn('refreshUsersList note:', err.message);
+    } finally {
+      setIsUsersRefreshing(false);
+    }
+  };
+
   // Subscribe to all users in Firestore / RTDB for real-time admin user list sync (Admin only)
   useEffect(() => {
     if (!isAdminAuthenticated) return;
+    refreshUsersList();
     const unsubAll = subscribeAllUsersFromFirestore((remoteUsersList) => {
       if (remoteUsersList && remoteUsersList.length > 0) {
         setUsersList(prev => {
@@ -654,8 +697,8 @@ export const AppProvider = ({ children }) => {
                 joinedAt: ru.createdAt
                   ? new Date(ru.createdAt).toISOString().split('T')[0]
                   : (ru.joinedAt || new Date().toISOString().split('T')[0]),
-                totalOrders: 0,
-                lifetimeSpendLkr: 0
+                totalOrders: ru.totalOrders || 0,
+                lifetimeSpendLkr: ru.lifetimeSpendLkr || 0
               });
             }
           });
@@ -1848,6 +1891,8 @@ export const AppProvider = ({ children }) => {
       setTickerNotice,
       creditUserWallet,
       usersList,
+      refreshUsersList,
+      isUsersRefreshing,
       verifyUserAccount,
       toggleBlockUser,
       updateUserBalance,

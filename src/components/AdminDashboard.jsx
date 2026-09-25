@@ -334,7 +334,7 @@ export const AdminDashboard = () => {
     isAdminOpen, setIsAdminOpen, orders, updateOrderStatus, moongoldConfig, updateMoongoldConfig,
     r2Config, updateR2Config, formatPrice,
     formatLkr, showToast, userProfile, vouchers, addVoucher, deleteVoucher,
-    tickerNotice, setTickerNotice, usersList, verifyUserAccount, toggleBlockUser, updateUserBalance,
+    tickerNotice, setTickerNotice, usersList, refreshUsersList, isUsersRefreshing, verifyUserAccount, toggleBlockUser, updateUserBalance,
     setUserExactBalance, manualPayments, approveManualPayment, rejectManualPayment, addManualPayment,
     supportTickets, refreshSupportTickets, sendTicketMessage, updateTicketStatus, updateTicketPriority, resellerApplications,
     updateResellerApplicationStatus, gamesCatalog, updateGamePrices, popupAdConfig, updatePopupAdConfig,
@@ -544,10 +544,12 @@ export const AdminDashboard = () => {
       fetchLiveBalance();
       fetchEzcashLogs();
       if (typeof refreshSupportTickets === 'function') refreshSupportTickets();
+      if (typeof refreshUsersList === 'function') refreshUsersList();
       const interval = setInterval(() => {
         fetchLiveBalance();
         fetchEzcashLogs();
         if (typeof refreshSupportTickets === 'function') refreshSupportTickets();
+        if (typeof refreshUsersList === 'function') refreshUsersList();
       }, 10000);
       return () => clearInterval(interval);
     }
@@ -1624,6 +1626,16 @@ export const AdminDashboard = () => {
                   <option value="newest">⬇ Newest First</option>
                   <option value="oldest">⬆ Oldest First</option>
                 </select>
+                <button
+                  type="button"
+                  onClick={() => refreshUsersList && refreshUsersList()}
+                  disabled={isUsersRefreshing}
+                  className="px-3.5 py-2.5 rounded-xl bg-red-600/15 hover:bg-red-600/25 border border-red-500/30 text-red-400 hover:text-red-300 text-xs font-black flex items-center gap-2 cursor-pointer disabled:opacity-50 shrink-0 transition-all"
+                  title="Reload all user profiles from Database"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isUsersRefreshing ? 'animate-spin' : ''}`} />
+                  <span>Refresh ({safeUsers.length})</span>
+                </button>
               </FilterBar>
 
               <DataTable
