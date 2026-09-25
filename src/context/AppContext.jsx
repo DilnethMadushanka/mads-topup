@@ -1,5 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getAdminToken } from '../services/adminSession.js';
 import { GAMES_DATA } from '../data/games';
 import { getMoongoldConfig, saveMoongoldConfig } from '../services/moongoldApi';
 import { getR2Config, saveR2Config } from '../services/storageService';
@@ -1592,7 +1593,7 @@ export const AppProvider = ({ children }) => {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 45000);
 
-            const sessionToken = localStorage.getItem('mads_admin_session_token') || '';
+            const sessionToken = getAdminToken() || '';
             const res = await fetch(endpoint, {
               method: 'POST',
               headers: {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { saveAdminToken, getAdminToken, clearAdminToken } from '../services/adminSession.js';
 import { useApp } from '../context/AppContext';
 import { dispatchMoongoldOrder, checkMoongoldBalance } from '../services/moongoldApi';
 import { uploadToR2Storage } from '../services/storageService';
@@ -449,7 +450,7 @@ export const AdminDashboard = () => {
   const fetchEzcashLogs = async () => {
     try {
       setIsEzcashLogsLoading(true);
-      const sessionToken = localStorage.getItem('mads_admin_session_token') || '';
+      const sessionToken = getAdminToken() || '';
       const res = await fetch('/api/ezcash/webhook-logs', {
         headers: sessionToken ? { 'Authorization': `Bearer ${sessionToken}` } : {}
       });
@@ -507,7 +508,7 @@ export const AdminDashboard = () => {
   // token is expired or invalid the admin must log in again.
   useEffect(() => {
     if (!isAdminOpen) return;
-    const token = localStorage.getItem('mads_admin_session_token') || '';
+    const token = getAdminToken() || '';
     if (!token) {
       setIsAdminAuthenticated(false);
       setIsVerifyingSession(false);
@@ -525,15 +526,13 @@ export const AdminDashboard = () => {
         if (data?.valid) {
           setIsAdminAuthenticated(true);
         } else {
-          localStorage.removeItem('mads_admin_session_token');
-          localStorage.removeItem('mads_admin_session_expires');
+          clearAdminToken();
           setIsAdminAuthenticated(false);
         }
       })
       .catch(() => {
-        // Server unreachable — deny access; never fall back to localStorage
-        localStorage.removeItem('mads_admin_session_token');
-        localStorage.removeItem('mads_admin_session_expires');
+        // Server unreachable — deny access; never fall back to any persisted store
+        clearAdminToken();
         setIsAdminAuthenticated(false);
       })
       .finally(() => setIsVerifyingSession(false));
@@ -597,8 +596,7 @@ export const AdminDashboard = () => {
       ]);
 
       if (data?.success && data?.token) {
-        localStorage.setItem('mads_admin_session_token', data.token);
-        localStorage.setItem('mads_admin_session_expires', String(data.expiresAt || ''));
+        saveAdminToken(data.token, data.expiresAt);
         setIsAdminAuthenticated(true);
         setAdminFailedAttempts(0);
         setAdminLockoutUntil(null);
@@ -627,9 +625,8 @@ export const AdminDashboard = () => {
   };
 
   const handleAdminLogout = () => {
-    const token = localStorage.getItem('mads_admin_session_token') || '';
-    localStorage.removeItem('mads_admin_session_token');
-    localStorage.removeItem('mads_admin_session_expires');
+    const token = getAdminToken() || '';
+    clearAdminToken();
     setIsAdminAuthenticated(false);
     setIsAdminOpen(false);
     showToast('Logged out from Admin Portal.');

@@ -40,7 +40,23 @@ try {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Security Hardening Headers & CORS Controls (Mozilla Observatory Compliant)
+// ─── Tightened CSP (removes unsafe-eval — safe for Vite production builds) ───
+// unsafe-inline kept in script-src only for the inline oncontextmenu handler on <body>.
+// All legitimate external origins are explicitly whitelisted.
+const PRODUCTION_CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' https://apis.google.com https://www.gstatic.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com",
+  "font-src 'self' https://fonts.gstatic.com data:",
+  "img-src 'self' data: blob: https:",
+  "connect-src 'self' https://madstopup.com https://*.firebaseio.com https://*.googleapis.com https://identitytoolkit.googleapis.com https://moogold.com https://genie.dialog.lk wss://ws.firebaseio.com wss://*.firebaseio.com",
+  "frame-src 'self' https://genie.dialog.lk https://accounts.google.com",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join('; ');
+
+// Security Hardening Headers (Mozilla Observatory Compliant)
 app.disable('x-powered-by');
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -48,14 +64,42 @@ app.use((req, res, next) => {
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-  res.setHeader('Content-Security-Policy', "default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https: blob:; connect-src 'self' https: wss:; frame-src 'self' https:;");
+  res.setHeader('Content-Security-Policy', PRODUCTION_CSP);
   next();
 });
 
+// ─── Strict CORS — only allow your own domain + payment/webhook origins ───
+const CORS_ALLOWED_ORIGINS = new Set([
+  'https://madstopup.com',
+  'https://www.madstopup.com',
+  'https://genie.dialog.lk',   // Genie Business IPG payment redirect
+  'https://moogold.com',       // MooGold webhook origin
+]);
+
 app.use(cors({
-  origin: true,
-  credentials: true
+  origin: (origin, callback) => {
+    // Allow server-to-server requests (no Origin header) and whitelisted origins
+    if (!origin || CORS_ALLOWED_ORIGINS.has(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS: Origin '${origin}' not allowed.`));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
+
+// ─── Cache-Control: prevent caching of API and sensitive page routes ─────
+app.use((req, res, next) => {
+  const p = req.path || '';
+  if (p.startsWith('/api/') || /\/(admin|wallet|checkout|order|dashboard|reseller|profile|auth)/i.test(p)) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
+  next();
+});
 app.use(express.json({ limit: '1mb' }));
 
 // Input Sanitization Helper against NoSQL & String Injection Attacks
@@ -1723,14 +1767,14 @@ app.get('/robots.txt', (req, res) => {
 app.use(express.static(path.join(__dirname, 'dist'), {
   setHeaders: (res) => {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-    res.setHeader('Content-Security-Policy', "default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https: blob:; connect-src 'self' https: wss:; frame-src 'self' https:;");
+    res.setHeader('Content-Security-Policy', PRODUCTION_CSP);
   }
 }));
 
 // SPA Fallback Routing for React Router
 app.use((req, res) => {
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-  res.setHeader('Content-Security-Policy', "default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https: blob:; connect-src 'self' https: wss:; frame-src 'self' https:;");
+  res.setHeader('Content-Security-Policy', PRODUCTION_CSP);
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
