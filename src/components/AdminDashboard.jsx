@@ -336,7 +336,7 @@ export const AdminDashboard = () => {
     formatLkr, showToast, userProfile, vouchers, addVoucher, deleteVoucher,
     tickerNotice, setTickerNotice, usersList, verifyUserAccount, toggleBlockUser, updateUserBalance,
     setUserExactBalance, manualPayments, approveManualPayment, rejectManualPayment, addManualPayment,
-    supportTickets, sendTicketMessage, updateTicketStatus, updateTicketPriority, resellerApplications,
+    supportTickets, refreshSupportTickets, sendTicketMessage, updateTicketStatus, updateTicketPriority, resellerApplications,
     updateResellerApplicationStatus, gamesCatalog, updateGamePrices, popupAdConfig, updatePopupAdConfig,
     isAdminAuthenticated, setIsAdminAuthenticated
   } = useApp();
@@ -383,6 +383,7 @@ export const AdminDashboard = () => {
   const [supportStatusFilter, setSupportStatusFilter] = useState('ALL');
   const [selectedTicketInspectId, setSelectedTicketInspectId] = useState(null);
   const [adminReplyText, setAdminReplyText] = useState('');
+  const [isRefreshingTickets, setIsRefreshingTickets] = useState(false);
 
   const [orderSearch, setOrderSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -542,9 +543,11 @@ export const AdminDashboard = () => {
     if (isAdminAuthenticated && isAdminOpen) {
       fetchLiveBalance();
       fetchEzcashLogs();
+      if (typeof refreshSupportTickets === 'function') refreshSupportTickets();
       const interval = setInterval(() => {
         fetchLiveBalance();
         fetchEzcashLogs();
+        if (typeof refreshSupportTickets === 'function') refreshSupportTickets();
       }, 10000);
       return () => clearInterval(interval);
     }
@@ -1750,16 +1753,32 @@ export const AdminDashboard = () => {
                 <div className="rounded-2xl border p-4 space-y-1" style={cardStyle}><span className="text-[10px] text-emerald-400 font-extrabold uppercase font-mono">Resolved</span><div className="text-2xl font-black text-emerald-400 font-heading">{safeTickets.filter(t => t.status === 'RESOLVED').length}</div></div>
               </div>
 
-              <FilterBar>
-                <SearchInput value={supportSearch} onChange={setSupportSearch} placeholder="Search ticket ID, user email, subject..." />
-                <select value={supportStatusFilter} onChange={(e) => setSupportStatusFilter(e.target.value)} className={fieldCls} style={{ ...fieldStyle, maxWidth: 200 }}>
-                  <option value="ALL">All Statuses</option>
-                  <option value="OPEN">Open</option>
-                  <option value="IN_PROGRESS">In Progress</option>
-                  <option value="RESOLVED">Resolved</option>
-                  <option value="CLOSED">Closed</option>
-                </select>
-              </FilterBar>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <FilterBar>
+                  <SearchInput value={supportSearch} onChange={setSupportSearch} placeholder="Search ticket ID, user email, subject..." />
+                  <select value={supportStatusFilter} onChange={(e) => setSupportStatusFilter(e.target.value)} className={fieldCls} style={{ ...fieldStyle, maxWidth: 200 }}>
+                    <option value="ALL">All Statuses</option>
+                    <option value="OPEN">Open</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="RESOLVED">Resolved</option>
+                    <option value="CLOSED">Closed</option>
+                  </select>
+                </FilterBar>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setIsRefreshingTickets(true);
+                    if (typeof refreshSupportTickets === 'function') await refreshSupportTickets();
+                    setIsRefreshingTickets(false);
+                    showToast('Support tickets refreshed live!');
+                  }}
+                  className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border text-xs font-bold font-mono transition-all cursor-pointer shrink-0"
+                  style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)', color: 'var(--adm-text)' }}
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 text-red-400 ${isRefreshingTickets ? 'animate-spin' : ''}`} />
+                  <span>Refresh Tickets</span>
+                </button>
+              </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 <div className="lg:col-span-5 space-y-3">

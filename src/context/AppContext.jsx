@@ -13,7 +13,7 @@ import {
   saveManualPaymentToFirestore, updateManualPaymentStatusInFirestore, subscribeManualPaymentsFromFirestore, creditUserWalletInDatabase, setUserExactBalanceInDatabase,
   saveVouchersToFirestore, subscribeVouchersFromFirestore, redeemVoucherInDatabase,
   savePopupAdConfigToFirestore, subscribePopupAdConfigFromFirestore, DEFAULT_POPUP_AD_CONFIG,
-  saveSupportTicketToFirestore, updateSupportTicketInFirestore, subscribeSupportTicketsFromFirestore,
+  saveSupportTicketToFirestore, updateSupportTicketInFirestore, subscribeSupportTicketsFromFirestore, normalizeTicket,
   saveReviewToFirestore, subscribeReviewsFromFirestore,
   saveReferralClick, lookupReferrerByCode, processReferralCashback
 } from '../services/firestoreService';
@@ -1495,6 +1495,29 @@ export const AppProvider = ({ children }) => {
     showToast(`Ticket ${ticketId} priority set to ${newPriority}`);
   };
 
+  const refreshSupportTickets = async () => {
+    try {
+      const res = await fetch('https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/supportTickets.json');
+      if (res.ok) {
+        const data = await res.json();
+        if (data && typeof data === 'object') {
+          const tickets = Object.entries(data)
+            .map(([k, v]) => normalizeTicket(v, k))
+            .filter(Boolean);
+          if (tickets.length > 0) {
+            setSupportTickets(tickets.sort((a, b) => {
+              const ta = b.updatedAt || b.createdAt ? new Date(b.updatedAt || b.createdAt).getTime() : 0;
+              const tb = a.updatedAt || a.createdAt ? new Date(a.updatedAt || a.createdAt).getTime() : 0;
+              return ta - tb;
+            }));
+            return true;
+          }
+        }
+      }
+    } catch (e) {}
+    return false;
+  };
+
   // Reseller Applications State & Handlers
   const [resellerApplications, setResellerApplications] = useState(() => {
     const saved = localStorage.getItem('mads_reseller_applications');
@@ -1838,6 +1861,7 @@ export const AppProvider = ({ children }) => {
       activeTicketId,
       setActiveTicketId,
       supportTickets,
+      refreshSupportTickets,
       createSupportTicket,
       sendTicketMessage,
       updateTicketStatus,
