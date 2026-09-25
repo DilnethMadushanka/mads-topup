@@ -236,6 +236,30 @@ app.post('/api/admin/login', rateLimiter(8, 300000), (req, res) => {
   res.json({ success: true, token, expiresAt });
 });
 
+// Verify an existing admin session token — called by the dashboard on every
+// open so a refreshed page re-confirms the token with the server rather than
+// trusting any localStorage flag.
+app.get('/api/admin/verify-session', (req, res) => {
+  pruneExpiredAdminSessions();
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+  const expiresAt = token && adminSessions.get(token);
+  if (!expiresAt || expiresAt <= Date.now()) {
+    return res.status(401).json({ valid: false });
+  }
+  res.json({ valid: true, expiresAt });
+});
+
+// Revoke an admin session token immediately on logout.
+app.post('/api/admin/logout', (req, res) => {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+  if (token && adminSessions.has(token)) {
+    adminSessions.delete(token);
+  }
+  res.json({ success: true });
+});
+
 // Direct OTP Email sending API endpoint with rate limiter & sanitization
 app.post('/api/send-otp', rateLimiter(10, 60000), async (req, res) => {
   try {

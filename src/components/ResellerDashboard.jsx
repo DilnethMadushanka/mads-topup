@@ -131,6 +131,14 @@ export const ResellerDashboard = () => {
       return;
     }
 
+    // Guard: block dispatch for games that don't have moongoldProductId configured.
+    // Without it, dispatchMoongoldOrder falls back to the MLBB product ID (215570)
+    // which causes a server-side price mismatch rejection on every order.
+    if (currentGame?.resellerDisabled) {
+      showToast(`⚠️ ${currentGame.name} is not yet available for reseller dispatch. Please contact admin to enable it.`, 'error');
+      return;
+    }
+
     setIsFulfilling(true);
 
     // Live Database check for Reseller Wallet Balance before dispatching order.
@@ -816,7 +824,7 @@ export const ResellerDashboard = () => {
 
                           <div className="text-right">
                             <span className="font-black text-emerald-400 block">Rs. {wholesalePrice.toLocaleString()}</span>
-                            <span className="text-[10px] text-amber-400 font-mono font-bold block">Profit: +Rs. {profitMargin}</span>
+                            <span className="text-[10px] text-amber-400 font-mono font-bold block">Profit: +Rs. {profitMargin.toLocaleString()}</span>
                           </div>
                         </div>
                       );

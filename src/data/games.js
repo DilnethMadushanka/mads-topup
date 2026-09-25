@@ -133,6 +133,7 @@ export const GAMES_DATA = [
     idGuideHint: '💡 Blood Strike User ID e.g. 981247192 (Find in player profile tab)',
     popular: true,
     moongoldCode: 'BLOODSTRIKE_GLOBAL',
+    resellerDisabled: true, // moongoldProductId not configured — reseller dispatch blocked until IDs are added
     packages: [
       { id: 'bs-100', name: '100 Gold', amount: 100, bonus: '', priceLkr: 475, moongoldCost: 425, priceUsd: 1.25, image: '/product_images/prod_10016Gold_1768633617_Blood_Strike_105.webp', isPopular: false },
       { id: 'bs-500', name: '500 + 20 Gold', amount: 520, bonus: '+20 Extra', priceLkr: 2240, moongoldCost: 1992, priceUsd: 5.86, image: '/product_images/prod_30052Gold_1768633690_Blood_Strike_105.webp', isPopular: true },
@@ -157,6 +158,7 @@ export const GAMES_DATA = [
     idGuideHint: '💡 Delta Force Character ID e.g. 981247192 (Find in player profile tab)',
     popular: true,
     moongoldCode: 'DELTAFORCE_GLOBAL',
+    resellerDisabled: true, // moongoldProductId not configured — reseller dispatch blocked until IDs are added
     packages: [
       { id: 'df-60', name: '60 Delta Coins', amount: 60, bonus: '', priceLkr: 460, moongoldCost: 411, priceUsd: 1.21, image: '/game_logos/delta_force.jpg', isPopular: false },
       { id: 'df-300', name: '300 + 30 Delta Coins', amount: 330, bonus: '+30 Extra', priceLkr: 2150, moongoldCost: 1914, priceUsd: 5.63, image: '/game_logos/delta_force.jpg', isPopular: true },
@@ -210,6 +212,7 @@ export const GAMES_DATA = [
     idGuideHint: '💡 Garena Account / Mobile Phone ID for Shells Topup',
     popular: true,
     moongoldCode: 'GARENA_SHELLS',
+    resellerDisabled: true, // moongoldProductId not configured — reseller dispatch blocked until IDs are added
     packages: [
       { id: 'gs-33', name: '33 Shells', amount: 33, bonus: 'Instant PIN', priceLkr: 290, moongoldCost: 245, priceUsd: 0.95, image: '/gift_cards/shell.png', isPopular: false },
       { id: 'gs-100', name: '100 Shells', amount: 100, bonus: 'Instant PIN', priceLkr: 860, moongoldCost: 740, priceUsd: 2.80, image: '/gift_cards/shell.png', isPopular: true }

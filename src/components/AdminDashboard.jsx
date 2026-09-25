@@ -339,10 +339,12 @@ export const AdminDashboard = () => {
     updateResellerApplicationStatus, gamesCatalog, updateGamePrices, popupAdConfig, updatePopupAdConfig
   } = useApp();
 
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
-    if (typeof window !== 'undefined') return localStorage.getItem('mads_admin_authenticated') === 'true';
-    return false;
-  });
+  // Auth state is always false on startup — only set to true after the SERVER
+  // confirms the session token is valid. localStorage is never used as the
+  // source of truth (that was the jailbreak: setting the key in devtools
+  // gave instant access without any password).
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [isVerifyingSession, setIsVerifyingSession] = useState(true);
   const [adminAuthEmail, setAdminAuthEmail] = useState('');
   const [adminAuthPassword, setAdminAuthPassword] = useState('');
   const [adminAuthSecurityCode, setAdminAuthSecurityCode] = useState('');
@@ -350,6 +352,7 @@ export const AdminDashboard = () => {
   const [adminAuthError, setAdminAuthError] = useState('');
   const [adminFailedAttempts, setAdminFailedAttempts] = useState(0);
   const [adminLockoutUntil, setAdminLockoutUntil] = useState(null);
+  const [isLoginLoading, setIsLoginLoading] = useState(false);
 
   const [adminTab, setAdminTab] = useState('overview');
   const [theme, setTheme] = useState(() => (typeof window !== 'undefined' && localStorage.getItem('mads_admin_theme')) || 'dark');
@@ -501,6 +504,43 @@ export const AdminDashboard = () => {
     }
   }, [popupAdConfig]);
 
+  // On every open: verify any stored session token against the server.
+  // This replaces the old localStorage flag check — if the server says the
+  // token is expired or invalid the admin must log in again.
+  useEffect(() => {
+    if (!isAdminOpen) return;
+    const token = localStorage.getItem('mads_admin_session_token') || '';
+    if (!token) {
+      setIsAdminAuthenticated(false);
+      setIsVerifyingSession(false);
+      return;
+    }
+    setIsVerifyingSession(true);
+    const tryVerify = (endpoint) =>
+      fetch(endpoint, { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)));
+    Promise.any([
+      tryVerify('/api/admin/verify-session'),
+      tryVerify('https://madstopup.com/api/admin/verify-session')
+    ])
+      .then(data => {
+        if (data?.valid) {
+          setIsAdminAuthenticated(true);
+        } else {
+          localStorage.removeItem('mads_admin_session_token');
+          localStorage.removeItem('mads_admin_session_expires');
+          setIsAdminAuthenticated(false);
+        }
+      })
+      .catch(() => {
+        // Server unreachable — deny access; never fall back to localStorage
+        localStorage.removeItem('mads_admin_session_token');
+        localStorage.removeItem('mads_admin_session_expires');
+        setIsAdminAuthenticated(false);
+      })
+      .finally(() => setIsVerifyingSession(false));
+  }, [isAdminOpen]);
+
   useEffect(() => {
     if (isAdminAuthenticated && isAdminOpen) {
       fetchLiveBalance();
@@ -525,7 +565,7 @@ export const AdminDashboard = () => {
 
   const themeClass = theme === 'light' ? 'theme-light' : '';
 
-  const handleAdminLoginSubmit = (e) => {
+  const handleAdminLoginSubmit = async (e) => {
     e.preventDefault();
 
     if (adminLockoutUntil && Date.now() < adminLockoutUntil) {
@@ -539,47 +579,39 @@ export const AdminDashboard = () => {
     const cleanPass = String(adminAuthPassword || '').trim();
     const cleanCode = String(adminAuthSecurityCode || '').trim().toUpperCase();
 
-    // Pre-computed hashes only — plaintext credentials never stored in source/bundle
-    const _h = (s) => [...s].reduce((a,c) => Math.imul(31,a)+c.charCodeAt(0)|0, 0x811c9dc5).toString(16);
-    const isValidEmail = _h(cleanEmail) === '6c24b307';
-    const isValidPassword = _h(cleanPass) === '-4d18553';
-    const isValidSecurityCode = _h(cleanCode) === '-77f0b15c' || _h(cleanCode) === '5881e801';
+    // Credentials are verified ONLY by the server — no client-side hash
+    // checks. This closes the jailbreak (localStorage bypass) and the leak
+    // (hash constants visible in the JS bundle).
+    setIsLoginLoading(true);
+    setAdminAuthError('');
 
-    if (isValidEmail && isValidPassword && isValidSecurityCode) {
-      localStorage.setItem('mads_admin_authenticated', 'true');
-      setIsAdminAuthenticated(true);
-      setAdminFailedAttempts(0);
-      setAdminLockoutUntil(null);
-      showToast('Admin Authentication Successful! Welcome Super Admin.');
-      setAdminAuthError('');
+    const loginPayload = JSON.stringify({ email: cleanEmail, password: cleanPass, securityCode: cleanCode });
+    const tryAdminLogin = (endpoint) => fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: loginPayload
+    }).then(r => r.ok ? r.json() : r.json().then(d => Promise.reject(new Error(d?.error || `HTTP ${r.status}`))));
 
-      // Also establish a REAL server-side admin session (a random, unguessable
-      // token the server issues only after independently re-verifying these
-      // same credentials) — this is what actually gates admin-only server
-      // endpoints like the EZ Cash webhook logs, since the client-side check
-      // above only gates this UI and can't be trusted by the server on its
-      // own. Fire-and-forget: if the server is unreachable this never blocks
-      // or breaks the dashboard UI itself, only the specific endpoints that
-      // require the token (which will show a clear error if called without it).
-      const loginPayload = JSON.stringify({ email: cleanEmail, password: cleanPass, securityCode: cleanCode });
-      const tryAdminLogin = (endpoint) => fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: loginPayload
-      }).then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)));
+    try {
+      const data = await Promise.any([
+        tryAdminLogin('/api/admin/login'),
+        tryAdminLogin('https://madstopup.com/api/admin/login')
+      ]);
 
-      Promise.any([tryAdminLogin('/api/admin/login'), tryAdminLogin('https://madstopup.com/api/admin/login')])
-        .then(data => {
-          if (data?.success && data?.token) {
-            localStorage.setItem('mads_admin_session_token', data.token);
-            localStorage.setItem('mads_admin_session_expires', String(data.expiresAt || ''));
-          }
-        })
-        .catch(err => console.warn('[Admin Session] Server-side session could not be established:', err.message));
-
-      setAdminAuthPassword('');
-      setAdminAuthSecurityCode('');
-    } else {
+      if (data?.success && data?.token) {
+        localStorage.setItem('mads_admin_session_token', data.token);
+        localStorage.setItem('mads_admin_session_expires', String(data.expiresAt || ''));
+        setIsAdminAuthenticated(true);
+        setAdminFailedAttempts(0);
+        setAdminLockoutUntil(null);
+        setAdminAuthError('');
+        showToast('Admin Authentication Successful! Welcome Super Admin.');
+        setAdminAuthPassword('');
+        setAdminAuthSecurityCode('');
+      } else {
+        throw new Error(data?.error || 'Authentication failed.');
+      }
+    } catch (err) {
       const nextFailures = adminFailedAttempts + 1;
       setAdminFailedAttempts(nextFailures);
       if (nextFailures >= 3) {
@@ -591,17 +623,42 @@ export const AdminDashboard = () => {
         setAdminAuthError(`Invalid Admin Email, Password, or 2FA Security Code! Attempt ${nextFailures}/3.`);
         showToast('Invalid Admin Security Credentials', 'error');
       }
+    } finally {
+      setIsLoginLoading(false);
     }
   };
 
   const handleAdminLogout = () => {
-    localStorage.removeItem('mads_admin_authenticated');
+    const token = localStorage.getItem('mads_admin_session_token') || '';
     localStorage.removeItem('mads_admin_session_token');
     localStorage.removeItem('mads_admin_session_expires');
     setIsAdminAuthenticated(false);
     setIsAdminOpen(false);
     showToast('Logged out from Admin Portal.');
+    // Fire-and-forget server-side token revocation
+    if (token) {
+      const tryLogout = (endpoint) => fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+      }).catch(() => {});
+      tryLogout('/api/admin/logout');
+      tryLogout('https://madstopup.com/api/admin/logout');
+    }
   };
+
+  if (isVerifyingSession) {
+    return (
+      <div className={`mads-admin ${themeClass} fixed inset-0 z-50 w-screen h-screen flex items-center justify-center`} style={{ background: 'var(--adm-bg)', color: 'var(--adm-text)' }}>
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-14 h-14 rounded-3xl bg-gradient-to-tr from-[#cc040a] to-[#ff2a30] flex items-center justify-center shadow-xl shadow-red-600/40">
+            <ShieldCheck className="w-7 h-7 text-white" />
+          </div>
+          <div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-mono" style={{ color: 'var(--adm-text-muted)' }}>Verifying session…</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAdminAuthenticated) {
     return (
@@ -653,9 +710,10 @@ export const AdminDashboard = () => {
               <label className="block font-extrabold mb-1.5 uppercase tracking-wider text-[10px] font-mono" style={mutedStyle}>Admin 2FA Security Passcode</label>
               <input type="password" required autoComplete="off" value={adminAuthSecurityCode} onChange={(e) => setAdminAuthSecurityCode(e.target.value)} placeholder="Enter 6-Digit Secret Passcode" className={fieldCls} style={{ ...fieldStyle, color: '#fbbf24' }} />
             </div>
-            <button type="submit" className="w-full py-3.5 bg-gradient-to-r from-[#cc040a] to-[#ff2a30] hover:from-[#b00308] hover:to-[#e02026] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-red-600/30 cursor-pointer mt-2 flex items-center justify-center gap-2">
-              <Lock className="w-4 h-4" />
-              <span>AUTHENTICATE & LOG IN</span>
+            <button type="submit" disabled={isLoginLoading} className="w-full py-3.5 bg-gradient-to-r from-[#cc040a] to-[#ff2a30] hover:from-[#b00308] hover:to-[#e02026] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-red-600/30 cursor-pointer mt-2 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+              {isLoginLoading
+                ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /><span>VERIFYING…</span></>
+                : <><Lock className="w-4 h-4" /><span>AUTHENTICATE &amp; LOG IN</span></>}
             </button>
           </form>
 
