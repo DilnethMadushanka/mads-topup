@@ -27,13 +27,6 @@ const QUICK_CHIPS = [
   { label: '💰 Wallet Recharge Help', text: 'I need help with my wallet recharge / top-up.' },
 ];
 
-// Contextual quick-reply chips for use inside an open ticket conversation
-const CHAT_CHIPS = [
-  { label: '⏳ Still Waiting', text: 'I am still waiting for a response. Could you please update me on this?' },
-  { label: '✅ Resolved', text: 'My issue has been resolved. Thank you for your help!' },
-  { label: '📸 More Info', text: 'Here is some additional information that may help resolve my issue:' },
-];
-
 export const SupportModal = () => {
   const {
     isSupportOpen,
@@ -57,15 +50,10 @@ export const SupportModal = () => {
   const [selectedOrderId, setSelectedOrderId] = useState('');
   const [initialMessage, setInitialMessage] = useState('');
   const [replyText, setReplyText] = useState('');
+  const [attachmentFile, setAttachmentFile] = useState(null);
   const [attachmentUrl, setAttachmentUrl] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [lightboxUrl, setLightboxUrl] = useState(null);
-  const [guestName, setGuestName] = useState('');
-  const [guestContact, setGuestContact] = useState('');
-
-  // Refs to reset file inputs on upload failure or view switch
-  const fileInputCreateRef = useRef(null);
-  const fileInputChatRef = useRef(null);
 
   // Active Ticket Object — no [0] fallback; null if no match
   const currentTicket = (supportTickets || []).find(t => t.id === activeTicketId) || null;
@@ -89,34 +77,15 @@ export const SupportModal = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, [lightboxUrl]);
 
-  // Reset attachment state and file inputs whenever the active view changes
-  useEffect(() => {
-    setAttachmentUrl('');
-    if (fileInputCreateRef.current) fileInputCreateRef.current.value = '';
-    if (fileInputChatRef.current) fileInputChatRef.current.value = '';
-  }, [view]);
-
-  // Auto-redirect: if a ticket disappears from Firestore while in chat view, go back to list
-  useEffect(() => {
-    if (view === 'chat' && !currentTicket && activeTicketId) {
-      const t = setTimeout(() => setView('list'), 1500);
-      return () => clearTimeout(t);
-    }
-  }, [view, currentTicket, activeTicketId]);
-
   const handleOpenChat = (ticketId) => {
     setActiveTicketId(ticketId);
     setView('chat');
   };
 
-  // Allow any user (authenticated or guest) to open the create ticket form
-  const handleNewTicket = () => {
-    setView('create');
-  };
-
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setAttachmentFile(file);
     setIsUploading(true);
     // Uses the verified /api/upload-file → Cloudflare R2 pipeline (storageService.js)
     // so attachments actually persist and display reliably.
@@ -126,9 +95,6 @@ export const SupportModal = () => {
       setAttachmentUrl(res.url);
       showToast('Image screenshot uploaded to support system!');
     } else {
-      // Reset the DOM file input so the user can immediately reselect the same file
-      if (fileInputCreateRef.current) fileInputCreateRef.current.value = '';
-      if (fileInputChatRef.current) fileInputChatRef.current.value = '';
       showToast(res.error || 'Upload failed', 'error');
     }
   };
@@ -139,33 +105,23 @@ export const SupportModal = () => {
       showToast('Please type your message!', 'error');
       return;
     }
-    try {
-      const isEmail = guestContact.includes('@');
-      const created = createSupportTicket({
-        subject: subject.trim() || `${category} Support Request`,
-        category,
-        message: initialMessage.trim(),
-        orderId: selectedOrderId || null,
-        attachmentUrl: attachmentUrl || null,
-        userName: guestName.trim() || userProfile?.name || 'Verified Gamer',
-        userEmail: isEmail ? guestContact.trim() : (userProfile?.email || 'customer@madstopup.com'),
-        userPhone: !isEmail && guestContact.trim() ? guestContact.trim() : (userProfile?.phone || '')
-      });
-      setSubject('');
-      setCategory('Order Issue');
-      setInitialMessage('');
-      setSelectedOrderId('');
-      setAttachmentUrl('');
-      setGuestName('');
-      setGuestContact('');
-      if (fileInputCreateRef.current) fileInputCreateRef.current.value = '';
-      if (created?.id) {
-        setActiveTicketId(created.id);
-      }
-      setView('chat');
-    } catch (err) {
-      showToast('Failed to create ticket. Please try again.', 'error');
-    }
+
+    createSupportTicket({
+      subject: subject.trim() || `${category} Support Request`,
+      category,
+      message: initialMessage.trim(),
+      orderId: selectedOrderId || null,
+      attachmentUrl: attachmentUrl || null
+    });
+
+    setSubject('');
+    setCategory('Order Issue');
+    setInitialMessage('');
+    setSelectedOrderId('');
+    setAttachmentUrl('');
+    setAttachmentFile(null);
+    // createSupportTicket() already calls setActiveTicketId(newTicket.id) internally
+    setView('chat');
   };
 
   const handleSendReply = (e) => {
@@ -176,7 +132,7 @@ export const SupportModal = () => {
     sendTicketMessage(currentTicket.id, replyText.trim(), 'user', attachmentUrl);
     setReplyText('');
     setAttachmentUrl('');
-    if (fileInputChatRef.current) fileInputChatRef.current.value = '';
+    setAttachmentFile(null);
   };
 
   const getStatusBadge = (status) => {
@@ -194,19 +150,10 @@ export const SupportModal = () => {
     );
   };
 
-  // Return tickets owned by this user (by account uid/email/phone) or created on this local browser
-  const userTickets = (supportTickets || []).filter(t => {
-    if (!t || !t.id) return false;
-    let myIds = [];
-    try { myIds = JSON.parse(localStorage.getItem('mads_my_ticket_ids') || '[]'); } catch (e) {}
-    if (myIds.includes(t.id) || (activeTicketId && t.id === activeTicketId)) return true;
-    if (isLoggedIn && userProfile) {
-      if (userProfile.uid && (t.userId === userProfile.uid || t.uid === userProfile.uid)) return true;
-      if (userProfile.email && (t.userEmail?.toLowerCase() === userProfile.email.toLowerCase() || t.email?.toLowerCase() === userProfile.email.toLowerCase())) return true;
-      if (userProfile.phone && (t.phone === userProfile.phone || t.userPhone === userProfile.phone)) return true;
-    }
-    return false;
-  });
+  // Return empty array when not logged in — prevents data leak to unauthenticated users
+  const userTickets = !isLoggedIn
+    ? []
+    : (supportTickets || []).filter(t => orderBelongsToUser(t, userProfile));
 
   // Filter orders strictly for current user
   const userOrders = !isLoggedIn ? [] : filterUserOrders(orders, userProfile);
@@ -285,7 +232,7 @@ export const SupportModal = () => {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                   {view === 'list' && (
-                    <button onClick={handleNewTicket} style={{ background: 'linear-gradient(135deg,#00f0ff,#8b5cf6)', border: 'none', borderRadius: 10, padding: '7px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 900, color: '#04050a', boxShadow: '0 0 16px rgba(0,240,255,0.35)' }}>
+                    <button onClick={() => setView('create')} style={{ background: 'linear-gradient(135deg,#00f0ff,#8b5cf6)', border: 'none', borderRadius: 10, padding: '7px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 900, color: '#04050a', boxShadow: '0 0 16px rgba(0,240,255,0.35)' }}>
                       <Plus style={{ width: 13, height: 13 }} /> New
                     </button>
                   )}
@@ -321,7 +268,7 @@ export const SupportModal = () => {
                       </div>
                       <h4 style={{ margin: '0 0 8px', fontWeight: 900, fontSize: 15, color: '#f1f5f9' }}>No Support Tickets Yet</h4>
                       <p style={{ margin: '0 0 20px', fontSize: 12, color: NEON.textDim, lineHeight: 1.6, maxWidth: 260, marginLeft: 'auto', marginRight: 'auto' }}>Need help with your top-up, payment, or account? Open a ticket and we'll assist instantly!</p>
-                      <button onClick={handleNewTicket} style={{ background: 'linear-gradient(135deg,#00f0ff,#8b5cf6)', border: 'none', borderRadius: 16, padding: '12px 28px', color: '#04050a', fontWeight: 900, fontSize: 12, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, boxShadow: '0 0 24px rgba(0,240,255,0.35)' }}>
+                      <button onClick={() => setView('create')} style={{ background: 'linear-gradient(135deg,#00f0ff,#8b5cf6)', border: 'none', borderRadius: 16, padding: '12px 28px', color: '#04050a', fontWeight: 900, fontSize: 12, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, boxShadow: '0 0 24px rgba(0,240,255,0.35)' }}>
                         <Plus style={{ width: 15, height: 15 }} /> Open New Ticket
                       </button>
                     </div>
@@ -340,7 +287,7 @@ export const SupportModal = () => {
                         </div>
                         <h4 style={{ margin: '0 0 8px', fontWeight: 800, fontSize: 12, color: '#e2e8f0' }}>{tck.subject}</h4>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span style={{ fontSize: 10, color: NEON.textDim }}>{(() => { const d = new Date(tck.updatedAt); const now = new Date(); return d.toDateString() === now.toDateString() ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' · ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); })()}</span>
+                          <span style={{ fontSize: 10, color: NEON.textDim }}>{new Date(tck.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                           <span style={{ fontSize: 10, color: NEON.cyan, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 3 }}>View Chat <ChevronRight style={{ width: 12, height: 12 }} /></span>
                         </div>
                       </div>
@@ -352,18 +299,6 @@ export const SupportModal = () => {
               {/* CREATE VIEW */}
               {view === 'create' && (
                 <form onSubmit={handleCreateTicketSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  {!isLoggedIn && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, background: 'rgba(0,240,255,0.03)', padding: 12, borderRadius: 14, border: `1px dashed ${NEON.border}` }}>
-                      <div>
-                        <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: NEON.textDim, marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Your Name</label>
-                        <input type="text" placeholder="e.g. Kasun SLAyer" value={guestName} onChange={e => setGuestName(e.target.value)} style={{ width: '100%', background: NEON.surface, border: '1.5px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '8px 12px', fontSize: 11, fontFamily: 'inherit', outline: 'none', color: '#e2e8f0', boxSizing: 'border-box' }} {...inputFocusHandlers} />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: NEON.textDim, marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>WhatsApp or Email</label>
-                        <input type="text" placeholder="e.g. 0771234567 or email" value={guestContact} onChange={e => setGuestContact(e.target.value)} style={{ width: '100%', background: NEON.surface, border: '1.5px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '8px 12px', fontSize: 11, fontFamily: 'inherit', outline: 'none', color: '#e2e8f0', boxSizing: 'border-box' }} {...inputFocusHandlers} />
-                      </div>
-                    </div>
-                  )}
                   <div>
                     <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: NEON.textDim, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Inquiry Type</label>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -413,7 +348,7 @@ export const SupportModal = () => {
                       <Image style={{ width: 14, height: 14, color: NEON.cyan }} /> Attach Screenshot (Optional)
                     </label>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <input ref={fileInputCreateRef} type="file" accept="image/*" onChange={handleFileUpload} disabled={isUploading} style={{ fontSize: 11, color: NEON.textDim, flex: 1 }} />
+                      <input type="file" accept="image/*" onChange={handleFileUpload} disabled={isUploading} style={{ fontSize: 11, color: NEON.textDim, flex: 1 }} />
                       {isUploading && <span style={{ fontSize: 11, color: NEON.cyan, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}><RefreshCw style={{ width: 12, height: 12, animation: 'smSpin 1s linear infinite' }} /> Uploading...</span>}
                     </div>
                     {attachmentUrl && (
@@ -452,11 +387,7 @@ export const SupportModal = () => {
                     </div>
                   </div>
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 14, paddingRight: 4 }}>
-                    {((Array.isArray(currentTicket.messages) ? currentTicket.messages : Object.values(currentTicket.messages || {})).filter(Boolean)).sort((a, b) => {
-                      const ta = a.timestamp ? new Date(a.timestamp).getTime() : 0;
-                      const tb = b.timestamp ? new Date(b.timestamp).getTime() : 0;
-                      return ta - tb;
-                    }).map(msg => {
+                    {currentTicket.messages.map(msg => {
                       const isAdmin = msg.sender === 'admin';
                       return (
                         <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isAdmin ? 'flex-start' : 'flex-end' }}>
@@ -496,7 +427,7 @@ export const SupportModal = () => {
                   </div>
                   <form onSubmit={handleSendReply} style={{ borderTop: `1px solid rgba(255,255,255,0.08)`, paddingTop: 12, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 2 }} className="sm-chip-row">
-                      {CHAT_CHIPS.map(chip => (
+                      {QUICK_CHIPS.map(chip => (
                         <button key={chip.label} type="button" onClick={() => applyChip(chip, setReplyText, replyText)}
                           style={{ fontSize: 10, fontWeight: 700, color: NEON.cyan, background: 'rgba(0,240,255,0.06)', border: `1px solid ${NEON.border}`, borderRadius: 99, padding: '5px 11px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
                           {chip.label}
@@ -512,7 +443,7 @@ export const SupportModal = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <label style={{ width: 40, height: 40, borderRadius: 12, flexShrink: 0, background: NEON.surface, border: `1.5px solid rgba(255,255,255,0.1)`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: NEON.textDim, transition: 'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = NEON.cyan; e.currentTarget.style.color = NEON.cyan; e.currentTarget.style.boxShadow = '0 0 12px rgba(0,240,255,0.3)'; }} onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = NEON.textDim; e.currentTarget.style.boxShadow = 'none'; }}>
                         <Paperclip style={{ width: 16, height: 16 }} />
-                        <input ref={fileInputChatRef} type="file" accept="image/*" onChange={handleFileUpload} disabled={isUploading} style={{ display: 'none' }} />
+                        <input type="file" accept="image/*" onChange={handleFileUpload} style={{ display: 'none' }} />
                       </label>
                       <input type="text" placeholder={isUploading ? 'Uploading screenshot...' : 'Type your message...'} value={replyText} onChange={e => setReplyText(e.target.value)}
                         style={{ flex: 1, minWidth: 0, background: NEON.surface, border: '1.5px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: '11px 14px', fontSize: 12, fontFamily: 'inherit', outline: 'none', color: '#e2e8f0', transition: 'box-shadow 0.15s, border-color 0.15s' }}
@@ -560,21 +491,7 @@ export const SupportModal = () => {
           <button onClick={() => setLightboxUrl(null)} aria-label="Close preview" style={{ position: 'absolute', top: 20, right: 20, width: 40, height: 40, borderRadius: 12, background: 'rgba(255,255,255,0.08)', border: `1px solid ${NEON.border}`, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
             <X style={{ width: 18, height: 18 }} />
           </button>
-          <img
-            src={lightboxUrl}
-            alt="Full preview"
-            onClick={e => e.stopPropagation()}
-            onError={e => {
-              e.target.style.display = 'none';
-              const fb = e.target.nextSibling;
-              if (fb) fb.style.display = 'flex';
-            }}
-            style={{ maxWidth: '100%', maxHeight: '90vh', borderRadius: 16, boxShadow: `0 0 60px rgba(0,240,255,0.25), 0 0 100px rgba(139,92,246,0.15)`, border: `1px solid ${NEON.border}`, cursor: 'default' }}
-          />
-          <div style={{ display: 'none', flexDirection: 'column', alignItems: 'center', gap: 12, color: '#f87171', fontSize: 13, fontWeight: 700, textAlign: 'center' }}>
-            <AlertCircle style={{ width: 32, height: 32, color: '#f87171' }} />
-            <span>Image could not be loaded</span>
-          </div>
+          <img src={lightboxUrl} alt="Full preview" onClick={e => e.stopPropagation()} style={{ maxWidth: '100%', maxHeight: '90vh', borderRadius: 16, boxShadow: `0 0 60px rgba(0,240,255,0.25), 0 0 100px rgba(139,92,246,0.15)`, border: `1px solid ${NEON.border}`, cursor: 'default' }} />
         </div>
       )}
 

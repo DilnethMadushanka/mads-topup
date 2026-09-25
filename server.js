@@ -40,85 +40,7 @@ try {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ─── Production CSP — no wildcards, every origin explicitly named ─────────────
-// Fixes ZAP: "CSP: Wildcard Directive" and "CSP: Failure to Define Directive
-// with No Fallback". unsafe-eval removed (safe for Vite prod). unsafe-inline
-// kept only in script-src for the oncontextmenu="return false" on <body>.
-//
-// Firebase services used by this project and their required origins:
-//   Firebase Auth (popup)  → mads-topup-76445.firebaseapp.com  ← OAuth handler page
-//                            identitytoolkit.googleapis.com     ← Auth REST
-//                            securetoken.googleapis.com         ← Token refresh
-//                            accounts.google.com                ← Google IdP
-//   Firestore              → firestore.googleapis.com
-//   Realtime Database      → mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app
-//   Firebase Storage       → firebasestorage.googleapis.com
-//                            mads-topup-76445.firebasestorage.app  ← newer bucket domain
-//   Firebase SDK CDN       → apis.google.com, www.gstatic.com
-const PRODUCTION_CSP = [
-  "default-src 'self'",
-
-  // Scripts: our bundle + Google Identity SDK + Firebase auth handler
-  // mads-topup-76445.firebaseapp.com hosts the OAuth redirect/popup handler page
-  // that Firebase's signInWithPopup() loads as a script source.
-  "script-src 'self' 'unsafe-inline' https://apis.google.com https://www.gstatic.com https://mads-topup-76445.firebaseapp.com",
-
-  // Styles: our bundle + Google Fonts CSS
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com",
-
-  // Fonts: Google Fonts binary files only
-  "font-src 'self' https://fonts.gstatic.com data:",
-
-  // Images: self + data URIs + blob (receipt previews) + Google profile photos
-  "img-src 'self' data: blob: https: https://lh3.googleusercontent.com",
-
-  // XHR / fetch / WebSocket — explicitly allow payment gateways, suppliers & Firebase
-  [
-    "connect-src 'self'",
-    "https://madstopup.com",
-    // Firebase Auth popup handler page (fetched by Firebase SDK during signInWithPopup)
-    "https://mads-topup-76445.firebaseapp.com",
-    // Firebase Auth REST API
-    "https://identitytoolkit.googleapis.com",
-    "https://securetoken.googleapis.com",
-    // Firestore REST API
-    "https://firestore.googleapis.com",
-    // Firebase Realtime Database (REST + WebSocket)
-    "https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app",
-    "wss://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app",
-    // Firebase Storage (both legacy and new bucket domain)
-    "https://firebasestorage.googleapis.com",
-    "https://mads-topup-76445.firebasestorage.app",
-    // Google Sign-In / token refresh / OAuth2
-    "https://accounts.google.com",
-    "https://oauth2.googleapis.com",
-    // MooGold reseller API (exact & subdomains)
-    "https://moogold.com",
-    "https://*.moogold.com",
-    // Dialog Genie IPG (exact & subdomains)
-    "https://genie.dialog.lk",
-    "https://*.dialog.lk",
-    "https://api.geniebiz.lk",
-    "https://paylink.geniebiz.lk",
-    "https://*.geniebiz.lk",
-    // Cloudflare R2 storage (uploaded receipts)
-    "https://mads-topup.r2.dev",
-  ].join(' '),
-
-  // Frames: Genie/Dialog payment iframe + Google Sign-In popup + Firebase auth handler
-  "frame-src 'self' https://genie.dialog.lk https://*.dialog.lk https://*.geniebiz.lk https://accounts.google.com https://mads-topup-76445.firebaseapp.com",
-
-  // Block all plugins (Flash, Java applets, etc.)
-  "object-src 'none'",
-
-  // Prevent <base> tag injection attacks
-  "base-uri 'self'",
-
-  // Forms: allow Google OAuth and Dialog/Genie payment form actions
-  "form-action 'self' https://accounts.google.com https://genie.dialog.lk https://*.dialog.lk https://*.geniebiz.lk",
-].join('; ');
-
-// Security Hardening Headers (Mozilla Observatory Compliant)
+// Security Hardening Headers & CORS Controls (Mozilla Observatory Compliant)
 app.disable('x-powered-by');
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -126,98 +48,14 @@ app.use((req, res, next) => {
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-  res.setHeader('Content-Security-Policy', PRODUCTION_CSP);
-  // same-origin-allow-popups (not same-origin) — required so the Google Sign-In
-  // popup window can post its OAuth token back to the opener (main tab).
-  // With plain same-origin, Chrome severs the BrowsingContext group between
-  // the popup and the opener, causing signInWithPopup() to hang silently.
-  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
-  res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
+  res.setHeader('Content-Security-Policy', "default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https: blob:; connect-src 'self' https: wss:; frame-src 'self' https:;");
   next();
 });
 
-// ─── Payment Webhook / Callback Route Exemption ──────────────────────────────
-// Third-party payment gateways (Dialog Genie, MooGold, Binance, eZ Cash) send
-// server-to-server POST/GET notifications without browser Origin headers, or
-// with gateway-specific headers. These routes MUST be completely exempt from
-// strict CORS checks, preflight blocks, and browser authentication middleware.
-const PAYMENT_WEBHOOK_PATHS = [
-  '/api/payments/callback',
-  '/api/genie/webhook',
-  '/api/genie/ipn',
-  '/api/moogold/callback',
-  '/api/moogold/webhook',
-  '/api/ezcash/webhook',
-  '/api/binance/webhook',
-];
-
-const isPaymentWebhookRoute = (reqPath) => {
-  const p = (reqPath || '').toLowerCase();
-  return PAYMENT_WEBHOOK_PATHS.some(route => p === route || p.startsWith(route + '/') || p.startsWith(route + '?'));
-};
-
-// 1. Webhook Preflight & Open CORS Exemption Header Injector
-app.use((req, res, next) => {
-  if (isPaymentWebhookRoute(req.path)) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, auth, timestamp');
-    if (req.method === 'OPTIONS') {
-      return res.status(200).end();
-    }
-  }
-  next();
-});
-
-// ─── Strict CORS for standard application routes ─────────────────────────────
-const CORS_ALLOWED_ORIGINS = [
-  'https://madstopup.com',
-  'https://www.madstopup.com',
-  'https://genie.dialog.lk',
-  'https://moogold.com',
-  'https://api.geniebiz.lk',
-  'https://paylink.geniebiz.lk',
-];
-
-app.use((req, res, next) => {
-  // If payment callback / IPN webhook, bypass strict CORS completely
-  if (isPaymentWebhookRoute(req.path)) {
-    return next();
-  }
-
-  cors({
-    origin: (origin, callback) => {
-      // Allow server-to-server requests (no Origin header) and whitelisted origins
-      if (!origin) return callback(null, true);
-      const isAllowed = CORS_ALLOWED_ORIGINS.some(allowed => origin === allowed) ||
-        origin.endsWith('.dialog.lk') ||
-        origin.endsWith('.moogold.com') ||
-        origin.endsWith('.geniebiz.lk') ||
-        origin.includes('localhost') ||
-        origin.includes('127.0.0.1');
-
-      if (isAllowed) {
-        callback(null, true);
-      } else {
-        callback(new Error(`CORS: Origin '${origin}' not allowed.`));
-      }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'auth', 'timestamp'],
-  })(req, res, next);
-});
-
-// ─── Cache-Control: prevent caching of API and sensitive page routes ─────
-app.use((req, res, next) => {
-  const p = req.path || '';
-  if (p.startsWith('/api/') || /\/(admin|wallet|checkout|order|dashboard|reseller|profile|auth)/i.test(p)) {
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-  }
-  next();
-});
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
 app.use(express.json({ limit: '1mb' }));
 
 // Input Sanitization Helper against NoSQL & String Injection Attacks
@@ -270,38 +108,26 @@ function rateLimiter(maxRequests = 30, windowMs = 60000) {
 const R2_UPLOAD_MAX_BYTES = 5 * 1024 * 1024; // 5MB — matches the client's own limit
 const R2_ALLOWED_FOLDERS = new Set(['receipts', 'support-attachments', 'popup_ads']);
 
-const r2KeyId = process.env.R2_ACCESS_KEY_ID || process.env.VITE_R2_ACCESS_KEY_ID;
-const r2Secret = process.env.R2_SECRET_ACCESS_KEY || process.env.VITE_R2_SECRET_ACCESS_KEY;
-const r2Endpoint = process.env.R2_ENDPOINT || process.env.VITE_R2_ENDPOINT;
-
 let r2Client = null;
-if (r2KeyId && r2Secret && r2Endpoint) {
-  try {
-    r2Client = new S3Client({
-      region: 'auto',
-      endpoint: r2Endpoint,
-      credentials: {
-        accessKeyId: r2KeyId,
-        secretAccessKey: r2Secret
-      }
-    });
-    console.log('[R2 Storage] Cloudflare R2 S3Client initialized successfully.');
-  } catch (e) {
-    console.warn('[R2 Storage Init Warning]:', e.message);
-  }
+if (process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY && process.env.R2_ENDPOINT) {
+  r2Client = new S3Client({
+    region: 'auto',
+    endpoint: process.env.R2_ENDPOINT,
+    credentials: {
+      accessKeyId: process.env.R2_ACCESS_KEY_ID,
+      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY
+    }
+  });
 } else {
-  console.warn('[R2 Storage] R2 credentials not set — falling back to local server disk storage (/uploads).');
+  console.warn('[R2 Storage] R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY / R2_ENDPOINT not fully configured — file uploads will fail until set.');
 }
 
-// Ensure local uploads directory exists
-const uploadsDir = path.join(__dirname, 'public', 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  try { fs.mkdirSync(uploadsDir, { recursive: true }); } catch (e) {}
-}
-app.use('/uploads', express.static(uploadsDir));
-
-app.post('/api/upload-file', rateLimiter(30, 60000), express.json({ limit: '8mb' }), async (req, res) => {
+app.post('/api/upload-file', rateLimiter(20, 60000), express.json({ limit: '8mb' }), async (req, res) => {
   try {
+    if (!r2Client) {
+      return res.status(503).json({ success: false, error: 'File storage is not configured on the server.' });
+    }
+
     const { fileName, fileType, fileDataBase64, folder } = req.body || {};
     if (!fileDataBase64 || typeof fileDataBase64 !== 'string') {
       return res.status(400).json({ success: false, error: 'Missing file data.' });
@@ -321,39 +147,20 @@ app.post('/api/upload-file', rateLimiter(30, 60000), express.json({ limit: '8mb'
     const key = `${cleanFolder}/${Date.now()}_${safeName}`;
     const bucketName = process.env.VITE_R2_BUCKET_NAME || process.env.R2_BUCKET_NAME || 'mads-topup';
 
-    if (r2Client) {
-      try {
-        await r2Client.send(new PutObjectCommand({
-          Bucket: bucketName,
-          Key: key,
-          Body: buffer,
-          ContentType: fileType || 'application/octet-stream'
-        }));
+    await r2Client.send(new PutObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+      Body: buffer,
+      ContentType: fileType || 'application/octet-stream'
+    }));
 
-        const bucketUrl = (process.env.VITE_R2_BUCKET_URL || process.env.R2_BUCKET_URL || `${r2Endpoint}/${bucketName}`).replace(/\/$/, '');
-        const url = `${bucketUrl}/${key}`;
+    const bucketUrl = (process.env.VITE_R2_BUCKET_URL || process.env.R2_BUCKET_URL || `${process.env.R2_ENDPOINT}/${bucketName}`).replace(/\/$/, '');
+    const url = `${bucketUrl}/${key}`;
 
-        console.log(`[R2 Upload Success] key=${key} size=${buffer.length}B bucket=${bucketName}`);
-        return res.json({ success: true, key, url, bucket: bucketName, size: buffer.length, storage: 'r2' });
-      } catch (r2Err) {
-        console.warn('[R2 Upload Failed, falling back to local disk]:', r2Err.message);
-      }
-    }
-
-    // Fallback: Store on server's local disk
-    const targetFolder = path.join(uploadsDir, cleanFolder);
-    if (!fs.existsSync(targetFolder)) {
-      try { fs.mkdirSync(targetFolder, { recursive: true }); } catch (e) {}
-    }
-    const localFileName = `${Date.now()}_${safeName}`;
-    const localPath = path.join(targetFolder, localFileName);
-    fs.writeFileSync(localPath, buffer);
-
-    const localUrl = `/uploads/${cleanFolder}/${localFileName}`;
-    console.log(`[Local Upload Success] path=${localUrl} size=${buffer.length}B`);
-    return res.json({ success: true, key, url: localUrl, storage: 'local', size: buffer.length });
+    console.log(`[R2 Upload Success] key=${key} size=${buffer.length}B bucket=${bucketName}`);
+    res.json({ success: true, key, url, bucket: bucketName, size: buffer.length });
   } catch (err) {
-    console.error('[Upload Error]:', err.message);
+    console.error('[R2 Upload Error]:', err.message);
     res.status(500).json({ success: false, error: 'Upload failed. Please try again.' });
   }
 });
@@ -1169,40 +976,6 @@ async function saveMoogoldOrderRecord(partnerOrderId, record) {
   }
 }
 
-// MooGold Server-to-Server Order Webhook / Callback (NO AUTH REQUIRED, EXEMPT FROM CORS)
-app.all(['/api/moogold/callback', '/api/moogold/webhook'], async (req, res) => {
-  try {
-    const payload = req.method === 'GET' ? req.query : req.body;
-    console.log('[MooGold Callback/Webhook Received]:', payload);
-
-    const partnerOrderId = payload?.partnerOrderId || payload?.partner_order_id || payload?.data?.partnerOrderId;
-    const orderId = payload?.order_id || payload?.orderId || payload?.data?.order_id;
-    const rawStatus = payload?.status || payload?.data?.status;
-    const status = String(rawStatus || '').toUpperCase();
-
-    if (partnerOrderId) {
-      const existing = await getMoogoldOrderRecord(partnerOrderId);
-      const isComplete = status.includes('COMPLET') || status === 'SUCCESS';
-      const isFailed = status.includes('FAIL') || status.includes('CANCEL') || status.includes('REFUND');
-      const normalizedStatus = isComplete ? 'COMPLETED' : (isFailed ? 'FAILED' : (status || 'PROCESSING'));
-
-      await saveMoogoldOrderRecord(partnerOrderId, {
-        ...(existing || {}),
-        status: normalizedStatus,
-        moogoldOrderId: orderId || existing?.moogoldOrderId,
-        callbackPayload: payload,
-        callbackReceivedAt: new Date().toISOString()
-      });
-      console.log(`[MooGold Callback Processed] partnerOrderId=${partnerOrderId} status=${normalizedStatus}`);
-    }
-
-    return res.status(200).json({ success: true, message: 'MooGold callback processed successfully' });
-  } catch (err) {
-    console.error('[MooGold Callback Error]:', err.message);
-    return res.status(200).json({ success: true, message: 'Callback received with error logging' });
-  }
-});
-
 app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
   const partnerOrderId = req.body?.bodyObj?.partnerOrderId || null;
   try {
@@ -1853,32 +1626,38 @@ app.post('/api/genie/verify-status', rateLimiter(30, 60000), async (req, res) =>
   }
 });
 
-// Payment Callback & IPN Webhook (Dialog Genie, Card, IPG) — Server-to-Server
-// Completely exempt from CORS and authentication checks. Handles /api/genie/webhook,
-// /api/genie/ipn, and /api/payments/callback.
-app.all(['/api/genie/webhook', '/api/genie/ipn', '/api/payments/callback'], async (req, res) => {
+// Genie Business Webhook (IPN Callback) — the authoritative, server-to-server
+// confirmation from Dialog Genie. This does NOT depend on the customer's
+// browser at all, so it's what guarantees a successful card/eZ Cash payment
+// always credits the wallet even if the customer never sees the redirect
+// (closed tab, crashed app, network drop). Field names for the transaction id
+// aren't guaranteed by Dialog's docs, so we defensively check the common
+// shapes; if none match we still ack (so Genie doesn't retry-storm us) but log
+// loudly for manual follow-up.
+app.post('/api/genie/webhook', async (req, res) => {
   const body = req.body || {};
-  console.log(`[Payment Webhook Received on ${req.path}]:`, body);
+  console.log('[Genie Business IPG Webhook Received]:', body);
 
-  let transactionId = body.id || body.transactionId || body.data?.id || req.query?.transactionId || req.query?.id || null;
-  if (!transactionId && (body.localId || body.orderRef || req.query?.localId || req.query?.orderRef)) {
-    transactionId = await resolveGenieTransactionIdByLocalId(body.localId || body.orderRef || req.query?.localId || req.query?.orderRef);
+  let transactionId = body.id || body.transactionId || body.data?.id || null;
+  if (!transactionId && body.localId) {
+    transactionId = await resolveGenieTransactionIdByLocalId(body.localId);
   }
 
   if (!transactionId) {
-    console.error('[Payment Webhook Error] Could not determine transaction id from webhook payload:', JSON.stringify(body).substring(0, 500));
+    console.error('[Genie Webhook Error] Could not determine transaction id from webhook payload:', JSON.stringify(body).substring(0, 500));
     return res.json({ success: true, message: 'Webhook received (no matching transaction id — logged for manual follow-up)' });
   }
 
   try {
     const result = await verifyAndCreditGenieTransaction(transactionId);
     if (!result.success) {
-      console.error(`[Payment Webhook Credit Failed] txn=${transactionId}:`, result.error);
+      console.error(`[Genie Webhook Credit Failed] txn=${transactionId}:`, result.error);
     }
-    // Always ack 200 so gateway doesn't endlessly retry-storm
+    // Always ack 200 so Dialog doesn't endlessly retry — failures are logged
+    // above for admin follow-up/manual credit rather than silently dropped.
     return res.json({ success: true, message: 'Webhook processed', result });
   } catch (e) {
-    console.error(`[Payment Webhook Error] txn=${transactionId}:`, e.message);
+    console.error(`[Genie Webhook Error] txn=${transactionId}:`, e.message);
     return res.json({ success: true, message: 'Webhook received (processing error logged)' });
   }
 });
@@ -1944,14 +1723,14 @@ app.get('/robots.txt', (req, res) => {
 app.use(express.static(path.join(__dirname, 'dist'), {
   setHeaders: (res) => {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-    res.setHeader('Content-Security-Policy', PRODUCTION_CSP);
+    res.setHeader('Content-Security-Policy', "default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https: blob:; connect-src 'self' https: wss:; frame-src 'self' https:;");
   }
 }));
 
 // SPA Fallback Routing for React Router
 app.use((req, res) => {
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-  res.setHeader('Content-Security-Policy', PRODUCTION_CSP);
+  res.setHeader('Content-Security-Policy', "default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https: blob:; connect-src 'self' https: wss:; frame-src 'self' https:;");
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 

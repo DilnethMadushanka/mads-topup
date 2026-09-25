@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { saveAdminToken, getAdminToken, clearAdminToken } from '../services/adminSession.js';
 import { useApp } from '../context/AppContext';
 import { dispatchMoongoldOrder, checkMoongoldBalance } from '../services/moongoldApi';
 import { uploadToR2Storage } from '../services/storageService';
@@ -334,9 +333,9 @@ export const AdminDashboard = () => {
     isAdminOpen, setIsAdminOpen, orders, updateOrderStatus, moongoldConfig, updateMoongoldConfig,
     r2Config, updateR2Config, formatPrice,
     formatLkr, showToast, userProfile, vouchers, addVoucher, deleteVoucher,
-    tickerNotice, setTickerNotice, usersList, refreshUsersList, isUsersRefreshing, verifyUserAccount, toggleBlockUser, updateUserBalance,
+    tickerNotice, setTickerNotice, usersList, verifyUserAccount, toggleBlockUser, updateUserBalance,
     setUserExactBalance, manualPayments, approveManualPayment, rejectManualPayment, addManualPayment,
-    supportTickets, refreshSupportTickets, sendTicketMessage, updateTicketStatus, updateTicketPriority, resellerApplications,
+    supportTickets, sendTicketMessage, updateTicketStatus, updateTicketPriority, resellerApplications,
     updateResellerApplicationStatus, gamesCatalog, updateGamePrices, popupAdConfig, updatePopupAdConfig,
     isAdminAuthenticated, setIsAdminAuthenticated
   } = useApp();
@@ -381,9 +380,8 @@ export const AdminDashboard = () => {
 
   const [supportSearch, setSupportSearch] = useState('');
   const [supportStatusFilter, setSupportStatusFilter] = useState('ALL');
-  const [selectedTicketInspectId, setSelectedTicketInspectId] = useState(null);
+  const [selectedTicketInspect, setSelectedTicketInspect] = useState(null);
   const [adminReplyText, setAdminReplyText] = useState('');
-  const [isRefreshingTickets, setIsRefreshingTickets] = useState(false);
 
   const [orderSearch, setOrderSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -451,7 +449,7 @@ export const AdminDashboard = () => {
   const fetchEzcashLogs = async () => {
     try {
       setIsEzcashLogsLoading(true);
-      const sessionToken = getAdminToken() || '';
+      const sessionToken = localStorage.getItem('mads_admin_session_token') || '';
       const res = await fetch('/api/ezcash/webhook-logs', {
         headers: sessionToken ? { 'Authorization': `Bearer ${sessionToken}` } : {}
       });
@@ -509,7 +507,7 @@ export const AdminDashboard = () => {
   // token is expired or invalid the admin must log in again.
   useEffect(() => {
     if (!isAdminOpen) return;
-    const token = getAdminToken() || '';
+    const token = localStorage.getItem('mads_admin_session_token') || '';
     if (!token) {
       setIsAdminAuthenticated(false);
       setIsVerifyingSession(false);
@@ -527,13 +525,15 @@ export const AdminDashboard = () => {
         if (data?.valid) {
           setIsAdminAuthenticated(true);
         } else {
-          clearAdminToken();
+          localStorage.removeItem('mads_admin_session_token');
+          localStorage.removeItem('mads_admin_session_expires');
           setIsAdminAuthenticated(false);
         }
       })
       .catch(() => {
-        // Server unreachable — deny access; never fall back to any persisted store
-        clearAdminToken();
+        // Server unreachable — deny access; never fall back to localStorage
+        localStorage.removeItem('mads_admin_session_token');
+        localStorage.removeItem('mads_admin_session_expires');
         setIsAdminAuthenticated(false);
       })
       .finally(() => setIsVerifyingSession(false));
@@ -543,13 +543,9 @@ export const AdminDashboard = () => {
     if (isAdminAuthenticated && isAdminOpen) {
       fetchLiveBalance();
       fetchEzcashLogs();
-      if (typeof refreshSupportTickets === 'function') refreshSupportTickets();
-      if (typeof refreshUsersList === 'function') refreshUsersList();
       const interval = setInterval(() => {
         fetchLiveBalance();
         fetchEzcashLogs();
-        if (typeof refreshSupportTickets === 'function') refreshSupportTickets();
-        if (typeof refreshUsersList === 'function') refreshUsersList();
       }, 10000);
       return () => clearInterval(interval);
     }
@@ -601,7 +597,8 @@ export const AdminDashboard = () => {
       ]);
 
       if (data?.success && data?.token) {
-        saveAdminToken(data.token, data.expiresAt);
+        localStorage.setItem('mads_admin_session_token', data.token);
+        localStorage.setItem('mads_admin_session_expires', String(data.expiresAt || ''));
         setIsAdminAuthenticated(true);
         setAdminFailedAttempts(0);
         setAdminLockoutUntil(null);
@@ -630,8 +627,9 @@ export const AdminDashboard = () => {
   };
 
   const handleAdminLogout = () => {
-    const token = getAdminToken() || '';
-    clearAdminToken();
+    const token = localStorage.getItem('mads_admin_session_token') || '';
+    localStorage.removeItem('mads_admin_session_token');
+    localStorage.removeItem('mads_admin_session_expires');
     setIsAdminAuthenticated(false);
     setIsAdminOpen(false);
     showToast('Logged out from Admin Portal.');
@@ -833,10 +831,7 @@ export const AdminDashboard = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const activeInspectTicket = (selectedTicketInspectId && safeTickets.find(t => t && t.id === selectedTicketInspectId)) ||
-    (selectedTicketInspectId && filteredSupportTickets.find(t => t && t.id === selectedTicketInspectId)) ||
-    filteredSupportTickets[0] ||
-    null;
+  const activeInspectTicket = selectedTicketInspect || filteredSupportTickets[0] || null;
 
   const filteredEzcashLogs = (ezcashLogs || []).filter(item => {
     if (!item) return false;
@@ -1626,16 +1621,6 @@ export const AdminDashboard = () => {
                   <option value="newest">⬇ Newest First</option>
                   <option value="oldest">⬆ Oldest First</option>
                 </select>
-                <button
-                  type="button"
-                  onClick={() => refreshUsersList && refreshUsersList()}
-                  disabled={isUsersRefreshing}
-                  className="px-3.5 py-2.5 rounded-xl bg-red-600/15 hover:bg-red-600/25 border border-red-500/30 text-red-400 hover:text-red-300 text-xs font-black flex items-center gap-2 cursor-pointer disabled:opacity-50 shrink-0 transition-all"
-                  title="Reload all user profiles from Database"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isUsersRefreshing ? 'animate-spin' : ''}`} />
-                  <span>Refresh ({safeUsers.length})</span>
-                </button>
               </FilterBar>
 
               <DataTable
@@ -1765,32 +1750,16 @@ export const AdminDashboard = () => {
                 <div className="rounded-2xl border p-4 space-y-1" style={cardStyle}><span className="text-[10px] text-emerald-400 font-extrabold uppercase font-mono">Resolved</span><div className="text-2xl font-black text-emerald-400 font-heading">{safeTickets.filter(t => t.status === 'RESOLVED').length}</div></div>
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <FilterBar>
-                  <SearchInput value={supportSearch} onChange={setSupportSearch} placeholder="Search ticket ID, user email, subject..." />
-                  <select value={supportStatusFilter} onChange={(e) => setSupportStatusFilter(e.target.value)} className={fieldCls} style={{ ...fieldStyle, maxWidth: 200 }}>
-                    <option value="ALL">All Statuses</option>
-                    <option value="OPEN">Open</option>
-                    <option value="IN_PROGRESS">In Progress</option>
-                    <option value="RESOLVED">Resolved</option>
-                    <option value="CLOSED">Closed</option>
-                  </select>
-                </FilterBar>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setIsRefreshingTickets(true);
-                    if (typeof refreshSupportTickets === 'function') await refreshSupportTickets();
-                    setIsRefreshingTickets(false);
-                    showToast('Support tickets refreshed live!');
-                  }}
-                  className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border text-xs font-bold font-mono transition-all cursor-pointer shrink-0"
-                  style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)', color: 'var(--adm-text)' }}
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 text-red-400 ${isRefreshingTickets ? 'animate-spin' : ''}`} />
-                  <span>Refresh Tickets</span>
-                </button>
-              </div>
+              <FilterBar>
+                <SearchInput value={supportSearch} onChange={setSupportSearch} placeholder="Search ticket ID, user email, subject..." />
+                <select value={supportStatusFilter} onChange={(e) => setSupportStatusFilter(e.target.value)} className={fieldCls} style={{ ...fieldStyle, maxWidth: 200 }}>
+                  <option value="ALL">All Statuses</option>
+                  <option value="OPEN">Open</option>
+                  <option value="IN_PROGRESS">In Progress</option>
+                  <option value="RESOLVED">Resolved</option>
+                  <option value="CLOSED">Closed</option>
+                </select>
+              </FilterBar>
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 <div className="lg:col-span-5 space-y-3">
@@ -1799,7 +1768,7 @@ export const AdminDashboard = () => {
                   ) : filteredSupportTickets.map(tck => {
                     const isSelected = activeInspectTicket?.id === tck.id;
                     return (
-                      <div key={tck.id} onClick={() => setSelectedTicketInspectId(tck.id)} className={`p-4 rounded-2xl border transition-all cursor-pointer space-y-2.5 ${isSelected ? 'ring-1 ring-red-500/50' : ''}`} style={isSelected ? { background: 'var(--adm-surface-hover)', borderColor: '#f4370680' } : cardStyle}>
+                      <div key={tck.id} onClick={() => setSelectedTicketInspect(tck)} className={`p-4 rounded-2xl border transition-all cursor-pointer space-y-2.5 ${isSelected ? 'ring-1 ring-red-500/50' : ''}`} style={isSelected ? { background: 'var(--adm-surface-hover)', borderColor: '#f4370680' } : cardStyle}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <span className="font-mono text-xs font-bold text-red-400">{tck.id}</span>
@@ -1855,11 +1824,7 @@ export const AdminDashboard = () => {
                       )}
 
                       <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
-                        {((Array.isArray(activeInspectTicket.messages) ? activeInspectTicket.messages : Object.values(activeInspectTicket.messages || {})).filter(Boolean)).sort((a, b) => {
-                          const ta = a.timestamp ? new Date(a.timestamp).getTime() : 0;
-                          const tb = b.timestamp ? new Date(b.timestamp).getTime() : 0;
-                          return ta - tb;
-                        }).map(msg => {
+                        {activeInspectTicket.messages.map(msg => {
                           const isAdmin = msg.sender === 'admin';
                           return (
                             <div key={msg.id} className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}>
@@ -2132,40 +2097,8 @@ export const AdminDashboard = () => {
           <div className="space-y-3 pt-2 border-t" style={{ borderColor: 'var(--adm-border)' }}>
             <h4 className="text-xs font-bold" style={mutedStyle}>Manual Wallet Balance Editor</h4>
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => {
-                updateUserBalance(selectedInspectUser.uid || selectedInspectUser.email, 1000, 0, selectedInspectUser.email);
-                addManualPayment({
-                  id: `PAY-ADM-${Date.now().toString().slice(-6)}`,
-                  userId: selectedInspectUser.uid || '',
-                  userEmail: selectedInspectUser.email || '',
-                  userName: selectedInspectUser.name || 'Gamer',
-                  method: 'Admin Wallet Top-Up',
-                  referenceNumber: 'Quick Credit: +Rs. 1,000 LKR by Admin',
-                  amount: 1000,
-                  currency: 'LKR',
-                  status: 'VERIFIED',
-                  createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
-                });
-                showToast(`Added +1,000 LKR to ${selectedInspectUser.name}`);
-                setSelectedInspectUser(null);
-              }} className="py-2 bg-emerald-500/15 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 rounded-xl text-xs font-bold cursor-pointer">+ Rs. 1,000 LKR</button>
-              <button onClick={() => {
-                updateUserBalance(selectedInspectUser.uid || selectedInspectUser.email, 0, 10, selectedInspectUser.email);
-                addManualPayment({
-                  id: `PAY-ADM-${Date.now().toString().slice(-6)}`,
-                  userId: selectedInspectUser.uid || '',
-                  userEmail: selectedInspectUser.email || '',
-                  userName: selectedInspectUser.name || 'Gamer',
-                  method: 'Admin Wallet Top-Up',
-                  referenceNumber: 'Quick Credit: +$10 USDT by Admin',
-                  amount: 10,
-                  currency: 'USDT',
-                  status: 'VERIFIED',
-                  createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
-                });
-                showToast(`Added +$10 USDT to ${selectedInspectUser.name}`);
-                setSelectedInspectUser(null);
-              }} className="py-2 bg-amber-500/15 hover:bg-amber-600 text-amber-400 hover:text-white border border-amber-500/30 rounded-xl text-xs font-bold cursor-pointer">+ $10 USDT</button>
+              <button onClick={() => { updateUserBalance(selectedInspectUser.email, 1000, 0); showToast(`Added +1,000 LKR to ${selectedInspectUser.name}`); setSelectedInspectUser(null); }} className="py-2 bg-emerald-500/15 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 rounded-xl text-xs font-bold cursor-pointer">+ Rs. 1,000 LKR</button>
+              <button onClick={() => { updateUserBalance(selectedInspectUser.email, 0, 10); showToast(`Added +$10 USDT to ${selectedInspectUser.name}`); setSelectedInspectUser(null); }} className="py-2 bg-amber-500/15 hover:bg-amber-600 text-amber-400 hover:text-white border border-amber-500/30 rounded-xl text-xs font-bold cursor-pointer">+ $10 USDT</button>
             </div>
 
             <div className="rounded-2xl border p-3.5 space-y-3" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
@@ -2196,19 +2129,7 @@ export const AdminDashboard = () => {
                     const usdt = editUsdtVal !== '' ? parseFloat(editUsdtVal) : 0;
                     const targetId = selectedInspectUser.uid || selectedInspectUser.email || selectedInspectUser.resellerCode || selectedInspectUser.securityKey;
                     if (!window.confirm(`SET balance for ${selectedInspectUser.name} to:\nRs. ${lkr.toLocaleString()} LKR / $${usdt.toFixed(2)} USDT\n\nThis REPLACES the current balance. Are you sure?`)) return;
-                    setUserExactBalance(targetId, lkr, usdt, selectedInspectUser.email);
-                    addManualPayment({
-                      id: `PAY-ADM-${Date.now().toString().slice(-6)}`,
-                      userId: selectedInspectUser.uid || '',
-                      userEmail: selectedInspectUser.email || '',
-                      userName: selectedInspectUser.name || 'Gamer',
-                      method: 'Admin Balance Adjustment',
-                      referenceNumber: `Set balance to Rs. ${lkr.toLocaleString()} LKR / $${usdt} USDT by Admin`,
-                      amount: lkr > 0 ? lkr : usdt,
-                      currency: lkr > 0 ? 'LKR' : 'USDT',
-                      status: 'VERIFIED',
-                      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
-                    });
+                    setUserExactBalance(targetId, lkr, usdt);
                     showToast(`✅ Set ${selectedInspectUser.name} balance → Rs.${lkr.toLocaleString()} LKR / $${usdt} USDT`);
                     setEditLkrVal(''); setEditUsdtVal(''); setSelectedInspectUser(null);
                   }}
@@ -2229,19 +2150,7 @@ export const AdminDashboard = () => {
                     const newUsdt = (selectedInspectUser.walletUsdt || 0) + usdt;
                     const targetId = selectedInspectUser.uid || selectedInspectUser.email || selectedInspectUser.resellerCode || selectedInspectUser.securityKey;
                     if (!window.confirm(`ADD funds to ${selectedInspectUser.name}:\n+Rs.${lkr.toLocaleString()} LKR / +$${usdt} USDT\nNew total: Rs.${newLkr.toLocaleString()} LKR / $${newUsdt.toFixed(2)} USDT`)) return;
-                    updateUserBalance(targetId, lkr, usdt, selectedInspectUser.email);
-                    addManualPayment({
-                      id: `PAY-ADM-${Date.now().toString().slice(-6)}`,
-                      userId: selectedInspectUser.uid || '',
-                      userEmail: selectedInspectUser.email || '',
-                      userName: selectedInspectUser.name || 'Gamer',
-                      method: 'Admin Wallet Top-Up',
-                      referenceNumber: `Added: +Rs. ${lkr.toLocaleString()} LKR / +$${usdt} USDT by Admin`,
-                      amount: lkr > 0 ? lkr : usdt,
-                      currency: lkr > 0 ? 'LKR' : 'USDT',
-                      status: 'VERIFIED',
-                      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
-                    });
+                    updateUserBalance(targetId, lkr, usdt);
                     showToast(`✅ Added +Rs.${lkr.toLocaleString()} LKR / +$${usdt} USDT to ${selectedInspectUser.name}`);
                     setEditLkrVal(''); setEditUsdtVal(''); setSelectedInspectUser(null);
                   }}

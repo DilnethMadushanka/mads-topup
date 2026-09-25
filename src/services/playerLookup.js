@@ -21,11 +21,6 @@ export const saveCachedIgn = (playerId, ignName) => {
     const raw = localStorage.getItem(IGN_CACHE_KEY);
     const cache = raw ? JSON.parse(raw) : {};
     cache[playerId.trim()] = ignName.trim();
-    // Cap at 100 entries — trim oldest keys to prevent localStorage bloat
-    const keys = Object.keys(cache);
-    if (keys.length > 100) {
-      keys.slice(0, keys.length - 100).forEach(k => delete cache[k]);
-    }
     localStorage.setItem(IGN_CACHE_KEY, JSON.stringify(cache));
   } catch (e) {}
 };

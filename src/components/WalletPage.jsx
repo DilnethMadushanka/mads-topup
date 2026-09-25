@@ -38,15 +38,8 @@ export const WalletPage = () => {
   React.useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const genieStatus = urlParams.get('genie');
-
-    // Retrieve pending transaction state from sessionStorage or fallback localStorage
-    let storedTxnId = null;
-    let storedOrderRef = null;
-    try {
-      storedTxnId = sessionStorage.getItem('mads_pending_genie_txnid') || localStorage.getItem('mads_pending_genie_txnid');
-      storedOrderRef = sessionStorage.getItem('mads_pending_genie_orderref') || localStorage.getItem('mads_pending_genie_orderref');
-    } catch (_) {}
-
+    const storedTxnId = sessionStorage.getItem('mads_pending_genie_txnid');
+    const storedOrderRef = sessionStorage.getItem('mads_pending_genie_orderref');
     const txnId = urlParams.get('txnId') || urlParams.get('id') || urlParams.get('transactionId') || storedTxnId;
     const orderRef = urlParams.get('orderRef') || urlParams.get('localId') || storedOrderRef;
 
@@ -65,16 +58,9 @@ export const WalletPage = () => {
       })
         .then(r => r.json())
         .then(data => {
+          sessionStorage.removeItem('mads_pending_genie_txnid');
+          sessionStorage.removeItem('mads_pending_genie_orderref');
           if (data.success && data.isPaid) {
-            // Clean up session and local storage ONLY after payment is confirmed/credited
-            try {
-              sessionStorage.removeItem('mads_pending_genie_txnid');
-              sessionStorage.removeItem('mads_pending_genie_orderref');
-              localStorage.removeItem('mads_pending_genie_txnid');
-              localStorage.removeItem('mads_pending_genie_orderref');
-              localStorage.removeItem('mads_pending_genie_data');
-            } catch (_) {}
-
             const amt = parseFloat(data.amount || 0);
             if (data.credited) {
               addManualPayment({
@@ -126,23 +112,10 @@ export const WalletPage = () => {
       });
       const resData = await response.json();
       if (resData.success && resData.redirectUrl) {
-        // Persist pending checkout state across tabs and external redirects in both sessionStorage & localStorage
-        const pendingRecord = {
-          transactionId: resData.transactionId || '',
-          orderRef: localId,
-          amount: amt,
-          timestamp: Date.now()
-        };
-        try {
-          if (resData.transactionId) {
-            sessionStorage.setItem('mads_pending_genie_txnid', resData.transactionId);
-            localStorage.setItem('mads_pending_genie_txnid', resData.transactionId);
-          }
-          sessionStorage.setItem('mads_pending_genie_orderref', localId);
-          localStorage.setItem('mads_pending_genie_orderref', localId);
-          localStorage.setItem('mads_pending_genie_data', JSON.stringify(pendingRecord));
-        } catch (_) {}
-
+        if (resData.transactionId) {
+          sessionStorage.setItem('mads_pending_genie_txnid', resData.transactionId);
+        }
+        sessionStorage.setItem('mads_pending_genie_orderref', localId);
         showToast('Redirecting to payment gateway...');
         const sep = resData.redirectUrl.includes('?') ? '&' : '?';
         window.location.href = resData.transactionId ? `${resData.redirectUrl}${sep}txnId=${resData.transactionId}` : resData.redirectUrl;
@@ -256,19 +229,7 @@ export const WalletPage = () => {
   };
 
   const goHome = () => { setIsWalletModalOpen(false); setSelectedGame(null); closeCatalog(); window.scrollTo({ top: 0, behavior: 'smooth' }); };
-  const userPayments = (manualPayments || []).filter(p => {
-    if (!userProfile?.email && !userProfile?.uid) return false;
-    const myEmail = userProfile?.email ? String(userProfile.email).trim().toLowerCase() : '';
-    const myUid = userProfile?.uid ? String(userProfile.uid).trim() : '';
-    const pEmail = p.userEmail ? String(p.userEmail).trim().toLowerCase() : '';
-    const pUid = p.userId ? String(p.userId).trim() : '';
-
-    return (myEmail && pEmail && pEmail === myEmail) || (myUid && pUid && pUid === myUid);
-  }).sort((a, b) => {
-    const tA = new Date(a.timestamp || a.createdAt).getTime() || 0;
-    const tB = new Date(b.timestamp || b.createdAt).getTime() || 0;
-    return tB - tA;
-  });
+  const userPayments = (manualPayments || []).filter(p => !userProfile?.email || (p.userEmail && p.userEmail.toLowerCase() === userProfile.email.toLowerCase()));
   const isApprovedReseller = Boolean(userProfile?.isReseller || userProfile?.role === 'reseller');
   const resellerWalletId = `RS-${(userProfile?.uid || '882104').slice(-6).toUpperCase()}`;
   const QUICK_LKR = ['500', '1000', '2000', '5000'];

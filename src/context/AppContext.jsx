@@ -1,19 +1,18 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getAdminToken } from '../services/adminSession.js';
 import { GAMES_DATA } from '../data/games';
 import { getMoongoldConfig, saveMoongoldConfig } from '../services/moongoldApi';
 import { getR2Config, saveR2Config } from '../services/storageService';
 import { auth, onAuthStateChanged, logoutGoogle, getRedirectResult } from '../services/firebaseAuth';
 import { 
   syncUserProfileToFirestore, updateUserProfileInFirestore, subscribeUserProfile, 
-  saveOrderToFirestore, subscribeAllUsersFromFirestore, fetchAllUsersFromRtdb, subscribeOrdersFromFirestore, updateOrderStatusInFirestore,
+  saveOrderToFirestore, subscribeAllUsersFromFirestore, subscribeOrdersFromFirestore, updateOrderStatusInFirestore,
   saveResellerApplicationToFirestore, subscribeResellerApplicationsFromFirestore, updateResellerApplicationStatusInFirestore,
   saveCustomGamePricesToFirestore, subscribeCustomGamePricesFromFirestore, generateUniqueSecurityKey, ensureResellerCredentials,
   saveManualPaymentToFirestore, updateManualPaymentStatusInFirestore, subscribeManualPaymentsFromFirestore, creditUserWalletInDatabase, setUserExactBalanceInDatabase,
   saveVouchersToFirestore, subscribeVouchersFromFirestore, redeemVoucherInDatabase,
   savePopupAdConfigToFirestore, subscribePopupAdConfigFromFirestore, DEFAULT_POPUP_AD_CONFIG,
-  saveSupportTicketToFirestore, updateSupportTicketInFirestore, subscribeSupportTicketsFromFirestore, normalizeTicket,
+  saveSupportTicketToFirestore, updateSupportTicketInFirestore, subscribeSupportTicketsFromFirestore,
   saveReviewToFirestore, subscribeReviewsFromFirestore,
   saveReferralClick, lookupReferrerByCode, processReferralCashback
 } from '../services/firestoreService';
@@ -629,52 +628,9 @@ export const AppProvider = ({ children }) => {
     }
   }, [userProfile]);
 
-  // Admin: Refresh all users list directly from RTDB
-  const [isUsersRefreshing, setIsUsersRefreshing] = useState(false);
-  const refreshUsersList = async () => {
-    setIsUsersRefreshing(true);
-    try {
-      const remoteUsers = await fetchAllUsersFromRtdb();
-      if (remoteUsers && remoteUsers.length > 0) {
-        setUsersList(prev => {
-          const merged = [...prev];
-          remoteUsers.forEach(ru => {
-            const index = merged.findIndex(u => (ru.uid && u.uid === ru.uid) || (ru.email && u.email && u.email.toLowerCase() === ru.email.toLowerCase()));
-            if (index >= 0) {
-              merged[index] = { ...merged[index], ...ru };
-            } else {
-              merged.push({
-                uid: ru.uid || `USR-${Math.floor(10000 + Math.random() * 90000)}`,
-                name: ru.name || 'Gamer',
-                email: ru.email || '',
-                phone: ru.phone || '',
-                walletBalance: ru.walletBalance || 0,
-                walletUsdt: ru.walletUsdt || 0,
-                isVerified: ru.isVerified || false,
-                status: ru.status || 'ACTIVE',
-                createdAt: ru.createdAt || (ru.joinedAt ? new Date(ru.joinedAt).toISOString() : null),
-                joinedAt: ru.createdAt
-                  ? new Date(ru.createdAt).toISOString().split('T')[0]
-                  : (ru.joinedAt || new Date().toISOString().split('T')[0]),
-                totalOrders: ru.totalOrders || 0,
-                lifetimeSpendLkr: ru.lifetimeSpendLkr || 0
-              });
-            }
-          });
-          return merged;
-        });
-      }
-    } catch (err) {
-      console.warn('refreshUsersList note:', err.message);
-    } finally {
-      setIsUsersRefreshing(false);
-    }
-  };
-
   // Subscribe to all users in Firestore / RTDB for real-time admin user list sync (Admin only)
   useEffect(() => {
     if (!isAdminAuthenticated) return;
-    refreshUsersList();
     const unsubAll = subscribeAllUsersFromFirestore((remoteUsersList) => {
       if (remoteUsersList && remoteUsersList.length > 0) {
         setUsersList(prev => {
@@ -697,8 +653,8 @@ export const AppProvider = ({ children }) => {
                 joinedAt: ru.createdAt
                   ? new Date(ru.createdAt).toISOString().split('T')[0]
                   : (ru.joinedAt || new Date().toISOString().split('T')[0]),
-                totalOrders: ru.totalOrders || 0,
-                lifetimeSpendLkr: ru.lifetimeSpendLkr || 0
+                totalOrders: 0,
+                lifetimeSpendLkr: 0
               });
             }
           });
@@ -1178,111 +1134,83 @@ export const AppProvider = ({ children }) => {
     }
     balanceUpdateDebounceRef.current.set(debounceKey, now);
 
-    // 1. OPTIMISTIC UPDATE FIRST: Immediately update usersList in React state & localStorage
-    setUsersList(prev => {
-      const next = prev.map(u => {
-        const uEmailLower = u.email ? String(u.email).toLowerCase() : '';
-        const uUidLower = u.uid ? String(u.uid).toLowerCase() : '';
-        const uIdLower = u.id ? String(u.id).toLowerCase() : '';
-        const uCodeLower = u.resellerCode ? String(u.resellerCode).toLowerCase() : '';
+    // 1. Write balance adjustment to DB (RTDB & Firestore) across UID, Email, Reseller Code, or Security Key
+    await creditUserWalletInDatabase(cleanId, lkrAmount, usdtAmount);
 
-        const matchEmail = (cleanIdLower && uEmailLower === cleanIdLower) || (cleanSecEmail && uEmailLower === cleanSecEmail);
-        const matchUid = cleanIdLower && (uUidLower === cleanIdLower || uIdLower === cleanIdLower);
-        const matchCode = cleanIdLower && uCodeLower === cleanIdLower;
+    // 2. Update local usersList state
+    setUsersList(prev => prev.map(u => {
+      const matchEmail = u.email && String(u.email).toLowerCase() === cleanIdLower;
+      const matchUid = u.uid && String(u.uid).toLowerCase() === cleanIdLower;
+      const matchCode = u.resellerCode && String(u.resellerCode).toLowerCase() === cleanIdLower;
 
-        if (matchEmail || matchUid || matchCode) {
-          const newLkr = Math.max(0, (parseFloat(u.walletBalance) || 0) + lkrDiff);
-          const newUsdt = Math.max(0, (parseFloat(u.walletUsdt) || 0) + usdtDiff);
-          return {
-            ...u,
-            walletBalance: newLkr,
-            walletUsdt: newUsdt
-          };
-        }
-        return u;
-      });
-      try {
-        localStorage.setItem('mads_users_list', JSON.stringify(next));
-      } catch (_) {}
-      return next;
-    });
+      if (matchEmail || matchUid || matchCode) {
+        const newLkr = Math.max(0, (u.walletBalance || 0) + lkrAmount);
+        const newUsdt = Math.max(0, (u.walletUsdt || 0) + usdtAmount);
+        return {
+          ...u,
+          walletBalance: newLkr,
+          walletUsdt: newUsdt
+        };
+      }
+      return u;
+    }));
 
-    // Update self userProfile locally if applicable
+    // 3. Update self userProfile locally if applicable (DB write is already handled above by creditUserWalletInDatabase)
+    // Do NOT call creditUserWallet() here as that writes to DB a second time and doubles the credit.
     if (userProfile) {
-      const pEmailLower = userProfile.email ? String(userProfile.email).toLowerCase() : '';
-      const pUidLower = userProfile.uid ? String(userProfile.uid).toLowerCase() : '';
-      const matchSelf = (cleanIdLower && (pEmailLower === cleanIdLower || pUidLower === cleanIdLower)) || (cleanSecEmail && pEmailLower === cleanSecEmail);
-      if (matchSelf) {
+      const matchSelfEmail = userProfile.email && String(userProfile.email).toLowerCase() === cleanIdLower;
+      const matchSelfUid = userProfile.uid && String(userProfile.uid).toLowerCase() === cleanIdLower;
+      const matchSelfCode = userProfile.resellerCode && String(userProfile.resellerCode).toLowerCase() === cleanIdLower;
+
+      if (matchSelfEmail || matchSelfUid || matchSelfCode) {
         setUserProfileState(prev => ({
           ...prev,
-          walletBalance: Math.max(0, (parseFloat(prev?.walletBalance) || 0) + lkrDiff),
-          walletUsdt: Math.max(0, (parseFloat(prev?.walletUsdt) || 0) + usdtDiff)
+          walletBalance: Math.max(0, (prev.walletBalance || 0) + lkrAmount),
+          walletUsdt: Math.max(0, (prev.walletUsdt || 0) + usdtAmount)
         }));
       }
     }
-
-    // 2. Persist to DB (direct REST PATCH)
-    try {
-      await creditUserWalletInDatabase(cleanId || cleanSecEmail, lkrDiff, usdtDiff);
-    } catch (err) {
-      console.warn('updateUserBalance note:', err);
-    }
   };
 
-  const setUserExactBalance = async (userEmailOrId, exactLkr, exactUsdt, secondaryEmail = null) => {
-    if (!userEmailOrId && !secondaryEmail) return;
-    const cleanId = String(userEmailOrId || '').trim();
+  const setUserExactBalance = async (userEmailOrId, exactLkr, exactUsdt) => {
+    if (!userEmailOrId) return;
+    const cleanId = String(userEmailOrId).trim();
     const cleanIdLower = cleanId.toLowerCase();
-    const cleanSecEmail = String(secondaryEmail || '').trim().toLowerCase();
     const newLkr = Math.max(0, parseFloat(exactLkr) || 0);
     const newUsdt = Math.max(0, parseFloat(exactUsdt) || 0);
 
-    // 1. OPTIMISTIC UPDATE FIRST: Immediately update usersList in React state & localStorage
-    setUsersList(prev => {
-      const next = prev.map(u => {
-        const uEmailLower = u.email ? String(u.email).toLowerCase() : '';
-        const uUidLower = u.uid ? String(u.uid).toLowerCase() : '';
-        const uIdLower = u.id ? String(u.id).toLowerCase() : '';
-        const uCodeLower = u.resellerCode ? String(u.resellerCode).toLowerCase() : '';
+    // 1. Write exact balance to DB (RTDB & Firestore)
+    await setUserExactBalanceInDatabase(cleanId, newLkr, newUsdt);
 
-        const matchEmail = (cleanIdLower && uEmailLower === cleanIdLower) || (cleanSecEmail && uEmailLower === cleanSecEmail);
-        const matchUid = cleanIdLower && (uUidLower === cleanIdLower || uIdLower === cleanIdLower);
-        const matchCode = cleanIdLower && uCodeLower === cleanIdLower;
+    // 2. Update local usersList state
+    setUsersList(prev => prev.map(u => {
+      const matchEmail = u.email && String(u.email).toLowerCase() === cleanIdLower;
+      const matchUid = u.uid && String(u.uid).toLowerCase() === cleanIdLower;
+      const matchCode = u.resellerCode && String(u.resellerCode).toLowerCase() === cleanIdLower;
 
-        if (matchEmail || matchUid || matchCode) {
-          return {
-            ...u,
-            walletBalance: newLkr,
-            walletUsdt: newUsdt
-          };
-        }
-        return u;
-      });
-      try {
-        localStorage.setItem('mads_users_list', JSON.stringify(next));
-      } catch (_) {}
-      return next;
-    });
+      if (matchEmail || matchUid || matchCode) {
+        return {
+          ...u,
+          walletBalance: newLkr,
+          walletUsdt: newUsdt
+        };
+      }
+      return u;
+    }));
 
-    // Update self userProfile if applicable
+    // 3. Update self userProfile if applicable
     if (userProfile) {
-      const pEmailLower = userProfile.email ? String(userProfile.email).toLowerCase() : '';
-      const pUidLower = userProfile.uid ? String(userProfile.uid).toLowerCase() : '';
-      const matchSelf = (cleanIdLower && (pEmailLower === cleanIdLower || pUidLower === cleanIdLower)) || (cleanSecEmail && pEmailLower === cleanSecEmail);
-      if (matchSelf) {
+      const matchSelfEmail = userProfile.email && String(userProfile.email).toLowerCase() === cleanIdLower;
+      const matchSelfUid = userProfile.uid && String(userProfile.uid).toLowerCase() === cleanIdLower;
+      const matchSelfCode = userProfile.resellerCode && String(userProfile.resellerCode).toLowerCase() === cleanIdLower;
+
+      if (matchSelfEmail || matchSelfUid || matchSelfCode) {
         setUserProfile(prev => ({
           ...prev,
           walletBalance: newLkr,
           walletUsdt: newUsdt
         }));
       }
-    }
-
-    // 2. Persist to DB (direct REST PATCH)
-    try {
-      await setUserExactBalanceInDatabase(cleanId || cleanSecEmail, newLkr, newUsdt);
-    } catch (err) {
-      console.warn('setUserExactBalance note:', err);
     }
   };
 
@@ -1350,108 +1278,98 @@ export const AppProvider = ({ children }) => {
   // CUSTOMER SUPPORT TICKET SYSTEM STATE & METHODS
   // -------------------------------------------------------------
   const [isSupportOpen, setIsSupportOpen] = useState(false);
-  const [activeTicketId, setActiveTicketId] = useState(() => {
-    return (typeof window !== 'undefined' && localStorage.getItem('mads_active_ticket_id')) || null;
-  });
+  const [activeTicketId, setActiveTicketId] = useState(null);
 
   const [supportTickets, setSupportTickets] = useState(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('mads_support_tickets') : null;
+    const saved = localStorage.getItem('mads_support_tickets');
     if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch (e) {}
+      try { return JSON.parse(saved); } catch (e) {}
     }
-    return [];
+    return [
+      {
+        id: 'TCK-8921',
+        userId: 'USR-98210',
+        userEmail: 'madsruzza@gmail.com',
+        userName: 'Dilneth Madushanka',
+        subject: 'Diamond topup delay check for ORD-31699',
+        category: 'Order Issue',
+        orderId: 'ORD-31699',
+        status: 'OPEN',
+        priority: 'HIGH',
+        createdAt: new Date(Date.now() - 3600000).toISOString(),
+        updatedAt: new Date(Date.now() - 1800000).toISOString(),
+        messages: [
+          {
+            id: 'MSG-1',
+            sender: 'user',
+            senderName: 'Dilneth Madushanka',
+            text: 'Hi support team, I placed an order for 25 Diamonds. Can you verify status?',
+            timestamp: new Date(Date.now() - 3600000).toISOString()
+          },
+          {
+            id: 'MSG-2',
+            sender: 'admin',
+            senderName: 'MADS Support Team',
+            text: 'Hello Dilneth! We checked your order ORD-31699. Reference 46388090 is verified & active!',
+            timestamp: new Date(Date.now() - 1800000).toISOString()
+          }
+        ]
+      },
+      {
+        id: 'TCK-8915',
+        userId: 'USR-98205',
+        userEmail: 'kasun.gamer@gmail.com',
+        userName: 'Kasun SLAyer',
+        subject: 'eZ Cash Topup verification slip',
+        category: 'Wallet Deposit',
+        orderId: 'ORD-29104',
+        status: 'IN_PROGRESS',
+        priority: 'MEDIUM',
+        createdAt: new Date(Date.now() - 86400000).toISOString(),
+        updatedAt: new Date(Date.now() - 7200000).toISOString(),
+        messages: [
+          {
+            id: 'MSG-101',
+            sender: 'user',
+            senderName: 'Kasun SLAyer',
+            text: 'Uploaded my eZ Cash receipt screenshot. TRX ID: EZ-991823. Please verify my wallet credit.',
+            attachmentUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=400',
+            timestamp: new Date(Date.now() - 86400000).toISOString()
+          }
+        ]
+      }
+    ];
   });
 
   useEffect(() => {
-    if (activeTicketId) {
-      try { localStorage.setItem('mads_active_ticket_id', activeTicketId); } catch (e) {}
-    }
-  }, [activeTicketId]);
-
-  useEffect(() => {
-    try { localStorage.setItem('mads_support_tickets', JSON.stringify(supportTickets)); } catch (e) {}
+    localStorage.setItem('mads_support_tickets', JSON.stringify(supportTickets));
   }, [supportTickets]);
 
-  // Real-time bidirectional database sync for support tickets (connects customer ↔ admin in real time)
+  // Real-time Firestore sync for support tickets (connects admin ↔ customer)
   useEffect(() => {
+    if (!isAdminAuthenticated) return;
     const unsub = subscribeSupportTicketsFromFirestore((liveTickets) => {
       if (!Array.isArray(liveTickets) || liveTickets.length === 0) return;
       setSupportTickets(prev => {
         const map = new Map();
-        // 1. Seed with previous tickets
-        (prev || []).forEach(t => {
-          if (t && t.id) map.set(t.id, t);
+        (prev || []).forEach(t => { if (t?.id) map.set(t.id, t); });
+        liveTickets.forEach(t => {
+          if (t?.id) map.set(t.id, { ...map.get(t.id), ...t });
         });
-
-        // 2. Merge live tickets
-        liveTickets.forEach(remote => {
-          if (!remote || !remote.id) return;
-          const existing = map.get(remote.id);
-
-          const getMsgs = (tck) => {
-            if (!tck || !tck.messages) return [];
-            if (Array.isArray(tck.messages)) return tck.messages;
-            if (typeof tck.messages === 'object') return Object.values(tck.messages).filter(Boolean);
-            return [];
-          };
-
-          const existingMsgs = getMsgs(existing);
-          const remoteMsgs = getMsgs(remote);
-
-          // Deduplicate messages by id or timestamp+text
-          const msgMap = new Map();
-          existingMsgs.forEach(m => {
-            if (m?.id) msgMap.set(m.id, m);
-            else if (m?.text && m?.timestamp) msgMap.set(`${m.timestamp}_${m.text}`, m);
-          });
-          remoteMsgs.forEach(m => {
-            if (m?.id) msgMap.set(m.id, m);
-            else if (m?.text && m?.timestamp) msgMap.set(`${m.timestamp}_${m.text}`, m);
-          });
-
-          const mergedMsgs = Array.from(msgMap.values()).sort((a, b) => {
-            const ta = a.timestamp ? new Date(a.timestamp).getTime() : 0;
-            const tb = b.timestamp ? new Date(b.timestamp).getTime() : 0;
-            return ta - tb;
-          });
-
-          map.set(remote.id, {
-            ...existing,
-            ...remote,
-            messages: mergedMsgs.length > 0 ? mergedMsgs : (remoteMsgs.length > 0 ? remoteMsgs : existingMsgs)
-          });
-        });
-
-        return Array.from(map.values()).sort((a, b) => {
-          const ta = b.updatedAt || b.createdAt ? new Date(b.updatedAt || b.createdAt).getTime() : 0;
-          const tb = a.updatedAt || a.createdAt ? new Date(a.updatedAt || a.createdAt).getTime() : 0;
-          return ta - tb;
-        });
+        return Array.from(map.values());
       });
     });
-
     return () => {
       if (typeof unsub === 'function') unsub();
     };
-  }, []);
+  }, [isAdminAuthenticated]);
 
-  const createSupportTicket = ({ subject, category, message, orderId, attachmentUrl, userName, userEmail, userPhone }) => {
-    const ticketId = 'TCK-' + Math.floor(1000 + Math.random() * 9000);
-    const finalName = userName || userProfile?.name || 'Verified Gamer';
-    const finalEmail = userEmail || userProfile?.email || 'customer@madstopup.com';
-    const finalPhone = userPhone || userProfile?.phone || '';
-    const finalUid = userProfile?.uid || 'USR-' + Math.floor(10000 + Math.random() * 90000);
-
+  const createSupportTicket = ({ subject, category, message, orderId, attachmentUrl }) => {
     const newTicket = {
-      id: ticketId,
-      userId: finalUid,
-      userEmail: finalEmail,
-      userName: finalName,
-      phone: finalPhone,
-      userPhone: finalPhone,
+      id: 'TCK-' + Math.floor(1000 + Math.random() * 9000),
+      userId: userProfile?.uid || 'USR-' + Math.floor(10000 + Math.random() * 90000),
+      userEmail: userProfile?.email || 'customer@madstopup.com',
+      userName: userProfile?.name || 'Verified Gamer',
       subject: subject || 'General Customer Support',
       category: category || 'General Inquiry',
       orderId: orderId || null,
@@ -1463,130 +1381,68 @@ export const AppProvider = ({ children }) => {
         {
           id: 'MSG-' + Date.now(),
           sender: 'user',
-          senderName: finalName,
+          senderName: userProfile?.name || 'Verified Gamer',
           text: message,
           attachmentUrl: attachmentUrl || null,
           timestamp: new Date().toISOString()
         }
       ]
     };
-
-    // Keep track of this ticket on the current browser so guest or unauthenticated user always has access
-    try {
-      const myIds = JSON.parse(localStorage.getItem('mads_my_ticket_ids') || '[]');
-      if (!myIds.includes(ticketId)) {
-        myIds.push(ticketId);
-        localStorage.setItem('mads_my_ticket_ids', JSON.stringify(myIds));
-      }
-    } catch (e) {}
-
-    setSupportTickets(prev => [newTicket, ...(prev || []).filter(t => t.id !== ticketId)]);
-    setActiveTicketId(ticketId);
-
-    // Persist immediately to RTDB and Firestore
+    setSupportTickets(prev => [newTicket, ...prev]);
+    setActiveTicketId(newTicket.id);
+    // Persist to Firestore so admin sees ticket immediately
     saveSupportTicketToFirestore(newTicket);
     showToast('Support ticket submitted! Our 24/7 team will respond shortly.');
     return newTicket;
   };
 
   const sendTicketMessage = (ticketId, text, senderRole = 'user', attachmentUrl = null) => {
-    if (!ticketId || (!text?.trim() && !attachmentUrl)) return;
-    
-    let updatedTicket = null;
-
-    setSupportTickets(prev => {
-      return (prev || []).map(tck => {
-        if (tck.id === ticketId) {
-          const currentMsgs = Array.isArray(tck.messages)
-            ? tck.messages
-            : Object.values(tck.messages || {}).filter(Boolean);
-
-          const newMessage = {
-            id: 'MSG-' + Date.now(),
-            sender: senderRole,
-            senderName: senderRole === 'admin' ? 'MADS Support Team' : (tck.userName || 'Customer'),
-            text: text?.trim() || '',
-            attachmentUrl: attachmentUrl || null,
-            timestamp: new Date().toISOString()
-          };
-
-          const newStatus = senderRole === 'admin'
-            ? (tck.status === 'OPEN' ? 'IN_PROGRESS' : tck.status)
-            : (tck.status === 'RESOLVED' || tck.status === 'CLOSED' ? 'OPEN' : tck.status);
-
-          updatedTicket = {
-            ...tck,
-            status: newStatus,
-            updatedAt: new Date().toISOString(),
-            messages: [...currentMsgs, newMessage]
-          };
-
-          return updatedTicket;
-        }
-        return tck;
-      });
-    });
-
-    if (updatedTicket) {
-      saveSupportTicketToFirestore(updatedTicket);
-    }
+    setSupportTickets(prev => prev.map(tck => {
+      if (tck.id === ticketId) {
+        const newMessage = {
+          id: 'MSG-' + Date.now(),
+          sender: senderRole,
+          senderName: senderRole === 'admin' ? 'MADS Support Team' : (tck.userName || 'Customer'),
+          text,
+          attachmentUrl: attachmentUrl || null,
+          timestamp: new Date().toISOString()
+        };
+        const updated = {
+          ...tck,
+          status: senderRole === 'admin' ? (tck.status === 'OPEN' ? 'IN_PROGRESS' : tck.status) : 'OPEN',
+          updatedAt: new Date().toISOString(),
+          messages: [...tck.messages, newMessage]
+        };
+        // Persist full updated ticket to Firestore
+        saveSupportTicketToFirestore(updated);
+        return updated;
+      }
+      return tck;
+    }));
   };
 
   const updateTicketStatus = (ticketId, newStatus) => {
-    if (!ticketId || !newStatus) return;
-    let updatedTicket = null;
-    const nowIso = new Date().toISOString();
-
-    setSupportTickets(prev => (prev || []).map(tck => {
+    setSupportTickets(prev => prev.map(tck => {
       if (tck.id === ticketId) {
-        updatedTicket = { ...tck, status: newStatus, updatedAt: nowIso };
-        return updatedTicket;
+        const updated = { ...tck, status: newStatus, updatedAt: new Date().toISOString() };
+        updateSupportTicketInFirestore(ticketId, { status: newStatus, updatedAt: updated.updatedAt });
+        return updated;
       }
       return tck;
     }));
-
-    updateSupportTicketInFirestore(ticketId, { status: newStatus, updatedAt: nowIso });
-    showToast(`Ticket ${ticketId} status updated to ${newStatus}`);
+    showToast(`Ticket ${ticketId} status set to ${newStatus}`);
   };
 
   const updateTicketPriority = (ticketId, newPriority) => {
-    if (!ticketId || !newPriority) return;
-    let updatedTicket = null;
-    const nowIso = new Date().toISOString();
-
-    setSupportTickets(prev => (prev || []).map(tck => {
+    setSupportTickets(prev => prev.map(tck => {
       if (tck.id === ticketId) {
-        updatedTicket = { ...tck, priority: newPriority, updatedAt: nowIso };
-        return updatedTicket;
+        const updated = { ...tck, priority: newPriority, updatedAt: new Date().toISOString() };
+        updateSupportTicketInFirestore(ticketId, { priority: newPriority, updatedAt: updated.updatedAt });
+        return updated;
       }
       return tck;
     }));
-
-    updateSupportTicketInFirestore(ticketId, { priority: newPriority, updatedAt: nowIso });
     showToast(`Ticket ${ticketId} priority set to ${newPriority}`);
-  };
-
-  const refreshSupportTickets = async () => {
-    try {
-      const res = await fetch('https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/supportTickets.json');
-      if (res.ok) {
-        const data = await res.json();
-        if (data && typeof data === 'object') {
-          const tickets = Object.entries(data)
-            .map(([k, v]) => normalizeTicket(v, k))
-            .filter(Boolean);
-          if (tickets.length > 0) {
-            setSupportTickets(tickets.sort((a, b) => {
-              const ta = b.updatedAt || b.createdAt ? new Date(b.updatedAt || b.createdAt).getTime() : 0;
-              const tb = a.updatedAt || a.createdAt ? new Date(a.updatedAt || a.createdAt).getTime() : 0;
-              return ta - tb;
-            }));
-            return true;
-          }
-        }
-      }
-    } catch (e) {}
-    return false;
   };
 
   // Reseller Applications State & Handlers
@@ -1736,7 +1592,7 @@ export const AppProvider = ({ children }) => {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 45000);
 
-            const sessionToken = getAdminToken() || '';
+            const sessionToken = localStorage.getItem('mads_admin_session_token') || '';
             const res = await fetch(endpoint, {
               method: 'POST',
               headers: {
@@ -1919,8 +1775,6 @@ export const AppProvider = ({ children }) => {
       setTickerNotice,
       creditUserWallet,
       usersList,
-      refreshUsersList,
-      isUsersRefreshing,
       verifyUserAccount,
       toggleBlockUser,
       updateUserBalance,
@@ -1934,7 +1788,6 @@ export const AppProvider = ({ children }) => {
       activeTicketId,
       setActiveTicketId,
       supportTickets,
-      refreshSupportTickets,
       createSupportTicket,
       sendTicketMessage,
       updateTicketStatus,
