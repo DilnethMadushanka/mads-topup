@@ -192,7 +192,86 @@ function _adminHash(s) {
 }
 const ADMIN_VALID_EMAIL_HASH = '6c24b307';
 const ADMIN_VALID_PASSWORD_HASH = '-4d18553';
-const ADMIN_VALID_CODE_HASHES = ['-77f0b15c', '5881e801'];
+// RFC 6238 TOTP Authenticator for Admin (Google Authenticator, Microsoft Authenticator, Authy)
+const ADMIN_TOTP_SECRET = process.env.ADMIN_TOTP_SECRET || 'YHYWPRT263LERQ67JHR4PI3FUWCMR473';
+
+function base32Decode(base32) {
+  const clean = String(base32 || '').toUpperCase().replace(/[\s=-]/g, '');
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  let bits = 0;
+  let value = 0;
+  const bytes = [];
+  for (let i = 0; i < clean.length; i++) {
+    const val = alphabet.indexOf(clean[i]);
+    if (val === -1) continue;
+    value = (value << 5) | val;
+    bits += 5;
+    if (bits >= 8) {
+      bytes.push((value >>> (bits - 8)) & 255);
+      bits -= 8;
+    }
+  }
+  return Buffer.from(bytes);
+}
+
+function generateTOTP(secret, timeOffsetSteps = 0, timeStepSeconds = 30) {
+  const key = typeof secret === 'string' ? base32Decode(secret) : secret;
+  const epoch = Math.floor(Date.now() / 1000);
+  const counter = Math.floor(epoch / timeStepSeconds) + timeOffsetSteps;
+
+  const buf = Buffer.alloc(8);
+  buf.writeBigUInt64BE(BigInt(counter));
+
+  const hmac = crypto.createHmac('sha1', key);
+  hmac.update(buf);
+  const digest = hmac.digest();
+
+  const offset = digest[digest.length - 1] & 0x0f;
+  const codeInt = (
+    ((digest[offset] & 0x7f) << 24) |
+    ((digest[offset + 1] & 0xff) << 16) |
+    ((digest[offset + 2] & 0xff) << 8) |
+    (digest[offset + 3] & 0xff)
+  ) % 1000000;
+
+  return {
+    code: codeInt.toString().padStart(6, '0'),
+    counter
+  };
+}
+
+// Track consumed TOTP counters to strictly enforce ONE-TIME TOKEN CONSUMPTION (anti-replay)
+const consumedTotpSteps = new Map(); // counter -> timestamp (ms)
+
+function pruneConsumedTotpSteps() {
+  const cutoff = Date.now() - 180000; // retain for 3 minutes
+  for (const [step, ts] of consumedTotpSteps.entries()) {
+    if (ts < cutoff) consumedTotpSteps.delete(step);
+  }
+}
+
+function verifyAdminTOTP(code) {
+  pruneConsumedTotpSteps();
+  const cleanCode = String(code || '').trim().replace(/\D/g, '');
+  if (cleanCode.length !== 6) {
+    return { valid: false, reason: 'INVALID_FORMAT' };
+  }
+
+  // Tolerance window: -1, 0, +1 (±30s drift compensation)
+  for (let step = -1; step <= 1; step++) {
+    const { code: expectedCode, counter } = generateTOTP(ADMIN_TOTP_SECRET, step);
+    if (expectedCode === cleanCode) {
+      if (consumedTotpSteps.has(counter)) {
+        return { valid: false, reason: 'ALREADY_CONSUMED' };
+      }
+      // Consume the step so the same code cannot be replayed
+      consumedTotpSteps.set(counter, Date.now());
+      return { valid: true, counter };
+    }
+  }
+
+  return { valid: false, reason: 'MISMATCH' };
+}
 
 const adminSessions = new Map(); // token -> expiresAt (ms)
 const ADMIN_SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
@@ -218,14 +297,21 @@ function requireAdminSession(req, res, next) {
 app.post('/api/admin/login', rateLimiter(8, 300000), (req, res) => {
   const cleanEmail = String(req.body?.email || '').trim().toLowerCase().replace(/['"`;=\-]/g, '');
   const cleanPassword = String(req.body?.password || '').trim();
-  const cleanCode = String(req.body?.securityCode || '').trim().toUpperCase();
+  const cleanCode = String(req.body?.securityCode || '').trim();
 
   const validEmail = _adminHash(cleanEmail) === ADMIN_VALID_EMAIL_HASH;
   const validPassword = _adminHash(cleanPassword) === ADMIN_VALID_PASSWORD_HASH;
-  const validCode = ADMIN_VALID_CODE_HASHES.includes(_adminHash(cleanCode));
 
-  if (!validEmail || !validPassword || !validCode) {
-    return res.status(401).json({ error: 'Invalid admin credentials.' });
+  if (!validEmail || !validPassword) {
+    return res.status(401).json({ error: 'Invalid admin email or password.' });
+  }
+
+  const totpResult = verifyAdminTOTP(cleanCode);
+  if (!totpResult.valid) {
+    if (totpResult.reason === 'ALREADY_CONSUMED') {
+      return res.status(401).json({ error: 'This 2FA code was already used. Please wait for the next 30-second code from your Authenticator app.' });
+    }
+    return res.status(401).json({ error: 'Invalid 2FA Authenticator code. Check your Google Authenticator app.' });
   }
 
   const token = crypto.randomBytes(32).toString('hex');

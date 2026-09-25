@@ -707,8 +707,30 @@ export const AdminDashboard = () => {
               </div>
             </div>
             <div>
-              <label className="block font-extrabold mb-1.5 uppercase tracking-wider text-[10px] font-mono" style={mutedStyle}>Admin 2FA Security Passcode</label>
-              <input type="password" required autoComplete="off" value={adminAuthSecurityCode} onChange={(e) => setAdminAuthSecurityCode(e.target.value)} placeholder="Enter 6-Digit Secret Passcode" className={fieldCls} style={{ ...fieldStyle, color: '#fbbf24' }} />
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="font-extrabold uppercase tracking-wider text-[10px] font-mono" style={mutedStyle}>Admin 2FA Authenticator Code (TOTP)</label>
+                <span className="text-[9px] font-mono text-amber-400">Google / MS Authenticator</span>
+              </div>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                required
+                autoComplete="one-time-code"
+                value={adminAuthSecurityCode}
+                onChange={(e) => setAdminAuthSecurityCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="000 000"
+                className={fieldCls}
+                style={{
+                  ...fieldStyle,
+                  color: '#fbbf24',
+                  textAlign: 'center',
+                  letterSpacing: '0.35em',
+                  fontSize: '1.1rem',
+                  fontWeight: '700'
+                }}
+              />
             </div>
             <button type="submit" disabled={isLoginLoading} className="w-full py-3.5 bg-gradient-to-r from-[#cc040a] to-[#ff2a30] hover:from-[#b00308] hover:to-[#e02026] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-red-600/30 cursor-pointer mt-2 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
               {isLoginLoading
