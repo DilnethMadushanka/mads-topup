@@ -217,26 +217,38 @@ function rateLimiter(maxRequests = 30, windowMs = 60000) {
 const R2_UPLOAD_MAX_BYTES = 5 * 1024 * 1024; // 5MB — matches the client's own limit
 const R2_ALLOWED_FOLDERS = new Set(['receipts', 'support-attachments', 'popup_ads']);
 
+const r2KeyId = process.env.R2_ACCESS_KEY_ID || process.env.VITE_R2_ACCESS_KEY_ID;
+const r2Secret = process.env.R2_SECRET_ACCESS_KEY || process.env.VITE_R2_SECRET_ACCESS_KEY;
+const r2Endpoint = process.env.R2_ENDPOINT || process.env.VITE_R2_ENDPOINT;
+
 let r2Client = null;
-if (process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY && process.env.R2_ENDPOINT) {
-  r2Client = new S3Client({
-    region: 'auto',
-    endpoint: process.env.R2_ENDPOINT,
-    credentials: {
-      accessKeyId: process.env.R2_ACCESS_KEY_ID,
-      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY
-    }
-  });
+if (r2KeyId && r2Secret && r2Endpoint) {
+  try {
+    r2Client = new S3Client({
+      region: 'auto',
+      endpoint: r2Endpoint,
+      credentials: {
+        accessKeyId: r2KeyId,
+        secretAccessKey: r2Secret
+      }
+    });
+    console.log('[R2 Storage] Cloudflare R2 S3Client initialized successfully.');
+  } catch (e) {
+    console.warn('[R2 Storage Init Warning]:', e.message);
+  }
 } else {
-  console.warn('[R2 Storage] R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY / R2_ENDPOINT not fully configured — file uploads will fail until set.');
+  console.warn('[R2 Storage] R2 credentials not set — falling back to local server disk storage (/uploads).');
 }
 
-app.post('/api/upload-file', rateLimiter(20, 60000), express.json({ limit: '8mb' }), async (req, res) => {
-  try {
-    if (!r2Client) {
-      return res.status(503).json({ success: false, error: 'File storage is not configured on the server.' });
-    }
+// Ensure local uploads directory exists
+const uploadsDir = path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  try { fs.mkdirSync(uploadsDir, { recursive: true }); } catch (e) {}
+}
+app.use('/uploads', express.static(uploadsDir));
 
+app.post('/api/upload-file', rateLimiter(30, 60000), express.json({ limit: '8mb' }), async (req, res) => {
+  try {
     const { fileName, fileType, fileDataBase64, folder } = req.body || {};
     if (!fileDataBase64 || typeof fileDataBase64 !== 'string') {
       return res.status(400).json({ success: false, error: 'Missing file data.' });
@@ -256,20 +268,39 @@ app.post('/api/upload-file', rateLimiter(20, 60000), express.json({ limit: '8mb'
     const key = `${cleanFolder}/${Date.now()}_${safeName}`;
     const bucketName = process.env.VITE_R2_BUCKET_NAME || process.env.R2_BUCKET_NAME || 'mads-topup';
 
-    await r2Client.send(new PutObjectCommand({
-      Bucket: bucketName,
-      Key: key,
-      Body: buffer,
-      ContentType: fileType || 'application/octet-stream'
-    }));
+    if (r2Client) {
+      try {
+        await r2Client.send(new PutObjectCommand({
+          Bucket: bucketName,
+          Key: key,
+          Body: buffer,
+          ContentType: fileType || 'application/octet-stream'
+        }));
 
-    const bucketUrl = (process.env.VITE_R2_BUCKET_URL || process.env.R2_BUCKET_URL || `${process.env.R2_ENDPOINT}/${bucketName}`).replace(/\/$/, '');
-    const url = `${bucketUrl}/${key}`;
+        const bucketUrl = (process.env.VITE_R2_BUCKET_URL || process.env.R2_BUCKET_URL || `${r2Endpoint}/${bucketName}`).replace(/\/$/, '');
+        const url = `${bucketUrl}/${key}`;
 
-    console.log(`[R2 Upload Success] key=${key} size=${buffer.length}B bucket=${bucketName}`);
-    res.json({ success: true, key, url, bucket: bucketName, size: buffer.length });
+        console.log(`[R2 Upload Success] key=${key} size=${buffer.length}B bucket=${bucketName}`);
+        return res.json({ success: true, key, url, bucket: bucketName, size: buffer.length, storage: 'r2' });
+      } catch (r2Err) {
+        console.warn('[R2 Upload Failed, falling back to local disk]:', r2Err.message);
+      }
+    }
+
+    // Fallback: Store on server's local disk
+    const targetFolder = path.join(uploadsDir, cleanFolder);
+    if (!fs.existsSync(targetFolder)) {
+      try { fs.mkdirSync(targetFolder, { recursive: true }); } catch (e) {}
+    }
+    const localFileName = `${Date.now()}_${safeName}`;
+    const localPath = path.join(targetFolder, localFileName);
+    fs.writeFileSync(localPath, buffer);
+
+    const localUrl = `/uploads/${cleanFolder}/${localFileName}`;
+    console.log(`[Local Upload Success] path=${localUrl} size=${buffer.length}B`);
+    return res.json({ success: true, key, url: localUrl, storage: 'local', size: buffer.length });
   } catch (err) {
-    console.error('[R2 Upload Error]:', err.message);
+    console.error('[Upload Error]:', err.message);
     res.status(500).json({ success: false, error: 'Upload failed. Please try again.' });
   }
 });
