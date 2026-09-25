@@ -1279,98 +1279,108 @@ export const AppProvider = ({ children }) => {
   // CUSTOMER SUPPORT TICKET SYSTEM STATE & METHODS
   // -------------------------------------------------------------
   const [isSupportOpen, setIsSupportOpen] = useState(false);
-  const [activeTicketId, setActiveTicketId] = useState(null);
+  const [activeTicketId, setActiveTicketId] = useState(() => {
+    return (typeof window !== 'undefined' && localStorage.getItem('mads_active_ticket_id')) || null;
+  });
 
   const [supportTickets, setSupportTickets] = useState(() => {
-    const saved = localStorage.getItem('mads_support_tickets');
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('mads_support_tickets') : null;
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
     }
-    return [
-      {
-        id: 'TCK-8921',
-        userId: 'USR-98210',
-        userEmail: 'madsruzza@gmail.com',
-        userName: 'Dilneth Madushanka',
-        subject: 'Diamond topup delay check for ORD-31699',
-        category: 'Order Issue',
-        orderId: 'ORD-31699',
-        status: 'OPEN',
-        priority: 'HIGH',
-        createdAt: new Date(Date.now() - 3600000).toISOString(),
-        updatedAt: new Date(Date.now() - 1800000).toISOString(),
-        messages: [
-          {
-            id: 'MSG-1',
-            sender: 'user',
-            senderName: 'Dilneth Madushanka',
-            text: 'Hi support team, I placed an order for 25 Diamonds. Can you verify status?',
-            timestamp: new Date(Date.now() - 3600000).toISOString()
-          },
-          {
-            id: 'MSG-2',
-            sender: 'admin',
-            senderName: 'MADS Support Team',
-            text: 'Hello Dilneth! We checked your order ORD-31699. Reference 46388090 is verified & active!',
-            timestamp: new Date(Date.now() - 1800000).toISOString()
-          }
-        ]
-      },
-      {
-        id: 'TCK-8915',
-        userId: 'USR-98205',
-        userEmail: 'kasun.gamer@gmail.com',
-        userName: 'Kasun SLAyer',
-        subject: 'eZ Cash Topup verification slip',
-        category: 'Wallet Deposit',
-        orderId: 'ORD-29104',
-        status: 'IN_PROGRESS',
-        priority: 'MEDIUM',
-        createdAt: new Date(Date.now() - 86400000).toISOString(),
-        updatedAt: new Date(Date.now() - 7200000).toISOString(),
-        messages: [
-          {
-            id: 'MSG-101',
-            sender: 'user',
-            senderName: 'Kasun SLAyer',
-            text: 'Uploaded my eZ Cash receipt screenshot. TRX ID: EZ-991823. Please verify my wallet credit.',
-            attachmentUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=400',
-            timestamp: new Date(Date.now() - 86400000).toISOString()
-          }
-        ]
-      }
-    ];
+    return [];
   });
 
   useEffect(() => {
-    localStorage.setItem('mads_support_tickets', JSON.stringify(supportTickets));
+    if (activeTicketId) {
+      try { localStorage.setItem('mads_active_ticket_id', activeTicketId); } catch (e) {}
+    }
+  }, [activeTicketId]);
+
+  useEffect(() => {
+    try { localStorage.setItem('mads_support_tickets', JSON.stringify(supportTickets)); } catch (e) {}
   }, [supportTickets]);
 
-  // Real-time Firestore sync for support tickets (connects admin ↔ customer)
+  // Real-time bidirectional database sync for support tickets (connects customer ↔ admin in real time)
   useEffect(() => {
-    if (!isAdminAuthenticated) return;
     const unsub = subscribeSupportTicketsFromFirestore((liveTickets) => {
       if (!Array.isArray(liveTickets) || liveTickets.length === 0) return;
       setSupportTickets(prev => {
         const map = new Map();
-        (prev || []).forEach(t => { if (t?.id) map.set(t.id, t); });
-        liveTickets.forEach(t => {
-          if (t?.id) map.set(t.id, { ...map.get(t.id), ...t });
+        // 1. Seed with previous tickets
+        (prev || []).forEach(t => {
+          if (t && t.id) map.set(t.id, t);
         });
-        return Array.from(map.values());
+
+        // 2. Merge live tickets
+        liveTickets.forEach(remote => {
+          if (!remote || !remote.id) return;
+          const existing = map.get(remote.id);
+
+          const getMsgs = (tck) => {
+            if (!tck || !tck.messages) return [];
+            if (Array.isArray(tck.messages)) return tck.messages;
+            if (typeof tck.messages === 'object') return Object.values(tck.messages).filter(Boolean);
+            return [];
+          };
+
+          const existingMsgs = getMsgs(existing);
+          const remoteMsgs = getMsgs(remote);
+
+          // Deduplicate messages by id or timestamp+text
+          const msgMap = new Map();
+          existingMsgs.forEach(m => {
+            if (m?.id) msgMap.set(m.id, m);
+            else if (m?.text && m?.timestamp) msgMap.set(`${m.timestamp}_${m.text}`, m);
+          });
+          remoteMsgs.forEach(m => {
+            if (m?.id) msgMap.set(m.id, m);
+            else if (m?.text && m?.timestamp) msgMap.set(`${m.timestamp}_${m.text}`, m);
+          });
+
+          const mergedMsgs = Array.from(msgMap.values()).sort((a, b) => {
+            const ta = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+            const tb = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+            return ta - tb;
+          });
+
+          map.set(remote.id, {
+            ...existing,
+            ...remote,
+            messages: mergedMsgs.length > 0 ? mergedMsgs : (remoteMsgs.length > 0 ? remoteMsgs : existingMsgs)
+          });
+        });
+
+        return Array.from(map.values()).sort((a, b) => {
+          const ta = b.updatedAt || b.createdAt ? new Date(b.updatedAt || b.createdAt).getTime() : 0;
+          const tb = a.updatedAt || a.createdAt ? new Date(a.updatedAt || a.createdAt).getTime() : 0;
+          return ta - tb;
+        });
       });
     });
+
     return () => {
       if (typeof unsub === 'function') unsub();
     };
-  }, [isAdminAuthenticated]);
+  }, []);
 
-  const createSupportTicket = ({ subject, category, message, orderId, attachmentUrl }) => {
+  const createSupportTicket = ({ subject, category, message, orderId, attachmentUrl, userName, userEmail, userPhone }) => {
+    const ticketId = 'TCK-' + Math.floor(1000 + Math.random() * 9000);
+    const finalName = userName || userProfile?.name || 'Verified Gamer';
+    const finalEmail = userEmail || userProfile?.email || 'customer@madstopup.com';
+    const finalPhone = userPhone || userProfile?.phone || '';
+    const finalUid = userProfile?.uid || 'USR-' + Math.floor(10000 + Math.random() * 90000);
+
     const newTicket = {
-      id: 'TCK-' + Math.floor(1000 + Math.random() * 9000),
-      userId: userProfile?.uid || 'USR-' + Math.floor(10000 + Math.random() * 90000),
-      userEmail: userProfile?.email || 'customer@madstopup.com',
-      userName: userProfile?.name || 'Verified Gamer',
+      id: ticketId,
+      userId: finalUid,
+      userEmail: finalEmail,
+      userName: finalName,
+      phone: finalPhone,
+      userPhone: finalPhone,
       subject: subject || 'General Customer Support',
       category: category || 'General Inquiry',
       orderId: orderId || null,
@@ -1382,67 +1392,106 @@ export const AppProvider = ({ children }) => {
         {
           id: 'MSG-' + Date.now(),
           sender: 'user',
-          senderName: userProfile?.name || 'Verified Gamer',
+          senderName: finalName,
           text: message,
           attachmentUrl: attachmentUrl || null,
           timestamp: new Date().toISOString()
         }
       ]
     };
-    setSupportTickets(prev => [newTicket, ...prev]);
-    setActiveTicketId(newTicket.id);
-    // Persist to Firestore so admin sees ticket immediately
+
+    // Keep track of this ticket on the current browser so guest or unauthenticated user always has access
+    try {
+      const myIds = JSON.parse(localStorage.getItem('mads_my_ticket_ids') || '[]');
+      if (!myIds.includes(ticketId)) {
+        myIds.push(ticketId);
+        localStorage.setItem('mads_my_ticket_ids', JSON.stringify(myIds));
+      }
+    } catch (e) {}
+
+    setSupportTickets(prev => [newTicket, ...(prev || []).filter(t => t.id !== ticketId)]);
+    setActiveTicketId(ticketId);
+
+    // Persist immediately to RTDB and Firestore
     saveSupportTicketToFirestore(newTicket);
     showToast('Support ticket submitted! Our 24/7 team will respond shortly.');
     return newTicket;
   };
 
   const sendTicketMessage = (ticketId, text, senderRole = 'user', attachmentUrl = null) => {
-    setSupportTickets(prev => prev.map(tck => {
-      if (tck.id === ticketId) {
-        const newMessage = {
-          id: 'MSG-' + Date.now(),
-          sender: senderRole,
-          senderName: senderRole === 'admin' ? 'MADS Support Team' : (tck.userName || 'Customer'),
-          text,
-          attachmentUrl: attachmentUrl || null,
-          timestamp: new Date().toISOString()
-        };
-        const updated = {
-          ...tck,
-          status: senderRole === 'admin' ? (tck.status === 'OPEN' ? 'IN_PROGRESS' : tck.status) : 'OPEN',
-          updatedAt: new Date().toISOString(),
-          messages: [...tck.messages, newMessage]
-        };
-        // Persist full updated ticket to Firestore
-        saveSupportTicketToFirestore(updated);
-        return updated;
-      }
-      return tck;
-    }));
+    if (!ticketId || (!text?.trim() && !attachmentUrl)) return;
+    
+    let updatedTicket = null;
+
+    setSupportTickets(prev => {
+      return (prev || []).map(tck => {
+        if (tck.id === ticketId) {
+          const currentMsgs = Array.isArray(tck.messages)
+            ? tck.messages
+            : Object.values(tck.messages || {}).filter(Boolean);
+
+          const newMessage = {
+            id: 'MSG-' + Date.now(),
+            sender: senderRole,
+            senderName: senderRole === 'admin' ? 'MADS Support Team' : (tck.userName || 'Customer'),
+            text: text?.trim() || '',
+            attachmentUrl: attachmentUrl || null,
+            timestamp: new Date().toISOString()
+          };
+
+          const newStatus = senderRole === 'admin'
+            ? (tck.status === 'OPEN' ? 'IN_PROGRESS' : tck.status)
+            : (tck.status === 'RESOLVED' || tck.status === 'CLOSED' ? 'OPEN' : tck.status);
+
+          updatedTicket = {
+            ...tck,
+            status: newStatus,
+            updatedAt: new Date().toISOString(),
+            messages: [...currentMsgs, newMessage]
+          };
+
+          return updatedTicket;
+        }
+        return tck;
+      });
+    });
+
+    if (updatedTicket) {
+      saveSupportTicketToFirestore(updatedTicket);
+    }
   };
 
   const updateTicketStatus = (ticketId, newStatus) => {
-    setSupportTickets(prev => prev.map(tck => {
+    if (!ticketId || !newStatus) return;
+    let updatedTicket = null;
+    const nowIso = new Date().toISOString();
+
+    setSupportTickets(prev => (prev || []).map(tck => {
       if (tck.id === ticketId) {
-        const updated = { ...tck, status: newStatus, updatedAt: new Date().toISOString() };
-        updateSupportTicketInFirestore(ticketId, { status: newStatus, updatedAt: updated.updatedAt });
-        return updated;
+        updatedTicket = { ...tck, status: newStatus, updatedAt: nowIso };
+        return updatedTicket;
       }
       return tck;
     }));
-    showToast(`Ticket ${ticketId} status set to ${newStatus}`);
+
+    updateSupportTicketInFirestore(ticketId, { status: newStatus, updatedAt: nowIso });
+    showToast(`Ticket ${ticketId} status updated to ${newStatus}`);
   };
 
   const updateTicketPriority = (ticketId, newPriority) => {
-    setSupportTickets(prev => prev.map(tck => {
+    if (!ticketId || !newPriority) return;
+    let updatedTicket = null;
+    const nowIso = new Date().toISOString();
+
+    setSupportTickets(prev => (prev || []).map(tck => {
       if (tck.id === ticketId) {
-        const updated = { ...tck, priority: newPriority, updatedAt: new Date().toISOString() };
-        updateSupportTicketInFirestore(ticketId, { priority: newPriority, updatedAt: updated.updatedAt });
-        return updated;
+        updatedTicket = { ...tck, priority: newPriority, updatedAt: nowIso };
+        return updatedTicket;
       }
       return tck;
     }));
+
+    updateSupportTicketInFirestore(ticketId, { priority: newPriority, updatedAt: nowIso });
     showToast(`Ticket ${ticketId} priority set to ${newPriority}`);
   };
 

@@ -381,7 +381,7 @@ export const AdminDashboard = () => {
 
   const [supportSearch, setSupportSearch] = useState('');
   const [supportStatusFilter, setSupportStatusFilter] = useState('ALL');
-  const [selectedTicketInspect, setSelectedTicketInspect] = useState(null);
+  const [selectedTicketInspectId, setSelectedTicketInspectId] = useState(null);
   const [adminReplyText, setAdminReplyText] = useState('');
 
   const [orderSearch, setOrderSearch] = useState('');
@@ -828,7 +828,10 @@ export const AdminDashboard = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const activeInspectTicket = selectedTicketInspect || filteredSupportTickets[0] || null;
+  const activeInspectTicket = (selectedTicketInspectId && safeTickets.find(t => t && t.id === selectedTicketInspectId)) ||
+    (selectedTicketInspectId && filteredSupportTickets.find(t => t && t.id === selectedTicketInspectId)) ||
+    filteredSupportTickets[0] ||
+    null;
 
   const filteredEzcashLogs = (ezcashLogs || []).filter(item => {
     if (!item) return false;
@@ -1765,7 +1768,7 @@ export const AdminDashboard = () => {
                   ) : filteredSupportTickets.map(tck => {
                     const isSelected = activeInspectTicket?.id === tck.id;
                     return (
-                      <div key={tck.id} onClick={() => setSelectedTicketInspect(tck)} className={`p-4 rounded-2xl border transition-all cursor-pointer space-y-2.5 ${isSelected ? 'ring-1 ring-red-500/50' : ''}`} style={isSelected ? { background: 'var(--adm-surface-hover)', borderColor: '#f4370680' } : cardStyle}>
+                      <div key={tck.id} onClick={() => setSelectedTicketInspectId(tck.id)} className={`p-4 rounded-2xl border transition-all cursor-pointer space-y-2.5 ${isSelected ? 'ring-1 ring-red-500/50' : ''}`} style={isSelected ? { background: 'var(--adm-surface-hover)', borderColor: '#f4370680' } : cardStyle}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <span className="font-mono text-xs font-bold text-red-400">{tck.id}</span>
@@ -1821,7 +1824,11 @@ export const AdminDashboard = () => {
                       )}
 
                       <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
-                        {activeInspectTicket.messages.map(msg => {
+                        {((Array.isArray(activeInspectTicket.messages) ? activeInspectTicket.messages : Object.values(activeInspectTicket.messages || {})).filter(Boolean)).sort((a, b) => {
+                          const ta = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+                          const tb = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+                          return ta - tb;
+                        }).map(msg => {
                           const isAdmin = msg.sender === 'admin';
                           return (
                             <div key={msg.id} className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}>

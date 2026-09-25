@@ -1895,26 +1895,104 @@ export const subscribePopupAdConfigFromFirestore = (callback) => {
    ================================================================ */
 
 /**
+ * Remove undefined values and functions before sending to Firebase/Firestore
+ */
+const sanitizeTicketData = (data) => {
+  if (!data || typeof data !== 'object') return data;
+  const clean = Array.isArray(data) ? [] : {};
+  for (const [k, v] of Object.entries(data)) {
+    if (v === undefined) {
+      clean[k] = null;
+    } else if (v !== null && typeof v === 'object') {
+      clean[k] = sanitizeTicketData(v);
+    } else {
+      clean[k] = v;
+    }
+  }
+  return clean;
+};
+
+/**
+ * Normalize ticket object ensuring 'id' and 'messages' array are always present
+ */
+export const normalizeTicket = (rawTicket, fallbackId = null) => {
+  if (!rawTicket || typeof rawTicket !== 'object') return null;
+  const id = rawTicket.id || fallbackId || ('TCK-' + Math.floor(1000 + Math.random() * 9000));
+  
+  let msgs = rawTicket.messages;
+  if (!Array.isArray(msgs)) {
+    msgs = msgs && typeof msgs === 'object' ? Object.values(msgs).filter(Boolean) : [];
+  }
+
+  // Ensure each message in msgs has an id and timestamp
+  const safeMsgs = msgs.map((m, idx) => {
+    if (!m || typeof m !== 'object') return null;
+    return {
+      id: m.id || `MSG-${idx}-${Date.now()}`,
+      sender: m.sender || 'user',
+      senderName: m.senderName || (m.sender === 'admin' ? 'MADS Support Team' : 'Customer'),
+      text: m.text || '',
+      attachmentUrl: m.attachmentUrl || null,
+      timestamp: m.timestamp || new Date().toISOString()
+    };
+  }).filter(Boolean);
+
+  return {
+    ...rawTicket,
+    id,
+    status: rawTicket.status || 'OPEN',
+    priority: rawTicket.priority || 'MEDIUM',
+    category: rawTicket.category || 'General Inquiry',
+    subject: rawTicket.subject || 'Customer Support Request',
+    userName: rawTicket.userName || 'Customer',
+    userEmail: rawTicket.userEmail || rawTicket.email || '',
+    userId: rawTicket.userId || rawTicket.uid || '',
+    phone: rawTicket.phone || rawTicket.userPhone || '',
+    userPhone: rawTicket.userPhone || rawTicket.phone || '',
+    createdAt: rawTicket.createdAt || new Date().toISOString(),
+    updatedAt: rawTicket.updatedAt || new Date().toISOString(),
+    messages: safeMsgs
+  };
+};
+
+/**
  * Save or update a full support ticket document in both RTDB and Firestore.
  * ticketId is used as the document / RTDB node key.
  */
 export const saveSupportTicketToFirestore = async (ticket) => {
   if (!ticket || !ticket.id) return false;
   const key = String(ticket.id).replace(/[.#$[\]]/g, '_');
+  const cleanTicket = sanitizeTicketData(normalizeTicket(ticket, key));
 
+  // 1. Realtime Database SDK
   if (rtdb) {
     try {
       const tRef = dbRef(rtdb, `supportTickets/${key}`);
-      await rtdbSet(tRef, ticket);
-    } catch (e) { console.warn('[firestoreService] RTDB ticket save note:', e); }
+      await rtdbSet(tRef, cleanTicket);
+    } catch (e) {
+      console.warn('[firestoreService] RTDB ticket save note:', e);
+    }
   }
 
+  // 2. Guaranteed Direct RTDB REST PUT (runs even if WebSocket stalls)
+  try {
+    fetch(`https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/supportTickets/${key}.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cleanTicket)
+    }).catch(() => {});
+  } catch (e) {}
+
+  // 3. Firestore SDK
   if (db) {
     try {
       const tDocRef = doc(db, 'supportTickets', key);
-      await setDoc(tDocRef, ticket, { merge: true });
-    } catch (e) { console.warn('[firestoreService] Firestore ticket save note:', e); }
+      await setDoc(tDocRef, cleanTicket, { merge: true });
+    } catch (e) {
+      console.warn('[firestoreService] Firestore ticket save note:', e);
+    }
   }
+
   return true;
 };
 
@@ -1924,64 +2002,109 @@ export const saveSupportTicketToFirestore = async (ticket) => {
 export const updateSupportTicketInFirestore = async (ticketId, updates) => {
   if (!ticketId || !updates) return false;
   const key = String(ticketId).replace(/[.#$[\]]/g, '_');
+  const cleanUpdates = sanitizeTicketData(updates);
 
+  // 1. Realtime Database SDK
   if (rtdb) {
     try {
       const tRef = dbRef(rtdb, `supportTickets/${key}`);
-      await rtdbUpdate(tRef, updates);
-    } catch (e) { console.warn('[firestoreService] RTDB ticket update note:', e); }
+      await rtdbUpdate(tRef, cleanUpdates);
+    } catch (e) {
+      console.warn('[firestoreService] RTDB ticket update note:', e);
+    }
   }
 
+  // 2. Guaranteed Direct RTDB REST PATCH
+  try {
+    fetch(`https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/supportTickets/${key}.json`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cleanUpdates)
+    }).catch(() => {});
+  } catch (e) {}
+
+  // 3. Firestore SDK
   if (db) {
     try {
       const tDocRef = doc(db, 'supportTickets', key);
-      await setDoc(tDocRef, updates, { merge: true });
-    } catch (e) { console.warn('[firestoreService] Firestore ticket update note:', e); }
+      await setDoc(tDocRef, cleanUpdates, { merge: true });
+    } catch (e) {
+      console.warn('[firestoreService] Firestore ticket update note:', e);
+    }
   }
+
   return true;
 };
 
 /**
  * Real-time subscription to all support tickets.
- * Fires callback(ticketsArray) immediately from localStorage cache, then from live DB.
+ * Fires callback(ticketsArray) immediately from localStorage cache, direct REST API, and live DB listeners.
  * Returns an unsubscribe function.
  */
 export const subscribeSupportTicketsFromFirestore = (callback) => {
   if (typeof callback !== 'function') return () => {};
 
-  // Seed from localStorage immediately so the UI shows previous data on mount
+  // 1. Seed from localStorage cache immediately
   try {
     const cached = localStorage.getItem('mads_support_tickets');
     if (cached) {
       const parsed = JSON.parse(cached);
-      if (Array.isArray(parsed) && parsed.length > 0) callback(parsed);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        callback(parsed.map(t => normalizeTicket(t)).filter(Boolean));
+      }
     }
+  } catch (e) {}
+
+  // 2. Direct HTTPS REST fetch on mount for instant zero-lag loading
+  try {
+    fetch('https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/supportTickets.json')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data && typeof data === 'object') {
+          const tickets = Object.entries(data)
+            .map(([k, v]) => normalizeTicket(v, k))
+            .filter(Boolean);
+          if (tickets.length > 0) {
+            try { localStorage.setItem('mads_support_tickets', JSON.stringify(tickets)); } catch (e) {}
+            callback(tickets);
+          }
+        }
+      })
+      .catch(() => {});
   } catch (e) {}
 
   let unsubRtdb = null;
   let unsubDb = null;
 
+  // 3. Live WebSocket listener on RTDB
   if (rtdb) {
     try {
       const tRef = dbRef(rtdb, 'supportTickets');
       unsubRtdb = rtdbOnValue(tRef, (snap) => {
         if (snap.exists()) {
           const val = snap.val();
-          const tickets = Object.values(val || {}).filter(Boolean);
-          if (tickets.length > 0) {
-            try { localStorage.setItem('mads_support_tickets', JSON.stringify(tickets)); } catch (e) {}
-            callback(tickets);
+          if (val && typeof val === 'object') {
+            const tickets = Object.entries(val)
+              .map(([k, v]) => normalizeTicket(v, k))
+              .filter(Boolean);
+            if (tickets.length > 0) {
+              try { localStorage.setItem('mads_support_tickets', JSON.stringify(tickets)); } catch (e) {}
+              callback(tickets);
+            }
           }
         }
+      }, (err) => {
+        console.warn('RTDB tickets subscription note:', err);
       });
     } catch (e) {}
   }
 
+  // 4. Live Firestore listener
   if (db) {
     try {
       const tCol = collection(db, 'supportTickets');
       unsubDb = onSnapshot(tCol, (snapshot) => {
-        const tickets = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).filter(Boolean);
+        const tickets = snapshot.docs.map(d => normalizeTicket({ id: d.id, ...d.data() }, d.id)).filter(Boolean);
         if (tickets.length > 0) {
           try { localStorage.setItem('mads_support_tickets', JSON.stringify(tickets)); } catch (e) {}
           callback(tickets);

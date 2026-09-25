@@ -60,6 +60,8 @@ export const SupportModal = () => {
   const [attachmentUrl, setAttachmentUrl] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [lightboxUrl, setLightboxUrl] = useState(null);
+  const [guestName, setGuestName] = useState('');
+  const [guestContact, setGuestContact] = useState('');
 
   // Refs to reset file inputs on upload failure or view switch
   const fileInputCreateRef = useRef(null);
@@ -107,9 +109,8 @@ export const SupportModal = () => {
     setView('chat');
   };
 
-  // Guard: only authenticated users may open the create ticket form
+  // Allow any user (authenticated or guest) to open the create ticket form
   const handleNewTicket = () => {
-    if (!isLoggedIn) { openAuth('login'); return; }
     setView('create');
   };
 
@@ -134,27 +135,33 @@ export const SupportModal = () => {
 
   const handleCreateTicketSubmit = (e) => {
     e.preventDefault();
-    // Guard: should not reach here unauthenticated, but double-check
-    if (!isLoggedIn) { openAuth('login'); return; }
     if (!initialMessage.trim()) {
       showToast('Please type your message!', 'error');
       return;
     }
     try {
-      createSupportTicket({
+      const isEmail = guestContact.includes('@');
+      const created = createSupportTicket({
         subject: subject.trim() || `${category} Support Request`,
         category,
         message: initialMessage.trim(),
         orderId: selectedOrderId || null,
-        attachmentUrl: attachmentUrl || null
+        attachmentUrl: attachmentUrl || null,
+        userName: guestName.trim() || userProfile?.name || 'Verified Gamer',
+        userEmail: isEmail ? guestContact.trim() : (userProfile?.email || 'customer@madstopup.com'),
+        userPhone: !isEmail && guestContact.trim() ? guestContact.trim() : (userProfile?.phone || '')
       });
       setSubject('');
       setCategory('Order Issue');
       setInitialMessage('');
       setSelectedOrderId('');
       setAttachmentUrl('');
+      setGuestName('');
+      setGuestContact('');
       if (fileInputCreateRef.current) fileInputCreateRef.current.value = '';
-      // createSupportTicket() already calls setActiveTicketId(newTicket.id) internally
+      if (created?.id) {
+        setActiveTicketId(created.id);
+      }
       setView('chat');
     } catch (err) {
       showToast('Failed to create ticket. Please try again.', 'error');
@@ -187,10 +194,19 @@ export const SupportModal = () => {
     );
   };
 
-  // Return empty array when not logged in — prevents data leak to unauthenticated users
-  const userTickets = !isLoggedIn
-    ? []
-    : (supportTickets || []).filter(t => orderBelongsToUser(t, userProfile));
+  // Return tickets owned by this user (by account uid/email/phone) or created on this local browser
+  const userTickets = (supportTickets || []).filter(t => {
+    if (!t || !t.id) return false;
+    let myIds = [];
+    try { myIds = JSON.parse(localStorage.getItem('mads_my_ticket_ids') || '[]'); } catch (e) {}
+    if (myIds.includes(t.id) || (activeTicketId && t.id === activeTicketId)) return true;
+    if (isLoggedIn && userProfile) {
+      if (userProfile.uid && (t.userId === userProfile.uid || t.uid === userProfile.uid)) return true;
+      if (userProfile.email && (t.userEmail?.toLowerCase() === userProfile.email.toLowerCase() || t.email?.toLowerCase() === userProfile.email.toLowerCase())) return true;
+      if (userProfile.phone && (t.phone === userProfile.phone || t.userPhone === userProfile.phone)) return true;
+    }
+    return false;
+  });
 
   // Filter orders strictly for current user
   const userOrders = !isLoggedIn ? [] : filterUserOrders(orders, userProfile);
@@ -336,6 +352,18 @@ export const SupportModal = () => {
               {/* CREATE VIEW */}
               {view === 'create' && (
                 <form onSubmit={handleCreateTicketSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {!isLoggedIn && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, background: 'rgba(0,240,255,0.03)', padding: 12, borderRadius: 14, border: `1px dashed ${NEON.border}` }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: NEON.textDim, marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Your Name</label>
+                        <input type="text" placeholder="e.g. Kasun SLAyer" value={guestName} onChange={e => setGuestName(e.target.value)} style={{ width: '100%', background: NEON.surface, border: '1.5px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '8px 12px', fontSize: 11, fontFamily: 'inherit', outline: 'none', color: '#e2e8f0', boxSizing: 'border-box' }} {...inputFocusHandlers} />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: NEON.textDim, marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>WhatsApp or Email</label>
+                        <input type="text" placeholder="e.g. 0771234567 or email" value={guestContact} onChange={e => setGuestContact(e.target.value)} style={{ width: '100%', background: NEON.surface, border: '1.5px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '8px 12px', fontSize: 11, fontFamily: 'inherit', outline: 'none', color: '#e2e8f0', boxSizing: 'border-box' }} {...inputFocusHandlers} />
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <label style={{ display: 'block', fontSize: 10, fontWeight: 900, color: NEON.textDim, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Inquiry Type</label>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -424,7 +452,11 @@ export const SupportModal = () => {
                     </div>
                   </div>
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 14, paddingRight: 4 }}>
-                    {currentTicket.messages.map(msg => {
+                    {((Array.isArray(currentTicket.messages) ? currentTicket.messages : Object.values(currentTicket.messages || {})).filter(Boolean)).sort((a, b) => {
+                      const ta = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+                      const tb = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+                      return ta - tb;
+                    }).map(msg => {
                       const isAdmin = msg.sender === 'admin';
                       return (
                         <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isAdmin ? 'flex-start' : 'flex-end' }}>
