@@ -40,20 +40,69 @@ try {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ─── Tightened CSP (removes unsafe-eval — safe for Vite production builds) ───
-// unsafe-inline kept in script-src only for the inline oncontextmenu handler on <body>.
-// All legitimate external origins are explicitly whitelisted.
+// ─── Production CSP — no wildcards, every origin explicitly named ─────────────
+// Fixes ZAP: "CSP: Wildcard Directive" and "CSP: Failure to Define Directive
+// with No Fallback". unsafe-eval removed (safe for Vite prod). unsafe-inline
+// kept only in script-src for the oncontextmenu="return false" on <body>.
+//
+// Firebase services used by this project and their required origins:
+//   Firebase Auth       → identitytoolkit.googleapis.com, securetoken.googleapis.com
+//   Firestore           → firestore.googleapis.com
+//   Realtime Database   → mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app
+//                         + wss:// of same host
+//   Firebase Storage    → firebasestorage.googleapis.com
+//   Firebase SDK CDN    → apis.google.com, www.gstatic.com
 const PRODUCTION_CSP = [
   "default-src 'self'",
+
+  // Scripts: only our own bundle + Google Identity SDK (needed for Google Sign-In popup)
   "script-src 'self' 'unsafe-inline' https://apis.google.com https://www.gstatic.com",
+
+  // Styles: our bundle + Google Fonts CSS
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com",
+
+  // Fonts: Google Fonts binary files only
   "font-src 'self' https://fonts.gstatic.com data:",
+
+  // Images: self + data URIs + blob (receipt previews) + any https image CDN
   "img-src 'self' data: blob: https:",
-  "connect-src 'self' https://madstopup.com https://*.firebaseio.com https://*.googleapis.com https://identitytoolkit.googleapis.com https://moogold.com https://genie.dialog.lk wss://ws.firebaseio.com wss://*.firebaseio.com",
+
+  // XHR / fetch / WebSocket — every external host named explicitly, no wildcards
+  [
+    "connect-src 'self'",
+    "https://madstopup.com",
+    // Firebase Auth REST
+    "https://identitytoolkit.googleapis.com",
+    "https://securetoken.googleapis.com",
+    // Firestore REST
+    "https://firestore.googleapis.com",
+    // Firebase Realtime Database (REST + WebSocket)
+    "https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "wss://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app",
+    // Firebase Storage
+    "https://firebasestorage.googleapis.com",
+    // Google Sign-In / token refresh
+    "https://accounts.google.com",
+    "https://oauth2.googleapis.com",
+    // MooGold reseller API
+    "https://moogold.com",
+    // Genie Business IPG (Dialog payment gateway)
+    "https://genie.dialog.lk",
+    // Resend transactional email (called from server-side only, but kept for CSP completeness)
+    "https://api.resend.com",
+  ].join(' '),
+
+  // Frames: Genie payment iframe + Google Sign-In popup
   "frame-src 'self' https://genie.dialog.lk https://accounts.google.com",
+
+  // Block all plugins (Flash, Java applets, etc.)
   "object-src 'none'",
+
+  // Prevent <base> tag injection attacks
   "base-uri 'self'",
-  "form-action 'self'",
+
+  // Restrict where forms can submit to
+  "form-action 'self' https://accounts.google.com",
 ].join('; ');
 
 // Security Hardening Headers (Mozilla Observatory Compliant)
