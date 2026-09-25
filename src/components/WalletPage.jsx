@@ -38,8 +38,15 @@ export const WalletPage = () => {
   React.useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const genieStatus = urlParams.get('genie');
-    const storedTxnId = sessionStorage.getItem('mads_pending_genie_txnid');
-    const storedOrderRef = sessionStorage.getItem('mads_pending_genie_orderref');
+
+    // Retrieve pending transaction state from sessionStorage or fallback localStorage
+    let storedTxnId = null;
+    let storedOrderRef = null;
+    try {
+      storedTxnId = sessionStorage.getItem('mads_pending_genie_txnid') || localStorage.getItem('mads_pending_genie_txnid');
+      storedOrderRef = sessionStorage.getItem('mads_pending_genie_orderref') || localStorage.getItem('mads_pending_genie_orderref');
+    } catch (_) {}
+
     const txnId = urlParams.get('txnId') || urlParams.get('id') || urlParams.get('transactionId') || storedTxnId;
     const orderRef = urlParams.get('orderRef') || urlParams.get('localId') || storedOrderRef;
 
@@ -58,9 +65,16 @@ export const WalletPage = () => {
       })
         .then(r => r.json())
         .then(data => {
-          sessionStorage.removeItem('mads_pending_genie_txnid');
-          sessionStorage.removeItem('mads_pending_genie_orderref');
           if (data.success && data.isPaid) {
+            // Clean up session and local storage ONLY after payment is confirmed/credited
+            try {
+              sessionStorage.removeItem('mads_pending_genie_txnid');
+              sessionStorage.removeItem('mads_pending_genie_orderref');
+              localStorage.removeItem('mads_pending_genie_txnid');
+              localStorage.removeItem('mads_pending_genie_orderref');
+              localStorage.removeItem('mads_pending_genie_data');
+            } catch (_) {}
+
             const amt = parseFloat(data.amount || 0);
             if (data.credited) {
               addManualPayment({
@@ -112,10 +126,23 @@ export const WalletPage = () => {
       });
       const resData = await response.json();
       if (resData.success && resData.redirectUrl) {
-        if (resData.transactionId) {
-          sessionStorage.setItem('mads_pending_genie_txnid', resData.transactionId);
-        }
-        sessionStorage.setItem('mads_pending_genie_orderref', localId);
+        // Persist pending checkout state across tabs and external redirects in both sessionStorage & localStorage
+        const pendingRecord = {
+          transactionId: resData.transactionId || '',
+          orderRef: localId,
+          amount: amt,
+          timestamp: Date.now()
+        };
+        try {
+          if (resData.transactionId) {
+            sessionStorage.setItem('mads_pending_genie_txnid', resData.transactionId);
+            localStorage.setItem('mads_pending_genie_txnid', resData.transactionId);
+          }
+          sessionStorage.setItem('mads_pending_genie_orderref', localId);
+          localStorage.setItem('mads_pending_genie_orderref', localId);
+          localStorage.setItem('mads_pending_genie_data', JSON.stringify(pendingRecord));
+        } catch (_) {}
+
         showToast('Redirecting to payment gateway...');
         const sep = resData.redirectUrl.includes('?') ? '&' : '?';
         window.location.href = resData.transactionId ? `${resData.redirectUrl}${sep}txnId=${resData.transactionId}` : resData.redirectUrl;

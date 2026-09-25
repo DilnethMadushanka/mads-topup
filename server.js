@@ -72,7 +72,7 @@ const PRODUCTION_CSP = [
   // Images: self + data URIs + blob (receipt previews) + Google profile photos
   "img-src 'self' data: blob: https: https://lh3.googleusercontent.com",
 
-  // XHR / fetch / WebSocket — every external host named explicitly, no wildcards
+  // XHR / fetch / WebSocket — explicitly allow payment gateways, suppliers & Firebase
   [
     "connect-src 'self'",
     "https://madstopup.com",
@@ -92,18 +92,21 @@ const PRODUCTION_CSP = [
     // Google Sign-In / token refresh / OAuth2
     "https://accounts.google.com",
     "https://oauth2.googleapis.com",
-    // MooGold reseller API
+    // MooGold reseller API (exact & subdomains)
     "https://moogold.com",
-    // Genie Business IPG (Dialog payment gateway)
+    "https://*.moogold.com",
+    // Dialog Genie IPG (exact & subdomains)
     "https://genie.dialog.lk",
+    "https://*.dialog.lk",
+    "https://api.geniebiz.lk",
+    "https://paylink.geniebiz.lk",
+    "https://*.geniebiz.lk",
     // Cloudflare R2 storage (uploaded receipts)
     "https://mads-topup.r2.dev",
   ].join(' '),
 
-  // Frames: Genie payment iframe + Google Sign-In popup + Firebase auth handler
-  // mads-topup-76445.firebaseapp.com is the iframe Firebase uses for the
-  // signInWithPopup OAuth handshake — without it the popup silently fails.
-  "frame-src 'self' https://genie.dialog.lk https://accounts.google.com https://mads-topup-76445.firebaseapp.com",
+  // Frames: Genie/Dialog payment iframe + Google Sign-In popup + Firebase auth handler
+  "frame-src 'self' https://genie.dialog.lk https://*.dialog.lk https://*.geniebiz.lk https://accounts.google.com https://mads-topup-76445.firebaseapp.com",
 
   // Block all plugins (Flash, Java applets, etc.)
   "object-src 'none'",
@@ -111,8 +114,8 @@ const PRODUCTION_CSP = [
   // Prevent <base> tag injection attacks
   "base-uri 'self'",
 
-  // Forms: allow Google OAuth form submissions
-  "form-action 'self' https://accounts.google.com",
+  // Forms: allow Google OAuth and Dialog/Genie payment form actions
+  "form-action 'self' https://accounts.google.com https://genie.dialog.lk https://*.dialog.lk https://*.geniebiz.lk",
 ].join('; ');
 
 // Security Hardening Headers (Mozilla Observatory Compliant)
@@ -133,27 +136,77 @@ app.use((req, res, next) => {
   next();
 });
 
-// ─── Strict CORS — only allow your own domain + payment/webhook origins ───
-const CORS_ALLOWED_ORIGINS = new Set([
+// ─── Payment Webhook / Callback Route Exemption ──────────────────────────────
+// Third-party payment gateways (Dialog Genie, MooGold, Binance, eZ Cash) send
+// server-to-server POST/GET notifications without browser Origin headers, or
+// with gateway-specific headers. These routes MUST be completely exempt from
+// strict CORS checks, preflight blocks, and browser authentication middleware.
+const PAYMENT_WEBHOOK_PATHS = [
+  '/api/payments/callback',
+  '/api/genie/webhook',
+  '/api/genie/ipn',
+  '/api/moogold/callback',
+  '/api/moogold/webhook',
+  '/api/ezcash/webhook',
+  '/api/binance/webhook',
+];
+
+const isPaymentWebhookRoute = (reqPath) => {
+  const p = (reqPath || '').toLowerCase();
+  return PAYMENT_WEBHOOK_PATHS.some(route => p === route || p.startsWith(route + '/') || p.startsWith(route + '?'));
+};
+
+// 1. Webhook Preflight & Open CORS Exemption Header Injector
+app.use((req, res, next) => {
+  if (isPaymentWebhookRoute(req.path)) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, auth, timestamp');
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
+  }
+  next();
+});
+
+// ─── Strict CORS for standard application routes ─────────────────────────────
+const CORS_ALLOWED_ORIGINS = [
   'https://madstopup.com',
   'https://www.madstopup.com',
-  'https://genie.dialog.lk',   // Genie Business IPG payment redirect
-  'https://moogold.com',       // MooGold webhook origin
-]);
+  'https://genie.dialog.lk',
+  'https://moogold.com',
+  'https://api.geniebiz.lk',
+  'https://paylink.geniebiz.lk',
+];
 
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow server-to-server requests (no Origin header) and whitelisted origins
-    if (!origin || CORS_ALLOWED_ORIGINS.has(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error(`CORS: Origin '${origin}' not allowed.`));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-}));
+app.use((req, res, next) => {
+  // If payment callback / IPN webhook, bypass strict CORS completely
+  if (isPaymentWebhookRoute(req.path)) {
+    return next();
+  }
+
+  cors({
+    origin: (origin, callback) => {
+      // Allow server-to-server requests (no Origin header) and whitelisted origins
+      if (!origin) return callback(null, true);
+      const isAllowed = CORS_ALLOWED_ORIGINS.some(allowed => origin === allowed) ||
+        origin.endsWith('.dialog.lk') ||
+        origin.endsWith('.moogold.com') ||
+        origin.endsWith('.geniebiz.lk') ||
+        origin.includes('localhost') ||
+        origin.includes('127.0.0.1');
+
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS: Origin '${origin}' not allowed.`));
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'auth', 'timestamp'],
+  })(req, res, next);
+});
 
 // ─── Cache-Control: prevent caching of API and sensitive page routes ─────
 app.use((req, res, next) => {
@@ -1116,6 +1169,40 @@ async function saveMoogoldOrderRecord(partnerOrderId, record) {
   }
 }
 
+// MooGold Server-to-Server Order Webhook / Callback (NO AUTH REQUIRED, EXEMPT FROM CORS)
+app.all(['/api/moogold/callback', '/api/moogold/webhook'], async (req, res) => {
+  try {
+    const payload = req.method === 'GET' ? req.query : req.body;
+    console.log('[MooGold Callback/Webhook Received]:', payload);
+
+    const partnerOrderId = payload?.partnerOrderId || payload?.partner_order_id || payload?.data?.partnerOrderId;
+    const orderId = payload?.order_id || payload?.orderId || payload?.data?.order_id;
+    const rawStatus = payload?.status || payload?.data?.status;
+    const status = String(rawStatus || '').toUpperCase();
+
+    if (partnerOrderId) {
+      const existing = await getMoogoldOrderRecord(partnerOrderId);
+      const isComplete = status.includes('COMPLET') || status === 'SUCCESS';
+      const isFailed = status.includes('FAIL') || status.includes('CANCEL') || status.includes('REFUND');
+      const normalizedStatus = isComplete ? 'COMPLETED' : (isFailed ? 'FAILED' : (status || 'PROCESSING'));
+
+      await saveMoogoldOrderRecord(partnerOrderId, {
+        ...(existing || {}),
+        status: normalizedStatus,
+        moogoldOrderId: orderId || existing?.moogoldOrderId,
+        callbackPayload: payload,
+        callbackReceivedAt: new Date().toISOString()
+      });
+      console.log(`[MooGold Callback Processed] partnerOrderId=${partnerOrderId} status=${normalizedStatus}`);
+    }
+
+    return res.status(200).json({ success: true, message: 'MooGold callback processed successfully' });
+  } catch (err) {
+    console.error('[MooGold Callback Error]:', err.message);
+    return res.status(200).json({ success: true, message: 'Callback received with error logging' });
+  }
+});
+
 app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
   const partnerOrderId = req.body?.bodyObj?.partnerOrderId || null;
   try {
@@ -1766,38 +1853,32 @@ app.post('/api/genie/verify-status', rateLimiter(30, 60000), async (req, res) =>
   }
 });
 
-// Genie Business Webhook (IPN Callback) — the authoritative, server-to-server
-// confirmation from Dialog Genie. This does NOT depend on the customer's
-// browser at all, so it's what guarantees a successful card/eZ Cash payment
-// always credits the wallet even if the customer never sees the redirect
-// (closed tab, crashed app, network drop). Field names for the transaction id
-// aren't guaranteed by Dialog's docs, so we defensively check the common
-// shapes; if none match we still ack (so Genie doesn't retry-storm us) but log
-// loudly for manual follow-up.
-app.post('/api/genie/webhook', async (req, res) => {
+// Payment Callback & IPN Webhook (Dialog Genie, Card, IPG) — Server-to-Server
+// Completely exempt from CORS and authentication checks. Handles /api/genie/webhook,
+// /api/genie/ipn, and /api/payments/callback.
+app.all(['/api/genie/webhook', '/api/genie/ipn', '/api/payments/callback'], async (req, res) => {
   const body = req.body || {};
-  console.log('[Genie Business IPG Webhook Received]:', body);
+  console.log(`[Payment Webhook Received on ${req.path}]:`, body);
 
-  let transactionId = body.id || body.transactionId || body.data?.id || null;
-  if (!transactionId && body.localId) {
-    transactionId = await resolveGenieTransactionIdByLocalId(body.localId);
+  let transactionId = body.id || body.transactionId || body.data?.id || req.query?.transactionId || req.query?.id || null;
+  if (!transactionId && (body.localId || body.orderRef || req.query?.localId || req.query?.orderRef)) {
+    transactionId = await resolveGenieTransactionIdByLocalId(body.localId || body.orderRef || req.query?.localId || req.query?.orderRef);
   }
 
   if (!transactionId) {
-    console.error('[Genie Webhook Error] Could not determine transaction id from webhook payload:', JSON.stringify(body).substring(0, 500));
+    console.error('[Payment Webhook Error] Could not determine transaction id from webhook payload:', JSON.stringify(body).substring(0, 500));
     return res.json({ success: true, message: 'Webhook received (no matching transaction id — logged for manual follow-up)' });
   }
 
   try {
     const result = await verifyAndCreditGenieTransaction(transactionId);
     if (!result.success) {
-      console.error(`[Genie Webhook Credit Failed] txn=${transactionId}:`, result.error);
+      console.error(`[Payment Webhook Credit Failed] txn=${transactionId}:`, result.error);
     }
-    // Always ack 200 so Dialog doesn't endlessly retry — failures are logged
-    // above for admin follow-up/manual credit rather than silently dropped.
+    // Always ack 200 so gateway doesn't endlessly retry-storm
     return res.json({ success: true, message: 'Webhook processed', result });
   } catch (e) {
-    console.error(`[Genie Webhook Error] txn=${transactionId}:`, e.message);
+    console.error(`[Payment Webhook Error] txn=${transactionId}:`, e.message);
     return res.json({ success: true, message: 'Webhook received (processing error logged)' });
   }
 });
