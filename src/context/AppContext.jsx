@@ -55,6 +55,7 @@ export const AppProvider = ({ children }) => {
     }
     return false;
   });
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [isGameCatalogOpen, setIsGameCatalogOpen] = useState(() => { try { return sessionStorage.getItem('mads_page') === 'catalog'; } catch { return false; } });
   const [isReviewsPageOpen, setIsReviewsPageOpen] = useState(() => { try { return sessionStorage.getItem('mads_page') === 'reviews'; } catch { return false; } });
   const [isContactPageOpen, setIsContactPageOpen] = useState(() => { try { return sessionStorage.getItem('mads_page') === 'contact'; } catch { return false; } });
@@ -627,8 +628,9 @@ export const AppProvider = ({ children }) => {
     }
   }, [userProfile]);
 
-  // Subscribe to all users in Firestore / RTDB for real-time admin user list sync
+  // Subscribe to all users in Firestore / RTDB for real-time admin user list sync (Admin only)
   useEffect(() => {
+    if (!isAdminAuthenticated) return;
     const unsubAll = subscribeAllUsersFromFirestore((remoteUsersList) => {
       if (remoteUsersList && remoteUsersList.length > 0) {
         setUsersList(prev => {
@@ -681,13 +683,18 @@ export const AppProvider = ({ children }) => {
         });
       }
     });
-    return () => unsubAll();
-  }, []);
+    return () => {
+      if (typeof unsubAll === 'function') unsubAll();
+    };
+  }, [isAdminAuthenticated]);
 
 
   // Realtime subscribe to live orders from Firestore / RTDB
   useEffect(() => {
-    const unsubOrders = subscribeOrdersFromFirestore(userProfile?.uid, (remoteOrders) => {
+    // Only subscribe if logged in as customer (for own orders) or authenticated as admin (for all orders)
+    if (!userProfile?.uid && !isAdminAuthenticated) return;
+    const targetUid = isAdminAuthenticated ? null : userProfile?.uid;
+    const unsubOrders = subscribeOrdersFromFirestore(targetUid, (remoteOrders) => {
       if (remoteOrders && remoteOrders.length > 0) {
         setOrders(prev => {
           const merged = [...prev];
@@ -703,8 +710,10 @@ export const AppProvider = ({ children }) => {
         });
       }
     });
-    return () => unsubOrders();
-  }, [userProfile?.uid]);
+    return () => {
+      if (typeof unsubOrders === 'function') unsubOrders();
+    };
+  }, [userProfile?.uid, isAdminAuthenticated]);
 
   useEffect(() => {
     localStorage.setItem('mads_orders', JSON.stringify(orders));
@@ -1034,6 +1043,7 @@ export const AppProvider = ({ children }) => {
   }, [manualPayments]);
 
   useEffect(() => {
+    if (!isAdminAuthenticated) return;
     const unsub = subscribeManualPaymentsFromFirestore((liveList) => {
       if (liveList && Array.isArray(liveList) && liveList.length > 0) {
         setManualPayments(prev => {
@@ -1048,8 +1058,10 @@ export const AppProvider = ({ children }) => {
         });
       }
     });
-    return () => unsub();
-  }, []);
+    return () => {
+      if (typeof unsub === 'function') unsub();
+    };
+  }, [isAdminAuthenticated]);
 
   const verifyUserAccount = async (uid) => {
     setUsersList(prev => prev.map(u => u.uid === uid ? { ...u, isVerified: true } : u));
@@ -1335,6 +1347,7 @@ export const AppProvider = ({ children }) => {
 
   // Real-time Firestore sync for support tickets (connects admin ↔ customer)
   useEffect(() => {
+    if (!isAdminAuthenticated) return;
     const unsub = subscribeSupportTicketsFromFirestore((liveTickets) => {
       if (!Array.isArray(liveTickets) || liveTickets.length === 0) return;
       setSupportTickets(prev => {
@@ -1346,8 +1359,10 @@ export const AppProvider = ({ children }) => {
         return Array.from(map.values());
       });
     });
-    return () => unsub();
-  }, []);
+    return () => {
+      if (typeof unsub === 'function') unsub();
+    };
+  }, [isAdminAuthenticated]);
 
   const createSupportTicket = ({ subject, category, message, orderId, attachmentUrl }) => {
     const newTicket = {
@@ -1458,6 +1473,7 @@ export const AppProvider = ({ children }) => {
   }, [resellerApplications]);
 
   useEffect(() => {
+    if (!isAdminAuthenticated) return;
     const unsub = subscribeResellerApplicationsFromFirestore((remoteApps) => {
       if (remoteApps && remoteApps.length > 0) {
         setResellerApplications(prev => {
@@ -1479,8 +1495,10 @@ export const AppProvider = ({ children }) => {
         });
       }
     });
-    return () => unsub();
-  }, []);
+    return () => {
+      if (typeof unsub === 'function') unsub();
+    };
+  }, [isAdminAuthenticated]);
 
   const addResellerApplication = (appData) => {
     const newId = appData.id || appData.firestoreId || `app-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
@@ -1673,6 +1691,8 @@ export const AppProvider = ({ children }) => {
       closeUserProfilePage,
       isAdminOpen,
       setIsAdminOpen,
+      isAdminAuthenticated,
+      setIsAdminAuthenticated,
       isGameCatalogOpen,
       setIsGameCatalogOpen,
       openCatalog,

@@ -336,14 +336,12 @@ export const AdminDashboard = () => {
     tickerNotice, setTickerNotice, usersList, verifyUserAccount, toggleBlockUser, updateUserBalance,
     setUserExactBalance, manualPayments, approveManualPayment, rejectManualPayment, addManualPayment,
     supportTickets, sendTicketMessage, updateTicketStatus, updateTicketPriority, resellerApplications,
-    updateResellerApplicationStatus, gamesCatalog, updateGamePrices, popupAdConfig, updatePopupAdConfig
+    updateResellerApplicationStatus, gamesCatalog, updateGamePrices, popupAdConfig, updatePopupAdConfig,
+    isAdminAuthenticated, setIsAdminAuthenticated
   } = useApp();
 
-  // Auth state is always false on startup — only set to true after the SERVER
-  // confirms the session token is valid. localStorage is never used as the
-  // source of truth (that was the jailbreak: setting the key in devtools
-  // gave instant access without any password).
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  // Auth state is managed via AppContext — listeners to admin data only subscribe when
+  // isAdminAuthenticated is true, preventing unauthenticated queries while displaying the login credentials form.
   const [isVerifyingSession, setIsVerifyingSession] = useState(true);
   const [adminAuthEmail, setAdminAuthEmail] = useState('');
   const [adminAuthPassword, setAdminAuthPassword] = useState('');

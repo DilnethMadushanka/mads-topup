@@ -1134,6 +1134,9 @@ export const subscribeOrdersFromFirestore = (uid, callback) => {
         const list = snapshot.docs.map(docSnap => ({ firestoreId: docSnap.id, ...docSnap.data() }));
         const filtered = uid ? list.filter(o => o.userId === uid || o.userEmail === uid) : list;
         if (filtered.length > 0) callback(filtered);
+      }, (err) => {
+        // Gracefully handle permission denials without unhandled console errors
+        console.warn('Firestore orders permission notice:', err.code);
       });
     } catch (err) {
       console.warn('Firestore orders listener note:', err);
@@ -1264,6 +1267,8 @@ export const subscribeManualPaymentsFromFirestore = (callback) => {
       unsubFirestore = onSnapshot(payCol, (snapshot) => {
         const list = snapshot.docs.map(docSnap => ({ firestoreId: docSnap.id, ...docSnap.data() }));
         if (list.length > 0) callback(list);
+      }, (err) => {
+        console.warn('Firestore manual payments permission notice:', err.code);
       });
     } catch (err) {
       console.warn('Firestore manual payments listener note:', err);
@@ -1312,6 +1317,8 @@ export const subscribeAllUsersFromFirestore = (callback) => {
           return creds;
         });
         if (list.length > 0) callback(list);
+      }, (err) => {
+        console.warn('Firestore users permission notice:', err.code);
       });
     } catch (err) {
       console.warn('Firestore users listener note:', err);
@@ -1380,6 +1387,8 @@ export const subscribeResellerApplicationsFromFirestore = (callback) => {
       unsubFirestore = onSnapshot(colRef, (snapshot) => {
         const list = snapshot.docs.map(docSnap => ({ firestoreId: docSnap.id, ...docSnap.data() }));
         if (list.length > 0) callback(list);
+      }, (err) => {
+        console.warn('Firestore reseller apps permission notice:', err.code);
       });
     } catch (err) {
       console.warn('Firestore reseller apps listener note:', err);
@@ -1977,6 +1986,8 @@ export const subscribeSupportTicketsFromFirestore = (callback) => {
           try { localStorage.setItem('mads_support_tickets', JSON.stringify(tickets)); } catch (e) {}
           callback(tickets);
         }
+      }, (err) => {
+        console.warn('Firestore support tickets permission notice:', err.code);
       });
     } catch (e) {}
   }
