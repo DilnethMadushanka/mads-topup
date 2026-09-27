@@ -479,38 +479,25 @@ export const AuthModal = () => {
           walletUsdt: 0
         };
 
-        // For login mode or returning users: close modal instantly
-        if (authMode === 'login' || !res.isNewUser) {
+        // Always check Firestore for phone — isNewUser can be false even for users who never set a phone
+        const existingProfile = await syncUserProfileToFirestore(res.user);
+        const hasPhone = Boolean(existingProfile?.phone?.trim());
+
+        if (hasPhone) {
+          // Returning user with phone already saved — log in immediately
           setIsLoggedIn(true);
-          setUserProfile(prev => ({ ...prev, ...immediateProfile }));
+          setUserProfile(prev => ({
+            ...prev,
+            ...immediateProfile,
+            ...(existingProfile || {}),
+            avatar: existingProfile?.avatar || res.user.photoURL || prev.avatar,
+            name: existingProfile?.name || res.user.name || prev.name
+          }));
           showToast(`Welcome back, ${res.user.name || 'Gamer'}!`);
           setIsAuthModalOpen(false);
-
-          // Sync full profile from DB in background (non-blocking)
-          syncUserProfileToFirestore(res.user).then(existingProfile => {
-            if (existingProfile) {
-              setUserProfile(prev => ({
-                ...prev,
-                ...existingProfile,
-                // Keep Google avatar/name if DB has none
-                avatar: existingProfile.avatar || res.user.photoURL || prev.avatar,
-                name: existingProfile.name || res.user.name || prev.name
-              }));
-            }
-          }).catch(() => {});
         } else {
-          // First-time registration: sync first then ask for WhatsApp
-          const existingProfile = await syncUserProfileToFirestore(res.user);
-          const hasPhone = Boolean(existingProfile?.phone?.trim());
-          if (hasPhone) {
-            setIsLoggedIn(true);
-            setUserProfile(prev => ({ ...prev, ...(existingProfile || {}), ...immediateProfile }));
-            showToast(`Welcome, ${res.user.name || 'Gamer'}!`);
-            setIsAuthModalOpen(false);
-          } else {
-            // Ask for WhatsApp number to complete setup
-            setPendingGoogleUser(res.user);
-          }
+          // No phone saved yet — must collect WhatsApp number before proceeding
+          setPendingGoogleUser(res.user);
         }
       }
     } catch (err) {
