@@ -34,6 +34,15 @@ export const WalletPage = () => {
   const [isRedeemingVoucher, setIsRedeemingVoucher] = useState(false);
   const [activePanel, setActivePanel] = useState(null);
 
+  // ── Bonus helper (stable ref via useCallback) ────────────────
+  // Defined before useEffect so the .then() closure can safely reference it.
+  const getGenieBonus = React.useCallback((amt) => {
+    const n = parseFloat(amt) || 0;
+    if (n >= 10000) return 200;
+    if (n >= 5000) return 100;
+    return 0;
+  }, []);
+
   // ── Auto-verify Genie return ────────────────────────────────
   React.useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -63,6 +72,7 @@ export const WalletPage = () => {
           if (data.success && data.isPaid) {
             const amt = parseFloat(data.amount || 0);
             if (data.credited) {
+              const bonus = getGenieBonus(amt);
               addManualPayment({
                 id: 'PAY-GENIE-' + (data.transactionId ? String(data.transactionId).slice(-6).toUpperCase() : Math.floor(1000 + Math.random() * 9000)),
                 userId: userProfile?.uid || '',
@@ -76,7 +86,25 @@ export const WalletPage = () => {
                 status: 'VERIFIED',
                 createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
               });
-              showToast(`⚡ CARD PAYMENT VERIFIED! +LKR ${amt.toLocaleString()} credited!`);
+              if (bonus > 0) {
+                creditUserWallet(bonus, 0);
+                addManualPayment({
+                  id: 'BONUS-' + Math.floor(1000 + Math.random() * 9000),
+                  userId: userProfile?.uid || '',
+                  userEmail: userProfile?.email || 'guest@madstopup.com',
+                  userName: userProfile?.name || 'Gamer',
+                  method: '🎁 Recharge Bonus',
+                  referenceNumber: `Bonus for Rs.${amt.toLocaleString()} recharge`,
+                  amount: bonus,
+                  currency: 'LKR',
+                  slipUrl: '',
+                  status: 'VERIFIED',
+                  createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
+                });
+                showToast(`⚡ CARD PAYMENT VERIFIED! +LKR ${amt.toLocaleString()} + 🎁 Rs.${bonus} BONUS credited!`);
+              } else {
+                showToast(`⚡ CARD PAYMENT VERIFIED! +LKR ${amt.toLocaleString()} credited!`);
+              }
             } else if (data.alreadyCredited) {
               showToast(`⚡ Payment already verified — Rs. ${amt.toLocaleString()} is in your wallet!`);
             } else {
@@ -92,6 +120,7 @@ export const WalletPage = () => {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
+
 
   // ── Handlers ────────────────────────────────────────────────
   const handleGenieSubmit = async (e) => {
@@ -433,6 +462,53 @@ export const WalletPage = () => {
                     <Zap className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                     <span className="text-xs font-semibold text-emerald-700">Accepts Visa, Mastercard, Dialog eZ Cash and Genie Wallet. Balance credited instantly after payment.</span>
                   </div>
+
+                  {/* ── BONUS BANNER ── */}
+                  <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Gift className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span className="text-xs font-black text-amber-800 uppercase tracking-wider">🎁 Recharge Bonus Offer</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className={`rounded-xl px-3 py-2.5 border text-center transition-all ${
+                        getGenieBonus(genieAmount) >= 100
+                          ? 'bg-amber-500 border-amber-500 shadow-md shadow-amber-500/30'
+                          : 'bg-white border-amber-200'
+                      }`}>
+                        <div className={`text-[10px] font-black uppercase tracking-wider mb-1 ${
+                          getGenieBonus(genieAmount) >= 100 ? 'text-amber-100' : 'text-amber-600'
+                        }`}>Rs. 5,000+</div>
+                        <div className={`text-lg font-black ${
+                          getGenieBonus(genieAmount) >= 100 ? 'text-white' : 'text-amber-700'
+                        }`}>+Rs. 100</div>
+                        <div className={`text-[10px] font-semibold mt-0.5 ${
+                          getGenieBonus(genieAmount) >= 100 ? 'text-amber-100' : 'text-slate-400'
+                        }`}>Bonus</div>
+                      </div>
+                      <div className={`rounded-xl px-3 py-2.5 border text-center transition-all ${
+                        getGenieBonus(genieAmount) === 200
+                          ? 'bg-amber-600 border-amber-600 shadow-md shadow-amber-600/30'
+                          : 'bg-white border-amber-200'
+                      }`}>
+                        <div className={`text-[10px] font-black uppercase tracking-wider mb-1 ${
+                          getGenieBonus(genieAmount) === 200 ? 'text-amber-100' : 'text-amber-600'
+                        }`}>Rs. 10,000+</div>
+                        <div className={`text-lg font-black ${
+                          getGenieBonus(genieAmount) === 200 ? 'text-white' : 'text-amber-700'
+                        }`}>+Rs. 200</div>
+                        <div className={`text-[10px] font-semibold mt-0.5 ${
+                          getGenieBonus(genieAmount) === 200 ? 'text-amber-100' : 'text-slate-400'
+                        }`}>Bonus</div>
+                      </div>
+                    </div>
+                    {getGenieBonus(genieAmount) > 0 && (
+                      <div className="mt-3 flex items-center gap-2 bg-emerald-100 border border-emerald-200 rounded-xl px-3 py-2">
+                        <span className="text-emerald-600 text-sm">✅</span>
+                        <span className="text-xs font-black text-emerald-700">You earn a Rs.{getGenieBonus(genieAmount)} bonus with this recharge!</span>
+                      </div>
+                    )}
+                  </div>
+
                   <div>
                     <label className="text-xs font-black text-slate-500 uppercase tracking-wider block mb-2">Recharge Amount (LKR)</label>
                     <input type="number" value={genieAmount} onChange={e => setGenieAmount(e.target.value)} placeholder="Enter amount in LKR..." className={inputCls} min="50" />
@@ -441,7 +517,7 @@ export const WalletPage = () => {
                   <button type="submit" disabled={isGenieLoading} className={btnRed}>
                     {isGenieLoading
                       ? <><RefreshCw className="w-4 h-4 animate-spin" /><span>Connecting to Gateway...</span></>
-                      : <><Zap className="w-4 h-4 fill-white" /><span>Pay Now — Rs. {Number(genieAmount || 0).toLocaleString()}</span></>}
+                      : <><Zap className="w-4 h-4 fill-white" /><span>Pay Now — Rs. {Number(genieAmount || 0).toLocaleString()}{getGenieBonus(genieAmount) > 0 ? ` + 🎁 Rs.${getGenieBonus(genieAmount)} Bonus` : ''}</span></>}
                   </button>
                   <p className="text-center text-[11px] text-slate-400 font-medium">You will be redirected to Dialog Genie Business IPG secure checkout</p>
                 </form>
