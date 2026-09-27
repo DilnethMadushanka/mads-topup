@@ -558,17 +558,11 @@ export const AuthModal = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200" onClick={pendingGoogleUser ? (e) => e.stopPropagation() : undefined}>
       {pendingGoogleUser ? (
         /* COMPLETE GOOGLE ACCOUNT SETUP CARD */
         <div className="w-full max-w-md bg-white text-slate-900 rounded-3xl p-8 shadow-2xl border border-slate-200/90 text-center relative animate-in zoom-in-95 duration-200 my-auto">
-          {/* Close Button */}
-          <button
-            onClick={() => { setPendingGoogleUser(null); setIsAuthModalOpen(false); }}
-            className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 flex items-center justify-center transition-colors cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          {/* Close Button hidden — WhatsApp number is mandatory to complete registration */}
 
           {/* User's Google Profile Picture at Top */}
           <div className="flex justify-center mb-5">
