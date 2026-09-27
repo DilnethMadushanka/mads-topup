@@ -1364,6 +1364,34 @@ export const AppProvider = ({ children }) => {
     };
   }, [isAdminAuthenticated]);
 
+  // Bug 2 fix: also subscribe for logged-in customers so admin replies appear live.
+  // Admin subscription above already covers admin view; this covers the customer side.
+  useEffect(() => {
+    if (!userProfile?.uid && !userProfile?.email) return;
+    if (isAdminAuthenticated) return; // admin already subscribed above
+    const unsub = subscribeSupportTicketsFromFirestore((liveTickets) => {
+      if (!Array.isArray(liveTickets) || liveTickets.length === 0) return;
+      setSupportTickets(prev => {
+        const map = new Map();
+        (prev || []).forEach(t => { if (t?.id) map.set(t.id, t); });
+        // Only merge tickets belonging to this user (uid or email match)
+        liveTickets.forEach(t => {
+          if (!t?.id) return;
+          const matchUid = Boolean(userProfile.uid) && t.userId === userProfile.uid;
+          const matchEmail = Boolean(userProfile.email) && Boolean(t.userEmail) &&
+            t.userEmail.toLowerCase() === userProfile.email.toLowerCase();
+          if (matchUid || matchEmail) {
+            map.set(t.id, { ...map.get(t.id), ...t });
+          }
+        });
+        return Array.from(map.values());
+      });
+    });
+    return () => {
+      if (typeof unsub === 'function') unsub();
+    };
+  }, [userProfile?.uid, userProfile?.email, isAdminAuthenticated]);
+
   const createSupportTicket = ({ subject, category, message, orderId, attachmentUrl }) => {
     const newTicket = {
       id: 'TCK-' + Math.floor(1000 + Math.random() * 9000),
@@ -1391,7 +1419,11 @@ export const AppProvider = ({ children }) => {
     setSupportTickets(prev => [newTicket, ...prev]);
     setActiveTicketId(newTicket.id);
     // Persist to Firestore so admin sees ticket immediately
-    saveSupportTicketToFirestore(newTicket);
+    // Bug 5 fix: catch Firestore errors so they're not silently swallowed
+    saveSupportTicketToFirestore(newTicket).catch(err => {
+      console.warn('[createSupportTicket] Firestore save error:', err);
+      showToast('Ticket saved locally. Sync may be delayed — contact support if unresolved.', 'error');
+    });
     showToast('Support ticket submitted! Our 24/7 team will respond shortly.');
     return newTicket;
   };
@@ -1409,7 +1441,11 @@ export const AppProvider = ({ children }) => {
         };
         const updated = {
           ...tck,
-          status: senderRole === 'admin' ? (tck.status === 'OPEN' ? 'IN_PROGRESS' : tck.status) : 'OPEN',
+          // Bug 3 fix: don't blindly reset to 'OPEN' on every user reply.
+          // Only reopen if the ticket was RESOLVED or CLOSED; leave IN_PROGRESS unchanged.
+          status: senderRole === 'admin'
+            ? (tck.status === 'OPEN' ? 'IN_PROGRESS' : tck.status)
+            : (tck.status === 'RESOLVED' || tck.status === 'CLOSED' ? 'OPEN' : tck.status),
           updatedAt: new Date().toISOString(),
           messages: [...tck.messages, newMessage]
         };

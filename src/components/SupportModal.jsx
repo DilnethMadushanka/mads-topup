@@ -67,8 +67,17 @@ export const SupportModal = () => {
   }, [currentTicket?.messages?.length, activeTicketId]);
 
   useEffect(() => {
-    if (isSupportOpen) setIsMinimized(false);
+    if (isSupportOpen) {
+      setIsMinimized(false);
+      setView('list'); // Bug 6 fix: reset view to list on every reopen
+    }
   }, [isSupportOpen]);
+
+  // Bug 4 fix: clear shared attachment state whenever the user switches views
+  useEffect(() => {
+    setAttachmentUrl('');
+    setAttachmentFile(null);
+  }, [view]);
 
   useEffect(() => {
     if (!lightboxUrl) return;
@@ -89,13 +98,19 @@ export const SupportModal = () => {
     setIsUploading(true);
     // Uses the verified /api/upload-file → Cloudflare R2 pipeline (storageService.js)
     // so attachments actually persist and display reliably.
-    const res = await uploadToR2Storage(file, 'support-attachments');
-    setIsUploading(false);
-    if (res.success) {
-      setAttachmentUrl(res.url);
-      showToast('Image screenshot uploaded to support system!');
-    } else {
-      showToast(res.error || 'Upload failed', 'error');
+    try {
+      // Bug 8 fix: wrap in try/finally so isUploading is always cleared even if upload throws
+      const res = await uploadToR2Storage(file, 'support-attachments');
+      if (res.success) {
+        setAttachmentUrl(res.url);
+        showToast('Image screenshot uploaded to support system!');
+      } else {
+        showToast(res.error || 'Upload failed', 'error');
+      }
+    } catch (err) {
+      showToast('Upload failed. Please try again.', 'error');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -150,10 +165,18 @@ export const SupportModal = () => {
     );
   };
 
-  // Return empty array when not logged in — prevents data leak to unauthenticated users
+  // Bug 1 fix: use a ticket-specific ownership check instead of orderBelongsToUser() which
+  // is designed for orders. Tickets use userId + userEmail (no phone). Also avoids the guest
+  // UID mismatch where a ticket created before login gets a random userId that never matches.
   const userTickets = !isLoggedIn
     ? []
-    : (supportTickets || []).filter(t => orderBelongsToUser(t, userProfile));
+    : (supportTickets || []).filter(t => {
+        if (!t || !userProfile) return false;
+        const matchUid = Boolean(userProfile.uid) && t.userId === userProfile.uid;
+        const matchEmail = Boolean(userProfile.email) && Boolean(t.userEmail) &&
+          t.userEmail.toLowerCase() === userProfile.email.toLowerCase();
+        return matchUid || matchEmail;
+      });
 
   // Filter orders strictly for current user
   const userOrders = !isLoggedIn ? [] : filterUserOrders(orders, userProfile);
@@ -287,7 +310,8 @@ export const SupportModal = () => {
                         </div>
                         <h4 style={{ margin: '0 0 8px', fontWeight: 800, fontSize: 12, color: '#e2e8f0' }}>{tck.subject}</h4>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span style={{ fontSize: 10, color: NEON.textDim }}>{new Date(tck.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          {/* Bug 7 fix: show date for old tickets instead of time-only */}
+                          <span style={{ fontSize: 10, color: NEON.textDim }}>{(() => { const d = new Date(tck.updatedAt); const isToday = new Date().toDateString() === d.toDateString(); return isToday ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString([], { month: 'short', day: 'numeric' }); })()}</span>
                           <span style={{ fontSize: 10, color: NEON.cyan, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 3 }}>View Chat <ChevronRight style={{ width: 12, height: 12 }} /></span>
                         </div>
                       </div>
