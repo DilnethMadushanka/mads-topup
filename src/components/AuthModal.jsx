@@ -479,12 +479,18 @@ export const AuthModal = () => {
           walletUsdt: 0
         };
 
-        // Always check Firestore for phone — isNewUser can be false even for users who never set a phone
-        const existingProfile = await syncUserProfileToFirestore(res.user);
+        // Sync profile from DB — used to check if phone already exists
+        let existingProfile = null;
+        try {
+          existingProfile = await syncUserProfileToFirestore(res.user);
+        } catch (syncErr) {
+          console.warn('Profile sync note:', syncErr);
+        }
+
         const hasPhone = Boolean(existingProfile?.phone?.trim());
 
         if (hasPhone) {
-          // Returning user with phone already saved — log in immediately
+          // Returning user — has phone saved, log in immediately
           setIsLoggedIn(true);
           setUserProfile(prev => ({
             ...prev,
@@ -495,8 +501,15 @@ export const AuthModal = () => {
           }));
           showToast(`Welcome back, ${res.user.name || 'Gamer'}!`);
           setIsAuthModalOpen(false);
+        } else if (existingProfile === null && !res.isNewUser) {
+          // Firestore failed to load AND this is a known returning user —
+          // don't block them with WhatsApp screen, log in gracefully
+          setIsLoggedIn(true);
+          setUserProfile(prev => ({ ...prev, ...immediateProfile }));
+          showToast(`Welcome back, ${res.user.name || 'Gamer'}!`);
+          setIsAuthModalOpen(false);
         } else {
-          // No phone saved yet — must collect WhatsApp number before proceeding
+          // New user or user without phone — must collect WhatsApp number
           setPendingGoogleUser(res.user);
         }
       }
