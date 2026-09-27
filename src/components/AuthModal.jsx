@@ -428,8 +428,12 @@ export const AuthModal = () => {
       showToast('Passwords do not match!', 'error');
       return;
     }
-    if (phone && !/^\d{7,10}$/.test(phone.trim())) {
-      showToast('Please enter a valid phone number (digits only, 7-10 digits)!', 'error');
+    if (!phone || !phone.trim()) {
+      showToast('Please enter your WhatsApp number to complete registration!', 'error');
+      return;
+    }
+    if (!/^\d{7,10}$/.test(phone.trim())) {
+      showToast('Please enter a valid WhatsApp number (digits only, 7-10 digits)!', 'error');
       return;
     }
 
@@ -1218,11 +1222,13 @@ export const AuthModal = () => {
                   </div>
                 )}
 
-                {/* WhatsApp Number */}
+                {/* WhatsApp Number - REQUIRED */}
                 <div>
                   <label className="text-xs font-extrabold text-slate-700 block mb-1 flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 text-slate-400" />
+                    <Phone className="w-3.5 h-3.5 text-green-500" />
                     <span>WhatsApp Number</span>
+                    <span className="text-[#cc040a] font-black">*</span>
+                    <span className="ml-auto text-[9px] font-bold bg-green-50 text-green-600 border border-green-200 px-2 py-0.5 rounded-full">Required</span>
                   </label>
                   <div className="flex items-center gap-2">
                     <div className="px-3 py-2.5 bg-[#F8FAFC] border border-slate-200 rounded-xl text-xs font-bold text-slate-700 shrink-0">
@@ -1230,14 +1236,17 @@ export const AuthModal = () => {
                     </div>
                     <input
                       type="tel"
-                      placeholder="Enter phone number"
+                      placeholder="e.g. 771234567"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-[#F8FAFC] border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:ring-2 focus:ring-red-500/20 transition-all"
+                      required
+                      className={`w-full px-3.5 py-2.5 bg-[#F8FAFC] border rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 transition-all ${
+                        phone && phone.trim() ? 'border-green-400 focus:border-green-500 focus:ring-green-500/20' : 'border-slate-200 focus:border-[#cc040a] focus:ring-red-500/20'
+                      }`}
                     />
                   </div>
                   <p className="text-[10px] font-medium text-slate-400 mt-0.5">
-                    Enter your number without leading zero
+                    📱 Enter your number without leading zero — used for order updates
                   </p>
                 </div>
 

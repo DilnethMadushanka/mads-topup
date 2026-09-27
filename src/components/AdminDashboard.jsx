@@ -1636,6 +1636,20 @@ export const AdminDashboard = () => {
                       <div className="text-[10px] font-mono" style={mutedStyle}>{u.email}</div>
                     </div>
                   )},
+                  { key: 'phone', label: 'WhatsApp', render: u => (
+                    u.phone ? (
+                      <a
+                        href={`https://wa.me/${u.phone.replace(/[^\d]/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-[11px] font-mono font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
+                        title="Open WhatsApp Chat"
+                      >
+                        <Smartphone className="w-3 h-3" />
+                        {u.phone}
+                      </a>
+                    ) : <span className="text-[10px]" style={{ color: 'var(--adm-text-faint)' }}>—</span>
+                  ) },
                   { key: 'verify', label: 'Verification', render: u => u.isVerified ? <StatusPill status="VERIFIED" /> : <StatusPill status="UNVERIFIED" /> },
                   { key: 'status', label: 'Account Status', sortable: true, sortValue: u => u.status || '', render: u => <StatusPill status={u.status} /> },
                   { key: 'lkr', label: 'EZ Wallet LKR', sortable: true, sortValue: u => u.walletBalance || 0, render: u => <span className="font-mono font-bold" style={{ color: 'var(--adm-text)' }}>Rs. {(u.walletBalance || 0).toLocaleString()}</span> },
@@ -2089,6 +2103,23 @@ export const AdminDashboard = () => {
 
       {selectedInspectUser && (
         <ModalShell onClose={() => setSelectedInspectUser(null)} title={selectedInspectUser.name} subtitle={selectedInspectUser.email} icon={selectedInspectUser.isVerified ? BadgeCheck : Users}>
+          {/* WhatsApp number display */}
+          {selectedInspectUser.phone && (
+            <div className="flex items-center gap-2 rounded-xl border px-4 py-2.5 text-xs" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
+              <Smartphone className="w-4 h-4 text-emerald-400 shrink-0" />
+              <div>
+                <span className="text-[10px] font-bold uppercase block" style={mutedStyle}>WhatsApp Number</span>
+                <a
+                  href={`https://wa.me/${selectedInspectUser.phone.replace(/[^\d]/g, '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
+                >
+                  {selectedInspectUser.phone}
+                </a>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3 text-xs rounded-2xl border p-4" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
             <div><span className="text-[10px] font-bold uppercase block" style={mutedStyle}>EZ Cash Balance</span><span className="text-base font-black font-heading" style={{ color: 'var(--adm-text)' }}>Rs. {(selectedInspectUser.walletBalance || 0).toLocaleString()}</span></div>
             <div><span className="text-[10px] font-bold uppercase block" style={mutedStyle}>Binance USDT</span><span className="text-base font-black text-emerald-400 font-heading">${(selectedInspectUser.walletUsdt || 0).toFixed(2)}</span></div>
