@@ -759,6 +759,12 @@ export const AdminDashboard = () => {
   const openTicketsCount = safeTickets.filter(t => t && t.status === 'OPEN').length;
   const pendingResellersCount = safeResellerApps.filter(a => a.status === 'PENDING').length;
 
+  // Today's new registrations
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  const todayNewUsers = safeUsers
+    .filter(u => u.createdAt && new Date(u.createdAt) >= todayStart)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
   const badges = {
     pending: pendingCount,
     payments: pendingPaymentsCount,
@@ -1284,6 +1290,35 @@ export const AdminDashboard = () => {
                   <span className="text-[10px] font-black uppercase tracking-wider block" style={mutedStyle}>Reseller Applications</span>
                   <h4 className="text-2xl font-black text-amber-400 font-heading mt-1">{pendingResellersCount} Pending</h4>
                   <span className="text-[10px] font-bold mt-1 inline-block" style={faintStyle}>{safeResellerApps.length} total applications</span>
+                </div>
+
+                {/* Today's New Registrations Card */}
+                <div className="rounded-2xl border p-5 sm:col-span-2 lg:col-span-3" style={cardStyle}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <span className="text-[10px] font-black uppercase tracking-wider block" style={mutedStyle}>Today's New Registrations</span>
+                      <h4 className="text-2xl font-black text-violet-400 font-heading mt-1">{todayNewUsers.length} <span className="text-sm font-normal" style={mutedStyle}>new users today</span></h4>
+                    </div>
+                    <button onClick={() => { setAdminTab('users'); setUserSortOrder('newest'); }} className="text-[10px] px-3 py-1.5 rounded-lg border font-bold cursor-pointer" style={{ borderColor: 'var(--adm-border)', ...mutedStyle }}>View All</button>
+                  </div>
+                  {todayNewUsers.length === 0 ? (
+                    <p className="text-[11px] text-center py-4" style={faintStyle}>No new registrations today yet.</p>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
+                      {todayNewUsers.map(u => (
+                        <div key={u.uid || u.email} className="flex items-center gap-2.5 p-2.5 rounded-xl border" style={{ borderColor: 'var(--adm-border)', background: 'var(--adm-input-bg)' }}>
+                          <div className="w-8 h-8 rounded-full bg-violet-600/20 border border-violet-500/30 flex items-center justify-center shrink-0">
+                            <span className="text-xs font-black text-violet-400">{(u.name || u.email || '?')[0].toUpperCase()}</span>
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold truncate" style={{ color: 'var(--adm-text)' }}>{u.name || 'New User'}</div>
+                            <div className="text-[10px] truncate" style={faintStyle}>{u.email}</div>
+                            <div className="text-[9px] font-mono" style={faintStyle}>{u.createdAt ? new Date(u.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
