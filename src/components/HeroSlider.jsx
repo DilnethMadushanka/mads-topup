@@ -131,7 +131,7 @@ export const HeroSlider = () => {
                   >
                     <div>
                       <div className="font-bold text-sm text-white">{pkg.name}</div>
-                      <div className="text-[11px] text-red-400 font-semibold">{pkg.bonus}</div>
+                      {pkg.bonus && <div className="text-[11px] text-red-400 font-semibold">{pkg.bonus}</div>}
                     </div>
                     <div className="text-right">
                       <div className="font-extrabold text-sm text-white">Rs. {pkg.priceLkr}</div>
