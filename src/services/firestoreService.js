@@ -970,12 +970,20 @@ export const setUserExactBalanceInDatabase = async (identifier, exactLkr, exactU
 
           if (matchUid || matchEmail || matchCode || matchSecKey) {
             targetUid = userObj.uid || uidKey;
-            const userRtdbRef = dbRef(rtdb, `users/${targetUid}`);
-            await rtdbUpdate(userRtdbRef, {
-              walletBalance: targetLkr,
-              walletUsdt: targetUsdt,
-              updatedAt: new Date().toISOString()
-            });
+            // Write to BOTH the actual RTDB key path (uidKey) AND the stored uid field
+            // path — the user's client subscribes to users/{firebaseAuthUid} which can
+            // differ from the RTDB key when the account was created via custom login.
+            // Writing both paths ensures the real-time listener always fires and the
+            // UI balance updates instantly without requiring a page reload.
+            const pathsToWrite = new Set([uidKey, targetUid].filter(Boolean));
+            for (const p of pathsToWrite) {
+              const refToWrite = dbRef(rtdb, `users/${p}`);
+              await rtdbUpdate(refToWrite, {
+                walletBalance: targetLkr,
+                walletUsdt: targetUsdt,
+                updatedAt: new Date().toISOString()
+              });
+            }
 
             userObj.walletBalance = targetLkr;
             userObj.walletUsdt = targetUsdt;
