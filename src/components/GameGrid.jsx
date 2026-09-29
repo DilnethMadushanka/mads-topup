@@ -61,10 +61,10 @@ export const GameGrid = () => {
           {/* Main Heading & Sub-heading */}
           <div>
             <h1 className="text-4xl sm:text-6xl font-black font-heading text-white tracking-tight leading-none">
-              Game Top-Up Center
+              Sri Lankan Diamond Store
             </h1>
             <p className="text-xs sm:text-base font-semibold text-slate-300 max-w-xl mx-auto mt-2.5">
-              The fastest & most secure way to top up your favourite games.
+              Buy Free Fire, Mobile Legends & PUBG diamonds in Sri Lanka - fast, secure, instant delivery.
             </p>
           </div>
 
