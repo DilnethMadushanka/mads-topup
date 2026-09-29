@@ -13,7 +13,10 @@ function sanitizeFileName(name) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const allowedOrigins = ['https://madstopup.com', 'https://www.madstopup.com', 'http://localhost:5173', 'http://localhost:5174'];
+  const requestOrigin = req.headers.origin || '';
+  const corsOrigin = allowedOrigins.includes(requestOrigin) ? requestOrigin : 'https://madstopup.com';
+  res.setHeader('Access-Control-Allow-Origin', corsOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 

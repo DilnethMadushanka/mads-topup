@@ -2,7 +2,15 @@
   "rules": {
     "users": {
       ".read": true,
-      ".write": true
+      ".write": true,
+      "$uid": {
+        "walletBalance": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        "walletUsdt": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        }
+      }
     },
     "orders": {
       ".read": true,
@@ -50,3 +58,4 @@
     }
   }
 }
+

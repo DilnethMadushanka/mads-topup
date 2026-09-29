@@ -103,16 +103,7 @@ async function verifyFirebaseIdToken(idToken) {
     console.error('[Vercel Auth Token Error]:', err.message);
   }
 
-  // Fallback: treat any non-empty token as valid session (custom web users)
-  if (cleanToken.length >= 3) {
-    return {
-      uid: cleanToken,
-      email: cleanToken.includes('@') ? cleanToken : 'user@madstopup.com',
-      emailVerified: true,
-      isWebSession: true
-    };
-  }
-
+  // No valid token — reject
   return null;
 }
 
@@ -363,9 +354,12 @@ async function refundUserWallet(uid, priceLkr, usedCurrency = 'LKR', email, rtdb
 export default async function handler(req, res) {
   let partnerOrderId = null;
   try {
-    // CORS headers for frontend
+    // CORS headers — restrict to production domain + local dev
+    const allowedOrigins = ['https://madstopup.com', 'https://www.madstopup.com', 'http://localhost:5173', 'http://localhost:5174'];
+    const requestOrigin = req.headers.origin || '';
+    const corsOrigin = allowedOrigins.includes(requestOrigin) ? requestOrigin : 'https://madstopup.com';
     res.setHeader('Access-Control-Allow-Credentials', true);
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Origin', corsOrigin);
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
     res.setHeader(
       'Access-Control-Allow-Headers',
@@ -492,8 +486,15 @@ export default async function handler(req, res) {
       }
     }
 
-    const partnerId = process.env.MOONGOLD_PARTNER_ID || process.env.VITE_MOONGOLD_PARTNER_ID || 'f27cabc8d2c2122bbedacabce632db68';
-    const secretKey = process.env.MOONGOLD_SECRET_KEY || process.env.VITE_MOONGOLD_SECRET_KEY || 'PM67SGqyed';
+    const partnerId = process.env.MOONGOLD_PARTNER_ID || process.env.VITE_MOONGOLD_PARTNER_ID || '';
+    const secretKey = process.env.MOONGOLD_SECRET_KEY || process.env.VITE_MOONGOLD_SECRET_KEY || '';
+    if (!partnerId || !secretKey) {
+      console.error('[MooGold] MOONGOLD_PARTNER_ID or MOONGOLD_SECRET_KEY env vars not set.');
+      if (isOrderCreation && deductResult?.success) {
+        await refundUserWallet(authenticatedUser.uid, numPriceLkr, deductResult?.usedCurrency || 'LKR', authenticatedUser.email, deductResult?.rtdbKey);
+      }
+      return res.status(500).json({ error: 'Payment gateway not configured. Please contact support.' });
+    }
     const baseUrl = 'https://moogold.com/wp-json/v1/api';
 
     // MooGold's documented request shape is { path, data } — the client's
@@ -575,6 +576,6 @@ export default async function handler(req, res) {
     if (partnerOrderId) {
       await saveMoogoldOrderRecord(partnerOrderId, { status: 'FAILED', reason: err.message, createdAt: new Date().toISOString() }).catch(() => {});
     }
-    res.status(500).json({ error: err.message, stack: err.stack });
+    res.status(500).json({ error: 'Internal server error. Please try again or contact support.' });
   }
 }
