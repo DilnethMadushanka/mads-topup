@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { PAYMENT_METHODS, getVerifiedPackagePriceLkr } from '../data/games';
+import { PAYMENT_METHODS } from '../data/games';
 import { checkPlayerIGN, dispatchMoongoldOrder } from '../services/moongoldApi';
 import { uploadToR2Storage } from '../services/storageService';
 import { auth } from '../services/firebaseAuth';
@@ -22,7 +22,6 @@ export const TopupModal = () => {
     savePlayerId,
     userProfile,
     setUserProfile,
-    creditUserWallet,
     setIsWalletModalOpen
   } = useApp();
 
@@ -352,109 +351,109 @@ export const TopupModal = () => {
           {step < 4 && (
             <>
               {/* SECTION 1: Player ID & Server Verification */}
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[#cc040a]"></span>
-                    Step 1: Enter Game Account ID
-                  </label>
+              <div className="space-y-3">
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-[#cc040a]"></span>
+                      Step 1: Enter Game Account ID
+                    </label>
+                    {(userProfile?.savedIds || []).filter(s => s.gameId === selectedGame.id).length > 0 && (
+                      <span className="text-[11px] text-slate-400 font-semibold">Saved IDs Available</span>
+                    )}
+                  </div>
+
+                  {/* Quick Select Saved IDs */}
                   {(userProfile?.savedIds || []).filter(s => s.gameId === selectedGame.id).length > 0 && (
-                    <span className="text-[11px] text-slate-400 font-semibold">Saved IDs Available</span>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {(userProfile?.savedIds || []).filter(s => s.gameId === selectedGame.id).map(saved => (
+                        <button
+                          key={saved.id}
+                          onClick={() => handleSelectSavedId(saved)}
+                          className={`px-3 py-1 rounded-lg text-xs font-bold border transition-all ${
+                            savedSelection === saved.id 
+                              ? 'bg-[#cc040a] text-white border-[#cc040a]' 
+                              : 'bg-slate-900 text-slate-300 border-slate-700 hover:border-slate-500'
+                          }`}
+                        >
+                          ⚡ {saved.nickName} ({saved.playerId})
+                        </button>
+                      ))}
+                    </div>
                   )}
-                </div>
 
-                {/* Quick Select Saved IDs */}
-                {(userProfile?.savedIds || []).filter(s => s.gameId === selectedGame.id).length > 0 && (
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {(userProfile?.savedIds || []).filter(s => s.gameId === selectedGame.id).map(saved => (
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-1">
+                    {/* Input fields: split for ML (User ID + Zone ID), single for others */}
+                    {selectedGame.requiresServer ? (
+                      /* Mobile Legends: two separate labeled boxes */
+                      <div className="sm:col-span-12 flex flex-col sm:flex-row gap-3">
+                        {/* User ID Box */}
+                        <div className="flex-1 bg-white border-2 border-slate-300 rounded-xl overflow-hidden focus-within:border-[#cc040a] transition-colors shadow-xs">
+                          <div className="px-4 pt-2 pb-0">
+                            <span className="text-[10px] font-extrabold text-[#cc040a] uppercase tracking-widest">User ID</span>
+                          </div>
+                          <input
+                            type="text"
+                            placeholder={selectedGame.idPlaceholder || "e.g. 84218845"}
+                            value={playerId}
+                            onChange={(e) => {
+                              setPlayerId(e.target.value);
+                              setIgnVerified(false);
+                            }}
+                            className="w-full px-4 pb-2.5 pt-0.5 bg-transparent text-sm text-slate-900 font-semibold focus:outline-none placeholder:text-slate-400"
+                          />
+                        </div>
+
+                        {/* Zone ID Box */}
+                        <div className="flex-1 sm:max-w-[180px] bg-white border-2 border-slate-300 rounded-xl overflow-hidden focus-within:border-amber-500 transition-colors shadow-xs">
+                          <div className="px-4 pt-2 pb-0">
+                            <span className="text-[10px] font-extrabold text-amber-600 uppercase tracking-widest">Zone ID</span>
+                          </div>
+                          <input
+                            type="text"
+                            placeholder={selectedGame.serverPlaceholder || "e.g. 2168"}
+                            value={zoneId}
+                            onChange={(e) => setZoneId(e.target.value)}
+                            className="w-full px-4 pb-2.5 pt-0.5 bg-transparent text-sm text-slate-900 font-semibold focus:outline-none placeholder:text-slate-400"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      /* Other games: single input */
+                      <div className="sm:col-span-8">
+                        <input
+                          type="text"
+                          placeholder={selectedGame.idPlaceholder}
+                          value={playerId}
+                          onChange={(e) => {
+                            setPlayerId(e.target.value);
+                            setIgnVerified(false);
+                          }}
+                          className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 font-semibold focus:outline-none focus:border-[#cc040a] shadow-xs"
+                        />
+                      </div>
+                    )}
+
+                    <div className="sm:col-span-12">
                       <button
-                        key={saved.id}
-                        onClick={() => handleSelectSavedId(saved)}
-                        className={`px-3 py-1 rounded-lg text-xs font-bold border transition-all ${
-                          savedSelection === saved.id 
-                            ? 'bg-[#cc040a] text-white border-[#cc040a]' 
-                            : 'bg-slate-900 text-slate-300 border-slate-700 hover:border-slate-500'
-                        }`}
+                        onClick={handleVerifyIgn}
+                        disabled={isVerifyingIgn}
+                        className="w-full h-full min-h-[42px] px-3 py-2 bg-[#cc040a] text-white rounded-xl text-xs font-bold hover:bg-[#990207] transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
                       >
-                        ⚡ {saved.nickName} ({saved.playerId})
+                        {isVerifyingIgn ? (
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin text-white" />
+                        ) : (
+                          <ShieldCheck className="w-3.5 h-3.5 text-white" />
+                        )}
+                        <span>{isVerifyingIgn ? 'Checking Moongold...' : 'Check IGN'}</span>
                       </button>
-                    ))}
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-1">
-                  {/* Input fields: split for ML (User ID + Zone ID), single for others */}
-                {selectedGame.requiresServer ? (
-                  /* Mobile Legends: two separate labeled boxes */
-                  <div className="sm:col-span-12 flex flex-col sm:flex-row gap-3">
-                    {/* User ID Box */}
-                    <div className="flex-1 bg-white border-2 border-slate-300 rounded-xl overflow-hidden focus-within:border-[#cc040a] transition-colors shadow-xs">
-                      <div className="px-4 pt-2 pb-0">
-                        <span className="text-[10px] font-extrabold text-[#cc040a] uppercase tracking-widest">User ID</span>
-                      </div>
-                      <input
-                        type="text"
-                        placeholder={selectedGame.idPlaceholder || "e.g. 84218845"}
-                        value={playerId}
-                        onChange={(e) => {
-                          setPlayerId(e.target.value);
-                          setIgnVerified(false);
-                        }}
-                        className="w-full px-4 pb-2.5 pt-0.5 bg-transparent text-sm text-slate-900 font-semibold focus:outline-none placeholder:text-slate-400"
-                      />
                     </div>
-
-                    {/* Zone ID Box */}
-                    <div className="flex-1 sm:max-w-[180px] bg-white border-2 border-slate-300 rounded-xl overflow-hidden focus-within:border-amber-500 transition-colors shadow-xs">
-                      <div className="px-4 pt-2 pb-0">
-                        <span className="text-[10px] font-extrabold text-amber-600 uppercase tracking-widest">Zone ID</span>
-                      </div>
-                      <input
-                        type="text"
-                        placeholder={selectedGame.serverPlaceholder || "e.g. 2168"}
-                        value={zoneId}
-                        onChange={(e) => setZoneId(e.target.value)}
-                        className="w-full px-4 pb-2.5 pt-0.5 bg-transparent text-sm text-slate-900 font-semibold focus:outline-none placeholder:text-slate-400"
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  /* Other games: single input */
-                  <div className="sm:col-span-8">
-                    <input
-                      type="text"
-                      placeholder={selectedGame.idPlaceholder}
-                      value={playerId}
-                      onChange={(e) => {
-                        setPlayerId(e.target.value);
-                        setIgnVerified(false);
-                      }}
-                      className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 font-semibold focus:outline-none focus:border-[#cc040a] shadow-xs"
-                    />
-                  </div>
-                )}
-
-
-                  <div className="sm:col-span-12">
-                    <button
-                      onClick={handleVerifyIgn}
-                      disabled={isVerifyingIgn}
-                      className="w-full h-full min-h-[42px] px-3 py-2 bg-[#cc040a] text-white rounded-xl text-xs font-bold hover:bg-[#990207] transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
-                    >
-                      {isVerifyingIgn ? (
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-white" />
-                      ) : (
-                        <ShieldCheck className="w-3.5 h-3.5 text-white" />
-                      )}
-                      <span>{isVerifyingIgn ? 'Checking Moongold...' : 'Check IGN'}</span>
-                    </button>
                   </div>
                 </div>
-              </div>
 
                 {/* Helper Guide Hint Banner ONLY for Mobile Legends */}
                 {selectedGame?.id === 'mobilelegends' && (
-                  <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-900 text-xs font-semibold flex items-start gap-2 mt-2">
+                  <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-900 text-xs font-semibold flex items-start gap-2">
                     <HelpCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                     <span className="leading-snug">💡 MLBB User ID (e.g. 84218845) සහ Zone ID (e.g. 2168 - Profile එකේ වරහන් ඇතුළත ඇති අංකය) ඇතුළත් කරන්න.</span>
                   </div>
@@ -664,6 +663,52 @@ export const TopupModal = () => {
                     </div>
                   )}
                   {/* PROMO CODE / COUPON INPUT BOX */}
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                    <label className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                      <Gift className="w-3.5 h-3.5 text-[#cc040a]" />
+                      Promo Code / Coupon
+                    </label>
+                    <form onSubmit={handleApplyPromoCode} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={promoCodeInput}
+                        onChange={(e) => {
+                          setPromoCodeInput(e.target.value.toUpperCase());
+                          setPromoError('');
+                        }}
+                        placeholder="Enter promo code (e.g. WELCOME50)"
+                        className="flex-1 px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-[#cc040a] placeholder:text-slate-400 font-mono uppercase"
+                      />
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-[#cc040a] text-white text-xs font-bold rounded-xl hover:bg-[#990207] transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
+                      >
+                        <Tag className="w-3.5 h-3.5" />
+                        Apply
+                      </button>
+                    </form>
+                    {promoError && (
+                      <p className="text-[11px] text-red-600 font-semibold flex items-center gap-1">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        {promoError}
+                      </p>
+                    )}
+                    {appliedPromo && (
+                      <div className="flex items-center justify-between bg-emerald-50 border border-emerald-300 rounded-xl px-3 py-2">
+                        <div className="flex items-center gap-2 text-xs font-bold text-emerald-800">
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>{appliedPromo.desc}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => { setAppliedPromo(null); setPromoCodeInput(''); }}
+                          className="text-[10px] text-slate-500 hover:text-red-600 font-bold cursor-pointer transition-colors"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
                 </div>
               )}
