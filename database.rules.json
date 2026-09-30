@@ -2,60 +2,87 @@
   "rules": {
     "users": {
       ".read": true,
-      ".write": true,
       "$uid": {
+        ".write": "newData.exists()",
+        ".validate": "newData.hasChildren()",
         "walletBalance": {
-          ".validate": "newData.isNumber() && newData.val() >= 0"
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000"
         },
         "walletUsdt": {
-          ".validate": "newData.isNumber() && newData.val() >= 0"
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000"
         }
       }
     },
     "orders": {
       ".read": true,
-      ".write": true
+      "$id": {
+        ".write": "newData.exists()",
+        ".validate": "newData.hasChildren()"
+      }
     },
     "manual_payments": {
       ".read": true,
-      ".write": true
+      "$id": {
+        ".write": "newData.exists()",
+        ".validate": "newData.hasChildren()"
+      }
     },
     "reseller_applications": {
       ".read": true,
-      ".write": true
+      "$id": {
+        ".write": "newData.exists()",
+        ".validate": "newData.hasChildren()"
+      }
     },
     "siteConfig": {
       ".read": true,
-      ".write": true
+      "$id": {
+        ".write": "newData.exists()"
+      }
     },
     "settings": {
       ".read": true,
-      ".write": true
+      "$id": {
+        ".write": "newData.exists()"
+      }
     },
     "genieTransactions": {
       ".read": true,
-      ".write": true
+      "$id": {
+        ".write": "newData.exists()"
+      }
     },
     "genieLocalIdIndex": {
       ".read": true,
-      ".write": true
+      "$id": {
+        ".write": "newData.exists()"
+      }
     },
     "moogoldProcessedOrders": {
       ".read": true,
-      ".write": true
+      "$id": {
+        ".write": "newData.exists()"
+      }
     },
     "supportTickets": {
       ".read": true,
-      ".write": true
+      "$id": {
+        ".write": "newData.exists()",
+        ".validate": "newData.hasChildren()"
+      }
     },
     "reviews": {
       ".read": true,
-      ".write": true
+      "$id": {
+        ".write": "newData.exists()",
+        ".validate": "newData.hasChildren()"
+      }
     },
     "vouchers_log": {
       ".read": true,
-      ".write": true
+      "$id": {
+        ".write": "newData.exists()"
+      }
     }
   }
 }
-
