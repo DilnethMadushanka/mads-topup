@@ -27,7 +27,7 @@ export const GameGrid = () => {
   });
 
   // Main games are shown large on top; everything else stays in the regular grid.
-  const FEATURED_IDS = ['freefire_sg', 'mobilelegends', 'pubg'];
+  const FEATURED_IDS = ['freefire_sg', 'pubg', 'mobilelegends'];
   const featuredGames = FEATURED_IDS.map(id => filteredGames.find(g => g.id === id)).filter(Boolean);
   const otherGames = filteredGames.filter(g => !FEATURED_IDS.includes(g.id));
 

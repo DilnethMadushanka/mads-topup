@@ -133,9 +133,9 @@ function PodiumCard({ user, rank, visible }) {
   const countVal = useCountUp(user.totalLkr, 1400, visible);
 
   const cfgMap = {
-    1: { ring: 'linear-gradient(135deg,#ff4d4f,#cc040a)', accent: '#ff6b6b', step: 'linear-gradient(180deg,rgba(204,4,10,0.55),rgba(204,4,10,0.08))', label: 'TOP SPENDER' },
-    2: { ring: 'linear-gradient(135deg,#e2e8f0,#94a3b8)', accent: '#cbd5e1', step: 'linear-gradient(180deg,rgba(148,163,184,0.38),rgba(148,163,184,0.05))', label: '2ND PLACE' },
-    3: { ring: 'linear-gradient(135deg,#fbbf24,#b45309)', accent: '#fbbf24', step: 'linear-gradient(180deg,rgba(217,119,6,0.42),rgba(217,119,6,0.05))', label: '3RD PLACE' },
+    1: { ring: 'linear-gradient(135deg,#ff4d4f,#cc040a)', accent: '#cc040a', step: 'linear-gradient(180deg,rgba(204,4,10,0.22),rgba(204,4,10,0.03))', label: 'TOP SPENDER' },
+    2: { ring: 'linear-gradient(135deg,#e2e8f0,#94a3b8)', accent: '#64748b', step: 'linear-gradient(180deg,rgba(100,116,139,0.22),rgba(100,116,139,0.03))', label: '2ND PLACE' },
+    3: { ring: 'linear-gradient(135deg,#fbbf24,#b45309)', accent: '#b45309', step: 'linear-gradient(180deg,rgba(217,119,6,0.26),rgba(217,119,6,0.03))', label: '3RD PLACE' },
   };
   const cfg = cfgMap[rank];
 
@@ -164,7 +164,7 @@ function PodiumCard({ user, rank, visible }) {
       <p className="tsp-name" title={user.name}>{user.name}</p>
       <p className="tsp-label" style={{ color: cfg.accent }}>{cfg.label}</p>
 
-      <p className="tsp-amount" style={{ color: isFirst ? '#fff' : '#e2e8f0' }}>{fmtLkr(countVal)}</p>
+      <p className="tsp-amount" style={{ color: isFirst ? '#cc040a' : '#0f172a' }}>{fmtLkr(countVal)}</p>
       <span className="tsp-orders">{user.orderCount} top-up{user.orderCount !== 1 ? 's' : ''}</span>
 
       {/* Podium step */}
@@ -196,10 +196,10 @@ function EmptySlot({ rank }) {
       <div className="tsp-avatar-wrap">
         <div className="tsp-empty-avatar">?</div>
       </div>
-      <p className="tsp-name" style={{ color: 'rgba(255,255,255,0.55)' }}>Open spot</p>
-      <p className="tsp-label" style={{ color: 'rgba(255,255,255,0.3)' }}>COULD BE YOU</p>
+      <p className="tsp-name" style={{ color: '#94a3b8' }}>Open spot</p>
+      <p className="tsp-label" style={{ color: '#cbd5e1' }}>COULD BE YOU</p>
       <div className="tsp-step tsp-step-skeleton" style={{ borderTopStyle: 'dashed' }}>
-        <span className="tsp-step-num" style={{ color: 'rgba(255,255,255,0.25)' }}>{rank}</span>
+        <span className="tsp-step-num" style={{ color: '#cbd5e1' }}>{rank}</span>
       </div>
     </div>
   );
@@ -244,7 +244,7 @@ export const TopSpendersSection = () => {
             <div>
               <div className="tsp-title-row">
                 <h2 className="tsp-title">Top Spenders</h2>
-                <Sparkles size={15} color="#ff6b6b" />
+                <Sparkles size={15} color="#cc040a" />
               </div>
               <p className="tsp-subtitle">Most valued customers this month</p>
             </div>
@@ -271,7 +271,7 @@ export const TopSpendersSection = () => {
           ) : topSpenders.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '28px 0 36px' }}>
               <p style={{ fontSize: 32, marginBottom: 8 }}>🎮</p>
-              <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, fontWeight: 700 }}>Be the first top spender this month!</p>
+              <p style={{ color: '#94a3b8', fontSize: 13, fontWeight: 700 }}>Be the first top spender this month!</p>
             </div>
           ) : (
             <div className="tsp-cols">
@@ -298,17 +298,17 @@ export const TopSpendersSection = () => {
           margin-top: 40px;
           padding: 56px 24px 52px;
           border-radius: 32px;
-          color: #fff;
-          background: linear-gradient(160deg, #0f1528 0%, #0d1220 55%, #150a10 100%);
-          border: 1px solid rgba(255,255,255,0.06);
-          box-shadow: 0 30px 70px -30px rgba(13,18,32,0.7);
+          color: #0f172a;
+          background: linear-gradient(160deg, #ffffff 0%, #ffffff 55%, #fff6f6 100%);
+          border: 1px solid rgba(204,4,10,0.10);
+          box-shadow: 0 30px 70px -36px rgba(204,4,10,0.28), 0 2px 6px rgba(15,23,42,0.04);
         }
         .tsp-glow { position: absolute; border-radius: 50%; pointer-events: none; filter: blur(90px); }
-        .tsp-glow-a { top: -140px; left: 50%; transform: translateX(-50%); width: 520px; height: 300px; background: rgba(204,4,10,0.28); }
-        .tsp-glow-b { bottom: -120px; right: -80px; width: 320px; height: 320px; background: rgba(124,58,237,0.16); }
+        .tsp-glow-a { top: -140px; left: 50%; transform: translateX(-50%); width: 520px; height: 300px; background: rgba(204,4,10,0.07); }
+        .tsp-glow-b { bottom: -120px; right: -80px; width: 320px; height: 320px; background: rgba(204,4,10,0.07); }
         .tsp-grid-bg {
           position: absolute; inset: 0; pointer-events: none; opacity: 0.05;
-          background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px);
+          background-image: linear-gradient(#cc040a 1px, transparent 1px), linear-gradient(90deg, #cc040a 1px, transparent 1px);
           background-size: 44px 44px;
           -webkit-mask-image: radial-gradient(ellipse at 50% 20%, #000 0%, transparent 70%);
           mask-image: radial-gradient(ellipse at 50% 20%, #000 0%, transparent 70%);
@@ -326,30 +326,30 @@ export const TopSpendersSection = () => {
           box-shadow: 0 10px 28px -6px rgba(204,4,10,0.65), inset 0 1px 0 rgba(255,255,255,0.25);
         }
         .tsp-title-row { display: flex; align-items: center; gap: 8px; }
-        .tsp-title { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: #fff; line-height: 1.1; }
-        .tsp-subtitle { margin: 4px 0 0; font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.5); }
+        .tsp-title { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: #0f172a; line-height: 1.1; }
+        .tsp-subtitle { margin: 4px 0 0; font-size: 13px; font-weight: 500; color: #64748b; }
         .tsp-month-badge {
           display: inline-flex; align-items: center; gap: 6px;
           padding: 6px 12px; border-radius: 99px;
-          background: rgba(204,4,10,0.14); border: 1px solid rgba(255,107,107,0.3);
-          font-size: 10px; font-weight: 800; color: #ff8a8a; letter-spacing: 0.14em;
+          background: rgba(204,4,10,0.07); border: 1px solid rgba(204,4,10,0.2);
+          font-size: 10px; font-weight: 800; color: #cc040a; letter-spacing: 0.14em;
         }
 
         /* buttons */
         .tsp-btn {
           display: inline-flex; align-items: center; gap: 8px;
           height: 44px; padding: 0 22px; border-radius: 999px;
-          background: rgba(255,255,255,0.06); color: #fff;
-          border: 1px solid rgba(255,255,255,0.14);
+          background: #ffffff; color: #cc040a;
+          border: 1.5px solid rgba(204,4,10,0.25);
           font-family: inherit; font-size: 12.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
           cursor: pointer; white-space: nowrap;
           transition: transform 0.25s cubic-bezier(.22,1,.36,1), background 0.25s, border-color 0.25s, box-shadow 0.25s;
         }
-        .tsp-btn:hover { background: #cc040a; border-color: #cc040a; transform: translateY(-2px); box-shadow: 0 12px 30px -8px rgba(204,4,10,0.7); }
+        .tsp-btn:hover { background: #cc040a; color: #fff; border-color: #cc040a; transform: translateY(-2px); box-shadow: 0 12px 30px -8px rgba(204,4,10,0.6); }
         .tsp-btn:active { transform: translateY(0) scale(0.98); }
-        .tsp-btn-bottom { height: 50px; padding: 0 30px; font-size: 13px; background: #fff; color: #cc040a; border-color: #fff; }
-        .tsp-btn-bottom:hover { background: #cc040a; color: #fff; }
-        .tsp-btn-dot { width: 7px; height: 7px; border-radius: 50%; background: #cc040a; animation: tsp-pulse 1.8s ease-in-out infinite; }
+        .tsp-btn-bottom { height: 50px; padding: 0 30px; font-size: 13px; background: #cc040a; color: #fff; border-color: #cc040a; box-shadow: 0 14px 30px -10px rgba(204,4,10,0.6); }
+        .tsp-btn-bottom:hover { background: #a80308; border-color: #a80308; }
+        .tsp-btn-dot { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: tsp-pulse 1.8s ease-in-out infinite; }
         .tsp-btn-bottom:hover .tsp-btn-dot { background: #fff; }
         .tsp-btn-chevron { display: flex; transition: transform 0.2s; }
         .tsp-btn:hover .tsp-btn-chevron { transform: translateX(3px); }
@@ -357,9 +357,9 @@ export const TopSpendersSection = () => {
         /* podium */
         .tsp-podium {
           border-radius: 28px; padding: 44px 18px 0;
-          background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015));
-          border: 1px solid rgba(255,255,255,0.08);
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+          background: linear-gradient(180deg, #ffffff, #fff6f6);
+          border: 1px solid rgba(204,4,10,0.12);
+          box-shadow: 0 18px 40px -24px rgba(204,4,10,0.25), inset 0 1px 0 #fff;
           overflow: hidden; position: relative;
         }
         .tsp-cols { display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 12px; align-items: end; }
@@ -372,18 +372,19 @@ export const TopSpendersSection = () => {
         .tsp-rank-3 { --step: 52px; }
 
         .tsp-avatar-wrap { position: relative; }
-        .tsp-ring { padding: 3px; border-radius: 50%; box-shadow: 0 14px 34px -10px rgba(0,0,0,0.7); }
-        .tsp-ring-inner { padding: 3px; border-radius: 50%; background: #0d1220; }
+        .tsp-ring { padding: 3px; border-radius: 50%; box-shadow: 0 14px 30px -12px rgba(15,23,42,0.35); }
+        .tsp-ring-inner { padding: 3px; border-radius: 50%; background: #fff; }
         .tsp-ring-inner > div { width: var(--av) !important; height: var(--av) !important; border: 0 !important; box-shadow: none !important; }
+        .tsp-ring-inner span { font-size: calc(var(--av) * 0.36) !important; }
         .tsp-rank-dot {
           position: absolute; bottom: -4px; right: -4px; width: 26px; height: 26px; border-radius: 50%;
           display: flex; align-items: center; justify-content: center;
-          font-size: 12px; font-weight: 800; color: #fff; border: 2px solid #0d1220;
+          font-size: 12px; font-weight: 800; color: #fff; border: 2px solid #fff;
         }
-        .tsp-name { margin: 14px 0 0; max-width: 100%; padding: 0 4px; font-size: var(--name); font-weight: 700; color: #fff; letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .tsp-name { margin: 14px 0 0; max-width: 100%; padding: 0 4px; font-size: var(--name); font-weight: 700; color: #0f172a; letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .tsp-label { margin: 4px 0 0; font-size: 10px; font-weight: 800; letter-spacing: 0.16em; }
         .tsp-amount { margin: 10px 0 0; font-size: var(--amt); font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1; }
-        .tsp-orders { margin-top: 8px; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.55); background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); }
+        .tsp-orders { margin-top: 8px; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; color: #64748b; background: #f8fafc; border: 1px solid #e2e8f0; }
 
         .tsp-step {
           width: 100%; height: var(--step); margin-top: 18px;
@@ -391,18 +392,18 @@ export const TopSpendersSection = () => {
           display: flex; align-items: flex-start; justify-content: center; padding-top: 10px;
         }
         .tsp-step-num { font-size: 34px; font-weight: 800; line-height: 1; opacity: 0.85; }
-        .tsp-step-skeleton { border-top-color: rgba(255,255,255,0.14); background: rgba(255,255,255,0.04); }
+        .tsp-step-skeleton { border-top-color: #e2e8f0; background: #f8fafc; }
 
         /* skeleton */
         .tsp-skeleton {
-          background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.05) 75%);
+          background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
           background-size: 200% auto; animation: tsp-shimmer 1.5s linear infinite;
         }
         .tsp-empty-avatar {
           width: var(--av); height: var(--av); border-radius: 50%;
           display: flex; align-items: center; justify-content: center;
-          font-size: calc(var(--av) * 0.4); font-weight: 800; color: rgba(255,255,255,0.3);
-          border: 2px dashed rgba(255,255,255,0.22); background: rgba(255,255,255,0.03);
+          font-size: calc(var(--av) * 0.4); font-weight: 800; color: #cbd5e1;
+          border: 2px dashed #cbd5e1; background: #f8fafc;
         }
         .tsp-skeleton-avatar { width: var(--av); height: var(--av); border-radius: 50%; }
 
