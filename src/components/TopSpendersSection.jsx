@@ -127,84 +127,79 @@ function Avatar({ name, src, size = 64, ringColor = '#fff' }) {
   );
 }
 
-/* ─── Podium card (responsive via CSS classes) ────────── */
+/* ─── Podium card ─────────────────────────────────────── */
 function PodiumCard({ user, rank, visible }) {
   const isFirst = rank === 1;
   const countVal = useCountUp(user.totalLkr, 1400, visible);
 
   const cfgMap = {
-    1: { barGrad: 'linear-gradient(90deg,#b91c1c,#cc040a,#ef4444,#cc040a)', labelColor: '#cc040a', label: 'TOP SPENDER', glow: '0 16px 50px rgba(204,4,10,0.22),0 4px 16px rgba(0,0,0,0.10)', border: '2px solid rgba(204,4,10,0.14)' },
-    2: { barGrad: 'linear-gradient(90deg,#6b7280,#9ca3af,#6b7280)', labelColor: '#475569', label: '2ND PLACE', glow: '0 8px 30px rgba(0,0,0,0.10)', border: '1.5px solid rgba(0,0,0,0.07)' },
-    3: { barGrad: 'linear-gradient(90deg,#92400e,#d97706,#f59e0b,#d97706,#92400e)', labelColor: '#92400e', label: '3RD PLACE', glow: '0 8px 30px rgba(0,0,0,0.10)', border: '1.5px solid rgba(0,0,0,0.07)' },
+    1: { ring: 'linear-gradient(135deg,#ff4d4f,#cc040a)', accent: '#ff6b6b', step: 'linear-gradient(180deg,rgba(204,4,10,0.55),rgba(204,4,10,0.08))', label: 'TOP SPENDER' },
+    2: { ring: 'linear-gradient(135deg,#e2e8f0,#94a3b8)', accent: '#cbd5e1', step: 'linear-gradient(180deg,rgba(148,163,184,0.38),rgba(148,163,184,0.05))', label: '2ND PLACE' },
+    3: { ring: 'linear-gradient(135deg,#fbbf24,#b45309)', accent: '#fbbf24', step: 'linear-gradient(180deg,rgba(217,119,6,0.42),rgba(217,119,6,0.05))', label: '3RD PLACE' },
   };
   const cfg = cfgMap[rank];
 
   return (
-    <div className={`ts-card-wrap ts-card-rank-${rank}`} style={{ animationDelay: `${rank === 1 ? 0 : rank === 2 ? 0.1 : 0.2}s`, animation: visible ? 'ts-rise 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards' : 'none', opacity: visible ? 1 : 0 }}>
-
-      {/* Champion badge */}
-      {isFirst ? (
-        <div className="ts-champion-badge">
-          <Crown size={10} /> CHAMPION
-        </div>
-      ) : (
-        <div className="ts-badge-spacer" />
+    <div
+      className={`tsp-col tsp-rank-${rank}`}
+      style={{
+        animation: visible ? `tsp-rise 0.6s cubic-bezier(0.22,1,0.36,1) ${rank === 1 ? 0 : rank === 2 ? 0.1 : 0.2}s both` : 'none',
+        opacity: visible ? undefined : 0,
+      }}
+    >
+      {isFirst && (
+        <div className="tsp-crown"><Crown size={18} fill="#fbbf24" color="#fbbf24" /></div>
       )}
 
-      {/* Avatar */}
-      <div className="ts-avatar-wrap" style={{ marginBottom: 'var(--av-half-neg)' }}>
-        <Avatar name={user.name} src={user.avatar} size={0 /* overridden by CSS var */} ringColor={isFirst ? 'rgba(204,4,10,0.3)' : '#fff'} />
-        {/* Rank badge on avatar */}
-        <div className="ts-rank-dot" style={{ background: cfg.barGrad }}>
-          {rank}
+      {/* Avatar with gradient ring */}
+      <div className="tsp-avatar-wrap">
+        <div className="tsp-ring" style={{ background: cfg.ring }}>
+          <div className="tsp-ring-inner">
+            <Avatar name={user.name} src={user.avatar} size={0 /* sized by CSS */} ringColor="transparent" />
+          </div>
         </div>
+        <div className="tsp-rank-dot" style={{ background: cfg.ring }}>{rank}</div>
       </div>
 
-      {/* Card */}
-      <div className="ts-card" style={{ boxShadow: cfg.glow, border: cfg.border }}>
-        {isFirst && <ParticleDots />}
+      <p className="tsp-name" title={user.name}>{user.name}</p>
+      <p className="tsp-label" style={{ color: cfg.accent }}>{cfg.label}</p>
 
-        <p className="ts-name">{user.name}</p>
+      <p className="tsp-amount" style={{ color: isFirst ? '#fff' : '#e2e8f0' }}>{fmtLkr(countVal)}</p>
+      <span className="tsp-orders">{user.orderCount} top-up{user.orderCount !== 1 ? 's' : ''}</span>
 
-        <p className="ts-label" style={{ color: cfg.labelColor }}>{cfg.label}</p>
-
-        <div className="ts-chips">
-          <span className="ts-chip">{user.orderCount} top-up{user.orderCount !== 1 ? 's' : ''}</span>
-          <span className="ts-chip ts-chip-amount" style={{ color: cfg.labelColor, borderColor: cfg.labelColor + '33', background: cfg.labelColor + '0d' }}>
-            {fmtLkr(countVal)}
-          </span>
-        </div>
-
-        {/* Rank bar */}
-        <div className="ts-bar" style={{ background: cfg.barGrad }}>
-          <span className="ts-bar-num">{rank}</span>
-        </div>
+      {/* Podium step */}
+      <div className="tsp-step" style={{ background: cfg.step, borderTopColor: cfg.accent }}>
+        <span className="tsp-step-num" style={{ color: cfg.accent }}>{rank}</span>
       </div>
-    </div>
-  );
-}
-
-function ParticleDots() {
-  return (
-    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', borderRadius: 'inherit' }}>
-      {[...Array(5)].map((_, i) => (
-        <div key={i} style={{ position: 'absolute', width: 4, height: 4, borderRadius: '50%', background: i % 2 === 0 ? 'rgba(204,4,10,0.4)' : 'rgba(255,100,100,0.35)', top: `${15 + i * 15}%`, left: `${10 + i * 16}%`, animation: `ts-float ${2.5 + i * 0.4}s ease-in-out infinite`, animationDelay: `${i * 0.3}s` }} />
-      ))}
     </div>
   );
 }
 
 function SkeletonCard({ rank }) {
   return (
-    <div className={`ts-card-wrap ts-card-rank-${rank}`}>
-      <div className="ts-badge-spacer" />
-      <div className="ts-avatar-wrap" style={{ marginBottom: 'var(--av-half-neg)' }}>
-        <div className="ts-skeleton ts-skeleton-avatar" />
+    <div className={`tsp-col tsp-rank-${rank}`}>
+      <div className="tsp-avatar-wrap">
+        <div className="tsp-skeleton tsp-skeleton-avatar" />
       </div>
-      <div className="ts-card ts-card-skeleton">
-        <div className="ts-skeleton" style={{ width: '60%', height: 13, borderRadius: 8, margin: '0 auto 8px' }} />
-        <div className="ts-skeleton" style={{ width: '40%', height: 10, borderRadius: 8, margin: '0 auto 12px' }} />
-        <div className="ts-skeleton ts-skeleton-bar" />
+      <div className="tsp-skeleton" style={{ width: '62%', height: 12, borderRadius: 8, marginTop: 14 }} />
+      <div className="tsp-skeleton" style={{ width: '40%', height: 9, borderRadius: 8, marginTop: 8 }} />
+      <div className="tsp-skeleton" style={{ width: '50%', height: 14, borderRadius: 8, marginTop: 12 }} />
+      <div className="tsp-step tsp-step-skeleton" />
+    </div>
+  );
+}
+
+/* Shown once data has loaded but nobody holds that rank yet */
+function EmptySlot({ rank }) {
+  return (
+    <div className={`tsp-col tsp-rank-${rank}`}>
+      <div className="tsp-avatar-wrap">
+        <div className="tsp-empty-avatar">?</div>
+      </div>
+      <p className="tsp-name" style={{ color: 'rgba(255,255,255,0.55)' }}>Open spot</p>
+      <p className="tsp-label" style={{ color: 'rgba(255,255,255,0.3)' }}>COULD BE YOU</p>
+      <div className="tsp-step tsp-step-skeleton" style={{ borderTopStyle: 'dashed' }}>
+        <span className="tsp-step-num" style={{ color: 'rgba(255,255,255,0.25)' }}>{rank}</span>
       </div>
     </div>
   );
@@ -232,379 +227,212 @@ export const TopSpendersSection = () => {
   const [first, second, third] = topSpenders;
 
   return (
-    <section ref={ref} className="ts-section">
-      <div style={{ position: 'absolute', top: -80, right: -80, width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle,rgba(204,4,10,0.08) 0%,transparent 70%)', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', bottom: -60, left: -60, width: 220, height: 220, borderRadius: '50%', background: 'radial-gradient(circle,rgba(204,4,10,0.05) 0%,transparent 70%)', pointerEvents: 'none' }} />
+    <section ref={ref} className="tsp-section">
+      {/* ambience */}
+      <div className="tsp-glow tsp-glow-a" />
+      <div className="tsp-glow tsp-glow-b" />
+      <div className="tsp-grid-bg" />
 
-      <div className="ts-inner">
+      <div className="tsp-inner">
 
         {/* Header */}
-        <div className="ts-header">
-          <div className="ts-header-left">
-            <div className="ts-trophy-box">
+        <div className="tsp-header">
+          <div className="tsp-header-left">
+            <div className="tsp-trophy-box">
               <Trophy size={22} color="#fff" />
             </div>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                <h2 className="ts-title">Top Spenders</h2>
-                <Sparkles size={15} color="#cc040a" />
+              <div className="tsp-title-row">
+                <h2 className="tsp-title">Top Spenders</h2>
+                <Sparkles size={15} color="#ff6b6b" />
               </div>
-              <p className="ts-subtitle">Most valued customers this month</p>
-              <span className="ts-month-badge">
-                <Flame size={9} /> THIS MONTH
-              </span>
+              <p className="tsp-subtitle">Most valued customers this month</p>
             </div>
           </div>
 
-          <button className="ts-btn ts-btn-desktop" onClick={openLeaderboardPage}>
-            <TrendingUp size={13} /> View Leaderboard <ChevronRight size={13} />
-          </button>
+          <div className="tsp-header-right">
+            <span className="tsp-month-badge">
+              <Flame size={11} /> THIS MONTH
+            </span>
+            <button className="tsp-btn tsp-btn-desktop" onClick={openLeaderboardPage}>
+              <TrendingUp size={14} /> View Leaderboard <ChevronRight size={14} />
+            </button>
+          </div>
         </div>
 
-        {/* Podium panel */}
-        <div className="ts-panel">
-          <div className="ts-panel-shine" />
+        {/* Podium */}
+        <div className="tsp-podium">
           {loading ? (
-            <div className="ts-grid">
+            <div className="tsp-cols">
               <SkeletonCard rank={2} />
               <SkeletonCard rank={1} />
               <SkeletonCard rank={3} />
             </div>
           ) : topSpenders.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '24px 0 40px' }}>
+            <div style={{ textAlign: 'center', padding: '28px 0 36px' }}>
               <p style={{ fontSize: 32, marginBottom: 8 }}>🎮</p>
-              <p style={{ color: '#94a3b8', fontSize: 13, fontWeight: 700 }}>Be the first top spender this month!</p>
+              <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, fontWeight: 700 }}>Be the first top spender this month!</p>
             </div>
           ) : (
-            <div className="ts-grid">
-              <div>{second ? <PodiumCard user={second} rank={2} visible={visible} /> : <SkeletonCard rank={2} />}</div>
-              <div>{first  ? <PodiumCard user={first}  rank={1} visible={visible} /> : <SkeletonCard rank={1} />}</div>
-              <div>{third  ? <PodiumCard user={third}  rank={3} visible={visible} /> : <SkeletonCard rank={3} />}</div>
+            <div className="tsp-cols">
+              {second ? <PodiumCard user={second} rank={2} visible={visible} /> : <EmptySlot rank={2} />}
+              {first  ? <PodiumCard user={first}  rank={1} visible={visible} /> : <EmptySlot rank={1} />}
+              {third  ? <PodiumCard user={third}  rank={3} visible={visible} /> : <EmptySlot rank={3} />}
             </div>
           )}
         </div>
 
         {/* Bottom CTA (always visible) */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 20 }}>
-          <button className="ts-btn ts-btn-bottom" onClick={openLeaderboardPage}>
-            <span className="ts-btn-dot"></span>
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 26 }}>
+          <button className="tsp-btn tsp-btn-bottom" onClick={openLeaderboardPage}>
+            <span className="tsp-btn-dot"></span>
             View Full Leaderboard
-            <span className="ts-btn-chevron"><ChevronRight size={14} /></span>
+            <span className="tsp-btn-chevron"><ChevronRight size={15} /></span>
           </button>
         </div>
       </div>
 
       <style>{`
-        /* ── Section & layout ──────────────────────────────── */
-        .ts-section {
-          background: #ffffff;
-          padding: 52px 20px 60px;
-          margin-top: 32px;
-          border-radius: 24px;
-          position: relative;
-          overflow: hidden;
+        .tsp-section {
+          position: relative; overflow: hidden;
+          margin-top: 40px;
+          padding: 56px 24px 52px;
+          border-radius: 32px;
+          color: #fff;
+          background: linear-gradient(160deg, #0f1528 0%, #0d1220 55%, #150a10 100%);
+          border: 1px solid rgba(255,255,255,0.06);
+          box-shadow: 0 30px 70px -30px rgba(13,18,32,0.7);
         }
-        .ts-inner {
-          max-width: 800px;
-          margin: 0 auto;
-          position: relative;
-          z-index: 1;
+        .tsp-glow { position: absolute; border-radius: 50%; pointer-events: none; filter: blur(90px); }
+        .tsp-glow-a { top: -140px; left: 50%; transform: translateX(-50%); width: 520px; height: 300px; background: rgba(204,4,10,0.28); }
+        .tsp-glow-b { bottom: -120px; right: -80px; width: 320px; height: 320px; background: rgba(124,58,237,0.16); }
+        .tsp-grid-bg {
+          position: absolute; inset: 0; pointer-events: none; opacity: 0.05;
+          background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px);
+          background-size: 44px 44px;
+          -webkit-mask-image: radial-gradient(ellipse at 50% 20%, #000 0%, transparent 70%);
+          mask-image: radial-gradient(ellipse at 50% 20%, #000 0%, transparent 70%);
         }
+        .tsp-inner { position: relative; z-index: 1; max-width: 820px; margin: 0 auto; }
 
-        /* ── Header ───────────────────────────────────────── */
-        .ts-header {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 14px;
-          margin-bottom: 48px;
-          flex-wrap: wrap;
-        }
-        .ts-header-left {
-          display: flex;
-          align-items: center;
-          gap: 14px;
-        }
-        .ts-trophy-box {
-          width: 52px; height: 52px; border-radius: 15px; flex-shrink: 0;
+        /* header */
+        .tsp-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 40px; }
+        .tsp-header-left { display: flex; align-items: center; gap: 14px; }
+        .tsp-header-right { display: flex; align-items: center; gap: 12px; }
+        .tsp-trophy-box {
+          width: 52px; height: 52px; border-radius: 16px; flex-shrink: 0;
+          display: flex; align-items: center; justify-content: center;
           background: linear-gradient(135deg, #cc040a 0%, #ff4d4f 100%);
-          display: flex; align-items: center; justify-content: center;
-          box-shadow: 0 8px 24px rgba(204,4,10,0.4);
-          animation: ts-bob 3s ease-in-out infinite;
+          box-shadow: 0 10px 28px -6px rgba(204,4,10,0.65), inset 0 1px 0 rgba(255,255,255,0.25);
         }
-        .ts-title {
-          margin: 0; font-weight: 900; font-size: 20px;
-          color: #0f172a; letter-spacing: -0.4px; font-family: inherit;
-        }
-        .ts-subtitle {
-          margin: 3px 0 0; font-weight: 600; font-size: 12px; color: #64748b;
-        }
-        .ts-month-badge {
-          display: inline-flex; align-items: center; gap: 5px; margin-top: 7px;
-          padding: 3px 11px; border-radius: 99px;
-          background: rgba(204,4,10,0.07); border: 1px solid rgba(204,4,10,0.18);
-          font-size: 9px; font-weight: 900; color: #cc040a; letter-spacing: 0.15em;
+        .tsp-title-row { display: flex; align-items: center; gap: 8px; }
+        .tsp-title { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: #fff; line-height: 1.1; }
+        .tsp-subtitle { margin: 4px 0 0; font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.5); }
+        .tsp-month-badge {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 6px 12px; border-radius: 99px;
+          background: rgba(204,4,10,0.14); border: 1px solid rgba(255,107,107,0.3);
+          font-size: 10px; font-weight: 800; color: #ff8a8a; letter-spacing: 0.14em;
         }
 
-        /* ── Buttons ──────────────────────────────────────── */
-        .ts-btn {
+        /* buttons */
+        .tsp-btn {
           display: inline-flex; align-items: center; gap: 8px;
-          padding: 11px 28px; border-radius: 14px;
-          background: #ffffff;
-          color: #cc040a;
-          border: 2px solid rgba(204,4,10,0.22);
-          cursor: pointer;
-          font-weight: 900; font-size: 12.5px; letter-spacing: 0.03em;
-          box-shadow: 0 2px 12px rgba(204,4,10,0.10), 0 1px 0 rgba(255,255,255,0.9);
-          transition: all 0.22s cubic-bezier(.22,1,.36,1);
-          white-space: nowrap; font-family: inherit;
-          position: relative; overflow: hidden;
-          text-transform: uppercase; letter-spacing: 0.06em;
+          height: 44px; padding: 0 22px; border-radius: 999px;
+          background: rgba(255,255,255,0.06); color: #fff;
+          border: 1px solid rgba(255,255,255,0.14);
+          font-family: inherit; font-size: 12.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+          cursor: pointer; white-space: nowrap;
+          transition: transform 0.25s cubic-bezier(.22,1,.36,1), background 0.25s, border-color 0.25s, box-shadow 0.25s;
         }
-        /* shimmer sweep on hover */
-        .ts-btn::before {
-          content: '';
-          position: absolute; inset: 0;
-          background: linear-gradient(110deg, transparent 30%, rgba(204,4,10,0.06) 50%, transparent 70%);
-          transform: translateX(-100%);
-          transition: transform 0.45s ease;
-        }
-        .ts-btn:hover::before { transform: translateX(100%); }
-        .ts-btn:hover {
-          background: #cc040a;
-          color: #ffffff;
-          border-color: #cc040a;
-          transform: translateY(-2px);
-          box-shadow: 0 8px 28px rgba(204,4,10,0.38), 0 2px 0 rgba(255,255,255,0.15) inset;
-        }
-        .ts-btn:hover .ts-btn-dot { background: #ffffff; box-shadow: 0 0 0 0 rgba(255,255,255,0.5); }
-        .ts-btn:hover .ts-btn-chevron { color: #ffffff; transform: translateX(3px); }
-        .ts-btn-dot {
-          width: 7px; height: 7px; border-radius: 50%;
-          background: #cc040a;
-          flex-shrink: 0;
-          animation: ts-pulse-dot 1.8s ease-in-out infinite;
-        }
-        .ts-btn-chevron {
-          transition: transform 0.2s; color: #cc040a;
-          display: flex; align-items: center;
-        }
-        @keyframes ts-pulse-dot {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(204,4,10,0.45); }
-          50%       { box-shadow: 0 0 0 5px rgba(204,4,10,0); }
-        }
-        .ts-btn-desktop { flex-shrink: 0; }
-        .ts-btn-bottom { padding: 12px 32px; font-size: 13px; }
+        .tsp-btn:hover { background: #cc040a; border-color: #cc040a; transform: translateY(-2px); box-shadow: 0 12px 30px -8px rgba(204,4,10,0.7); }
+        .tsp-btn:active { transform: translateY(0) scale(0.98); }
+        .tsp-btn-bottom { height: 50px; padding: 0 30px; font-size: 13px; background: #fff; color: #cc040a; border-color: #fff; }
+        .tsp-btn-bottom:hover { background: #cc040a; color: #fff; }
+        .tsp-btn-dot { width: 7px; height: 7px; border-radius: 50%; background: #cc040a; animation: tsp-pulse 1.8s ease-in-out infinite; }
+        .tsp-btn-bottom:hover .tsp-btn-dot { background: #fff; }
+        .tsp-btn-chevron { display: flex; transition: transform 0.2s; }
+        .tsp-btn:hover .tsp-btn-chevron { transform: translateX(3px); }
 
-        /* ── Podium panel ─────────────────────────────────── */
-        .ts-panel {
-          background: linear-gradient(145deg, #eef2ff 0%, #e8f0fe 40%, #ede9fe 80%, #f0f4ff 100%);
-          border-radius: 24px;
-          padding: 52px 20px 0;
-          box-shadow: 0 4px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
-          border: 1px solid rgba(255,255,255,0.95);
-          position: relative; overflow: hidden;
-        }
-        .ts-panel-shine {
-          position: absolute; top: 0; left: 0; right: 0; height: 2px;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent);
-          border-radius: 24px 24px 0 0;
-        }
-        .ts-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr 1fr;
-          gap: 14px;
-          align-items: flex-end;
-        }
-
-        /* ── Card wrapper (CSS vars for avatar sizing) ────── */
-        .ts-card-rank-1 {
-          --av-size: 80px;
-          --av-half-neg: -40px;
-          --name-size: 14px;
-          --bar-pad: 13px 0;
-          --bar-num-size: 24px;
-          --pt-offset: 52px;
-        }
-        .ts-card-rank-2,
-        .ts-card-rank-3 {
-          --av-size: 66px;
-          --av-half-neg: -33px;
-          --name-size: 12px;
-          --bar-pad: 10px 0;
-          --bar-num-size: 20px;
-          --pt-offset: 45px;
-        }
-
-        .ts-card-wrap {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
-
-        /* ── Champion badge ───────────────────────────────── */
-        .ts-champion-badge {
-          background: linear-gradient(135deg, #cc040a, #ff4d4f);
-          color: #fff; border-radius: 99px;
-          padding: 4px 12px; margin-bottom: 7px;
-          font-size: 9px; font-weight: 900; letter-spacing: 0.12em;
-          display: inline-flex; align-items: center; gap: 4px;
-          box-shadow: 0 4px 14px rgba(204,4,10,0.5);
-          white-space: nowrap;
-        }
-        .ts-badge-spacer { height: 28px; }
-
-        /* ── Avatar wrap ──────────────────────────────────── */
-        .ts-avatar-wrap {
-          position: relative;
-          z-index: 2;
-          /* Override Avatar size via CSS var */
-        }
-        /* Re-target the avatar inner div to use CSS var */
-        .ts-avatar-wrap > div:first-child {
-          width: var(--av-size) !important;
-          height: var(--av-size) !important;
-        }
-        .ts-rank-dot {
-          position: absolute; bottom: -2px; right: -2px;
-          width: 21px; height: 21px; border-radius: 50%;
-          border: 2px solid #fff;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 10px; font-weight: 900; color: #fff;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-        }
-
-        /* ── Card body ────────────────────────────────────── */
-        .ts-card {
-          width: 100%; background: #fff;
-          border-radius: 20px;
+        /* podium */
+        .tsp-podium {
+          border-radius: 28px; padding: 44px 18px 0;
+          background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015));
+          border: 1px solid rgba(255,255,255,0.08);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
           overflow: hidden; position: relative;
-          padding-top: var(--pt-offset);
-          padding-left: 8px; padding-right: 8px; padding-bottom: 0;
-          transition: transform 0.25s, box-shadow 0.25s;
         }
-        .ts-card:hover { transform: translateY(-4px); }
-        .ts-card-skeleton { background: #f8fafc; }
+        .tsp-cols { display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 12px; align-items: end; }
+        .tsp-col { display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; min-width: 0; }
+        .tsp-crown { position: absolute; top: -30px; animation: tsp-bob 3s ease-in-out infinite; filter: drop-shadow(0 4px 10px rgba(251,191,36,0.5)); }
 
-        .ts-name {
-          margin: 0; font-weight: 900; font-size: var(--name-size);
-          color: #0f172a; text-align: center;
-          overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-          padding: 0 4px; line-height: 1.25; letter-spacing: -0.2px;
-        }
-        .ts-label {
-          margin: 5px 0 0; font-size: 9px; font-weight: 900;
-          text-align: center; letter-spacing: 0.14em;
-        }
-        .ts-chips {
-          display: flex; justify-content: center; flex-wrap: wrap;
-          gap: 5px; margin-top: 7px;
-        }
-        .ts-chip {
-          font-size: 9px; font-weight: 600; color: #94a3b8;
-          background: #f8fafc; border-radius: 99px; padding: 2px 7px;
-          border: 1px solid #e2e8f0;
-        }
-        .ts-chip-amount { font-weight: 800; }
-        .ts-bar {
-          margin-top: 12px; width: 100%;
-          padding: var(--bar-pad); text-align: center;
-        }
-        .ts-bar-num {
-          color: #fff; font-weight: 900;
-          font-size: var(--bar-num-size);
-          line-height: 1; text-shadow: 0 2px 6px rgba(0,0,0,0.2);
-        }
+        .tsp-rank-1 { --av: 92px; --name: 16px; --amt: 26px; --step: 96px; }
+        .tsp-rank-2, .tsp-rank-3 { --av: 70px; --name: 14px; --amt: 20px; }
+        .tsp-rank-2 { --step: 68px; }
+        .tsp-rank-3 { --step: 52px; }
 
-        /* ── Skeleton ─────────────────────────────────────── */
-        .ts-skeleton {
-          background: linear-gradient(90deg, #f0f0f0 25%, #e4e4e4 50%, #f0f0f0 75%);
-          background-size: 200% auto;
-          animation: ts-shimmer 1.5s linear infinite;
+        .tsp-avatar-wrap { position: relative; }
+        .tsp-ring { padding: 3px; border-radius: 50%; box-shadow: 0 14px 34px -10px rgba(0,0,0,0.7); }
+        .tsp-ring-inner { padding: 3px; border-radius: 50%; background: #0d1220; }
+        .tsp-ring-inner > div { width: var(--av) !important; height: var(--av) !important; border: 0 !important; box-shadow: none !important; }
+        .tsp-rank-dot {
+          position: absolute; bottom: -4px; right: -4px; width: 26px; height: 26px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 12px; font-weight: 800; color: #fff; border: 2px solid #0d1220;
         }
-        .ts-skeleton-avatar {
-          width: var(--av-size); height: var(--av-size);
-          border-radius: 50%; border: 3.5px solid #fff;
-        }
-        .ts-skeleton-bar { width: 100%; height: 44px; }
+        .tsp-name { margin: 14px 0 0; max-width: 100%; padding: 0 4px; font-size: var(--name); font-weight: 700; color: #fff; letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .tsp-label { margin: 4px 0 0; font-size: 10px; font-weight: 800; letter-spacing: 0.16em; }
+        .tsp-amount { margin: 10px 0 0; font-size: var(--amt); font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1; }
+        .tsp-orders { margin-top: 8px; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.55); background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); }
 
-        /* ── Animations ───────────────────────────────────── */
-        @keyframes ts-shimmer {
-          0%   { background-position: -200% center; }
-          100% { background-position:  200% center; }
+        .tsp-step {
+          width: 100%; height: var(--step); margin-top: 18px;
+          border-radius: 16px 16px 0 0; border-top: 2px solid;
+          display: flex; align-items: flex-start; justify-content: center; padding-top: 10px;
         }
-        @keyframes ts-rise {
-          from { opacity: 0; transform: translateY(24px) scale(0.97); }
-          to   { opacity: 1; transform: translateY(0)   scale(1); }
-        }
-        @keyframes ts-bob {
-          0%, 100% { transform: translateY(0); }
-          50%       { transform: translateY(-4px); }
-        }
-        @keyframes ts-float {
-          0%, 100% { transform: translateY(0) scale(1); opacity: 0.55; }
-          50%       { transform: translateY(-10px) scale(1.2); opacity: 1; }
-        }
+        .tsp-step-num { font-size: 34px; font-weight: 800; line-height: 1; opacity: 0.85; }
+        .tsp-step-skeleton { border-top-color: rgba(255,255,255,0.14); background: rgba(255,255,255,0.04); }
 
-        /* ── RESPONSIVE — Tablet (≤ 640px) ───────────────── */
+        /* skeleton */
+        .tsp-skeleton {
+          background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.05) 75%);
+          background-size: 200% auto; animation: tsp-shimmer 1.5s linear infinite;
+        }
+        .tsp-empty-avatar {
+          width: var(--av); height: var(--av); border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          font-size: calc(var(--av) * 0.4); font-weight: 800; color: rgba(255,255,255,0.3);
+          border: 2px dashed rgba(255,255,255,0.22); background: rgba(255,255,255,0.03);
+        }
+        .tsp-skeleton-avatar { width: var(--av); height: var(--av); border-radius: 50%; }
+
+        @keyframes tsp-shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
+        @keyframes tsp-rise { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes tsp-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+        @keyframes tsp-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(204,4,10,0.5); } 50% { box-shadow: 0 0 0 6px rgba(204,4,10,0); } }
+
+        /* tablet / phone */
         @media (max-width: 640px) {
-          .ts-section  { padding: 36px 12px 44px; border-radius: 20px; }
-          .ts-header   { margin-bottom: 32px; gap: 10px; }
-          .ts-trophy-box { width: 44px; height: 44px; border-radius: 12px; }
-          .ts-title    { font-size: 17px; }
-          .ts-subtitle { font-size: 11px; }
-          .ts-btn-desktop { display: none; }   /* hide desktop btn — bottom CTA covers it */
-          .ts-panel    { padding: 38px 12px 0; border-radius: 20px; }
-          .ts-grid     { gap: 10px; }
-
-          .ts-card-rank-1 {
-            --av-size: 62px; --av-half-neg: -31px;
-            --name-size: 12px; --bar-pad: 10px 0;
-            --bar-num-size: 20px; --pt-offset: 43px;
-          }
-          .ts-card-rank-2, .ts-card-rank-3 {
-            --av-size: 50px; --av-half-neg: -25px;
-            --name-size: 11px; --bar-pad: 8px 0;
-            --bar-num-size: 17px; --pt-offset: 36px;
-          }
-          .ts-champion-badge { font-size: 8px; padding: 3px 9px; }
-          .ts-badge-spacer   { height: 22px; }
-          .ts-card  { border-radius: 16px; padding-left: 5px; padding-right: 5px; }
-          .ts-label { font-size: 8px; }
-          .ts-chips { gap: 4px; margin-top: 5px; }
-          .ts-chip  { font-size: 8px; padding: 1.5px 5px; }
-          .ts-bar   { margin-top: 8px; }
-          .ts-rank-dot { width: 18px; height: 18px; font-size: 9px; }
-        }
-
-        /* ── RESPONSIVE — Mobile (≤ 400px) ───────────────── */
-        @media (max-width: 400px) {
-          .ts-section  { padding: 28px 10px 36px; border-radius: 16px; }
-          .ts-panel    { padding: 30px 8px 0; border-radius: 16px; }
-          .ts-grid     { gap: 7px; }
-          .ts-header   { margin-bottom: 24px; }
-          .ts-trophy-box { width: 38px; height: 38px; border-radius: 10px; }
-          .ts-title    { font-size: 15px; }
-
-          .ts-card-rank-1 {
-            --av-size: 54px; --av-half-neg: -27px;
-            --name-size: 11px; --bar-pad: 9px 0;
-            --bar-num-size: 18px; --pt-offset: 38px;
-          }
-          .ts-card-rank-2, .ts-card-rank-3 {
-            --av-size: 44px; --av-half-neg: -22px;
-            --name-size: 10px; --bar-pad: 7px 0;
-            --bar-num-size: 15px; --pt-offset: 32px;
-          }
-          .ts-champion-badge { font-size: 7.5px; padding: 3px 7px; gap: 3px; }
-          .ts-badge-spacer   { height: 20px; }
-          .ts-label { font-size: 7.5px; letter-spacing: 0.1em; }
-          .ts-chip  { font-size: 7.5px; padding: 1px 4px; }
-          .ts-chips { margin-top: 4px; gap: 3px; }
-          .ts-rank-dot { width: 16px; height: 16px; font-size: 8px; }
-          .ts-bar { margin-top: 6px; }
-          .ts-card { border-radius: 14px; padding-left: 3px; padding-right: 3px; }
-          .ts-btn-bottom { padding: 9px 20px; font-size: 11px; }
+          .tsp-section { padding: 36px 14px 34px; border-radius: 26px; margin-top: 28px; }
+          .tsp-header { margin-bottom: 28px; }
+          .tsp-header-right .tsp-btn-desktop { display: none; }
+          .tsp-trophy-box { width: 44px; height: 44px; border-radius: 14px; }
+          .tsp-title { font-size: 20px; }
+          .tsp-subtitle { font-size: 12px; }
+          .tsp-podium { padding: 38px 8px 0; border-radius: 22px; }
+          .tsp-cols { gap: 6px; grid-template-columns: 1fr 1.1fr 1fr; }
+          .tsp-rank-1 { --av: 64px; --name: 13px; --amt: 18px; --step: 78px; }
+          .tsp-rank-2, .tsp-rank-3 { --av: 50px; --name: 12px; --amt: 15px; }
+          .tsp-rank-2 { --step: 54px; }
+          .tsp-rank-3 { --step: 40px; }
+          .tsp-crown { top: -26px; }
+          .tsp-crown svg { width: 15px; height: 15px; }
+          .tsp-rank-dot { width: 21px; height: 21px; font-size: 10px; }
+          .tsp-label { font-size: 8px; letter-spacing: 0.1em; }
+          .tsp-orders { font-size: 9.5px; padding: 2px 7px; }
+          .tsp-step-num { font-size: 26px; }
+          .tsp-step { margin-top: 14px; }
+          .tsp-btn-bottom { height: 46px; padding: 0 24px; font-size: 12px; }
         }
       `}</style>
     </section>
