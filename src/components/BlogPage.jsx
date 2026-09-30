@@ -58,7 +58,7 @@ export const BlogPage = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/30 to-transparent" />
             <div className="absolute bottom-6 left-6 right-6">
               <span className="inline-block px-3 py-1 rounded-full bg-[#cc040a] text-white text-[10px] font-black uppercase tracking-wider mb-3">{selectedPost.tag}</span>
-              <h1 className="text-2xl sm:text-3xl font-black text-white font-heading leading-tight">{selectedPost.title}</h1>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white font-heading leading-[1.1]">{selectedPost.title}</h1>
             </div>
           </div>
 
@@ -106,7 +106,7 @@ export const BlogPage = () => {
             </div>
             <span className="text-xs font-black uppercase tracking-widest text-red-200">MADS TOPUP BLOG</span>
           </div>
-          <h1 className="text-4xl sm:text-5xl font-black font-heading tracking-tight text-white mb-3">
+          <h1 className="text-4xl sm:text-5xl font-extrabold font-heading tracking-tight text-white mb-3">
             Game News &amp; <span className="text-red-200">Guides</span>
           </h1>
           <p className="text-red-100 text-sm sm:text-base font-medium max-w-xl">

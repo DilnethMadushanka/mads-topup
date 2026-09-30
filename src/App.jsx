@@ -165,7 +165,7 @@ const MainContent = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ position: 'relative', zIndex: 1 }}>
 
           {/* ── Top brand bar ─────────────────────────────── */}
-          <div style={{ padding: '48px 0 36px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexWrap: 'wrap', gap: 32, alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <div style={{ padding: '64px 0 48px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexWrap: 'wrap', gap: 40, alignItems: 'flex-start', justifyContent: 'space-between' }}>
 
             {/* Brand block */}
             <div style={{ maxWidth: 300 }}>
@@ -178,7 +178,7 @@ const MainContent = () => {
                   <div style={{ fontSize: 9, fontWeight: 700, color: '#cc040a', letterSpacing: '0.14em', textTransform: 'uppercase' }}>Enterprise · Sri Lanka</div>
                 </div>
               </div>
-              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', lineHeight: 1.7, fontWeight: 500, margin: '0 0 14px' }}>
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.75, fontWeight: 500, margin: '0 0 14px' }}>
                 Premier automated game top-up platform in Sri Lanka. Instant delivery for PUBG Mobile, Free Fire, Mobile Legends, and more.
               </p>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 99, background: 'rgba(204,4,10,0.1)', border: '1px solid rgba(204,4,10,0.25)', fontSize: 9, fontWeight: 800, color: '#cc040a', letterSpacing: '0.12em' }}>
@@ -188,9 +188,9 @@ const MainContent = () => {
 
             {/* Quick Links */}
             <div>
-              <h4 style={{ margin: '0 0 16px', fontSize: 10, fontWeight: 900, color: '#cc040a', textTransform: 'uppercase', letterSpacing: '0.18em' }}>Quick Links</h4>
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <li onClick={openResellerPage} style={{ fontSize: 11, fontWeight: 800, color: '#fbbf24', cursor: 'pointer', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: 5, transition: 'color 0.15s' }}
+              <h4 style={{ margin: '0 0 20px', fontSize: 11, fontWeight: 800, color: '#cc040a', textTransform: 'uppercase', letterSpacing: '0.18em' }}>Quick Links</h4>
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <li onClick={openResellerPage} style={{ fontSize: 13, fontWeight: 700, color: '#fbbf24', cursor: 'pointer', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: 5, transition: 'color 0.15s' }}
                   onMouseEnter={e => e.currentTarget.style.color='#fde68a'} onMouseLeave={e => e.currentTarget.style.color='#fbbf24'}>
                   👑 Reseller Program
                 </li>
@@ -203,7 +203,7 @@ const MainContent = () => {
                   { label: 'Terms of Service',action: () => openPolicyModal('terms') },
                 ].map(({ label, action }) => (
                   <li key={label} onClick={action}
-                    style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.5)', cursor: 'pointer', transition: 'color 0.15s' }}
+                    style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.55)', cursor: 'pointer', transition: 'color 0.15s' }}
                     onMouseEnter={e => e.currentTarget.style.color='#cc040a'}
                     onMouseLeave={e => e.currentTarget.style.color='rgba(255,255,255,0.5)'}>
                     {label}
@@ -214,7 +214,7 @@ const MainContent = () => {
 
             {/* Contact */}
             <div>
-              <h4 style={{ margin: '0 0 16px', fontSize: 10, fontWeight: 900, color: '#cc040a', textTransform: 'uppercase', letterSpacing: '0.18em' }}>Contact Us</h4>
+              <h4 style={{ margin: '0 0 20px', fontSize: 11, fontWeight: 800, color: '#cc040a', textTransform: 'uppercase', letterSpacing: '0.18em' }}>Contact Us</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {[
                   { icon: '📞', label: 'WhatsApp', value: '+94 74 043 6276', href: 'https://wa.me/94740436276', highlight: true },
@@ -225,12 +225,12 @@ const MainContent = () => {
                   <div key={label} style={{ display: 'flex', alignItems: 'flex-start', gap: 9 }}>
                     <span style={{ fontSize: 12, flexShrink: 0, marginTop: 1 }}>{icon}</span>
                     <div>
-                      <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 1 }}>{label}</div>
+                      <div style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 1 }}>{label}</div>
                       {href
-                        ? <a href={href} target="_blank" rel="noreferrer" style={{ fontSize: 11, fontWeight: 700, color: highlight ? '#ff6b6b' : 'rgba(255,255,255,0.6)', textDecoration: 'none' }}
+                        ? <a href={href} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 600, color: highlight ? '#ff6b6b' : 'rgba(255,255,255,0.6)', textDecoration: 'none' }}
                             onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
                             onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>{value}</a>
-                        : <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.55)' }}>{value}</span>
+                        : <span style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.6)' }}>{value}</span>
                       }
                     </div>
                   </div>
@@ -241,11 +241,11 @@ const MainContent = () => {
           </div>
 
           {/* ── Legal disclaimer ──────────────────────────── */}
-          <div id="legal-disclaimer" style={{ padding: '20px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', borderTop: '1px solid rgba(204,4,10,0.15)' }}>
+          <div id="legal-disclaimer" style={{ padding: '28px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', borderTop: '1px solid rgba(204,4,10,0.15)' }}>
             <p style={{ fontSize: 9, fontWeight: 800, color: 'rgba(204,4,10,0.9)', textTransform: 'uppercase', letterSpacing: '0.14em', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
               ⚠️ Third-Party Reseller Disclaimer &amp; Trademark Notice
             </p>
-            <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', lineHeight: 1.8, margin: 0, fontWeight: 500 }}>
+            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', lineHeight: 1.85, margin: 0, fontWeight: 500 }}>
               <strong style={{ color: 'rgba(255,255,255,0.6)' }}>MADS TOPUP is an independent third-party digital top-up reseller and is NOT affiliated with, sponsored by, endorsed by, or officially connected to Garena, Tencent Games, Moonton, NetEase Games, TiMi Studio Group, or any other official game publisher.</strong>{' '}
               We do not collect any game account passwords or login credentials — only Player UIDs are required for top-up delivery. All top-ups are delivered via the official MooGold reseller API.
               All game titles, trademarks, logos, and artwork (including Free Fire®, PUBG Mobile®, Mobile Legends: Bang Bang®, Blood Strike®, Delta Force®, Garena Shells®) are registered trademarks of their respective copyright holders and are used strictly for product identification and digital top-up delivery purposes only.
@@ -255,11 +255,11 @@ const MainContent = () => {
           </div>
 
           {/* ── Copyright bar ─────────────────────────────── */}
-          <div style={{ padding: '16px 0', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-            <p style={{ margin: 0, fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>© 2026 MADS TOPUP. All rights reserved.</p>
+          <div style={{ padding: '20px 0', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}>© 2026 MADS TOPUP. All rights reserved.</p>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e', display: 'inline-block', boxShadow: '0 0 6px #22c55e' }} />
-              <p style={{ margin: 0, fontSize: 10, color: 'rgba(255,255,255,0.25)', fontWeight: 600, letterSpacing: '0.04em' }}>POWERED BY MADS AUTOMATED ENGINE</p>
+              <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: 600, letterSpacing: '0.04em' }}>POWERED BY MADS AUTOMATED ENGINE</p>
             </div>
           </div>
 

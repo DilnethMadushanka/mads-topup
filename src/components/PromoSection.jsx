@@ -52,7 +52,7 @@ export const PromoSection = () => {
               </div>
 
               {/* Headline */}
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black font-heading tracking-tight leading-tight uppercase text-[#0f172a]">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold font-heading tracking-tight leading-[1.1] uppercase text-[#0f172a]">
                 Sri Lanka's Most Trusted &amp; Fastest{' '}
                 <span className="relative inline-block">
                   <span className="text-transparent bg-clip-text"

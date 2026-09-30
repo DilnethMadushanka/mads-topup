@@ -60,7 +60,7 @@ export const GameGrid = () => {
 
           {/* Main Heading & Sub-heading */}
           <div>
-            <h1 className="text-4xl sm:text-6xl font-black font-heading text-white tracking-tight leading-none">
+            <h1 className="text-4xl sm:text-6xl font-extrabold font-heading text-white tracking-tight leading-none">
               Sri Lankan Diamond Store
             </h1>
             <p className="text-xs sm:text-base font-semibold text-slate-300 max-w-xl mx-auto mt-2.5">
@@ -88,7 +88,7 @@ export const GameGrid = () => {
             <span className="text-[10px] sm:text-xs font-mono font-black text-slate-400 uppercase tracking-widest block mb-1">
               — CHOOSE YOUR GAME —
             </span>
-            <h2 className="text-2xl sm:text-4xl font-black text-white font-heading tracking-tight">
+            <h2 className="text-2xl sm:text-4xl font-extrabold text-white font-heading tracking-tight">
               Popular Games
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 font-semibold mt-1">

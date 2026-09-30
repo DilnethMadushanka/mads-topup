@@ -162,7 +162,7 @@ export const ResellerProgramPage = () => {
             <span>PARTNER WITH US</span>
           </div>
 
-          <h1 className="text-4xl sm:text-6xl font-black font-heading tracking-tight drop-shadow-md">
+          <h1 className="text-4xl sm:text-6xl font-extrabold font-heading tracking-tight drop-shadow-md">
             Reseller <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-rose-500 to-pink-500">Program</span>
           </h1>
 
@@ -238,7 +238,7 @@ export const ResellerProgramPage = () => {
             <span>START HERE</span>
           </div>
 
-          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading">
             Application Form
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
@@ -414,7 +414,7 @@ export const ResellerProgramPage = () => {
           <span className="text-xs font-extrabold text-cyan-600 tracking-widest uppercase font-mono">
             — WHY JOIN US —
           </span>
-          <h2 className="text-3xl sm:text-4xl font-black text-slate-900 font-heading">
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 font-heading">
             Reseller Benefits
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 font-medium">

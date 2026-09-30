@@ -36,7 +36,7 @@ export const ContactPage = () => {
           </div>
 
           <div className="space-y-3 max-w-3xl">
-            <h1 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight font-heading leading-tight">
+            <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight font-heading leading-[1.1]">
               We're Here to <span className="text-[#cc040a]">Help You</span>
             </h1>
             <p className="text-slate-600 text-sm sm:text-base font-semibold leading-relaxed">

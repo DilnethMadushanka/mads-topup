@@ -41,7 +41,7 @@ export const ResellerBannerSection = () => {
           </div>
 
           {/* Title */}
-          <h2 className="text-3xl sm:text-5xl font-black font-heading tracking-tight text-[#0f172a]">
+          <h2 className="text-3xl sm:text-5xl font-extrabold font-heading tracking-tight text-[#0f172a]">
             Reseller{' '}
             <span className="relative inline-block">
               <span className="text-transparent bg-clip-text"

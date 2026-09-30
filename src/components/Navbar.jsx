@@ -108,161 +108,163 @@ export const Navbar = () => {
     { label: 'My Orders', icon: ShoppingBag, color: 'text-indigo-500', bg: 'bg-indigo-50', action: () => { if (isUserLoggedIn) { openUserProfilePage(); } else { openAuth('login'); } setIsMobileMenuOpen(false); }, count: isUserLoggedIn ? filterUserOrders(orders, userProfile).length : 0 },
   ];
 
+
+  const desktopLinks = [
+    { label: 'Game List', icon: Gamepad2, action: () => { setSelectedGame(null); openCatalog(); }, active: isGameCatalogOpen },
+    { label: 'Gift Cards', icon: Gift, action: () => handleNavClick('services-section') },
+    { label: 'Blog', icon: BookOpen, action: () => { openBlogPage(); }, active: isBlogPageOpen },
+    { label: 'Download App', icon: Download, action: () => setIsDownloadAppModalOpen(true) },
+  ];
+
+  const linkCls = (active) =>
+    `relative flex items-center gap-2 h-10 px-4 rounded-full text-[13px] font-semibold whitespace-nowrap cursor-pointer transition-all duration-200 ${
+      active
+        ? 'bg-white text-[#cc040a] shadow-[0_1px_2px_rgba(15,23,42,0.08),0_4px_12px_-4px_rgba(204,4,10,0.25)]'
+        : 'text-slate-600 hover:text-[#cc040a] hover:bg-white/80'
+    }`;
+
   return (
     <>
-      <header className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/98 backdrop-blur-xl shadow-md shadow-slate-200/60 border-b border-slate-200/60' : 'bg-white/90 backdrop-blur-xl border-b border-slate-200/50'}`}>
-        {/* Red accent line at very top */}
-        <div className="h-0.5 bg-gradient-to-r from-[#cc040a] via-red-500 to-[#cc040a] opacity-80" />
-
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3 xl:gap-6">
+      <header className="sticky top-0 z-50 px-3 sm:px-5 pt-3">
+        <div
+          className={`max-w-[1440px] mx-auto h-16 rounded-2xl sm:rounded-full flex items-center justify-between gap-3 pl-3 pr-2.5 sm:pl-4 border backdrop-blur-xl backdrop-saturate-150 transition-all duration-300 ${
+            scrolled
+              ? 'bg-gradient-to-r from-red-50/95 via-white/90 to-rose-50/95 border-red-100 shadow-[0_12px_32px_-12px_rgba(204,4,10,0.25)]'
+              : 'bg-gradient-to-r from-red-50/80 via-white/75 to-rose-50/80 border-red-100/70 shadow-[0_4px_20px_-8px_rgba(204,4,10,0.15)]'
+          }`}
+        >
 
           {/* ── LOGO ── */}
           <div
             onClick={() => { setSelectedGame(null); closeCatalog(); setIsMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-            className="flex items-center gap-2.5 cursor-pointer group shrink-0 mr-1 xl:mr-4"
+            className="flex items-center gap-2.5 cursor-pointer group shrink-0"
           >
-            <div className="w-10 h-10 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300 overflow-hidden p-0.5">
-              <img src="/mads-logo.jpg" alt="MADS TOPUP Logo" className="w-full h-full object-contain rounded-lg" />
+            <div className="w-10 h-10 rounded-full bg-slate-950 ring-2 ring-white shadow-md flex items-center justify-center overflow-hidden group-hover:scale-105 transition-transform duration-300">
+              <img src="/mads-logo.jpg" alt="MADS TOPUP Logo" className="w-full h-full object-contain" />
             </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1 font-black text-xl tracking-tighter text-slate-950 font-heading">
+            <div className="flex flex-col leading-none">
+              <div className="flex items-center gap-1 font-heading font-extrabold text-[19px] tracking-tight text-slate-950">
                 <span>MADS</span>
                 <span className="text-[#cc040a]">TOPUP</span>
               </div>
-              <span className="text-[7px] font-black text-slate-400 tracking-widest uppercase font-mono -mt-1">EVERYGAME LK</span>
+              <span className="mt-1 text-[8px] font-bold text-slate-400 tracking-[0.22em] uppercase font-mono">EVERYGAME LK</span>
             </div>
           </div>
 
-          {/* ── DESKTOP NAV ── */}
-          <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5 text-xs font-bold text-slate-700 uppercase tracking-wide flex-1">
-            {[
-              { label: 'Game List', icon: Gamepad2, action: () => { setSelectedGame(null); openCatalog(); }, active: isGameCatalogOpen, iconCls: 'text-[#cc040a] bg-red-50' },
-              { label: 'Gift Cards', icon: Gift, action: () => handleNavClick('services-section'), iconCls: 'text-emerald-600 bg-emerald-50' },
-              { label: 'Blog', icon: BookOpen, action: () => { openBlogPage(); }, active: isBlogPageOpen, iconCls: 'text-amber-500 bg-amber-50' },
-              { label: 'Download App', icon: Download, action: () => setIsDownloadAppModalOpen(true), iconCls: 'text-slate-600 bg-slate-100' },
-            ].map(item => (
-              <button key={item.label} onClick={item.action}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all cursor-pointer group relative ${item.active ? 'text-[#cc040a] bg-red-50 font-black' : 'hover:bg-slate-50 hover:text-[#cc040a]'}`}>
-                <span className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${item.iconCls}`}>
-                  <item.icon className="w-3 h-3" />
-                </span>
-                <span className="whitespace-nowrap">{item.label}</span>
-                {item.active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#cc040a]" />}
+          {/* ── DESKTOP NAV (segmented pill group) ── */}
+          <nav className="hidden lg:flex items-center gap-0.5 p-1 rounded-full bg-red-100/50 border border-red-100">
+            {desktopLinks.map(item => (
+              <button key={item.label} onClick={item.action} className={linkCls(item.active)}>
+                <item.icon className="w-4 h-4" />
+                {item.label}
               </button>
             ))}
 
-            {/* Referral */}
             {isReseller ? (
               <button onClick={() => openResellerDashboard()}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black text-xs hover:from-amber-400 hover:to-yellow-300 shadow-sm transition-all cursor-pointer shrink-0 mx-1 ${isResellerDashboardOpen ? 'ring-2 ring-amber-400' : ''}`}>
-                <Crown className="w-3.5 h-3.5 fill-slate-950 shrink-0" />
-                <span className="whitespace-nowrap">RESELLER</span>
+                className={`flex items-center gap-1.5 h-10 px-4 rounded-full bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-bold text-[13px] shadow-sm cursor-pointer shrink-0 transition-all hover:brightness-105 ${isResellerDashboardOpen ? 'ring-2 ring-amber-400 ring-offset-1' : ''}`}>
+                <Crown className="w-4 h-4 fill-slate-950 shrink-0" />
+                <span className="whitespace-nowrap">Reseller</span>
               </button>
             ) : (
-              <button onClick={() => openReferralPage()}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all cursor-pointer group ${isReferralPageOpen ? 'text-[#cc040a] bg-red-50 font-black' : 'hover:bg-red-50 hover:text-[#cc040a]'}`}>
-                <span className="w-5 h-5 rounded-md bg-red-50 text-[#cc040a] flex items-center justify-center shrink-0">
-                  <Gift className="w-3 h-3" />
-                </span>
-                <span className="whitespace-nowrap">Referral</span>
+              <button onClick={() => openReferralPage()} className={linkCls(isReferralPageOpen)}>
+                <Gift className="w-4 h-4" />
+                Referral
               </button>
             )}
 
-            <button onClick={() => openContactPage()}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl hover:bg-red-50 hover:text-[#cc040a] transition-all cursor-pointer group">
-              <span className="w-5 h-5 rounded-md bg-red-50 text-[#cc040a] flex items-center justify-center shrink-0">
-                <Headset className="w-3 h-3" />
-              </span>
-              <span className="whitespace-nowrap">Support</span>
+            <button onClick={() => openContactPage()} className={linkCls(false)}>
+              <Headset className="w-4 h-4" />
+              Support
             </button>
           </nav>
 
           {/* ── DESKTOP RIGHT ── */}
-          <div className="hidden lg:flex items-center gap-2.5 xl:gap-3 shrink-0">
+          <div className="hidden lg:flex items-center gap-2 shrink-0">
             {isUserLoggedIn ? (
-              <div className="flex items-center gap-2">
-                {/* LKR Wallet chip — always visible */}
-                <button onClick={() => handleWalletClick('ezcash')}
-                  className="group flex items-center gap-1.5 bg-[#cc040a] hover:bg-[#b00308] text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm shadow-red-600/25 cursor-pointer transition-all relative">
-                  <Wallet className="w-3.5 h-3.5 fill-white/80 shrink-0" />
-                  <div className="text-left leading-none">
-                    <div className="text-[8px] text-red-200 font-bold uppercase tracking-widest leading-none">LKR</div>
-                    <div className="text-sm font-black">{(userProfile.walletBalance || 0).toFixed(2)}</div>
-                  </div>
-                </button>
+              <>
+                {/* Wallets — one segmented control */}
+                <div className="flex items-stretch h-11 rounded-full overflow-hidden border border-slate-200 bg-white shadow-sm">
+                  <button onClick={() => handleWalletClick('ezcash')}
+                    className="group flex items-center gap-2 pl-3 pr-3.5 hover:bg-red-50 cursor-pointer transition-colors">
+                    <span className="w-6 h-6 rounded-full bg-[#cc040a] text-white flex items-center justify-center shrink-0">
+                      <Wallet className="w-3 h-3" />
+                    </span>
+                    <span className="text-left leading-none">
+                      <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400">LKR</span>
+                      <span className="block text-[13px] font-extrabold text-slate-900 tabular-nums mt-0.5">{(userProfile.walletBalance || 0).toFixed(2)}</span>
+                    </span>
+                  </button>
+                  <span className="w-px bg-slate-200 my-2" />
+                  <button onClick={() => handleWalletClick('binance')}
+                    className="group flex items-center gap-2 pl-3 pr-3.5 hover:bg-emerald-50 cursor-pointer transition-colors">
+                    <span className="w-6 h-6 rounded-full bg-emerald-600 text-white font-extrabold text-[10px] italic flex items-center justify-center shrink-0">B</span>
+                    <span className="text-left leading-none">
+                      <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400">USDT</span>
+                      <span className="block text-[13px] font-extrabold text-slate-900 tabular-nums mt-0.5">{(userProfile.walletUsdt || 0).toFixed(2)}</span>
+                    </span>
+                  </button>
+                </div>
 
-                {/* USDT Wallet chip — always visible */}
-                <button onClick={() => handleWalletClick('binance')}
-                  className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm shadow-emerald-600/20 cursor-pointer transition-all">
-                  <div className="w-3.5 h-3.5 rounded-full bg-white text-emerald-600 font-black text-[9px] flex items-center justify-center italic shrink-0 leading-none">B</div>
-                  <div className="text-left leading-none">
-                    <div className="text-[8px] text-emerald-200 font-bold uppercase tracking-widest leading-none">USDT</div>
-                    <div className="text-sm font-black">{(userProfile.walletUsdt || 0).toFixed(2)}</div>
-                  </div>
-                </button>
-
-                {/* Profile Pill */}
+                {/* Profile */}
                 <button onClick={openUserProfilePage}
-                  className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 pl-1.5 pr-3 py-1 rounded-full cursor-pointer group transition-all shadow-xs">
-                  <div className="w-7 h-7 rounded-full bg-[#cc040a] border-2 border-white ring-1 ring-slate-200 flex items-center justify-center font-black text-white text-[11px] shadow-xs shrink-0 overflow-hidden">
+                  className="group flex items-center gap-2.5 h-11 pl-1 pr-3 rounded-full bg-white border border-slate-200 hover:border-slate-300 shadow-sm cursor-pointer transition-all">
+                  <span className="w-9 h-9 rounded-full bg-[#cc040a] text-white font-bold text-xs flex items-center justify-center shrink-0 overflow-hidden ring-2 ring-white">
                     {userProfile.avatar
                       ? <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
                       : getInitials(userProfile.name, userProfile.email)}
-                  </div>
-                  <span className="text-slate-800 font-extrabold text-xs group-hover:text-[#cc040a] transition-colors max-w-[100px] xl:max-w-[130px] truncate">
+                  </span>
+                  <span className="text-slate-800 font-bold text-[13px] group-hover:text-[#cc040a] transition-colors max-w-[96px] xl:max-w-[128px] truncate">
                     {getCleanName(userProfile.name, userProfile.email)}
                   </span>
-                  <ChevronDown className="w-3 h-3 text-slate-400 group-hover:translate-y-0.5 transition-transform shrink-0" />
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:translate-y-0.5 transition-transform shrink-0" />
                 </button>
-              </div>
+              </>
             ) : (
-              <div className="flex items-center gap-2.5">
+              <>
                 <button onClick={() => openAuth('login')}
-                  className="text-xs font-black text-slate-600 hover:text-slate-900 uppercase tracking-wider cursor-pointer px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-all">
+                  className="h-11 px-5 rounded-full text-[13px] font-bold text-slate-700 hover:text-slate-950 hover:bg-slate-100 cursor-pointer transition-colors">
                   Login
                 </button>
                 <button onClick={() => openAuth('register')}
-                  className="btn-purple-pill px-5 py-2 text-xs font-black uppercase tracking-wider cursor-pointer shadow-md flex items-center gap-1.5">
-                  <UserPlus className="w-3.5 h-3.5" />
+                  className="btn-purple-pill h-11 px-6 text-[13px] font-bold cursor-pointer flex items-center gap-2">
+                  <UserPlus className="w-4 h-4" />
                   <span>Register</span>
                 </button>
-              </div>
+              </>
             )}
           </div>
 
-          {/* ── MOBILE RIGHT (balance chips + hamburger) ── */}
+          {/* ── MOBILE RIGHT ── */}
           <div className="lg:hidden flex items-center gap-1.5">
-
-            {/* Live balance chips — visible without opening anything */}
             {isUserLoggedIn && (
-              <div className="flex items-center gap-1.5">
-                {/* LKR chip */}
+              <div className="flex items-center h-10 rounded-full border border-slate-200 bg-white overflow-hidden shadow-sm">
                 <button onClick={() => handleWalletClick('ezcash')}
-                  className="flex items-center gap-1 bg-[#cc040a] hover:bg-[#b00308] text-white font-black px-2.5 py-1.5 rounded-full cursor-pointer transition-all shadow-sm shadow-red-600/25 active:scale-95">
-                  <Wallet className="w-3 h-3 fill-white/80 shrink-0" />
-                  <div className="text-left leading-none">
-                    <div className="text-[7px] text-red-200 font-bold uppercase tracking-wider leading-none">LKR</div>
-                    <div className="text-[11px] font-black leading-tight">{(userProfile.walletBalance || 0).toFixed(0)}</div>
-                  </div>
+                  className="flex items-center gap-1.5 pl-2 pr-2.5 h-full active:bg-red-50 cursor-pointer">
+                  <span className="w-5 h-5 rounded-full bg-[#cc040a] text-white flex items-center justify-center shrink-0">
+                    <Wallet className="w-2.5 h-2.5" />
+                  </span>
+                  <span className="text-left leading-none">
+                    <span className="block text-[8px] font-bold uppercase tracking-wider text-slate-400">LKR</span>
+                    <span className="block text-[12px] font-extrabold text-slate-900 tabular-nums">{(userProfile.walletBalance || 0).toFixed(0)}</span>
+                  </span>
                 </button>
-
-                {/* USDT chip */}
+                <span className="w-px h-5 bg-slate-200" />
                 <button onClick={() => handleWalletClick('binance')}
-                  className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black px-2.5 py-1.5 rounded-full cursor-pointer transition-all shadow-sm shadow-emerald-600/20 active:scale-95">
-                  <div className="w-3 h-3 rounded-full bg-white text-emerald-600 font-black text-[8px] flex items-center justify-center italic shrink-0 leading-none">B</div>
-                  <div className="text-left leading-none">
-                    <div className="text-[7px] text-emerald-200 font-bold uppercase tracking-wider leading-none">USDT</div>
-                    <div className="text-[11px] font-black leading-tight">{(userProfile.walletUsdt || 0).toFixed(2)}</div>
-                  </div>
+                  className="flex items-center gap-1.5 pl-2 pr-2.5 h-full active:bg-emerald-50 cursor-pointer">
+                  <span className="w-5 h-5 rounded-full bg-emerald-600 text-white font-extrabold text-[9px] italic flex items-center justify-center shrink-0">B</span>
+                  <span className="text-left leading-none">
+                    <span className="block text-[8px] font-bold uppercase tracking-wider text-slate-400">USDT</span>
+                    <span className="block text-[12px] font-extrabold text-slate-900 tabular-nums">{(userProfile.walletUsdt || 0).toFixed(2)}</span>
+                  </span>
                 </button>
               </div>
             )}
 
-            {/* Hamburger */}
             <button
               onClick={() => setIsMobileMenuOpen(true)}
               aria-label="Open Menu"
-              className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-900 hover:bg-[#cc040a] text-white transition-all cursor-pointer shadow-md active:scale-95"
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-950 hover:bg-[#cc040a] text-white transition-colors cursor-pointer shadow-md active:scale-95"
             >
               <Menu className="w-5 h-5" />
             </button>
@@ -272,195 +274,165 @@ export const Navbar = () => {
       </header>
 
       {/* ══════════════════════════════════════════════════
-          PREMIUM WHITE/RED MOBILE SLIDE-IN DRAWER
+          MOBILE SIDEBAR
       ══════════════════════════════════════════════════ */}
 
       {/* Backdrop */}
       <div
         onClick={() => setIsMobileMenuOpen(false)}
         className={`lg:hidden fixed inset-0 z-[998] transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
-        style={{ background: 'rgba(15,15,25,0.7)', backdropFilter: 'blur(4px)' }}
+        style={{ background: 'rgba(9,13,22,0.55)', backdropFilter: 'blur(6px)' }}
       />
 
-      {/* White/Red Drawer panel */}
-      <div className={`lg:hidden fixed top-0 right-0 bottom-0 z-[999] w-[300px] max-w-[88vw] bg-white flex flex-col transition-transform duration-300 ease-out overflow-hidden shadow-2xl ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}
-        style={{ borderLeft: '3px solid #cc040a', boxShadow: '-4px 0 30px rgba(204,4,10,0.12), -1px 0 6px rgba(0,0,0,0.08)' }}>
+      {/* Panel */}
+      <aside
+        className={`lg:hidden fixed top-2 right-2 bottom-2 z-[999] w-[320px] max-w-[calc(100vw-16px)] bg-white rounded-[1.75rem] flex flex-col overflow-hidden shadow-[0_30px_80px_-20px_rgba(9,13,22,0.5)] transition-transform duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-[110%]'}`}
+      >
 
-        {/* ── RED GRADIENT HEADER ── */}
-        <div className="bg-gradient-to-br from-[#cc040a] via-red-600 to-[#8B0000] px-5 pt-11 pb-5 relative overflow-hidden flex-shrink-0">
-          {/* Subtle pattern overlay */}
-          <div className="absolute inset-0 opacity-[0.07] pointer-events-none"
-            style={{ backgroundImage: 'repeating-linear-gradient(45deg, #fff 0px, #fff 1px, transparent 1px, transparent 8px)', backgroundSize: '12px 12px' }} />
-          <div className="absolute top-0 right-0 w-28 h-28 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+        {/* Header */}
+        <div className="relative shrink-0 px-5 pt-5 pb-5 bg-gradient-to-br from-[#cc040a] via-red-600 to-[#8B0000] text-white overflow-hidden">
+          <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+          <div className="absolute inset-0 opacity-[0.06] pointer-events-none"
+            style={{ backgroundImage: 'repeating-linear-gradient(45deg, #fff 0px, #fff 1px, transparent 1px, transparent 9px)' }} />
 
-          {/* Close button */}
-          <button onClick={() => setIsMobileMenuOpen(false)}
-            className="absolute top-3.5 right-4 w-8 h-8 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/15 rounded-lg transition-all cursor-pointer z-20">
-            <X className="w-4 h-4" />
-          </button>
-
-          {/* Brand row */}
-          <div className="flex items-center gap-2.5 relative z-10 mb-4">
-            <div className="w-9 h-9 rounded-xl overflow-hidden flex-shrink-0 bg-white/20 border border-white/30 shadow-sm">
-              <img src="/mads-logo.jpg" alt="MADS TOPUP" className="w-full h-full object-contain" />
+          <div className="relative flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20 ring-2 ring-white/30">
+                <img src="/mads-logo.jpg" alt="MADS TOPUP" className="w-full h-full object-contain" />
+              </div>
+              <div className="leading-none">
+                <div className="font-heading font-extrabold text-[17px] tracking-tight">MADS<span className="text-white/80">TOPUP</span></div>
+                <div className="mt-1 text-[9px] font-bold uppercase tracking-[0.2em] font-mono text-red-200">EVERYGAME · LK</div>
+              </div>
             </div>
-            <div>
-              <div className="font-black text-base font-heading tracking-tight text-white">MADS<span className="text-white/80">TOPUP</span></div>
-              <div className="text-[9px] font-black uppercase tracking-widest font-mono text-red-200">EVERYGAME · LK</div>
-            </div>
-            <div className="ml-auto flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-white/50 animate-ping absolute" />
-              <span className="w-1.5 h-1.5 rounded-full bg-white" />
-              <span className="text-[9px] font-black text-white/60 uppercase tracking-wider ml-2">LIVE</span>
-            </div>
+            <button onClick={() => setIsMobileMenuOpen(false)} aria-label="Close Menu"
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-white/15 hover:bg-white/25 text-white transition-colors cursor-pointer">
+              <X className="w-4 h-4" />
+            </button>
           </div>
 
-          {/* User profile card OR login buttons */}
-          {isUserLoggedIn ? (
-            <button onClick={() => { openUserProfilePage(); setIsMobileMenuOpen(false); }}
-              className="relative z-10 w-full flex items-center gap-3 bg-white/15 hover:bg-white/25 border border-white/20 rounded-2xl px-3 py-2.5 transition-all cursor-pointer group">
-              <div className="relative shrink-0">
-                <div className="w-10 h-10 rounded-xl overflow-hidden border-2 border-white/40 shadow-sm">
-                  {userProfile.avatar
-                    ? <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
-                    : <div className="w-full h-full bg-white flex items-center justify-center font-black text-[#cc040a] text-sm">{getInitials(userProfile.name, userProfile.email)}</div>}
+          <div className="relative mt-5">
+            {isUserLoggedIn ? (
+              <button onClick={() => { openUserProfilePage(); setIsMobileMenuOpen(false); }}
+                className="w-full flex items-center gap-3 bg-white/15 hover:bg-white/25 border border-white/20 rounded-2xl p-2.5 pr-3 transition-colors cursor-pointer group">
+                <div className="relative shrink-0">
+                  <div className="w-11 h-11 rounded-full overflow-hidden ring-2 ring-white/40">
+                    {userProfile.avatar
+                      ? <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
+                      : <div className="w-full h-full bg-white flex items-center justify-center font-bold text-[#cc040a] text-sm">{getInitials(userProfile.name, userProfile.email)}</div>}
+                  </div>
+                  <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#cc040a]" />
                 </div>
-                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#cc040a]" />
-              </div>
-              <div className="flex-1 text-left min-w-0">
-                <div className="text-white font-black text-sm truncate">{getCleanName(userProfile.name, userProfile.email)}</div>
-                <div className="text-red-200 text-[11px] font-medium truncate">{userProfile.email || 'MADS Gamer'}</div>
-              </div>
-              <div className="shrink-0 flex flex-col items-end gap-1">
-                {isReseller
-                  ? <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-400 text-amber-900 uppercase">PARTNER</span>
-                  : <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-white/25 text-white uppercase">GAMER</span>}
-                <ChevronRight className="w-3.5 h-3.5 text-white/60 group-hover:translate-x-0.5 transition-transform" />
-              </div>
-            </button>
-          ) : (
-            <div className="relative z-10 flex gap-2">
-              <button onClick={() => { openAuth('login'); setIsMobileMenuOpen(false); }}
-                className="flex-1 bg-white/20 hover:bg-white/30 border border-white/30 text-white font-black text-xs py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer">
-                <LogIn className="w-3.5 h-3.5" /><span>LOGIN</span>
+                <div className="flex-1 text-left min-w-0">
+                  <div className="font-bold text-[15px] truncate">{getCleanName(userProfile.name, userProfile.email)}</div>
+                  <div className="text-red-100/90 text-xs truncate">{userProfile.email || 'MADS Gamer'}</div>
+                </div>
+                <div className="shrink-0 flex items-center gap-1.5">
+                  {isReseller
+                    ? <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400 text-amber-950 uppercase">Partner</span>
+                    : <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/25 uppercase">Gamer</span>}
+                  <ChevronRight className="w-4 h-4 text-white/70 group-hover:translate-x-0.5 transition-transform" />
+                </div>
               </button>
-              <button onClick={() => { openAuth('register'); setIsMobileMenuOpen(false); }}
-                className="flex-1 bg-white text-[#cc040a] font-black text-xs py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md">
-                <UserPlus className="w-3.5 h-3.5" /><span>JOIN NOW</span>
-              </button>
-            </div>
-          )}
+            ) : (
+              <div className="flex gap-2">
+                <button onClick={() => { openAuth('login'); setIsMobileMenuOpen(false); }}
+                  className="flex-1 h-11 bg-white/15 hover:bg-white/25 border border-white/30 text-white font-bold text-[13px] rounded-full flex items-center justify-center gap-2 transition-colors cursor-pointer">
+                  <LogIn className="w-4 h-4" /><span>Login</span>
+                </button>
+                <button onClick={() => { openAuth('register'); setIsMobileMenuOpen(false); }}
+                  className="flex-1 h-11 bg-white text-[#cc040a] font-bold text-[13px] rounded-full flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-md">
+                  <UserPlus className="w-4 h-4" /><span>Join now</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* ── WALLET STRIPS ── */}
+        {/* Wallet cards */}
         {isUserLoggedIn && (
-          <div className="flex gap-2 px-4 py-3 flex-shrink-0 bg-red-50 border-b border-red-100">
+          <div className="grid grid-cols-2 gap-2.5 px-4 pt-4 shrink-0">
             <button onClick={() => handleWalletClick('ezcash')}
-              className="flex-1 flex items-center gap-2 bg-[#cc040a] hover:bg-[#b00308] text-white text-xs font-black py-2.5 px-3 rounded-xl transition-all cursor-pointer shadow-md shadow-red-600/20 active:scale-[0.97]">
-              <Wallet className="w-3.5 h-3.5 fill-white/80 shrink-0" />
-              <div className="text-left leading-none">
-                <div className="text-[8px] text-red-200 font-bold uppercase tracking-widest">LKR Balance</div>
-                <div className="text-sm font-black mt-0.5">{(userProfile.walletBalance || 0).toFixed(2)}</div>
-              </div>
+              className="text-left rounded-2xl border border-red-100 bg-red-50/70 hover:bg-red-50 p-3 transition-colors cursor-pointer active:scale-[0.98]">
+              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#cc040a]">
+                <Wallet className="w-3 h-3" /> LKR
+              </span>
+              <span className="block mt-1.5 text-lg font-extrabold font-heading text-slate-900 tabular-nums">{(userProfile.walletBalance || 0).toFixed(2)}</span>
             </button>
             <button onClick={() => handleWalletClick('binance')}
-              className="flex-1 flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black py-2.5 px-3 rounded-xl transition-all cursor-pointer shadow-md shadow-emerald-600/20 active:scale-[0.97]">
-              <div className="w-5 h-5 rounded-full bg-white text-emerald-700 font-black text-[10px] flex items-center justify-center italic shrink-0">B</div>
-              <div className="text-left leading-none">
-                <div className="text-[8px] text-emerald-200 font-bold uppercase tracking-widest">USDT Balance</div>
-                <div className="text-sm font-black mt-0.5">{(userProfile.walletUsdt || 0).toFixed(2)}</div>
-              </div>
+              className="text-left rounded-2xl border border-emerald-100 bg-emerald-50/70 hover:bg-emerald-50 p-3 transition-colors cursor-pointer active:scale-[0.98]">
+              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                <span className="w-3 h-3 rounded-full bg-emerald-600 text-white text-[7px] font-extrabold italic flex items-center justify-center">B</span> USDT
+              </span>
+              <span className="block mt-1.5 text-lg font-extrabold font-heading text-slate-900 tabular-nums">{(userProfile.walletUsdt || 0).toFixed(2)}</span>
             </button>
           </div>
         )}
 
-        {/* ── NAV ITEMS ── */}
+        {/* Nav items */}
         {isUserLoggedIn ? (
-          <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-            {/* Section header */}
-            <div className="flex items-center gap-2 px-2 py-2 mb-1">
-              <div className="h-px flex-1 bg-gradient-to-r from-[#cc040a]/40 to-transparent" />
-              <span className="text-[9px] font-black text-[#cc040a] uppercase tracking-[0.2em]">MENU</span>
-              <div className="h-px flex-1 bg-gradient-to-l from-[#cc040a]/40 to-transparent" />
-            </div>
+          <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+            <div className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Menu</div>
 
             {navItems.map((item, i) => (
               <button key={i} onClick={item.action}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-150 cursor-pointer group relative overflow-hidden border ${
-                  item.active
-                    ? 'bg-red-50 border-red-200'
-                    : 'bg-transparent border-transparent hover:bg-slate-50 hover:border-slate-200'
+                className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-2xl text-left transition-colors duration-150 cursor-pointer group relative ${
+                  item.active ? 'bg-red-50' : 'hover:bg-slate-50'
                 }`}>
-                {/* Active left accent bar */}
-                {item.active && (
-                  <div className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full bg-[#cc040a]" />
-                )}
+                {item.active && <span className="absolute left-0 top-3 bottom-3 w-1 rounded-r-full bg-[#cc040a]" />}
 
-                {/* Icon box */}
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all group-hover:scale-105 ${
-                  item.active ? 'bg-[#cc040a] shadow-md shadow-red-600/25' : 'bg-slate-100 group-hover:bg-red-50'
+                <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                  item.active ? 'bg-[#cc040a] shadow-md shadow-red-600/25' : `${item.bg} `
                 }`}>
-                  <item.icon className={`w-4 h-4 ${item.active ? 'text-white' : 'text-slate-500 group-hover:text-[#cc040a]'}`} />
-                </div>
+                  <item.icon className={`w-[18px] h-[18px] ${item.active ? 'text-white' : item.color}`} />
+                </span>
 
-                {/* Label */}
-                <span className={`flex-1 text-sm font-bold ${item.active ? 'text-[#cc040a] font-black' : 'text-slate-700 group-hover:text-slate-900'}`}>
+                <span className={`flex-1 text-[15px] font-semibold ${item.active ? 'text-[#cc040a]' : 'text-slate-700 group-hover:text-slate-950'}`}>
                   {item.label}
                 </span>
 
-                {/* Badge */}
                 {item.badge && (
-                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider flex-shrink-0 ${
-                    item.badge === 'PARTNER' ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-red-100 text-[#cc040a] border border-red-200'
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${
+                    item.badge === 'PARTNER' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-[#cc040a]'
                   }`}>
                     {item.badge}
                   </span>
                 )}
 
-                {/* Order count */}
                 {item.count > 0 && (
-                  <span className="bg-[#cc040a] text-white text-[10px] font-black px-2 py-0.5 rounded-full min-w-[20px] text-center flex-shrink-0 shadow-sm shadow-red-600/30">
+                  <span className="bg-[#cc040a] text-white text-[11px] font-bold px-2 h-5 rounded-full min-w-[20px] flex items-center justify-center shrink-0">
                     {item.count}
                   </span>
                 )}
 
-                {/* Arrow */}
-                <ChevronRight className={`w-3.5 h-3.5 shrink-0 transition-all group-hover:translate-x-0.5 ${item.active ? 'text-[#cc040a]' : 'text-slate-300'}`} />
+                <ChevronRight className={`w-4 h-4 shrink-0 transition-transform group-hover:translate-x-0.5 ${item.active ? 'text-[#cc040a]' : 'text-slate-300'}`} />
               </button>
             ))}
 
-            {/* ── Logout button — right after My Orders ── */}
-            {isUserLoggedIn && (
-              <>
-                <div className="mx-2 my-1 h-px bg-slate-100" />
-                <button
-                  onClick={() => { handleLogout && handleLogout(); setIsMobileMenuOpen(false); }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-150 cursor-pointer group border border-transparent hover:bg-red-50 hover:border-red-200 active:scale-[0.98]"
-                >
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-red-50 group-hover:bg-[#cc040a] transition-all group-hover:scale-105 group-hover:shadow-md group-hover:shadow-red-600/25">
-                    <LogOut className="w-4 h-4 text-[#cc040a] group-hover:text-white transition-colors" />
-                  </div>
-                  <span className="flex-1 text-sm font-bold text-[#cc040a] group-hover:font-black">
-                    Logout
-                  </span>
-                  <ChevronRight className="w-3.5 h-3.5 shrink-0 text-red-300 group-hover:translate-x-0.5 transition-all" />
-                </button>
-              </>
-            )}
+            <div className="mx-2 my-2 h-px bg-slate-100" />
+            <button
+              onClick={() => { handleLogout && handleLogout(); setIsMobileMenuOpen(false); }}
+              className="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-2xl text-left transition-colors duration-150 cursor-pointer group hover:bg-red-50"
+            >
+              <span className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-red-50 group-hover:bg-[#cc040a] transition-colors">
+                <LogOut className="w-[18px] h-[18px] text-[#cc040a] group-hover:text-white transition-colors" />
+              </span>
+              <span className="flex-1 text-[15px] font-semibold text-[#cc040a]">Logout</span>
+            </button>
           </nav>
         ) : (
           <div className="flex-1" />
         )}
 
-        {/* ── FOOTER ── */}
-        <div className="border-t border-slate-100 px-4 py-3 flex-shrink-0 flex items-center justify-between bg-slate-50">
-          <div className="text-[9px] font-mono text-slate-400 font-semibold">MADS TOPUP &copy; {new Date().getFullYear()}</div>
-          <div className="flex items-center gap-1.5">
+        {/* Footer */}
+        <div className="shrink-0 px-5 py-3.5 flex items-center justify-between border-t border-slate-100 bg-slate-50/70">
+          <span className="text-[11px] font-mono text-slate-400 font-medium">MADS TOPUP &copy; {new Date().getFullYear()}</span>
+          <span className="flex items-center gap-1.5 text-[11px] font-mono font-medium text-emerald-600">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            <span className="text-[9px] font-mono font-semibold text-emerald-600">ONLINE</span>
-          </div>
+            ONLINE
+          </span>
         </div>
-      </div>
+      </aside>
     </>
   );
 };

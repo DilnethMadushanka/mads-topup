@@ -16,7 +16,7 @@ export const BlogSection = () => {
             <BookOpen className="w-3.5 h-3.5" />
             <span>LATEST GAMING ARTICLES</span>
           </span>
-          <h2 className="text-4xl sm:text-5xl font-black text-slate-900 font-heading tracking-tight uppercase">
+          <h2 className="text-4xl sm:text-5xl font-extrabold text-slate-900 font-heading tracking-tight uppercase">
             News & <span className="text-[#cc040a]">Guides</span>
           </h2>
           <p className="text-slate-500 text-sm sm:text-base font-medium max-w-lg mx-auto leading-relaxed">

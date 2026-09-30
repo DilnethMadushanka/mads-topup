@@ -118,7 +118,7 @@ export const ReferralProgramPage = () => {
             <Gift className="w-3.5 h-3.5" />
             Referral Program
           </span>
-          <h1 className="text-3xl sm:text-5xl font-black text-slate-900 font-heading tracking-tight">
+          <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 font-heading tracking-tight">
             Invite Friends,&nbsp;<span className="text-[#cc040a]">Earn Cash</span>
           </h1>
           <p className="text-slate-500 text-sm sm:text-base font-medium max-w-lg mx-auto">
@@ -159,7 +159,7 @@ export const ReferralProgramPage = () => {
             </div>
 
             <div className="space-y-2">
-              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">Program Locked</h2>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading">Program Locked</h2>
               <p className="text-xs sm:text-sm text-slate-500 font-semibold leading-relaxed max-w-xs mx-auto">
                 Exclusive to active customers. Unlock by meeting <strong className="text-slate-800">ONE</strong> of the criteria below:
               </p>
@@ -236,7 +236,7 @@ export const ReferralProgramPage = () => {
                   <Sparkles className="w-4 h-4 text-amber-300" />
                   Program Unlocked & Active
                 </div>
-                <h2 className="text-3xl sm:text-5xl font-black font-heading tracking-tight leading-tight">
+                <h2 className="text-3xl sm:text-5xl font-extrabold font-heading tracking-tight leading-[1.1]">
                   Earn <span className="text-amber-300">1.5% Cashback</span><br className="hidden sm:block" />
                   On Every Friend's Top-Up!
                 </h2>

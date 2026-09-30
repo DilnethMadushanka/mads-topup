@@ -44,7 +44,7 @@ export const ReviewsSection = () => {
           <span className="text-xs font-black text-[#cc040a] tracking-widest uppercase font-mono bg-[#cc040a]/10 px-4 py-1.5 rounded-full border border-[#cc040a]/20">
             — COMMUNITY —
           </span>
-          <h2 className="text-4xl sm:text-5xl font-black text-slate-900 font-heading tracking-tight">
+          <h2 className="text-4xl sm:text-5xl font-extrabold text-slate-900 font-heading tracking-tight">
             What Our <span className="text-[#cc040a]">Customers Say</span>
           </h2>
           <p className="text-slate-600 text-sm sm:text-base font-semibold max-w-lg mx-auto">

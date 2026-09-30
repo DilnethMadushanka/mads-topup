@@ -105,7 +105,7 @@ export const ReviewsPage = () => {
             <span>VERIFIED REVIEWS</span>
           </div>
           
-          <h1 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight font-heading">
+          <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight font-heading">
             What Our <span className="text-[#cc040a]">Customers Say</span>
           </h1>
           
