@@ -814,6 +814,19 @@ async function deductUserWallet(uid, priceLkr, email, clientProfile) {
     if (!resolved) return { success: false, reason: 'User wallet not found' };
 
     const { rtdbKey } = resolved;
+
+    // Accounts blocked by an admin must not spend wallet funds. Fail-open on any
+    // lookup error so a database hiccup can never break a normal top-up.
+    try {
+      const stRes = await fetch(`${FIREBASE_RTDB_URL}/users/${encodeURIComponent(rtdbKey)}/status.json`);
+      if (stRes.ok && (await stRes.json()) === 'BLOCKED') {
+        console.warn(`[BLOCKED ACCOUNT] Wallet spend refused for UID ${uid} (key: ${rtdbKey})`);
+        return { success: false, reason: 'Your account has been blocked. Please contact support.' };
+      }
+    } catch (e) {
+      console.warn('[Blocked-status check skipped]:', e.message);
+    }
+
     // LKR and USDT wallets are INDEPENDENT — never recalculate one from the other
     let newLkr = resolved.walletBalance;
     let newUsdt = resolved.walletUsdt;

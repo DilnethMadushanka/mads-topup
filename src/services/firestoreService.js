@@ -812,7 +812,7 @@ export const updateUserPasswordInFirestore = async (identifier, newPassword) => 
 /**
  * Credit user or reseller wallet balance in Realtime Database & Firestore by UID, Email, or Reseller Code
  */
-export const creditUserWalletInDatabase = async (identifier, lkrAmount, usdtAmount = 0) => {
+export const creditUserWalletInDatabase = async (identifier, lkrAmount, usdtAmount = 0, opts = {}) => {
   if (!identifier || (!lkrAmount && !usdtAmount)) return false;
   const cleanId = String(identifier).trim();
   const cleanIdUpper = cleanId.toUpperCase();
@@ -852,15 +852,25 @@ export const creditUserWalletInDatabase = async (identifier, lkrAmount, usdtAmou
             targetUid = userObj.uid || uidKey;
             const curLkr = parseFloat(userObj.walletBalance || 0);
             const curUsdt = parseFloat(userObj.walletUsdt || 0);
-            const newLkr = Math.max(0, curLkr + (lkrAmount || 0));
-            const newUsdt = Math.max(0, curUsdt + (usdtAmount || 0));
 
+            // Atomic read-modify-write: the credit is applied on top of the balance
+            // that is in the database at commit time, so a concurrent wallet spend
+            // (top-up deduction) can never be overwritten by a stale admin credit.
             const userRtdbRef = dbRef(rtdb, `users/${targetUid}`);
-            await rtdbUpdate(userRtdbRef, {
-              walletBalance: newLkr,
-              walletUsdt: newUsdt,
-              updatedAt: new Date().toISOString()
+            const txResult = await rtdbRunTransaction(userRtdbRef, (cur) => {
+              const base = (cur && typeof cur === 'object') ? cur : null;
+              const baseLkr = base ? parseFloat(base.walletBalance || 0) : curLkr;
+              const baseUsdt = base ? parseFloat(base.walletUsdt || 0) : curUsdt;
+              return {
+                ...(base || {}),
+                walletBalance: Math.max(0, baseLkr + (lkrAmount || 0)),
+                walletUsdt: Math.max(0, baseUsdt + (usdtAmount || 0)),
+                updatedAt: new Date().toISOString()
+              };
             });
+            const committed = txResult && txResult.snapshot && txResult.snapshot.val();
+            const newLkr = committed ? parseFloat(committed.walletBalance || 0) : Math.max(0, curLkr + (lkrAmount || 0));
+            const newUsdt = committed ? parseFloat(committed.walletUsdt || 0) : Math.max(0, curUsdt + (usdtAmount || 0));
 
             // Update in-memory userObj & registry
             userObj.walletBalance = newLkr;
@@ -872,6 +882,7 @@ export const creditUserWalletInDatabase = async (identifier, lkrAmount, usdtAmou
       }
     } catch (e) {
       console.warn('RTDB wallet credit note:', e.message);
+      if (opts.strict) throw e;
     }
   }
 
@@ -923,13 +934,14 @@ export const creditUserWalletInDatabase = async (identifier, lkrAmount, usdtAmou
     }
   }
 
+  if (opts.strict && !targetUid) throw new Error('User not found in database');
   return targetUid;
 };
 
 /**
  * Set exact user wallet balance in Realtime Database & Firestore by UID, Email, Reseller Code, or Security Key
  */
-export const setUserExactBalanceInDatabase = async (identifier, exactLkr, exactUsdt) => {
+export const setUserExactBalanceInDatabase = async (identifier, exactLkr, exactUsdt, opts = {}) => {
   if (!identifier) return false;
   const cleanId = String(identifier).trim();
   const cleanIdUpper = cleanId.toUpperCase();
@@ -994,6 +1006,7 @@ export const setUserExactBalanceInDatabase = async (identifier, exactLkr, exactU
       }
     } catch (e) {
       console.warn('RTDB exact wallet balance note:', e.message);
+      if (opts.strict) throw e;
     }
   }
 
@@ -1035,6 +1048,7 @@ export const setUserExactBalanceInDatabase = async (identifier, exactLkr, exactU
     }
   }
 
+  if (opts.strict && !targetUid) throw new Error('User not found in database');
   return targetUid;
 };
 

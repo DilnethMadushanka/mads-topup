@@ -794,7 +794,8 @@ export const AdminDashboard = () => {
     const usrName = String(usr.name || usr.username || usr.displayName || '').toLowerCase();
     const usrEmail = String(usr.email || '').toLowerCase();
     const usrPhone = String(usr.phone || '');
-    const matchesSearch = usrName.includes(search) || usrEmail.includes(search) || (usrPhone && usrPhone.includes(userSearch));
+    const usrUid = String(usr.uid || '').toLowerCase();
+    const matchesSearch = usrName.includes(search) || usrEmail.includes(search) || usrUid.includes(search) || (usrPhone && usrPhone.includes(userSearch));
     const matchesStatus = userStatusFilter === 'ALL' ||
       (userStatusFilter === 'VERIFIED' && usr.isVerified) ||
       (userStatusFilter === 'UNVERIFIED' && !usr.isVerified) ||
@@ -995,9 +996,11 @@ export const AdminDashboard = () => {
       showToast('Please enter an amount to credit!', 'error');
       return;
     }
-    updateUserBalance(creditUserEmail, lkr, usdt);
-    setCreditLkrAmount('');
-    setCreditUsdtAmount('');
+    updateUserBalance(creditUserEmail, lkr, usdt, { strict: true }).then((ok) => {
+      if (ok === false) return;
+      setCreditLkrAmount('');
+      setCreditUsdtAmount('');
+    });
   };
 
   const handleCreateVoucherSubmit = (e) => {
@@ -1645,7 +1648,7 @@ export const AdminDashboard = () => {
           {adminTab === 'users' && (
             <div className="space-y-4">
               <FilterBar>
-                <SearchInput value={userSearch} onChange={setUserSearch} placeholder="Search User Name, Email, or Phone..." />
+                <SearchInput value={userSearch} onChange={setUserSearch} placeholder="Search User Name, Email, Phone, or UID..." />
                 <select value={userStatusFilter} onChange={(e) => setUserStatusFilter(e.target.value)} className={fieldCls} style={{ ...fieldStyle, maxWidth: 220 }}>
                   <option value="ALL">All Account Types</option>
                   <option value="VERIFIED">Verified Accounts Only</option>
@@ -2163,8 +2166,8 @@ export const AdminDashboard = () => {
           <div className="space-y-3 pt-2 border-t" style={{ borderColor: 'var(--adm-border)' }}>
             <h4 className="text-xs font-bold" style={mutedStyle}>Manual Wallet Balance Editor</h4>
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => { updateUserBalance(selectedInspectUser.email, 1000, 0); showToast(`Added +1,000 LKR to ${selectedInspectUser.name}`); setSelectedInspectUser(null); }} className="py-2 bg-emerald-500/15 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 rounded-xl text-xs font-bold cursor-pointer">+ Rs. 1,000 LKR</button>
-              <button onClick={() => { updateUserBalance(selectedInspectUser.email, 0, 10); showToast(`Added +$10 USDT to ${selectedInspectUser.name}`); setSelectedInspectUser(null); }} className="py-2 bg-amber-500/15 hover:bg-amber-600 text-amber-400 hover:text-white border border-amber-500/30 rounded-xl text-xs font-bold cursor-pointer">+ $10 USDT</button>
+              <button onClick={async () => { if (!window.confirm(`Add +Rs. 1,000 LKR to ${selectedInspectUser.name}?`)) return; const ok = await updateUserBalance(selectedInspectUser.email, 1000, 0, { strict: true }); if (ok !== false) { showToast(`Added +1,000 LKR to ${selectedInspectUser.name}`); setSelectedInspectUser(null); } }} className="py-2 bg-emerald-500/15 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 rounded-xl text-xs font-bold cursor-pointer">+ Rs. 1,000 LKR</button>
+              <button onClick={async () => { if (!window.confirm(`Add +$10 USDT to ${selectedInspectUser.name}?`)) return; const ok = await updateUserBalance(selectedInspectUser.email, 0, 10, { strict: true }); if (ok !== false) { showToast(`Added +$10 USDT to ${selectedInspectUser.name}`); setSelectedInspectUser(null); } }} className="py-2 bg-amber-500/15 hover:bg-amber-600 text-amber-400 hover:text-white border border-amber-500/30 rounded-xl text-xs font-bold cursor-pointer">+ $10 USDT</button>
             </div>
 
             <div className="rounded-2xl border p-3.5 space-y-3" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
@@ -2186,7 +2189,7 @@ export const AdminDashboard = () => {
                 {/* SET EXACT: overwrites both fields. Blank field = 0 (NOT keep existing) */}
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={async () => {
                     if (editLkrVal === '' && editUsdtVal === '') {
                       showToast('Enter LKR or USDT to set exact balance', 'error');
                       return;
@@ -2195,7 +2198,8 @@ export const AdminDashboard = () => {
                     const usdt = editUsdtVal !== '' ? parseFloat(editUsdtVal) : 0;
                     const targetId = selectedInspectUser.uid || selectedInspectUser.email || selectedInspectUser.resellerCode || selectedInspectUser.securityKey;
                     if (!window.confirm(`SET balance for ${selectedInspectUser.name} to:\nRs. ${lkr.toLocaleString()} LKR / $${usdt.toFixed(2)} USDT\n\nThis REPLACES the current balance. Are you sure?`)) return;
-                    setUserExactBalance(targetId, lkr, usdt);
+                    const ok = await setUserExactBalance(targetId, lkr, usdt);
+                    if (ok === false) return;
                     showToast(`✅ Set ${selectedInspectUser.name} balance → Rs.${lkr.toLocaleString()} LKR / $${usdt} USDT`);
                     setEditLkrVal(''); setEditUsdtVal(''); setSelectedInspectUser(null);
                   }}
@@ -2205,7 +2209,7 @@ export const AdminDashboard = () => {
                 {/* ADD: adds on top of existing balance */}
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={async () => {
                     if (editLkrVal === '' && editUsdtVal === '') {
                       showToast('Enter amount to add', 'error');
                       return;
@@ -2216,7 +2220,8 @@ export const AdminDashboard = () => {
                     const newUsdt = (selectedInspectUser.walletUsdt || 0) + usdt;
                     const targetId = selectedInspectUser.uid || selectedInspectUser.email || selectedInspectUser.resellerCode || selectedInspectUser.securityKey;
                     if (!window.confirm(`ADD funds to ${selectedInspectUser.name}:\n+Rs.${lkr.toLocaleString()} LKR / +$${usdt} USDT\nNew total: Rs.${newLkr.toLocaleString()} LKR / $${newUsdt.toFixed(2)} USDT`)) return;
-                    updateUserBalance(targetId, lkr, usdt);
+                    const ok = await updateUserBalance(targetId, lkr, usdt, { strict: true });
+                    if (ok === false) return;
                     showToast(`✅ Added +Rs.${lkr.toLocaleString()} LKR / +$${usdt} USDT to ${selectedInspectUser.name}`);
                     setEditLkrVal(''); setEditUsdtVal(''); setSelectedInspectUser(null);
                   }}

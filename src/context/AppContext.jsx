@@ -1063,22 +1063,48 @@ export const AppProvider = ({ children }) => {
     };
   }, [isAdminAuthenticated]);
 
-  const verifyUserAccount = async (uid) => {
-    setUsersList(prev => prev.map(u => u.uid === uid ? { ...u, isVerified: true } : u));
-    // RTDB first — it's the real backend of record. Firestore is disabled
-    // for this project, so awaiting it BEFORE the RTDB write (the previous
-    // order) meant a rejected setDoc threw straight into the catch block
-    // and skipped the RTDB update entirely — "Verify" appeared to succeed
-    // (toast + optimistic UI) but never actually persisted anywhere.
+  // Find the real RTDB key for a user. The admin list uses `uid`, but some accounts
+  // are stored under another key (phone / email). Returns null when no record exists,
+  // so an update can never create a stray half-empty user node.
+  const resolveRtdbUserKey = async (rtdbMod, rtdb, uid) => {
+    const direct = await rtdbMod.get(rtdbMod.ref(rtdb, `users/${uid}`));
+    if (direct.exists()) return uid;
+    const all = await rtdbMod.get(rtdbMod.ref(rtdb, 'users'));
+    if (all.exists()) {
+      for (const [key, val] of Object.entries(all.val())) {
+        if (val && String(val.uid || '') === String(uid)) return key;
+      }
+    }
+    return null;
+  };
+
+  // Persist a partial update for one user. Returns true only if it really saved.
+  const saveAdminUserField = async (uid, fields) => {
     try {
       const { rtdb } = await import('../services/firebaseAuth');
-      if (rtdb) {
-        const rtdbMod = await import('firebase/database');
-        await rtdbMod.update(rtdbMod.ref(rtdb, `users/${uid}`), { isVerified: true });
-      }
-    } catch (e) { console.warn('verifyUserAccount RTDB note:', e); }
-    // Best-effort Firestore mirror — not awaited, so it can never block or
-    // abort the RTDB write above.
+      if (!rtdb) return false;
+      const rtdbMod = await import('firebase/database');
+      const key = await resolveRtdbUserKey(rtdbMod, rtdb, uid);
+      if (!key) return false;
+      await rtdbMod.update(rtdbMod.ref(rtdb, `users/${key}`), fields);
+      return true;
+    } catch (e) {
+      console.warn('saveAdminUserField failed:', e);
+      return false;
+    }
+  };
+
+  const verifyUserAccount = async (uid) => {
+    const previous = usersList.find(u => u.uid === uid);
+    setUsersList(prev => prev.map(u => u.uid === uid ? { ...u, isVerified: true } : u));
+    // RTDB first — it's the real backend of record (Firestore is disabled for this project).
+    const saved = await saveAdminUserField(uid, { isVerified: true });
+    if (!saved) {
+      setUsersList(prev => prev.map(u => u.uid === uid ? { ...u, isVerified: previous ? !!previous.isVerified : false } : u));
+      showToast('Could not verify this user — the change was NOT saved.', 'error');
+      return;
+    }
+    // Best-effort Firestore mirror — not awaited, so it can never block the RTDB write above.
     import('../services/firebaseAuth').then(({ db }) => {
       import('firebase/firestore').then(({ doc, setDoc }) => {
         setDoc(doc(db, 'users', uid), { isVerified: true }, { merge: true }).catch(() => {});
@@ -1088,22 +1114,16 @@ export const AppProvider = ({ children }) => {
   };
 
   const toggleBlockUser = async (uid) => {
-    let newStatus = 'ACTIVE';
-    setUsersList(prev => prev.map(u => {
-      if (u.uid === uid) {
-        newStatus = u.status === 'BLOCKED' ? 'ACTIVE' : 'BLOCKED';
-        return { ...u, status: newStatus };
-      }
-      return u;
-    }));
-    // RTDB first — same reasoning as verifyUserAccount above.
-    try {
-      const { rtdb } = await import('../services/firebaseAuth');
-      if (rtdb) {
-        const rtdbMod = await import('firebase/database');
-        await rtdbMod.update(rtdbMod.ref(rtdb, `users/${uid}`), { status: newStatus });
-      }
-    } catch (e) { console.warn('toggleBlockUser RTDB note:', e); }
+    const current = usersList.find(u => u.uid === uid);
+    const previousStatus = current ? current.status : undefined;
+    const newStatus = previousStatus === 'BLOCKED' ? 'ACTIVE' : 'BLOCKED';
+    setUsersList(prev => prev.map(u => u.uid === uid ? { ...u, status: newStatus } : u));
+    const saved = await saveAdminUserField(uid, { status: newStatus });
+    if (!saved) {
+      setUsersList(prev => prev.map(u => u.uid === uid ? { ...u, status: previousStatus } : u));
+      showToast('Could not change account status — the change was NOT saved.', 'error');
+      return;
+    }
     // Best-effort Firestore mirror — not awaited.
     import('../services/firebaseAuth').then(({ db }) => {
       import('firebase/firestore').then(({ doc, setDoc }) => {
@@ -1113,8 +1133,10 @@ export const AppProvider = ({ children }) => {
     showToast(`User account status updated to ${newStatus}.`);
   };
 
-  const updateUserBalance = async (userEmailOrId, lkrAmount, usdtAmount = 0) => {
-    if (!userEmailOrId) return;
+  // opts.strict (admin actions): a failed database write shows an error and leaves the
+  // list untouched, instead of pretending the credit succeeded. Returns false on failure.
+  const updateUserBalance = async (userEmailOrId, lkrAmount, usdtAmount = 0, opts = {}) => {
+    if (!userEmailOrId) return false;
     const cleanId = String(userEmailOrId).trim();
     const cleanIdLower = cleanId.toLowerCase();
 
@@ -1130,12 +1152,22 @@ export const AppProvider = ({ children }) => {
     const lastCall = balanceUpdateDebounceRef.current.get(debounceKey);
     if (lastCall && now - lastCall < 2000) {
       showToast('Please wait a moment before repeating that credit.', 'error');
-      return;
+      return false;
     }
     balanceUpdateDebounceRef.current.set(debounceKey, now);
 
     // 1. Write balance adjustment to DB (RTDB & Firestore) across UID, Email, Reseller Code, or Security Key
-    await creditUserWalletInDatabase(cleanId, lkrAmount, usdtAmount);
+    if (opts && opts.strict) {
+      try {
+        await creditUserWalletInDatabase(cleanId, lkrAmount, usdtAmount, { strict: true });
+      } catch (e) {
+        balanceUpdateDebounceRef.current.delete(debounceKey);
+        showToast(`Credit failed — nothing was saved. (${e.message || 'database error'})`, 'error');
+        return false;
+      }
+    } else {
+      await creditUserWalletInDatabase(cleanId, lkrAmount, usdtAmount);
+    }
 
     // 2. Update local usersList state
     setUsersList(prev => prev.map(u => {
@@ -1170,17 +1202,23 @@ export const AppProvider = ({ children }) => {
         }));
       }
     }
+    return true;
   };
 
   const setUserExactBalance = async (userEmailOrId, exactLkr, exactUsdt) => {
-    if (!userEmailOrId) return;
+    if (!userEmailOrId) return false;
     const cleanId = String(userEmailOrId).trim();
     const cleanIdLower = cleanId.toLowerCase();
     const newLkr = Math.max(0, parseFloat(exactLkr) || 0);
     const newUsdt = Math.max(0, parseFloat(exactUsdt) || 0);
 
     // 1. Write exact balance to DB (RTDB & Firestore)
-    await setUserExactBalanceInDatabase(cleanId, newLkr, newUsdt);
+    try {
+      await setUserExactBalanceInDatabase(cleanId, newLkr, newUsdt, { strict: true });
+    } catch (e) {
+      showToast(`Set balance failed — nothing was saved. (${e.message || 'database error'})`, 'error');
+      return false;
+    }
 
     // 2. Update local usersList state
     setUsersList(prev => prev.map(u => {
@@ -1212,6 +1250,7 @@ export const AppProvider = ({ children }) => {
         }));
       }
     }
+    return true;
   };
 
   const approveManualPayment = async (paymentId) => {
