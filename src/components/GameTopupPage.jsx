@@ -745,7 +745,7 @@ export const GameTopupPage = () => {
               if (sortOrder === 'lth') packages.sort((a, b) => a.priceLkr - b.priceLkr);
               if (sortOrder === 'htl') packages.sort((a, b) => b.priceLkr - a.priceLkr);
               return (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-5">
                   {packages.map((pkg) => {
                 const qty = cartQuantities[pkg.id] || 0;
                 const isSelected = qty > 0;
@@ -757,80 +757,94 @@ export const GameTopupPage = () => {
                     onClick={() => {
                       if (qty === 0) updateQuantity(pkg.id, 1);
                     }}
-                    className={`bg-white rounded-2xl sm:rounded-3xl border transition-all duration-300 p-5 flex flex-col justify-between items-center text-center relative shadow-xs hover:shadow-md cursor-pointer group hover:-translate-y-1 ${
-                      isSelected 
-                        ? 'border-[#cc040a] ring-4 ring-[#cc040a]/15 bg-red-50/30' 
-                        : 'border-slate-200/90 hover:border-[#cc040a]/40'
+                    className={`group relative flex flex-col items-center text-center rounded-[1.4rem] border bg-white p-3 sm:p-4 cursor-pointer transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 ${
+                      isSelected
+                        ? 'border-[#cc040a] bg-gradient-to-b from-red-50/70 to-white shadow-[0_18px_40px_-18px_rgba(204,4,10,0.45)] ring-2 ring-[#cc040a]/20'
+                        : 'border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_10px_24px_-16px_rgba(15,23,42,0.18)] hover:border-[#cc040a]/35 hover:shadow-[0_22px_44px_-20px_rgba(204,4,10,0.35)]'
                     }`}
                   >
+                    {/* Popular ribbon */}
                     {pkg.isPopular && (
-                      <span className="absolute -top-3 px-3 py-1 rounded-full bg-slate-900 text-white text-[10px] font-black uppercase tracking-wider shadow-md z-10">
-                        🔥 POPULAR
+                      <span className="absolute top-2.5 left-2.5 z-10 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r from-[#cc040a] to-[#ff4d4f] text-white text-[9px] font-bold uppercase tracking-wider shadow-md shadow-red-600/30">
+                        🔥 Popular
                       </span>
                     )}
 
-                    {/* Larger Image Thumbnail Container */}
-                    <div className="w-full h-24 sm:h-28 rounded-2xl bg-[#F8FAFC] p-3 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform duration-300 border border-slate-100 shadow-inner">
+                    {/* Selected check */}
+                    {isSelected && (
+                      <span className="absolute top-2.5 right-2.5 z-10 w-6 h-6 rounded-full bg-[#cc040a] text-white text-xs font-bold flex items-center justify-center shadow-md shadow-red-600/40">
+                        ✓
+                      </span>
+                    )}
+
+                    {/* Artwork */}
+                    <div className="relative w-full aspect-[5/4] rounded-2xl overflow-hidden bg-gradient-to-br from-slate-50 via-white to-red-50/60 border border-slate-100 flex items-center justify-center">
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_60%,rgba(204,4,10,0.10),transparent_65%)] opacity-70 group-hover:opacity-100 transition-opacity duration-300"></div>
                       {pkg.image ? (
-                        <img src={pkg.image} alt={pkg.name} className="w-20 h-20 sm:w-24 sm:h-24 object-contain drop-shadow-sm" />
+                        <img
+                          src={pkg.image}
+                          alt={pkg.name}
+                          className="relative w-[68%] h-[68%] object-contain drop-shadow-[0_8px_14px_rgba(15,23,42,0.18)] group-hover:scale-110 group-hover:-translate-y-0.5 transition-transform duration-500 ease-out"
+                        />
                       ) : (
-                        <span className="text-4xl">{selectedGame.currencyIcon}</span>
+                        <span className="relative text-4xl">{selectedGame.currencyIcon}</span>
                       )}
                     </div>
 
-                    {/* Package Title */}
-                    <div className="font-black text-xs sm:text-sm text-slate-900 font-heading leading-tight min-h-[36px] flex items-center justify-center text-center mb-1">
+                    {/* Package title */}
+                    <div className="mt-3 min-h-[2.4rem] flex items-center justify-center font-heading font-bold text-[13px] sm:text-sm text-slate-900 leading-tight">
                       {pkg.name}
                     </div>
 
-                    {/* Bonus Tag — hidden for Free Fire since additional diamonds are not delivered */}
+                    {/* Bonus tag — hidden for Free Fire since additional diamonds are not delivered */}
                     {pkg.bonus && selectedGame?.id !== 'freefire_sg' && (
-                      <span className="text-[10px] font-bold text-[#cc040a] bg-red-50 border border-red-100 px-2 py-0.5 rounded-full mb-1">
+                      <span className="mt-1 text-[10px] font-bold text-[#cc040a] bg-red-50 border border-red-100 px-2 py-0.5 rounded-full">
                         {pkg.bonus}
                       </span>
                     )}
 
-                    {/* Price Display (With Reseller Wholesale Discounting) */}
-                    <div className="my-1 text-center">
+                    {/* Price (with reseller wholesale discounting) */}
+                    <div className="mt-auto pt-2 text-center">
                       {isApprovedReseller ? (
                         <div className="flex flex-col items-center">
-                          <span className="font-black text-base sm:text-lg text-emerald-600 font-heading tracking-tight leading-none">
+                          <span className="font-heading font-extrabold text-lg text-emerald-600 tracking-tight leading-none">
                             {formatLkr(effectivePrice)}
                           </span>
-                          <span className="text-[10px] text-slate-400 line-through font-bold mt-0.5">
-                            {formatLkr(pkg.priceLkr)}
+                          <span className="mt-1 inline-flex items-center gap-1.5 text-[10px] font-bold">
+                            <span className="text-slate-400 line-through">{formatLkr(pkg.priceLkr)}</span>
+                            <span className="px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">-5%</span>
                           </span>
                         </div>
                       ) : (
-                        <div className="font-black text-base sm:text-lg text-[#cc040a] font-heading tracking-tight">
+                        <div className="font-heading font-extrabold text-lg text-[#cc040a] tracking-tight leading-none">
                           {formatLkr(pkg.priceLkr)}
                         </div>
                       )}
                     </div>
 
-                    {/* Counter Buttons (- 0 +) */}
-                    <div className="w-full pt-3 border-t border-slate-100 flex items-center justify-between px-0.5">
+                    {/* Quantity stepper */}
+                    <div className="mt-3 w-full flex items-center justify-between rounded-full bg-slate-100/80 border border-slate-200/70 p-1">
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); updateQuantity(pkg.id, -1); }}
                         disabled={qty === 0}
-                        className={`w-9 h-9 rounded-xl font-black text-base flex items-center justify-center transition-all cursor-pointer ${
-                          qty > 0 
-                            ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200' 
-                            : 'bg-slate-50 text-slate-300 border border-slate-100 cursor-not-allowed'
+                        className={`w-8 h-8 rounded-full font-bold text-base flex items-center justify-center transition-all ${
+                          qty > 0
+                            ? 'bg-white text-slate-800 shadow-sm hover:bg-slate-50 cursor-pointer active:scale-95'
+                            : 'text-slate-300 cursor-not-allowed'
                         }`}
                       >
                         -
                       </button>
 
-                      <span className={`font-black text-base sm:text-lg font-heading px-1 ${qty > 0 ? 'text-[#cc040a]' : 'text-slate-400'}`}>
+                      <span className={`font-heading font-extrabold text-base tabular-nums px-1 ${qty > 0 ? 'text-[#cc040a]' : 'text-slate-400'}`}>
                         {qty}
                       </span>
 
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); updateQuantity(pkg.id, 1); }}
-                        className="w-9 h-9 rounded-xl bg-[#cc040a] hover:bg-[#b00308] text-white font-black text-base flex items-center justify-center transition-all cursor-pointer shadow-md shadow-red-600/25"
+                        className="w-8 h-8 rounded-full bg-[#cc040a] hover:bg-[#b00308] text-white font-bold text-base flex items-center justify-center transition-all cursor-pointer shadow-md shadow-red-600/30 active:scale-95"
                       >
                         +
                       </button>
