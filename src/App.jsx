@@ -153,113 +153,150 @@ const MainContent = () => {
 
       {/* Footer: Only visible on the main home page, not on sub-pages */}
       {!selectedGame && !isUserProfileOpen && !isWalletModalOpen && !isResellerDashboardOpen && !isResellerLoginPageOpen && !isResellerPageOpen && !isReferralPageOpen && !isContactPageOpen && !isReviewsPageOpen && !isLeaderboardPageOpen && !isGameCatalogOpen && !isBlogPageOpen && (
-      <footer style={{ background: 'linear-gradient(180deg,#0d0a0b 0%,#0a0608 60%,#080408 100%)', color: '#fff', borderTop: '1px solid rgba(204,4,10,0.25)', position: 'relative', overflow: 'hidden' }}>
+      <footer className="relative overflow-hidden text-white border-t border-[#cc040a]/25" style={{ background: 'linear-gradient(180deg,#0d0a0b 0%,#0a0608 60%,#080408 100%)' }}>
 
-        {/* Red top glow line */}
-        <div style={{ position: 'absolute', top: 0, left: '15%', right: '15%', height: '1px', background: 'linear-gradient(90deg,transparent,rgba(204,4,10,0.8),transparent)' }} />
-        {/* Subtle red radial glow top-right */}
-        <div style={{ position: 'absolute', top: -120, right: -80, width: 360, height: 360, borderRadius: '50%', background: 'radial-gradient(circle,rgba(204,4,10,0.07) 0%,transparent 70%)', pointerEvents: 'none' }} />
-        {/* Subtle red radial glow bottom-left */}
-        <div style={{ position: 'absolute', bottom: -80, left: -60, width: 260, height: 260, borderRadius: '50%', background: 'radial-gradient(circle,rgba(204,4,10,0.05) 0%,transparent 70%)', pointerEvents: 'none' }} />
+        {/* Ambient glows + top accent line */}
+        <div className="absolute top-0 left-[12%] right-[12%] h-px bg-gradient-to-r from-transparent via-[#cc040a] to-transparent pointer-events-none" />
+        <div className="absolute -top-32 -right-24 w-[420px] h-[420px] rounded-full bg-[#cc040a]/[0.08] blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-16 w-[320px] h-[320px] rounded-full bg-[#cc040a]/[0.06] blur-3xl pointer-events-none" />
+        <div
+          className="absolute inset-0 opacity-[0.035] pointer-events-none"
+          style={{
+            backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)',
+            backgroundSize: '48px 48px',
+            maskImage: 'linear-gradient(to bottom, #000, transparent 70%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, #000, transparent 70%)',
+          }}
+        />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ position: 'relative', zIndex: 1 }}>
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-          {/* ── Top brand bar ─────────────────────────────── */}
-          <div style={{ padding: '64px 0 48px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexWrap: 'wrap', gap: 40, alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          {/* ── Main grid ── */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-8 pt-16 pb-14">
 
-            {/* Brand block */}
-            <div style={{ maxWidth: 300 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg,#cc040a,#ff4444)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 18px rgba(204,4,10,0.5)', flexShrink: 0 }}>
-                  <Flame size={18} color="#fff" />
+            {/* Brand */}
+            <div className="md:col-span-5 lg:col-span-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#cc040a] to-[#ff4444] flex items-center justify-center shadow-[0_8px_24px_-6px_rgba(204,4,10,0.6)] shrink-0">
+                  <Flame size={22} color="#fff" />
                 </div>
-                <div>
-                  <div style={{ fontWeight: 900, fontSize: 15, letterSpacing: '-0.2px', color: '#fff' }}>MADS TOPUP</div>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: '#cc040a', letterSpacing: '0.14em', textTransform: 'uppercase' }}>Enterprise · Sri Lanka</div>
+                <div className="leading-none">
+                  <div className="font-heading font-extrabold text-xl tracking-tight">MADS TOPUP</div>
+                  <div className="mt-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#cc040a]">Enterprise · Sri Lanka</div>
                 </div>
               </div>
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.75, fontWeight: 500, margin: '0 0 14px' }}>
+
+              <p className="mt-6 max-w-sm text-sm leading-relaxed text-white/55">
                 Premier automated game top-up platform in Sri Lanka. Instant delivery for PUBG Mobile, Free Fire, Mobile Legends, and more.
               </p>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 99, background: 'rgba(204,4,10,0.1)', border: '1px solid rgba(204,4,10,0.25)', fontSize: 9, fontWeight: 800, color: '#cc040a', letterSpacing: '0.12em' }}>
-                🇱🇰 SRI LANKA OFFICIAL STORE
+
+              <div className="mt-6 flex flex-wrap items-center gap-2.5">
+                <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#cc040a]/10 border border-[#cc040a]/25 text-[11px] font-bold tracking-[0.1em] text-[#ff6b6b]">
+                  🇱🇰 SRI LANKA OFFICIAL STORE
+                </span>
+                <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-[11px] font-semibold text-white/60">
+                  <span className="relative flex w-1.5 h-1.5">
+                    <span className="absolute inline-flex w-full h-full rounded-full bg-emerald-400 opacity-70 animate-ping" />
+                    <span className="relative inline-flex w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  </span>
+                  24 / 7 Automated
+                </span>
               </div>
             </div>
 
-            {/* Quick Links */}
-            <div>
-              <h4 style={{ margin: '0 0 20px', fontSize: 11, fontWeight: 800, color: '#cc040a', textTransform: 'uppercase', letterSpacing: '0.18em' }}>Quick Links</h4>
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <li onClick={openResellerPage} style={{ fontSize: 13, fontWeight: 700, color: '#fbbf24', cursor: 'pointer', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: 5, transition: 'color 0.15s' }}
-                  onMouseEnter={e => e.currentTarget.style.color='#fde68a'} onMouseLeave={e => e.currentTarget.style.color='#fbbf24'}>
-                  👑 Reseller Program
+            {/* Quick links */}
+            <div className="md:col-span-3 lg:col-span-3">
+              <h4 className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#cc040a]">Quick Links</h4>
+              <ul className="mt-5 flex flex-col gap-1">
+                <li>
+                  <button
+                    type="button"
+                    onClick={openResellerPage}
+                    className="group inline-flex items-center gap-2 py-1.5 text-sm font-bold text-amber-400 hover:text-amber-200 transition-colors cursor-pointer"
+                  >
+                    <span>👑</span>
+                    <span>Reseller Program</span>
+                    <span className="opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200">→</span>
+                  </button>
                 </li>
                 {[
-                  { label: 'About Us',        action: openContactPage },
-                  { label: 'Contact',         action: openContactPage },
-                  { label: 'My Orders',       action: openUserProfilePage },
-                  { label: 'Refund Policy',   action: () => openPolicyModal('refund') },
-                  { label: 'Privacy Policy',  action: () => openPolicyModal('privacy') },
-                  { label: 'Terms of Service',action: () => openPolicyModal('terms') },
+                  { label: 'About Us',         action: openContactPage },
+                  { label: 'Contact',          action: openContactPage },
+                  { label: 'My Orders',        action: openUserProfilePage },
+                  { label: 'Refund Policy',    action: () => openPolicyModal('refund') },
+                  { label: 'Privacy Policy',   action: () => openPolicyModal('privacy') },
+                  { label: 'Terms of Service', action: () => openPolicyModal('terms') },
                 ].map(({ label, action }) => (
-                  <li key={label} onClick={action}
-                    style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.55)', cursor: 'pointer', transition: 'color 0.15s' }}
-                    onMouseEnter={e => e.currentTarget.style.color='#cc040a'}
-                    onMouseLeave={e => e.currentTarget.style.color='rgba(255,255,255,0.5)'}>
-                    {label}
+                  <li key={label}>
+                    <button
+                      type="button"
+                      onClick={action}
+                      className="group inline-flex items-center gap-2 py-1.5 text-sm font-medium text-white/55 hover:text-white transition-colors cursor-pointer"
+                    >
+                      <span className="w-0 h-px bg-[#cc040a] group-hover:w-3 transition-all duration-200" />
+                      <span>{label}</span>
+                    </button>
                   </li>
                 ))}
               </ul>
             </div>
 
             {/* Contact */}
-            <div>
-              <h4 style={{ margin: '0 0 20px', fontSize: 11, fontWeight: 800, color: '#cc040a', textTransform: 'uppercase', letterSpacing: '0.18em' }}>Contact Us</h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div className="md:col-span-4 lg:col-span-4">
+              <h4 className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#cc040a]">Contact Us</h4>
+              <div className="mt-5 flex flex-col gap-3">
                 {[
                   { icon: '📞', label: 'WhatsApp', value: '+94 74 043 6276', href: 'https://wa.me/94740436276', highlight: true },
                   { icon: '✉️', label: 'Email',    value: 'info@trivextit.com', href: 'mailto:info@trivextit.com', highlight: true },
                   { icon: '📍', label: 'Address',  value: 'Colombo Fort, Sri Lanka', highlight: false },
                   { icon: '🕐', label: 'Hours',    value: '24 / 7 Automated', highlight: false },
-                ].map(({ icon, label, value, href, highlight }) => (
-                  <div key={label} style={{ display: 'flex', alignItems: 'flex-start', gap: 9 }}>
-                    <span style={{ fontSize: 12, flexShrink: 0, marginTop: 1 }}>{icon}</span>
-                    <div>
-                      <div style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 1 }}>{label}</div>
-                      {href
-                        ? <a href={href} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 600, color: highlight ? '#ff6b6b' : 'rgba(255,255,255,0.6)', textDecoration: 'none' }}
-                            onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
-                            onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>{value}</a>
-                        : <span style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.6)' }}>{value}</span>
-                      }
+                ].map(({ icon, label, value, href, highlight }) => {
+                  const inner = (
+                    <>
+                      <span className="w-10 h-10 rounded-xl bg-white/[0.05] border border-white/10 flex items-center justify-center text-base shrink-0 group-hover:bg-[#cc040a]/15 group-hover:border-[#cc040a]/30 transition-colors">
+                        {icon}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35">{label}</span>
+                        <span className={`block mt-0.5 text-sm font-semibold truncate ${highlight ? 'text-[#ff6b6b]' : 'text-white/70'}`}>{value}</span>
+                      </span>
+                    </>
+                  );
+                  return href ? (
+                    <a key={label} href={href} target="_blank" rel="noreferrer" className="group flex items-center gap-3.5 no-underline">
+                      {inner}
+                    </a>
+                  ) : (
+                    <div key={label} className="group flex items-center gap-3.5">
+                      {inner}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
           </div>
 
-          {/* ── Legal disclaimer ──────────────────────────── */}
-          <div id="legal-disclaimer" style={{ padding: '28px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', borderTop: '1px solid rgba(204,4,10,0.15)' }}>
-            <p style={{ fontSize: 9, fontWeight: 800, color: 'rgba(204,4,10,0.9)', textTransform: 'uppercase', letterSpacing: '0.14em', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
+          {/* ── Legal disclaimer ── */}
+          <div id="legal-disclaimer" className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-5 sm:p-6">
+            <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#cc040a]/90">
               ⚠️ Third-Party Reseller Disclaimer &amp; Trademark Notice
             </p>
-            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', lineHeight: 1.85, margin: 0, fontWeight: 500 }}>
-              <strong style={{ color: 'rgba(255,255,255,0.6)' }}>MADS TOPUP is an independent third-party digital top-up reseller and is NOT affiliated with, sponsored by, endorsed by, or officially connected to Garena, Tencent Games, Moonton, NetEase Games, TiMi Studio Group, or any other official game publisher.</strong>{' '}
+            <p className="mt-3 text-[11.5px] leading-[1.85] text-white/40">
+              <strong className="text-white/65 font-semibold">MADS TOPUP is an independent third-party digital top-up reseller and is NOT affiliated with, sponsored by, endorsed by, or officially connected to Garena, Tencent Games, Moonton, NetEase Games, TiMi Studio Group, or any other official game publisher.</strong>{' '}
               We do not collect any game account passwords or login credentials — only Player UIDs are required for top-up delivery. All top-ups are delivered via the official MooGold reseller API.
               All game titles, trademarks, logos, and artwork (including Free Fire®, PUBG Mobile®, Mobile Legends: Bang Bang®, Blood Strike®, Delta Force®, Garena Shells®) are registered trademarks of their respective copyright holders and are used strictly for product identification and digital top-up delivery purposes only.
               DMCA &amp; Copyright Contact:{' '}
-              <a href="mailto:info@trivextit.com" style={{ color: '#ff6b6b', fontWeight: 700 }}>info@trivextit.com</a>.
+              <a href="mailto:info@trivextit.com" className="text-[#ff6b6b] font-bold hover:underline">info@trivextit.com</a>.
             </p>
           </div>
 
-          {/* ── Copyright bar ─────────────────────────────── */}
-          <div style={{ padding: '20px 0', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-            <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}>© 2026 MADS TOPUP. All rights reserved.</p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e', display: 'inline-block', boxShadow: '0 0 6px #22c55e' }} />
-              <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: 600, letterSpacing: '0.04em' }}>POWERED BY MADS AUTOMATED ENGINE</p>
+          {/* ── Copyright bar ── */}
+          <div className="py-7 flex flex-col-reverse sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+            <p className="text-xs font-medium text-white/35">© 2026 MADS TOPUP. All rights reserved.</p>
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#22c55e]" />
+              <p className="text-[11px] font-semibold tracking-[0.08em] text-white/30">POWERED BY MADS AUTOMATED ENGINE</p>
             </div>
           </div>
 
