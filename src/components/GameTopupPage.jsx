@@ -871,33 +871,37 @@ export const GameTopupPage = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
               {PAYMENT_METHODS.filter(m => isLoggedIn || m.id !== 'wallet').map((method) => {
                 const isSelected = selectedPayment.id === method.id;
                 return (
                   <div
                     key={method.id}
                     onClick={() => setSelectedPayment(method)}
-                    className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
+                    className={`relative p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center gap-3.5 ${
                       isSelected
-                        ? 'bg-[#cc040a] text-white border-[#cc040a] shadow-md shadow-red-600/20'
-                        : 'bg-white text-slate-900 border-slate-200 hover:border-[#cc040a]/40'
+                        ? 'bg-red-50/60 border-[#cc040a] shadow-md shadow-red-600/10'
+                        : 'bg-white border-slate-200 hover:border-[#cc040a]/40 hover:shadow-sm'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-2xl">{method.icon}</span>
-                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                        isSelected ? 'bg-white text-[#cc040a]' : 'bg-red-50 text-[#cc040a] border border-red-100'
-                      }`}>
+                    <div className={`w-12 h-12 shrink-0 rounded-xl flex items-center justify-center text-2xl transition-colors ${
+                      isSelected ? 'bg-[#cc040a] shadow-md shadow-red-600/25' : 'bg-slate-100'
+                    }`}>
+                      {method.icon}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="font-extrabold text-sm text-slate-900 font-heading truncate">{method.name}</div>
+                      <div className="text-xs mt-0.5 text-slate-500 leading-snug">{method.subtitle}</div>
+                      <span className="inline-block mt-1.5 text-[10px] font-black px-2 py-0.5 rounded-full bg-red-50 text-[#cc040a] border border-red-100">
                         {method.badge}
                       </span>
                     </div>
 
-                    <div>
-                      <div className="font-extrabold text-sm font-heading">{method.name}</div>
-                      <div className={`text-xs mt-0.5 ${isSelected ? 'text-red-100' : 'text-slate-500'}`}>
-                        {method.subtitle}
-                      </div>
+                    <div className={`w-6 h-6 shrink-0 rounded-full flex items-center justify-center border-2 transition-all ${
+                      isSelected ? 'bg-[#cc040a] border-[#cc040a]' : 'border-slate-300 bg-white'
+                    }`}>
+                      {isSelected && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
                     </div>
                   </div>
                 );
@@ -907,35 +911,36 @@ export const GameTopupPage = () => {
               {!isLoggedIn && (
                 <div
                   onClick={() => openAuth('login')}
-                  className="p-4 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 hover:border-[#cc040a]/60 hover:bg-red-50 cursor-pointer transition-all flex flex-col justify-center items-center text-center gap-1.5"
+                  className="p-4 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 hover:border-[#cc040a]/60 hover:bg-red-50 cursor-pointer transition-all flex items-center gap-3.5"
                 >
-                  <span className="text-2xl">💳</span>
-                  <div className="font-extrabold text-sm text-slate-700">MADS Wallet</div>
-                  <div className="text-[10px] text-slate-400 font-semibold">Log in to pay with wallet balance</div>
-                  <span className="mt-1 text-[10px] bg-[#cc040a] text-white px-2.5 py-0.5 rounded-full font-bold">Login Required</span>
+                  <div className="w-12 h-12 shrink-0 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-2xl">💳</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-extrabold text-sm text-slate-800 font-heading">MADS Wallet</div>
+                    <div className="text-xs text-slate-500 mt-0.5">Log in to pay with wallet balance</div>
+                    <span className="inline-block mt-1.5 text-[10px] bg-[#cc040a] text-white px-2.5 py-0.5 rounded-full font-bold">Login Required</span>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-slate-400 shrink-0" />
                 </div>
               )}
 
               {/* Recharge Wallet Helper Card */}
               <div
                 onClick={() => openWalletModal()}
-                className="p-4 rounded-2xl border-2 border-dashed border-emerald-300 bg-emerald-50/50 hover:bg-emerald-50 text-slate-900 cursor-pointer transition-all flex flex-col justify-between group"
+                className="p-4 rounded-2xl border-2 border-dashed border-emerald-300 bg-emerald-50/50 hover:bg-emerald-50 cursor-pointer transition-all flex items-center gap-3.5 group"
               >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-2xl">📥</span>
-                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-600 text-white uppercase tracking-wider">
+                <div className="w-12 h-12 shrink-0 rounded-xl bg-white border border-emerald-200 flex items-center justify-center text-2xl">📥</div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-extrabold text-sm text-emerald-900 font-heading group-hover:text-emerald-700">
+                    Recharge Wallet Balance
+                  </div>
+                  <div className="text-xs text-emerald-700 mt-0.5 leading-snug">
+                    Deposit via EZ Cash, Binance Pay, or Bank Transfer
+                  </div>
+                  <span className="inline-block mt-1.5 text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-600 text-white uppercase tracking-wider">
                     Recharge Wallet
                   </span>
                 </div>
-                <div>
-                  <div className="font-extrabold text-sm text-emerald-900 font-heading group-hover:text-emerald-700 flex items-center gap-1">
-                    <span>Recharge Wallet Balance</span>
-                    <span className="text-xs">→</span>
-                  </div>
-                  <div className="text-xs text-emerald-700 mt-0.5">
-                    Deposit via EZ Cash, Binance Pay, or Bank Transfer
-                  </div>
-                </div>
+                <ChevronRight className="w-5 h-5 text-emerald-500 shrink-0 group-hover:translate-x-0.5 transition-transform" />
               </div>
             </div>
 
@@ -1132,14 +1137,14 @@ export const GameTopupPage = () => {
             </div>
           )}
 
-          {/* HOW IT WORKS ACCORDION SECTION (Matching Screenshot 3) */}
+          {/* HOW IT WORKS ACCORDION SECTION */}
           <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden mb-6">
-            <div 
+            <div
               onClick={() => setIsHowItWorksOpen(!isHowItWorksOpen)}
-              className="p-5 bg-white flex items-center justify-between cursor-pointer border-b border-slate-100 hover:bg-slate-50 transition-colors"
+              className={`p-5 bg-white flex items-center justify-between cursor-pointer hover:bg-red-50/40 transition-colors ${isHowItWorksOpen ? 'border-b border-slate-100' : ''}`}
             >
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
+                <div className="w-10 h-10 rounded-xl bg-[#cc040a] text-white flex items-center justify-center shadow-md shadow-red-600/20">
                   <HelpCircle className="w-5 h-5" />
                 </div>
                 <div>
@@ -1150,70 +1155,33 @@ export const GameTopupPage = () => {
                 </div>
               </div>
 
-              <div className="text-slate-400 hover:text-slate-700">
-                {isHowItWorksOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+              <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center">
+                {isHowItWorksOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </div>
             </div>
 
-            {/* Accordion 5 Steps Content */}
             {isHowItWorksOpen && (
-              <div className="p-5 bg-slate-50/50 space-y-3">
-                
-                {/* Step 1 */}
-                <div className="p-4 bg-white rounded-2xl border border-slate-200/80 flex items-start gap-4 shadow-xs">
-                  <div className="w-7 h-7 rounded-full bg-blue-600 text-white font-extrabold flex items-center justify-center text-xs shrink-0 mt-0.5">
-                    1
+              <div className="p-5 sm:p-6">
+                {[
+                  ['Verify Your ID', 'Enter your Player ID to confirm your game account.'],
+                  ['Select Products', 'Choose your currency and select diamond packages.'],
+                  ['Checkout', 'Review your cart and select payment method.'],
+                  ['Secure Payment', 'Complete your payment through our secure gateway.'],
+                  ['Instant Diamond Delivery', 'Diamonds are delivered instantly to your account!'],
+                ].map(([title, desc], i, arr) => (
+                  <div key={title} className="flex items-start gap-4">
+                    <div className="flex flex-col items-center self-stretch">
+                      <div className="w-8 h-8 rounded-full bg-[#cc040a] text-white font-extrabold flex items-center justify-center text-sm shrink-0 shadow-md shadow-red-600/20">
+                        {i + 1}
+                      </div>
+                      {i < arr.length - 1 && <div className="w-0.5 flex-1 bg-red-100 my-1"></div>}
+                    </div>
+                    <div className={i < arr.length - 1 ? 'pb-5' : ''}>
+                      <h4 className="text-sm font-extrabold text-slate-900 font-heading leading-8">{title}</h4>
+                      <p className="text-xs text-slate-500 -mt-0.5 font-medium">{desc}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wide font-heading">Verify Your ID</h4>
-                    <p className="text-xs text-slate-500 mt-0.5 font-medium">Enter your Player ID to confirm your game account.</p>
-                  </div>
-                </div>
-
-                {/* Step 2 */}
-                <div className="p-4 bg-white rounded-2xl border border-slate-200/80 flex items-start gap-4 shadow-xs">
-                  <div className="w-7 h-7 rounded-full bg-blue-600 text-white font-extrabold flex items-center justify-center text-xs shrink-0 mt-0.5">
-                    2
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wide font-heading">Select Products</h4>
-                    <p className="text-xs text-slate-500 mt-0.5 font-medium">Choose your currency and select diamond packages.</p>
-                  </div>
-                </div>
-
-                {/* Step 3 */}
-                <div className="p-4 bg-white rounded-2xl border border-slate-200/80 flex items-start gap-4 shadow-xs">
-                  <div className="w-7 h-7 rounded-full bg-blue-600 text-white font-extrabold flex items-center justify-center text-xs shrink-0 mt-0.5">
-                    3
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wide font-heading">Checkout</h4>
-                    <p className="text-xs text-slate-500 mt-0.5 font-medium">Review your cart and select payment method.</p>
-                  </div>
-                </div>
-
-                {/* Step 4 */}
-                <div className="p-4 bg-white rounded-2xl border border-slate-200/80 flex items-start gap-4 shadow-xs">
-                  <div className="w-7 h-7 rounded-full bg-blue-600 text-white font-extrabold flex items-center justify-center text-xs shrink-0 mt-0.5">
-                    4
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wide font-heading">Secure Payment</h4>
-                    <p className="text-xs text-slate-500 mt-0.5 font-medium">Complete your payment through our secure gateway.</p>
-                  </div>
-                </div>
-
-                {/* Step 5 */}
-                <div className="p-4 bg-white rounded-2xl border border-slate-200/80 flex items-start gap-4 shadow-xs">
-                  <div className="w-7 h-7 rounded-full bg-blue-600 text-white font-extrabold flex items-center justify-center text-xs shrink-0 mt-0.5">
-                    5
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wide font-heading">Instant Diamond Delivery</h4>
-                    <p className="text-xs text-slate-500 mt-0.5 font-medium">Diamonds are delivered instantly to your account!</p>
-                  </div>
-                </div>
-
+                ))}
               </div>
             )}
           </div>

@@ -570,27 +570,28 @@ export const TopupModal = () => {
                         <div
                           key={method.id}
                           onClick={() => setSelectedPayment(method)}
-                          className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between ${
+                          className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all flex items-center gap-3 ${
                             isSelected
-                              ? 'bg-[#cc040a] text-white border-[#cc040a] shadow-lg shadow-red-500/20'
-                              : 'bg-white text-slate-900 border-slate-200 hover:border-slate-400'
+                              ? 'bg-red-50/60 border-[#cc040a] shadow-md shadow-red-600/10'
+                              : 'bg-white border-slate-200 hover:border-[#cc040a]/40 hover:shadow-sm'
                           }`}
                         >
-                          <div className="flex items-center gap-3">
-                            <span className="text-2xl">{method.icon}</span>
-                            <div>
-                              <div className="font-bold text-xs flex items-center gap-2">
-                                <span>{method.name}</span>
-                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${
-                                  isSelected ? 'bg-white text-slate-900' : 'bg-[#cc040a]/20 text-[#cc040a]'
-                                }`}>
-                                  {method.badge}
-                                </span>
-                              </div>
-                              <div className={`text-[10px] ${isSelected ? 'text-slate-100' : 'text-slate-500'}`}>
-                                {method.subtitle}
-                              </div>
-                            </div>
+                          <div className={`w-11 h-11 shrink-0 rounded-xl flex items-center justify-center text-xl transition-colors ${
+                            isSelected ? 'bg-[#cc040a] shadow-md shadow-red-600/25' : 'bg-slate-100'
+                          }`}>
+                            {method.icon}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="font-extrabold text-xs text-slate-900 truncate">{method.name}</div>
+                            <div className="text-[10px] text-slate-500 leading-snug mt-0.5">{method.subtitle}</div>
+                            <span className="inline-block mt-1 text-[9px] font-black px-1.5 py-0.5 rounded-full bg-red-50 text-[#cc040a] border border-red-100">
+                              {method.badge}
+                            </span>
+                          </div>
+                          <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center border-2 transition-all ${
+                            isSelected ? 'bg-[#cc040a] border-[#cc040a]' : 'border-slate-300 bg-white'
+                          }`}>
+                            {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
                           </div>
                         </div>
                       );
