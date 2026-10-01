@@ -146,6 +146,25 @@ const ModalShell = ({ onClose, title, subtitle, icon: Icon, children, maxWidth =
   </div>
 );
 
+// Fallback when R2 is unreachable: shrink the picture so the embedded data-URL stays small
+// (webp keeps transparency for PNG posters).
+const compressImageToDataUrl = (file, maxSide = 900) => new Promise((resolve, reject) => {
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(img.width * scale));
+    canvas.height = Math.max(1, Math.round(img.height * scale));
+    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+    URL.revokeObjectURL(url);
+    const keepsAlpha = /png|webp|gif/.test(file.type);
+    resolve(keepsAlpha ? canvas.toDataURL('image/webp', 0.85) : canvas.toDataURL('image/jpeg', 0.82));
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not decode image')); };
+  img.src = url;
+});
+
 const AreaChart = ({ data, color = '#cc040a', height = 88, showDots = true }) => {
   const values = data.length ? data : [0, 0];
   const max = Math.max(...values, 1);
@@ -959,24 +978,43 @@ export const AdminDashboard = () => {
     }
     setIsUploadingAdImg(true);
     try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const dataUrl = reader.result;
-        try { await uploadToR2Storage(file, 'popup_ads'); } catch (r2Err) {}
-        setAdImageUrl(dataUrl);
-        setIsUploadingAdImg(false);
-        showToast('Image uploaded & applied successfully! ☁️');
-      };
-      reader.readAsDataURL(file);
+      // Store the picture in R2 and keep only its URL in the popup config — never the raw file.
+      let uploaded = null;
+      try { uploaded = await uploadToR2Storage(file, 'popup_ads'); } catch (r2Err) { uploaded = null; }
+
+      if (uploaded?.success && uploaded.url) {
+        setAdImageUrl(uploaded.url);
+        showToast('Image uploaded to storage & applied! ☁️');
+      } else {
+        // R2 unreachable: embed a compressed copy so the popup still works, but say so.
+        try {
+          const dataUrl = await compressImageToDataUrl(file);
+          if (dataUrl.length > 700000) throw new Error('too large');
+          setAdImageUrl(dataUrl);
+          showToast('Storage upload unavailable — applied a compressed copy instead. Re-upload later for best results.');
+        } catch (cErr) {
+          showToast(uploaded?.error || 'Image upload failed. Try a smaller image or paste a direct URL.', 'error');
+        }
+      }
     } catch (err) {
       console.error('Image upload error:', err);
-      setIsUploadingAdImg(false);
       showToast('Failed to upload image file.', 'error');
+    } finally {
+      setIsUploadingAdImg(false);
+      if (e.target) e.target.value = '';
     }
   };
 
   const handleSavePopupAd = async (e) => {
     if (e) e.preventDefault();
+    if (adEnabled && !adImageUrl.trim() && !adTitle.trim() && !adDescription.trim()) {
+      showToast('Add an image, title or description before publishing the popup.', 'error');
+      return;
+    }
+    if (adImageUrl.startsWith('data:') && adImageUrl.length > 700000) {
+      showToast('Image is too large to publish. Upload it again (it is stored as a URL) or use a smaller file.', 'error');
+      return;
+    }
     setIsSavingAd(true);
     const success = await updatePopupAdConfig({
       enabled: adEnabled, title: adTitle, description: adDescription, imageUrl: adImageUrl,
@@ -2151,7 +2189,7 @@ export const AdminDashboard = () => {
                   <div><label className="text-xs font-bold block mb-1" style={mutedStyle}>Popup Title / Headline</label><input type="text" placeholder="e.g. SPECIAL PROMO OFFER!" value={adTitle} onChange={(e) => setAdTitle(e.target.value)} className={fieldCls} style={fieldStyle} /></div>
                   <div><label className="text-xs font-bold block mb-1" style={mutedStyle}>Description / Offer Details</label><textarea rows={3} value={adDescription} onChange={(e) => setAdDescription(e.target.value)} className={`${fieldCls} resize-none`} style={fieldStyle} /></div>
                   <div>
-                    <label className="text-xs font-bold block mb-1.5" style={mutedStyle}>Banner Image</label>
+                    <label className="text-xs font-bold block mb-1.5" style={mutedStyle}>Banner Image <span style={faintStyle}>— a PNG with a transparent background floats on the page with no box behind it (recommended ~900×1100)</span></label>
                     <label className="w-full border-2 border-dashed border-red-500/40 hover:border-red-500 p-3.5 rounded-2xl flex items-center justify-center gap-2.5 cursor-pointer transition-colors text-xs mb-2" style={mutedStyle}>
                       {isUploadingAdImg ? (<><Loader2 className="w-5 h-5 text-red-500 animate-spin" /><span className="font-extrabold text-red-400">Uploading...</span></>) : (<><UploadCloud className="w-5 h-5 text-red-500" /><span className="font-extrabold" style={{ color: 'var(--adm-text)' }}>Upload Image File</span></>)}
                       <input type="file" accept="image/*" disabled={isUploadingAdImg} onChange={handleAdImageFileUpload} className="hidden" />
@@ -2165,7 +2203,13 @@ export const AdminDashboard = () => {
                       <select value={adButtonLink} onChange={(e) => setAdButtonLink(e.target.value)} className={fieldCls} style={fieldStyle}>
                         <option value="#catalog">Open Game Catalog</option>
                         <option value="#wallet">Open Deposit Wallet</option>
+                        <option value="#referral">Open Referral Page</option>
+                        <option value="#reseller">Open Reseller Program</option>
+                        <option value="#support">Open Live Support Chat</option>
                         <option value="https://wa.me/94740436276">Open Support WhatsApp</option>
+                        {!['#catalog', '#wallet', '#referral', '#reseller', '#support', 'https://wa.me/94740436276'].includes(adButtonLink) && (
+                          <option value={adButtonLink}>{adButtonLink}</option>
+                        )}
                       </select>
                     </div>
                   </div>
@@ -2176,14 +2220,21 @@ export const AdminDashboard = () => {
                   <div className="rounded-3xl border-2 p-5" style={cardStyle}>
                     <h4 className="text-xs font-black uppercase tracking-wider mb-4 flex items-center justify-between" style={mutedStyle}><span>Live Preview</span><span className="text-emerald-400 font-mono">Real-time</span></h4>
                     <div className="flex flex-col items-center w-full">
-                      <div className="border-2 border-amber-400/40 text-white rounded-3xl shadow-2xl overflow-hidden relative flex flex-col items-center w-full" style={{ background: '#0b0f17' }}>
-                        {adBadge && <div className="absolute top-3 left-3 z-10"><span className="px-2.5 py-0.5 rounded-full bg-slate-950/80 text-amber-300 border border-amber-400/40 font-black text-[9px] uppercase">{adBadge}</span></div>}
-                        {adImageUrl && <div className="relative w-full h-36 bg-slate-900 overflow-hidden"><img src={adImageUrl} alt="Preview" className="w-full h-full object-cover" /><div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div></div>}
-                        <div className="p-4 text-center space-y-2.5 w-full bg-slate-950">
-                          <h5 className="text-base font-black">{adTitle || 'Popup Title Here'}</h5>
-                          <p className="text-[11px] text-slate-400 leading-relaxed">{adDescription || 'Your ad description will appear here...'}</p>
-                          <div className="pt-2 flex justify-center"><div className="px-8 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow flex items-center gap-1.5"><span>{adButtonText || 'GO'}</span><ArrowRight className="w-3.5 h-3.5" /></div></div>
+                      <div className="relative w-full rounded-2xl overflow-hidden flex flex-col items-center px-4 py-6 gap-3" style={{ background: 'repeating-conic-gradient(#1a1a22 0% 25%, #101016 0% 50%) 50% / 18px 18px' }}>
+                        {adImageUrl ? (
+                          <div className="relative w-full flex justify-center">
+                            {adBadge && <span className="absolute top-0 left-0 z-10 px-2.5 py-0.5 rounded-full bg-[#e11d28] text-white font-black text-[9px] uppercase">{adBadge}</span>}
+                            <img src={adImageUrl} alt="Preview" className="max-h-52 w-auto max-w-full object-contain" style={{ filter: 'drop-shadow(0 14px 30px rgba(225,29,40,0.45))' }} />
+                          </div>
+                        ) : (
+                          <div className="w-full rounded-2xl border border-white/20 bg-white/10 py-8 text-center text-[11px] text-white/60">No image — a glass card is shown instead</div>
+                        )}
+                        <div className="text-center space-y-2 w-full">
+                          <h5 className="text-base font-black text-white" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>{adTitle || 'Popup Title Here'}</h5>
+                          <p className="text-[11px] text-white/85 leading-relaxed" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>{adDescription || 'Your ad description will appear here...'}</p>
+                          <div className="pt-1 flex justify-center"><div className="px-8 py-2.5 bg-gradient-to-r from-[#ef1c25] to-[#b8060d] text-white font-black text-xs uppercase tracking-wider rounded-full shadow-lg flex items-center gap-1.5"><span>{adButtonText || 'GO'}</span><ArrowRight className="w-3.5 h-3.5" /></div></div>
                         </div>
+                        <div className="w-8 h-8 rounded-full bg-white/10 border border-white/25 flex items-center justify-center text-white mt-1"><X className="w-4 h-4" /></div>
                       </div>
                     </div>
                   </div>

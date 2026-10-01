@@ -1837,24 +1837,55 @@ export const DEFAULT_POPUP_AD_CONFIG = {
   showOncePerSession: false
 };
 
+// Every visitor downloads this config through a realtime listener, so keep it small and
+// well-formed. (Embedding a multi-MB base64 image here used to blow past the database limits.)
+const POPUP_AD_MAX_BYTES = 900 * 1024;
+
 export const savePopupAdConfigToFirestore = async (config) => {
   if (!config) return false;
-  if (typeof window !== 'undefined' && window.localStorage) {
-    try { localStorage.setItem('mads_popup_ad_config', JSON.stringify(config)); } catch (e) {}
+
+  const clean = {
+    enabled: Boolean(config.enabled),
+    title: String(config.title || '').slice(0, 200),
+    description: String(config.description || '').slice(0, 1000),
+    imageUrl: String(config.imageUrl || ''),
+    buttonText: String(config.buttonText || '').slice(0, 60),
+    buttonLink: String(config.buttonLink || '#catalog').slice(0, 500),
+    badge: String(config.badge || '').slice(0, 60),
+    showOncePerSession: Boolean(config.showOncePerSession),
+  };
+
+  if (JSON.stringify(clean).length > POPUP_AD_MAX_BYTES) {
+    console.warn('[PopupAd] Config too large to publish (image is embedded as base64). Upload the image so it is stored as a URL.');
+    return false;
   }
+
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try { localStorage.setItem('mads_popup_ad_config', JSON.stringify(clean)); } catch (e) {}
+  }
+
+  // Report the truth: success means the config reached at least one live database.
+  let attempted = false;
+  let published = false;
   if (rtdb) {
+    attempted = true;
     try {
-      const adRef = dbRef(rtdb, 'siteConfig/popupAd');
-      await rtdbSet(adRef, config);
-    } catch (e) {}
+      await rtdbSet(dbRef(rtdb, 'siteConfig/popupAd'), clean);
+      published = true;
+    } catch (e) {
+      console.warn('[PopupAd] Realtime DB publish failed:', e?.message || e);
+    }
   }
   if (db) {
+    attempted = true;
     try {
-      const adDocRef = doc(db, 'siteConfig', 'popupAd');
-      await setDoc(adDocRef, config, { merge: true });
-    } catch (e) {}
+      await setDoc(doc(db, 'siteConfig', 'popupAd'), clean);
+      published = true;
+    } catch (e) {
+      console.warn('[PopupAd] Firestore publish failed:', e?.message || e);
+    }
   }
-  return true;
+  return attempted ? published : true;
 };
 
 export const subscribePopupAdConfigFromFirestore = (callback) => {
