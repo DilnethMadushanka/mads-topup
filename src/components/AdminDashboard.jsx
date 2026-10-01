@@ -19,7 +19,7 @@ import {
    reused across every tab of the admin panel.
    ============================================================ */
 
-const fieldCls = "w-full px-4 py-2.5 rounded-xl border text-xs font-semibold focus:outline-none focus:border-red-500 transition-colors disabled:opacity-50";
+const fieldCls = "w-full px-4 py-2.5 rounded-xl border-2 text-xs font-bold focus:outline-none focus:border-red-500 transition-all disabled:opacity-50";
 const fieldStyle = { background: 'var(--adm-input-bg)', borderColor: 'var(--adm-border)', color: 'var(--adm-text)' };
 const cardStyle = { background: 'var(--adm-surface)', borderColor: 'var(--adm-border)', boxShadow: 'var(--adm-shadow)' };
 const mutedStyle = { color: 'var(--adm-text-muted)' };
@@ -45,7 +45,8 @@ const STATUS_STYLES = {
 };
 
 const StatusPill = ({ status, children }) => (
-  <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase border inline-block whitespace-nowrap ${STATUS_STYLES[status] || 'bg-slate-500/15 text-slate-400 border-slate-500/30'}`}>
+  <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase border inline-flex items-center gap-1.5 whitespace-nowrap ${STATUS_STYLES[status] || 'bg-slate-500/15 text-slate-400 border-slate-500/30'}`}>
+    <span className="w-1.5 h-1.5 rounded-full bg-current" />
     {children || status}
   </span>
 );
@@ -69,12 +70,15 @@ const timeAgo = (iso) => {
 
 const SectionHeader = ({ title, subtitle, icon: Icon, actions }) => (
   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-    <div>
-      <h3 className="text-lg sm:text-xl font-black font-heading flex items-center gap-2" style={{ color: 'var(--adm-text)' }}>
-        {Icon && <Icon className="w-5 h-5 text-red-500" />}
-        <span>{title}</span>
-      </h3>
-      {subtitle && <p className="text-xs mt-0.5" style={mutedStyle}>{subtitle}</p>}
+    <div className="flex items-center gap-3 min-w-0">
+      <div className="w-1.5 self-stretch min-h-[40px] rounded-full bg-gradient-to-b from-[#ef1c25] to-[#990207] shrink-0" />
+      <div className="min-w-0">
+        <h3 className="text-lg sm:text-xl font-black font-heading flex items-center gap-2" style={{ color: 'var(--adm-text)' }}>
+          {Icon && <Icon className="w-5 h-5 text-red-500" />}
+          <span>{title}</span>
+        </h3>
+        {subtitle && <p className="text-xs mt-0.5 font-medium" style={mutedStyle}>{subtitle}</p>}
+      </div>
     </div>
     {actions && <div className="flex items-center gap-2 flex-wrap">{actions}</div>}
   </div>
@@ -95,7 +99,7 @@ const SearchInput = ({ value, onChange, placeholder }) => (
 );
 
 const FilterBar = ({ children }) => (
-  <div className="rounded-2xl border p-3.5 flex flex-col sm:flex-row gap-3 sm:items-center" style={cardStyle}>
+  <div className="rounded-2xl border-2 p-3.5 flex flex-col sm:flex-row gap-3 sm:items-center" style={cardStyle}>
     {children}
   </div>
 );
@@ -109,7 +113,7 @@ const ToggleSwitch = ({ checked, onChange, label, description }) => (
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className={`w-12 h-6 rounded-full transition-colors relative p-1 shrink-0 cursor-pointer ${checked ? 'bg-red-600' : 'bg-slate-600/40'}`}
+      className={`w-12 h-6 rounded-full transition-colors relative p-1 shrink-0 cursor-pointer ${checked ? 'bg-[#cc040a] shadow-md shadow-red-600/30' : 'bg-slate-400/40'}`}
     >
       <div className={`w-4 h-4 rounded-full bg-white transition-transform ${checked ? 'translate-x-6' : 'translate-x-0'}`} />
     </button>
@@ -118,12 +122,13 @@ const ToggleSwitch = ({ checked, onChange, label, description }) => (
 
 const ModalShell = ({ onClose, title, subtitle, icon: Icon, children, maxWidth = 'max-w-lg', footer }) => (
   <div className="fixed inset-0 z-[70] bg-slate-950/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div className={`w-full ${maxWidth} rounded-t-3xl sm:rounded-3xl border p-5 sm:p-6 space-y-4 relative shadow-2xl max-h-[92vh] sm:max-h-[90vh] flex flex-col overflow-hidden`} style={cardStyle}>
+    <div className={`w-full ${maxWidth} rounded-t-3xl sm:rounded-3xl border-2 p-5 sm:p-6 space-y-4 relative shadow-2xl max-h-[92vh] sm:max-h-[90vh] flex flex-col overflow-hidden`} style={cardStyle}>
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#ef1c25] via-[#cc040a] to-[#990207]" />
       <div className="flex items-center justify-between pb-3 border-b shrink-0" style={{ borderColor: 'var(--adm-border)' }}>
         <div className="flex items-center gap-2.5">
           {Icon && (
-            <div className="w-9 h-9 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400 shrink-0">
-              <Icon className="w-4.5 h-4.5" />
+            <div className="w-10 h-10 rounded-xl bg-[#cc040a] flex items-center justify-center text-white shadow-md shadow-red-600/25 shrink-0">
+              <Icon className="w-5 h-5" />
             </div>
           )}
           <div>
@@ -141,7 +146,7 @@ const ModalShell = ({ onClose, title, subtitle, icon: Icon, children, maxWidth =
   </div>
 );
 
-const AreaChart = ({ data, color = '#cc040a', height = 88 }) => {
+const AreaChart = ({ data, color = '#cc040a', height = 88, showDots = true }) => {
   const values = data.length ? data : [0, 0];
   const max = Math.max(...values, 1);
   const min = Math.min(...values, 0);
@@ -167,7 +172,7 @@ const AreaChart = ({ data, color = '#cc040a', height = 88 }) => {
       </defs>
       <path d={areaPath} fill={`url(#${gid})`} stroke="none" />
       <path d={linePath} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-      {points.map((p, i) => (
+      {showDots && points.map((p, i) => (
         <circle key={i} cx={p[0]} cy={p[1]} r="3" fill={color} />
       ))}
     </svg>
@@ -208,6 +213,23 @@ const DonutChart = ({ segments, size = 116, thickness = 15 }) => {
   );
 };
 
+const StatCard = ({ icon: Icon, label, value, valueCls = '', sub, subCls = '', tint = 'bg-red-500/15 text-red-500', action, span = '' }) => (
+  <div className={`relative rounded-2xl border-2 p-5 overflow-hidden group transition-all hover:-translate-y-0.5 hover:shadow-lg ${span}`} style={cardStyle}>
+    <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-[#cc040a]/5 group-hover:bg-[#cc040a]/10 transition-colors pointer-events-none" />
+    <div className="relative flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <span className="text-[10px] font-black uppercase tracking-wider block" style={mutedStyle}>{label}</span>
+        <h4 className={`text-2xl font-black font-heading mt-1.5 ${valueCls}`} style={valueCls ? undefined : { color: 'var(--adm-text)' }}>{value}</h4>
+        {sub && <span className={`text-[10px] font-bold mt-1.5 inline-block ${subCls}`} style={subCls ? undefined : faintStyle}>{sub}</span>}
+      </div>
+      <div className="flex flex-col items-end gap-2 shrink-0">
+        <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${tint}`}><Icon className="w-5 h-5" /></div>
+        {action}
+      </div>
+    </div>
+  </div>
+);
+
 const DataTable = ({ columns, rows, rowKey = 'id', pageSize = 8, emptyMessage = 'No records found.' }) => {
   const [sortKey, setSortKey] = useState(null);
   const [sortDir, setSortDir] = useState('asc');
@@ -240,10 +262,31 @@ const DataTable = ({ columns, rows, rowKey = 'id', pageSize = 8, emptyMessage = 
   };
 
   return (
-    <div className="rounded-2xl border overflow-hidden min-w-0" style={cardStyle}>
-      <div className="overflow-x-auto -mx-px">
+    <div className="rounded-2xl border-2 overflow-hidden min-w-0" style={cardStyle}>
+      {/* Phones: one card per row (no sideways scrolling) */}
+      <div className="md:hidden divide-y" style={{ borderColor: 'var(--adm-border)' }}>
+        {pageRows.length === 0 ? (
+          <div className="p-8 text-center text-xs font-semibold" style={faintStyle}>{emptyMessage}</div>
+        ) : pageRows.map(row => (
+          <div key={row[rowKey]} className="p-4 space-y-2.5">
+            {columns.filter(col => col.key !== 'actions').map(col => (
+              <div key={col.key} className="flex items-start justify-between gap-3 text-xs">
+                <span className="text-[10px] font-black uppercase tracking-wider font-mono pt-0.5 shrink-0 max-w-[40%]" style={faintStyle}>{col.label}</span>
+                <div className="min-w-0 text-right break-words font-medium">{col.render ? col.render(row) : row[col.key]}</div>
+              </div>
+            ))}
+            {columns.filter(col => col.key === 'actions').map(col => (
+              <div key={col.key} className="pt-2.5 border-t flex justify-end" style={{ borderColor: 'var(--adm-border)' }}>
+                {col.render ? col.render(row) : row[col.key]}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden md:block overflow-x-auto -mx-px">
         <table className="w-full text-left text-xs">
-          <thead style={{ background: 'var(--adm-surface-2)' }} className="uppercase font-mono text-[10px]">
+          <thead style={{ background: 'var(--adm-surface-2)' }} className="uppercase font-mono text-[10px] tracking-wider">
             <tr>
               {columns.map(col => (
                 <th key={col.key} className={`p-3.5 select-none whitespace-nowrap ${col.align === 'right' ? 'text-right' : ''}`} style={mutedStyle}>
@@ -273,7 +316,7 @@ const DataTable = ({ columns, rows, rowKey = 'id', pageSize = 8, emptyMessage = 
         </table>
       </div>
       {sortedRows.length > pageSize && (
-        <div className="flex items-center justify-between px-4 py-3 border-t text-[11px] font-mono" style={{ borderColor: 'var(--adm-border)', ...mutedStyle }}>
+        <div className="flex flex-col min-[420px]:flex-row items-center justify-between gap-2 px-4 py-3 border-t text-[11px] font-mono" style={{ borderColor: 'var(--adm-border)', ...mutedStyle }}>
           <span>Showing {safePage * pageSize + 1}–{Math.min(sortedRows.length, (safePage + 1) * pageSize)} of {sortedRows.length}</span>
           <div className="flex items-center gap-1.5">
             <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={safePage === 0} className="px-2.5 py-1 rounded-lg border disabled:opacity-30 cursor-pointer" style={{ borderColor: 'var(--adm-border)' }}>Prev</button>
@@ -353,7 +396,8 @@ export const AdminDashboard = () => {
   const [isLoginLoading, setIsLoginLoading] = useState(false);
 
   const [adminTab, setAdminTab] = useState('overview');
-  const [theme, setTheme] = useState(() => (typeof window !== 'undefined' && localStorage.getItem('mads_admin_theme')) || 'dark');
+  const [revenueDays, setRevenueDays] = useState(7);
+  const [theme, setTheme] = useState(() => (typeof window !== 'undefined' && localStorage.getItem('mads_admin_theme')) || 'light');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => typeof window !== 'undefined' && localStorage.getItem('mads_admin_sidebar_collapsed') === 'true');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -661,10 +705,11 @@ export const AdminDashboard = () => {
   if (!isAdminAuthenticated) {
     return (
       <div className={`mads-admin ${themeClass} fixed inset-0 z-50 w-screen h-screen min-h-screen overflow-y-auto overflow-x-hidden flex flex-col items-center justify-center p-3 sm:p-4`} style={{ background: 'var(--adm-bg)', color: 'var(--adm-text)' }}>
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute -top-32 -left-32 w-[28rem] h-[28rem] bg-red-600/15 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute -bottom-32 -right-32 w-[28rem] h-[28rem] bg-red-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-        <div className="w-full max-w-md rounded-3xl shadow-2xl border overflow-hidden relative p-5 sm:p-8 z-10" style={cardStyle}>
+        <div className="w-full max-w-md rounded-3xl shadow-2xl border-2 overflow-hidden relative p-5 sm:p-8 z-10" style={cardStyle}>
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#ef1c25] via-[#cc040a] to-[#990207]" />
           <button
             onClick={() => setIsAdminOpen(false)}
             className="absolute top-4 right-4 p-2 rounded-xl hover:bg-[var(--adm-surface-hover)] transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-bold font-mono"
@@ -1033,7 +1078,7 @@ export const AdminDashboard = () => {
   };
 
   const revenueTrend = (() => {
-    const days = 7;
+    const days = revenueDays;
     const buckets = Array.from({ length: days }, (_, i) => {
       const d = new Date();
       d.setHours(0, 0, 0, 0);
@@ -1050,6 +1095,9 @@ export const AdminDashboard = () => {
     return buckets;
   })();
   const revenueTrendTotal = revenueTrend.reduce((s, b) => s + b.total, 0);
+  const revenueDailyAvg = revenueTrendTotal / Math.max(1, revenueTrend.length);
+  const revenueBestDay = revenueTrend.reduce((best, b) => (b.total > best.total ? b : best), revenueTrend[0] || { total: 0, date: new Date() });
+  const revenueLabelStep = Math.max(1, Math.ceil(revenueTrend.length / 8));
 
   const orderStatusCounts = {
     COMPLETED: safeOrders.filter(o => o.status === 'COMPLETED').length,
@@ -1104,7 +1152,8 @@ export const AdminDashboard = () => {
     <div className={wrapperCls} style={{ background: 'var(--adm-bg)', color: 'var(--adm-text)' }}>
 
       {/* TOP BAR */}
-      <div className="px-3 sm:px-5 py-3 border-b flex items-center justify-between gap-3 shrink-0" style={{ background: 'var(--adm-surface)', borderColor: 'var(--adm-border)' }}>
+      <div className="px-3 sm:px-5 py-3 border-b flex items-center justify-between gap-3 shrink-0 relative" style={{ background: 'var(--adm-surface)', borderColor: 'var(--adm-border)' }}>
+        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#ef1c25] via-[#cc040a]/60 to-transparent pointer-events-none" />
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)} className="lg:hidden p-2 rounded-xl border cursor-pointer" style={{ borderColor: 'var(--adm-border)', ...mutedStyle }} title="Toggle Menu">
             <Menu className="w-5 h-5" />
@@ -1112,13 +1161,13 @@ export const AdminDashboard = () => {
           <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)} className="hidden lg:flex p-2 rounded-xl border cursor-pointer" style={{ borderColor: 'var(--adm-border)', ...mutedStyle }} title="Toggle Sidebar">
             {sidebarCollapsed ? <PanelLeftOpen className="w-4.5 h-4.5" /> : <PanelLeftClose className="w-4.5 h-4.5" />}
           </button>
-          <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#cc040a] to-[#ff2a30] flex items-center justify-center text-white shadow-lg shadow-red-600/30 shrink-0">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#ef1c25] to-[#990207] flex items-center justify-center text-white shadow-lg shadow-red-600/30 shrink-0">
             <ShieldCheck className="w-5 h-5" />
           </div>
           <div className="min-w-0 hidden sm:block">
             <div className="flex items-center gap-1.5">
               <h2 className="text-base font-black font-heading tracking-tight truncate" style={{ color: 'var(--adm-text)' }}>MADS ADMIN</h2>
-              <span className="px-2 py-0.5 rounded-full bg-red-500/15 border border-red-500/30 text-red-400 text-[9px] font-mono font-bold shrink-0">v4.0</span>
+              <span className="px-2 py-0.5 rounded-full bg-[#cc040a] text-white text-[9px] font-mono font-bold shrink-0">v4.0</span>
             </div>
           </div>
         </div>
@@ -1134,7 +1183,7 @@ export const AdminDashboard = () => {
             style={fieldStyle}
           />
           {commandResults.length > 0 && (
-            <div className="absolute top-full mt-2 left-0 right-0 rounded-2xl border shadow-2xl overflow-hidden z-20" style={cardStyle}>
+            <div className="absolute top-full mt-2 left-0 right-0 rounded-2xl border-2 shadow-2xl overflow-hidden z-20" style={cardStyle}>
               {commandResults.map(r => (
                 <button key={r.key} onClick={() => { r.onGo(); setCommandQuery(''); }} className="w-full flex items-center justify-between px-4 py-2.5 text-left text-xs hover:bg-[var(--adm-surface-hover)] cursor-pointer border-b last:border-0" style={{ borderColor: 'var(--adm-border)' }}>
                   <span className="font-bold" style={{ color: 'var(--adm-text)' }}>{r.label}</span>
@@ -1159,7 +1208,7 @@ export const AdminDashboard = () => {
               )}
             </button>
             {isNotifOpen && (
-              <div className="absolute right-0 top-full mt-2 w-72 rounded-2xl border shadow-2xl overflow-hidden z-20" style={cardStyle}>
+              <div className="fixed left-3 right-3 top-16 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-72 rounded-2xl border-2 shadow-2xl overflow-hidden z-30" style={cardStyle}>
                 <div className="px-4 py-2.5 border-b text-xs font-black" style={{ borderColor: 'var(--adm-border)' }}>Live Alerts</div>
                 {[
                   { label: 'Pending orders', count: pendingCount, tab: 'orders' },
@@ -1201,12 +1250,12 @@ export const AdminDashboard = () => {
         )}
 
         <aside
-          className={`${sidebarCollapsed ? 'w-[72px]' : 'w-64'} border-r p-3 overflow-y-auto shrink-0 transition-all duration-200 z-50 lg:z-auto ${isMobileSidebarOpen ? 'fixed inset-y-0 left-0 top-0 shadow-2xl block w-64' : 'hidden lg:block'}`}
+          className={`${sidebarCollapsed ? 'w-[72px]' : 'w-64'} border-r p-3 pt-4 overflow-y-auto shrink-0 transition-all duration-200 z-50 lg:z-auto ${isMobileSidebarOpen ? 'fixed inset-y-0 left-0 top-0 shadow-2xl block w-64' : 'hidden lg:block'}`}
           style={{ background: 'var(--adm-surface)', borderColor: 'var(--adm-border)' }}
         >
           {NAV_GROUPS.map(group => (
             <div key={group.label} className="mb-3">
-              {!sidebarCollapsed && <div className="px-2.5 mb-1.5 text-[10px] font-black uppercase tracking-widest font-mono" style={faintStyle}>{group.label}</div>}
+              {!sidebarCollapsed && <div className="px-2.5 mb-1.5 text-[10px] font-black uppercase tracking-widest font-mono flex items-center gap-2" style={faintStyle}><span className="w-3 h-0.5 rounded-full bg-[#cc040a]" />{group.label}</div>}
               <div className="space-y-1">
                 {group.items.map(item => {
                   const Icon = item.icon;
@@ -1217,7 +1266,7 @@ export const AdminDashboard = () => {
                       key={item.id}
                       onClick={() => handleTabSelect(item.id)}
                       title={item.label}
-                      className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${active ? 'bg-gradient-to-r from-[#cc040a] to-[#ff2a30] text-white shadow-lg shadow-red-600/25' : 'hover:bg-[var(--adm-surface-hover)]'}`}
+                      className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${active ? 'bg-gradient-to-r from-[#cc040a] to-[#ef1c25] text-white shadow-lg shadow-red-600/30' : 'hover:bg-[var(--adm-surface-hover)] hover:translate-x-0.5'}`}
                       style={!active ? mutedStyle : undefined}
                     >
                       <span className="flex items-center gap-2.5 min-w-0">
@@ -1225,7 +1274,7 @@ export const AdminDashboard = () => {
                         {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
                       </span>
                       {!sidebarCollapsed && badge > 0 && (
-                        <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded-full shrink-0 ${active ? 'bg-white/25 text-white' : 'bg-amber-500/15 text-amber-400'}`}>{badge}</span>
+                        <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded-full shrink-0 ${active ? 'bg-white/25 text-white' : 'bg-[#cc040a] text-white'}`}>{badge}</span>
                       )}
                     </button>
                   );
@@ -1249,54 +1298,61 @@ export const AdminDashboard = () => {
                 actions={<button onClick={() => { fetchLiveBalance(); fetchEzcashLogs(); showToast('Analytics data refreshed!'); }} className="px-3 py-1.5 border rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer" style={{ borderColor: 'var(--adm-border)', ...mutedStyle }}><RefreshCw className="w-3.5 h-3.5" /><span>Refresh</span></button>}
               />
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="rounded-2xl border p-5" style={cardStyle}>
-                  <span className="text-[10px] font-black uppercase tracking-wider block" style={mutedStyle}>Gross Revenue</span>
-                  <h4 className="text-2xl font-black text-emerald-400 font-heading mt-1">{formatLkr(totalRevenueLkr)}</h4>
-                  <span className="text-[10px] font-bold mt-1 inline-block" style={faintStyle}>{completedOrders.length} completed orders</span>
-                </div>
-                <div className="rounded-2xl border p-5" style={cardStyle}>
-                  <span className="text-[10px] font-black uppercase tracking-wider block" style={mutedStyle}>Total User Accounts</span>
-                  <h4 className="text-2xl font-black font-heading mt-1" style={{ color: 'var(--adm-text)' }}>{safeUsers.length}</h4>
-                  <span className="text-[10px] text-blue-400 font-bold mt-1 inline-block">{safeUsers.filter(u => u.isVerified).length} verified accounts</span>
-                </div>
-                <div className="rounded-2xl border p-5" style={cardStyle}>
-                  <span className="text-[10px] font-black uppercase tracking-wider block" style={mutedStyle}>Manual Verifications Queue</span>
-                  <h4 className="text-2xl font-black text-amber-400 font-heading mt-1">{pendingPaymentsCount} Pending</h4>
-                  <span className="text-[10px] text-amber-500 font-bold mt-1 inline-block">EZ Cash RN / Binance Order IDs</span>
-                </div>
-                <div className="rounded-2xl border p-5" style={cardStyle}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black uppercase tracking-wider block" style={mutedStyle}>{liveMoongoldBalance.isRealtime ? 'Moongold Live Balance' : 'Total System Wallet Balance'}</span>
-                    <button onClick={fetchLiveBalance} style={mutedStyle} title="Refresh Live Balance">
-                      <RefreshCw className={`w-3 h-3 ${liveMoongoldBalance.isLoading ? 'animate-spin text-amber-400' : ''}`} />
-                    </button>
+              {/* Welcome banner — summarises the live counters already computed above */}
+              <div className="relative rounded-3xl bg-gradient-to-br from-[#ef1c25] via-[#dc0b13] to-[#b8060d] text-white p-5 sm:p-7 overflow-hidden shadow-xl shadow-red-600/20">
+                <div className="absolute -top-20 -right-12 w-72 h-72 rounded-full bg-white/10 pointer-events-none" />
+                <div className="absolute -bottom-24 -left-10 w-64 h-64 rounded-full bg-white/10 pointer-events-none" />
+                <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 border border-white/25 text-[10px] font-black uppercase tracking-widest font-mono mb-2.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" /> Live
+                    </div>
+                    <h3 className="text-2xl sm:text-3xl font-black font-heading tracking-tight">Welcome back, Admin</h3>
+                    <p className="text-sm text-red-50 font-medium mt-1">
+                      {(pendingCount + pendingPaymentsCount + openTicketsCount + pendingResellersCount) > 0
+                        ? `${pendingCount + pendingPaymentsCount + openTicketsCount + pendingResellersCount} items need your attention right now.`
+                        : 'Everything is up to date — nothing is waiting on you.'}
+                    </p>
                   </div>
-                  {liveMoongoldBalance.isRealtime ? (
-                    <>
-                      <h4 className="text-2xl font-black text-sky-400 font-heading mt-1">Rs. {liveMoongoldBalance.balanceLkr.toLocaleString()}</h4>
-                      <span className="text-[10px] text-sky-500 font-bold mt-1 inline-block">${liveMoongoldBalance.balanceUsd} USDT {liveMoongoldBalance.lastFetched ? `• Updated ${liveMoongoldBalance.lastFetched}` : '• Auto-Synced'}</span>
-                    </>
-                  ) : (
-                    <>
-                      <h4 className="text-2xl font-black text-sky-400 font-heading mt-1">Rs. {safeUsers.reduce((sum, u) => sum + (parseFloat(u.walletBalance) || 0), 0).toLocaleString()}</h4>
-                      <span className="text-[10px] text-sky-500 font-bold mt-1 inline-block">Total balance across all users</span>
-                    </>
-                  )}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    {[
+                      { label: 'Orders', count: pendingCount, tab: 'orders' },
+                      { label: 'Deposits', count: pendingPaymentsCount, tab: 'deposits' },
+                      { label: 'Tickets', count: openTicketsCount, tab: 'support' },
+                      { label: 'Resellers', count: pendingResellersCount, tab: 'resellers' }
+                    ].map(q => (
+                      <button key={q.tab} onClick={() => setAdminTab(q.tab)} className="text-left px-4 py-3 rounded-2xl bg-white/15 hover:bg-white/25 border border-white/25 backdrop-blur-md transition-all cursor-pointer">
+                        <div className="text-2xl font-black font-heading leading-none">{q.count}</div>
+                        <div className="text-[10px] font-black uppercase tracking-wider text-red-100 mt-1">{q.label}</div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="rounded-2xl border p-5" style={cardStyle}>
-                  <span className="text-[10px] font-black uppercase tracking-wider block" style={mutedStyle}>Open Support Tickets</span>
-                  <h4 className="text-2xl font-black text-rose-400 font-heading mt-1">{openTicketsCount}</h4>
-                  <span className="text-[10px] font-bold mt-1 inline-block" style={faintStyle}>{safeTickets.length} total tickets</span>
-                </div>
-                <div className="rounded-2xl border p-5" style={cardStyle}>
-                  <span className="text-[10px] font-black uppercase tracking-wider block" style={mutedStyle}>Reseller Applications</span>
-                  <h4 className="text-2xl font-black text-amber-400 font-heading mt-1">{pendingResellersCount} Pending</h4>
-                  <span className="text-[10px] font-bold mt-1 inline-block" style={faintStyle}>{safeResellerApps.length} total applications</span>
-                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <StatCard icon={DollarSign} label="Gross Revenue" value={formatLkr(totalRevenueLkr)} valueCls="text-emerald-400" sub={`${completedOrders.length} completed orders`} tint="bg-emerald-500/15 text-emerald-500" />
+                <StatCard icon={Users} label="Total User Accounts" value={safeUsers.length} sub={`${safeUsers.filter(u => u.isVerified).length} verified accounts`} subCls="text-blue-400" tint="bg-blue-500/15 text-blue-500" />
+                <StatCard icon={FileCheck} label="Manual Verifications Queue" value={`${pendingPaymentsCount} Pending`} valueCls="text-amber-400" sub="EZ Cash RN / Binance Order IDs" subCls="text-amber-500" tint="bg-amber-500/15 text-amber-500" />
+                <StatCard
+                  icon={Zap}
+                  label={liveMoongoldBalance.isRealtime ? 'Moongold Live Balance' : 'Total System Wallet Balance'}
+                  value={liveMoongoldBalance.isRealtime ? `Rs. ${liveMoongoldBalance.balanceLkr.toLocaleString()}` : `Rs. ${safeUsers.reduce((sum, u) => sum + (parseFloat(u.walletBalance) || 0), 0).toLocaleString()}`}
+                  valueCls="text-sky-400"
+                  sub={liveMoongoldBalance.isRealtime ? `$${liveMoongoldBalance.balanceUsd} USDT ${liveMoongoldBalance.lastFetched ? `• Updated ${liveMoongoldBalance.lastFetched}` : '• Auto-Synced'}` : 'Total balance across all users'}
+                  subCls="text-sky-500"
+                  tint="bg-sky-500/15 text-sky-500"
+                  action={
+                    <button onClick={fetchLiveBalance} style={mutedStyle} title="Refresh Live Balance" className="p-1 rounded-lg hover:bg-[var(--adm-surface-hover)] cursor-pointer">
+                      <RefreshCw className={`w-3.5 h-3.5 ${liveMoongoldBalance.isLoading ? 'animate-spin text-amber-400' : ''}`} />
+                    </button>
+                  }
+                />
+                <StatCard icon={Headset} label="Open Support Tickets" value={openTicketsCount} valueCls="text-rose-400" sub={`${safeTickets.length} total tickets`} tint="bg-rose-500/15 text-rose-500" />
+                <StatCard icon={Crown} label="Reseller Applications" value={`${pendingResellersCount} Pending`} valueCls="text-amber-400" sub={`${safeResellerApps.length} total applications`} tint="bg-amber-500/15 text-amber-500" />
 
                 {/* Today's New Registrations Card */}
-                <div className="rounded-2xl border p-5 sm:col-span-2 lg:col-span-3" style={cardStyle}>
+                <div className="rounded-2xl border-2 p-5 sm:col-span-2 lg:col-span-3" style={cardStyle}>
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <span className="text-[10px] font-black uppercase tracking-wider block" style={mutedStyle}>Today's New Registrations</span>
@@ -1326,17 +1382,62 @@ export const AdminDashboard = () => {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div className="lg:col-span-2 rounded-2xl border p-5" style={cardStyle}>
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-xs font-black uppercase tracking-wider font-mono" style={mutedStyle}>Revenue — Last 7 Days</h4>
-                    <span className="text-sm font-black text-emerald-400 font-heading">{formatLkr(revenueTrendTotal)}</span>
+                <div className="lg:col-span-2 rounded-2xl border-2 p-5" style={cardStyle}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                    <div>
+                      <h4 className="text-xs font-black uppercase tracking-wider font-mono" style={mutedStyle}>Revenue — Last {revenueDays} Day{revenueDays === 1 ? '' : 's'}</h4>
+                      <span className="text-2xl font-black text-emerald-400 font-heading block mt-1">{formatLkr(revenueTrendTotal)}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {[7, 14, 30, 90].map(d => (
+                        <button
+                          key={d}
+                          onClick={() => setRevenueDays(d)}
+                          className={`px-3 py-1.5 rounded-lg text-[11px] font-black font-mono transition-all cursor-pointer border ${revenueDays === d ? 'bg-[#cc040a] border-[#cc040a] text-white shadow-md shadow-red-600/25' : 'hover:border-red-500/50'}`}
+                          style={revenueDays === d ? undefined : { borderColor: 'var(--adm-border)', ...mutedStyle }}
+                        >
+                          {d}d
+                        </button>
+                      ))}
+                      <label className="flex items-center gap-1.5 pl-2 text-[10px] font-black uppercase tracking-wider font-mono" style={faintStyle}>
+                        Days
+                        <input
+                          type="number"
+                          min="1"
+                          max="365"
+                          value={revenueDays}
+                          onChange={(e) => {
+                            const n = parseInt(e.target.value, 10);
+                            if (!isNaN(n)) setRevenueDays(Math.min(365, Math.max(1, n)));
+                          }}
+                          className="w-16 px-2 py-1.5 rounded-lg border-2 text-xs font-black text-center focus:outline-none"
+                          style={fieldStyle}
+                        />
+                      </label>
+                    </div>
                   </div>
-                  <AreaChart data={revenueTrend.map(b => b.total)} color="#cc040a" />
-                  <div className="flex justify-between mt-1 text-[9px] font-mono" style={faintStyle}>
-                    {revenueTrend.map((b, i) => <span key={i}>{b.date.toLocaleDateString(undefined, { weekday: 'short' })}</span>)}
+                  <AreaChart data={revenueTrend.map(b => b.total)} color="#cc040a" height={130} showDots={revenueTrend.length <= 31} />
+                  <div className="flex justify-between mt-1.5 text-[9px] font-mono" style={faintStyle}>
+                    {revenueTrend.map((b, i) => (
+                      (i % revenueLabelStep === 0 || i === revenueTrend.length - 1)
+                        ? <span key={i}>{revenueDays <= 7 ? b.date.toLocaleDateString(undefined, { weekday: 'short' }) : b.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                        : null
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mt-4">
+                    {[
+                      ['Total', formatLkr(revenueTrendTotal)],
+                      ['Daily avg', formatLkr(Math.round(revenueDailyAvg))],
+                      ['Best day', revenueBestDay.total > 0 ? `${formatLkr(revenueBestDay.total)} · ${revenueBestDay.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : '—']
+                    ].map(([k, v]) => (
+                      <div key={k} className={`rounded-xl border px-3 py-2.5 ${k === 'Best day' ? 'col-span-2 sm:col-span-1' : ''}`} style={{ borderColor: 'var(--adm-border)', background: 'var(--adm-surface-2)' }}>
+                        <div className="text-[9px] font-black uppercase tracking-wider font-mono" style={faintStyle}>{k}</div>
+                        <div className="text-xs font-black font-heading mt-0.5 truncate" style={{ color: 'var(--adm-text)' }}>{v}</div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-                <div className="rounded-2xl border p-5 flex flex-col items-center" style={cardStyle}>
+                <div className="rounded-2xl border-2 p-5 flex flex-col items-center" style={cardStyle}>
                   <h4 className="text-xs font-black uppercase tracking-wider font-mono self-start mb-3" style={mutedStyle}>Order Status Mix</h4>
                   {safeOrders.length === 0 ? (
                     <div className="py-6 text-xs text-center" style={faintStyle}>No orders yet.</div>
@@ -1357,7 +1458,7 @@ export const AdminDashboard = () => {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div className="lg:col-span-2 rounded-2xl border p-5" style={cardStyle}>
+                <div className="lg:col-span-2 rounded-2xl border-2 p-5" style={cardStyle}>
                   <h4 className="text-xs font-black uppercase tracking-wider font-mono mb-3 flex items-center gap-2" style={mutedStyle}><Inbox className="w-3.5 h-3.5" /><span>Recent Activity</span></h4>
                   {sortedActivity.length === 0 ? (
                     <div className="py-6 text-xs text-center" style={faintStyle}>No recent activity to show yet.</div>
@@ -1382,7 +1483,7 @@ export const AdminDashboard = () => {
                   )}
                 </div>
 
-                <div className="rounded-2xl border p-5 space-y-3" style={cardStyle}>
+                <div className="rounded-2xl border-2 p-5 space-y-3" style={cardStyle}>
                   <h4 className="text-xs font-black uppercase tracking-wider font-mono mb-1" style={mutedStyle}>System Status</h4>
                   {[
                     { label: 'Firebase Auth & Database', desc: 'Google OAuth & Firestore sync connected.', color: 'bg-emerald-400' },
@@ -1406,14 +1507,14 @@ export const AdminDashboard = () => {
             <div className="space-y-4">
               <FilterBar>
                 <SearchInput value={orderSearch} onChange={setOrderSearch} placeholder="Search Order ID, Player ID, IGN, or Game..." />
-                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={fieldCls} style={{ ...fieldStyle, maxWidth: 200 }}>
+                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={`${fieldCls} sm:max-w-[200px]`} style={fieldStyle}>
                   <option value="ALL">All Statuses</option>
                   <option value="PENDING">Pending</option>
                   <option value="PROCESSING">Processing</option>
                   <option value="COMPLETED">Completed</option>
                   <option value="FAILED">Failed</option>
                 </select>
-                <select value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)} className={fieldCls} style={{ ...fieldStyle, maxWidth: 220 }}>
+                <select value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)} className={`${fieldCls} sm:max-w-[220px]`} style={fieldStyle}>
                   <option value="ALL">All Payment Methods</option>
                   <option value="TELEGRAM">Telegram Bot Orders</option>
                   <option value="EZ Cash">EZ Cash</option>
@@ -1475,13 +1576,13 @@ export const AdminDashboard = () => {
 
               <FilterBar>
                 <SearchInput value={paymentSearch} onChange={setPaymentSearch} placeholder="Search RN, Order ID, Email, Name, or Amount..." />
-                <select value={paymentMethodFilter} onChange={(e) => setPaymentMethodFilter(e.target.value)} className={fieldCls} style={{ ...fieldStyle, maxWidth: 200 }}>
+                <select value={paymentMethodFilter} onChange={(e) => setPaymentMethodFilter(e.target.value)} className={`${fieldCls} sm:max-w-[200px]`} style={fieldStyle}>
                   <option value="ALL">All Payment Methods</option>
                   <option value="EZ_CASH">EZ Cash Only</option>
                   <option value="BINANCE">Binance Pay Only</option>
                   <option value="BANK">Bank Deposit Only</option>
                 </select>
-                <select value={paymentStatusFilter} onChange={(e) => setPaymentStatusFilter(e.target.value)} className={fieldCls} style={{ ...fieldStyle, maxWidth: 200 }}>
+                <select value={paymentStatusFilter} onChange={(e) => setPaymentStatusFilter(e.target.value)} className={`${fieldCls} sm:max-w-[200px]`} style={fieldStyle}>
                   <option value="ALL">All Statuses</option>
                   <option value="PENDING">Pending Verification</option>
                   <option value="VERIFIED">Verified & Credited</option>
@@ -1568,7 +1669,7 @@ export const AdminDashboard = () => {
               </div>
               <FilterBar>
                 <SearchInput value={ezcashSearch} onChange={setEzcashSearch} placeholder="Search RN Number, SMS Text, or User Email..." />
-                <select value={ezcashStatusFilter} onChange={(e) => setEzcashStatusFilter(e.target.value)} className={fieldCls} style={{ ...fieldStyle, maxWidth: 220 }}>
+                <select value={ezcashStatusFilter} onChange={(e) => setEzcashStatusFilter(e.target.value)} className={`${fieldCls} sm:max-w-[220px]`} style={fieldStyle}>
                   <option value="ALL">All Statuses ({ezcashLogs.length})</option>
                   <option value="UNCLAIMED">Unclaimed / Pending</option>
                   <option value="REDEEMED">Auto-Approved / Redeemed</option>
@@ -1598,7 +1699,7 @@ export const AdminDashboard = () => {
           {adminTab === 'vouchers' && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <form onSubmit={handleCreateVoucherSubmit} className="rounded-2xl border p-5 space-y-3 lg:col-span-1" style={cardStyle}>
+                <form onSubmit={handleCreateVoucherSubmit} className="rounded-2xl border-2 p-5 space-y-3 lg:col-span-1" style={cardStyle}>
                   <h4 className="text-sm font-black" style={{ color: 'var(--adm-text)' }}>Create New Voucher</h4>
                   <div>
                     <label className="text-[10px] font-bold uppercase block mb-1" style={mutedStyle}>Voucher Code</label>
@@ -1649,13 +1750,13 @@ export const AdminDashboard = () => {
             <div className="space-y-4">
               <FilterBar>
                 <SearchInput value={userSearch} onChange={setUserSearch} placeholder="Search User Name, Email, Phone, or UID..." />
-                <select value={userStatusFilter} onChange={(e) => setUserStatusFilter(e.target.value)} className={fieldCls} style={{ ...fieldStyle, maxWidth: 220 }}>
+                <select value={userStatusFilter} onChange={(e) => setUserStatusFilter(e.target.value)} className={`${fieldCls} sm:max-w-[220px]`} style={fieldStyle}>
                   <option value="ALL">All Account Types</option>
                   <option value="VERIFIED">Verified Accounts Only</option>
                   <option value="UNVERIFIED">Unverified Accounts</option>
                   <option value="BLOCKED">Blocked Accounts</option>
                 </select>
-                <select value={userSortOrder} onChange={(e) => setUserSortOrder(e.target.value)} className={fieldCls} style={{ ...fieldStyle, maxWidth: 200 }}>
+                <select value={userSortOrder} onChange={(e) => setUserSortOrder(e.target.value)} className={`${fieldCls} sm:max-w-[200px]`} style={fieldStyle}>
                   <option value="newest">⬇ Newest First</option>
                   <option value="oldest">⬆ Oldest First</option>
                 </select>
@@ -1717,7 +1818,7 @@ export const AdminDashboard = () => {
           )}
 
           {adminTab === 'credit' && (
-            <div className="max-w-2xl rounded-3xl border p-6 space-y-5" style={cardStyle}>
+            <div className="max-w-2xl rounded-3xl border-2 p-6 space-y-5" style={cardStyle}>
               <form onSubmit={handleManualCreditSubmit} className="space-y-4 text-xs">
                 <div>
                   <label className="block font-extrabold mb-1" style={mutedStyle}>Target User Account Email</label>
@@ -1757,7 +1858,7 @@ export const AdminDashboard = () => {
                 {filteredResellerApps.length === 0 ? (
                   <div className="rounded-2xl border p-8 text-center text-xs" style={{ ...cardStyle, ...mutedStyle }}>No reseller applications found.</div>
                 ) : filteredResellerApps.map(app => (
-                  <div key={app.id || app.firestoreId} className="rounded-2xl border p-5 space-y-4" style={cardStyle}>
+                  <div key={app.id || app.firestoreId} className="rounded-2xl border-2 p-5 space-y-4" style={cardStyle}>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b" style={{ borderColor: 'var(--adm-border)' }}>
                       <div className="flex items-center gap-3">
                         <div className="w-11 h-11 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0"><Crown className="w-6 h-6" /></div>
@@ -1796,15 +1897,15 @@ export const AdminDashboard = () => {
           {adminTab === 'support' && (
             <div className="space-y-6">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="rounded-2xl border p-4 space-y-1" style={cardStyle}><span className="text-[10px] font-extrabold uppercase font-mono" style={mutedStyle}>Total Tickets</span><div className="text-2xl font-black font-heading" style={{ color: 'var(--adm-text)' }}>{safeTickets.length}</div></div>
-                <div className="rounded-2xl border p-4 space-y-1" style={cardStyle}><span className="text-[10px] text-amber-400 font-extrabold uppercase font-mono">Open</span><div className="text-2xl font-black text-amber-400 font-heading">{safeTickets.filter(t => t.status === 'OPEN').length}</div></div>
-                <div className="rounded-2xl border p-4 space-y-1" style={cardStyle}><span className="text-[10px] text-blue-400 font-extrabold uppercase font-mono">In Progress</span><div className="text-2xl font-black text-blue-400 font-heading">{safeTickets.filter(t => t.status === 'IN_PROGRESS').length}</div></div>
-                <div className="rounded-2xl border p-4 space-y-1" style={cardStyle}><span className="text-[10px] text-emerald-400 font-extrabold uppercase font-mono">Resolved</span><div className="text-2xl font-black text-emerald-400 font-heading">{safeTickets.filter(t => t.status === 'RESOLVED').length}</div></div>
+                <div className="rounded-2xl border-2 p-4 space-y-1" style={cardStyle}><span className="text-[10px] font-extrabold uppercase font-mono" style={mutedStyle}>Total Tickets</span><div className="text-2xl font-black font-heading" style={{ color: 'var(--adm-text)' }}>{safeTickets.length}</div></div>
+                <div className="rounded-2xl border-2 p-4 space-y-1" style={cardStyle}><span className="text-[10px] text-amber-400 font-extrabold uppercase font-mono">Open</span><div className="text-2xl font-black text-amber-400 font-heading">{safeTickets.filter(t => t.status === 'OPEN').length}</div></div>
+                <div className="rounded-2xl border-2 p-4 space-y-1" style={cardStyle}><span className="text-[10px] text-blue-400 font-extrabold uppercase font-mono">In Progress</span><div className="text-2xl font-black text-blue-400 font-heading">{safeTickets.filter(t => t.status === 'IN_PROGRESS').length}</div></div>
+                <div className="rounded-2xl border-2 p-4 space-y-1" style={cardStyle}><span className="text-[10px] text-emerald-400 font-extrabold uppercase font-mono">Resolved</span><div className="text-2xl font-black text-emerald-400 font-heading">{safeTickets.filter(t => t.status === 'RESOLVED').length}</div></div>
               </div>
 
               <FilterBar>
                 <SearchInput value={supportSearch} onChange={setSupportSearch} placeholder="Search ticket ID, user email, subject..." />
-                <select value={supportStatusFilter} onChange={(e) => setSupportStatusFilter(e.target.value)} className={fieldCls} style={{ ...fieldStyle, maxWidth: 200 }}>
+                <select value={supportStatusFilter} onChange={(e) => setSupportStatusFilter(e.target.value)} className={`${fieldCls} sm:max-w-[200px]`} style={fieldStyle}>
                   <option value="ALL">All Statuses</option>
                   <option value="OPEN">Open</option>
                   <option value="IN_PROGRESS">In Progress</option>
@@ -1841,7 +1942,7 @@ export const AdminDashboard = () => {
                   })}
                 </div>
 
-                <div className="lg:col-span-7 rounded-2xl border p-4 sm:p-6 space-y-4" style={cardStyle}>
+                <div className="lg:col-span-7 rounded-2xl border-2 p-4 sm:p-6 space-y-4" style={cardStyle}>
                   {activeInspectTicket ? (
                     <div className="space-y-4">
                       <div className="pb-4 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3" style={{ borderColor: 'var(--adm-border)' }}>
@@ -1910,7 +2011,7 @@ export const AdminDashboard = () => {
 
           {adminTab === 'games' && (
             <div className="space-y-6">
-              <div className="rounded-3xl border p-6 flex flex-col md:flex-row md:items-center justify-between gap-4" style={cardStyle}>
+              <div className="rounded-3xl border-2 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4" style={cardStyle}>
                 <p className="text-xs" style={mutedStyle}>Edit retail prices for any package. Click Save & Publish to instantly update prices on the Website & Telegram Bot in real-time.</p>
                 <button onClick={handleSaveAllPrices} disabled={isSavingPrices} className="px-6 py-3 bg-[#cc040a] hover:bg-red-700 disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider rounded-2xl flex items-center gap-2 shadow-lg shadow-red-600/30 cursor-pointer shrink-0">
                   <Save className={`w-4 h-4 ${isSavingPrices ? 'animate-spin' : ''}`} /><span>{isSavingPrices ? 'Saving...' : 'Save & Publish All Prices'}</span>
@@ -1919,7 +2020,7 @@ export const AdminDashboard = () => {
 
               <FilterBar>
                 <SearchInput value={catalogSearch} onChange={setCatalogSearch} placeholder="Search package name, diamond amount, or game title..." />
-                <select value={selectedGameCatalogId} onChange={(e) => setSelectedGameCatalogId(e.target.value)} className={`${fieldCls} font-mono`} style={{ ...fieldStyle, maxWidth: 240 }}>
+                <select value={selectedGameCatalogId} onChange={(e) => setSelectedGameCatalogId(e.target.value)} className={`${fieldCls} font-mono sm:max-w-[240px]`} style={fieldStyle}>
                   <option value="ALL">ALL GAMES ({(gamesCatalog || []).length})</option>
                   {(gamesCatalog || []).map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                 </select>
@@ -1934,9 +2035,9 @@ export const AdminDashboard = () => {
                   });
                   if (matchingPackages.length === 0) return null;
                   return (
-                    <div key={game.id} className="rounded-3xl border overflow-hidden" style={cardStyle}>
-                      <div className="p-5 flex items-center justify-between border-b" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
-                        <div className="flex items-center gap-3">
+                    <div key={game.id} className="rounded-3xl border-2 overflow-hidden" style={cardStyle}>
+                      <div className="p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3 border-b" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
+                        <div className="flex items-center gap-3 min-w-0">
                           <span className="text-3xl">{game.currencyIcon || '🎮'}</span>
                           <div>
                             <h4 className="font-black text-lg" style={{ color: 'var(--adm-text)' }}>{game.name}</h4>
@@ -1945,7 +2046,43 @@ export const AdminDashboard = () => {
                         </div>
                         <button onClick={handleSaveAllPrices} disabled={isSavingPrices} className="px-4 py-2 bg-emerald-500/15 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 text-xs font-extrabold rounded-xl cursor-pointer shrink-0">Save Prices</button>
                       </div>
-                      <div className="p-4 sm:p-6 overflow-x-auto">
+                      <div className="md:hidden p-3 space-y-3">
+                        {matchingPackages.map(pkg => {
+                          const currentPrice = editedPricesMap[pkg.id] !== undefined ? editedPricesMap[pkg.id] : pkg.priceLkr;
+                          const isChanged = editedPricesMap[pkg.id] !== undefined && editedPricesMap[pkg.id] !== pkg.priceLkr;
+                          const wholesalePrice = Math.round(currentPrice * 0.95);
+                          const usdPrice = (currentPrice / 340).toFixed(2);
+                          return (
+                            <div key={pkg.id} className={`rounded-2xl border-2 p-3.5 space-y-3 ${isChanged ? 'border-amber-500/50' : ''}`} style={isChanged ? { background: 'var(--adm-surface-2)' } : { background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {pkg.image && <img src={pkg.image} alt="" className="w-7 h-7 object-contain" />}
+                                <span className="text-sm font-black" style={{ color: 'var(--adm-text)' }}>{pkg.name}</span>
+                                {pkg.bonus && <span className="text-[9px] bg-blue-500/15 text-blue-400 border border-blue-500/30 px-1.5 py-0.5 rounded font-mono">{pkg.bonus}</span>}
+                                {isChanged && <span className="text-[9px] bg-amber-500/15 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded font-mono">EDITED</span>}
+                              </div>
+                              <div className="relative">
+                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-xs" style={faintStyle}>Rs.</span>
+                                <input type="number" value={currentPrice} onChange={(e) => handlePriceInputChange(pkg.id, e.target.value)} className={`w-full pl-10 pr-3 py-2.5 rounded-xl font-mono font-black text-sm focus:outline-none border-2 ${isChanged ? 'text-amber-400 border-amber-500/50' : ''}`} style={!isChanged ? { ...fieldStyle } : { background: 'var(--adm-input-bg)' }} />
+                              </div>
+                              <div className="grid grid-cols-3 gap-2 text-center">
+                                <div className="rounded-xl border px-2 py-2" style={{ borderColor: 'var(--adm-border)' }}>
+                                  <div className="text-[9px] font-black uppercase tracking-wider font-mono" style={faintStyle}>Wholesale</div>
+                                  <div className="text-xs font-mono font-bold text-emerald-400 mt-0.5">Rs. {wholesalePrice.toLocaleString()}</div>
+                                </div>
+                                <div className="rounded-xl border px-2 py-2" style={{ borderColor: 'var(--adm-border)' }}>
+                                  <div className="text-[9px] font-black uppercase tracking-wider font-mono" style={faintStyle}>USD</div>
+                                  <div className="text-xs font-mono font-bold mt-0.5" style={mutedStyle}>${usdPrice}</div>
+                                </div>
+                                <div className="rounded-xl border px-2 py-2 min-w-0" style={{ borderColor: 'var(--adm-border)' }}>
+                                  <div className="text-[9px] font-black uppercase tracking-wider font-mono" style={faintStyle}>Code</div>
+                                  <div className="text-[10px] font-mono font-bold mt-0.5 truncate" style={mutedStyle}>{pkg.id}</div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="hidden md:block p-4 sm:p-6 overflow-x-auto">
                         <table className="w-full text-left text-xs">
                           <thead className="font-mono text-[10px] uppercase border-b" style={{ borderColor: 'var(--adm-border)', ...mutedStyle }}>
                             <tr><th className="p-3">Package</th><th className="p-3">Retail (LKR)</th><th className="p-3">Wholesale (5% Off)</th><th className="p-3">USD</th><th className="p-3 text-right">Code</th></tr>
@@ -1996,7 +2133,7 @@ export const AdminDashboard = () => {
 
           {adminTab === 'popupAd' && (
             <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-3xl border p-6" style={cardStyle}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-3xl border-2 p-6" style={cardStyle}>
                 <div className="flex items-center gap-2">
                   <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black font-mono border ${adEnabled ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'border'}`} style={!adEnabled ? { borderColor: 'var(--adm-border)', ...mutedStyle } : undefined}>{adEnabled ? 'LIVE ON WEB' : 'DISABLED'}</span>
                 </div>
@@ -2006,7 +2143,7 @@ export const AdminDashboard = () => {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <form onSubmit={handleSavePopupAd} className="lg:col-span-7 rounded-3xl border p-6 space-y-5" style={cardStyle}>
+                <form onSubmit={handleSavePopupAd} className="lg:col-span-7 rounded-3xl border-2 p-6 space-y-5" style={cardStyle}>
                   <ToggleSwitch checked={adEnabled} onChange={setAdEnabled} label="Enable Popup Banner Ad" description="Show this advertisement popup when users load the web app" />
                   <ToggleSwitch checked={adShowOncePerSession} onChange={setAdShowOncePerSession} label="Show Once Per Session" description="Popup won't re-appear on refresh after being closed" />
                   <div><label className="text-xs font-bold block mb-1" style={mutedStyle}>Badge Text</label><input type="text" placeholder="e.g. LIMITED TIME DEAL" value={adBadge} onChange={(e) => setAdBadge(e.target.value)} className={fieldCls} style={fieldStyle} /></div>
@@ -2035,7 +2172,7 @@ export const AdminDashboard = () => {
                 </form>
 
                 <div className="lg:col-span-5">
-                  <div className="rounded-3xl border p-5" style={cardStyle}>
+                  <div className="rounded-3xl border-2 p-5" style={cardStyle}>
                     <h4 className="text-xs font-black uppercase tracking-wider mb-4 flex items-center justify-between" style={mutedStyle}><span>Live Preview</span><span className="text-emerald-400 font-mono">Real-time</span></h4>
                     <div className="flex flex-col items-center w-full">
                       <div className="border-2 border-amber-400/40 text-white rounded-3xl shadow-2xl overflow-hidden relative flex flex-col items-center w-full" style={{ background: '#0b0f17' }}>
@@ -2055,7 +2192,7 @@ export const AdminDashboard = () => {
           )}
 
           {adminTab === 'announcement' && (
-            <div className="max-w-2xl rounded-3xl border p-6 space-y-4" style={cardStyle}>
+            <div className="max-w-2xl rounded-3xl border-2 p-6 space-y-4" style={cardStyle}>
               <form onSubmit={handleSaveNoticeSubmit} className="space-y-4 text-xs">
                 <div>
                   <label className="block font-extrabold mb-1" style={mutedStyle}>Banner Announcement Text</label>
@@ -2068,7 +2205,7 @@ export const AdminDashboard = () => {
 
           {adminTab === 'moongold' && (
             <div className="space-y-6 max-w-3xl">
-              <div className="rounded-3xl border p-6 space-y-4" style={cardStyle}>
+              <div className="rounded-3xl border-2 p-6 space-y-4" style={cardStyle}>
                 <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--adm-border)' }}>
                   <p className="text-xs" style={mutedStyle}>Configure live API credentials and automated topup dispatch</p>
                   <button onClick={handleCheckBalance} disabled={isCheckingBalance} className="px-3.5 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 cursor-pointer shrink-0" style={{ borderColor: 'var(--adm-border)', color: '#fbbf24' }}>
@@ -2096,7 +2233,7 @@ export const AdminDashboard = () => {
 
           {adminTab === 'r2' && (
             <div className="space-y-6 max-w-3xl">
-              <div className="rounded-3xl border p-6 space-y-4" style={cardStyle}>
+              <div className="rounded-3xl border-2 p-6 space-y-4" style={cardStyle}>
                 <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--adm-border)' }}>
                   <p className="text-xs" style={mutedStyle}>Configure the Cloudflare R2 bucket used for game assets & receipt uploads</p>
                   <button onClick={handleTestR2Connection} disabled={isTestingR2} className="px-3.5 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 cursor-pointer shrink-0" style={{ borderColor: 'var(--adm-border)', color: '#38bdf8' }}>
