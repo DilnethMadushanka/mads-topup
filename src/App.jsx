@@ -4,6 +4,7 @@ import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
 import { ServicesSection } from './components/ServicesSection';
 import { StatsSection } from './components/StatsSection';
+import { useSiteTheme } from './hooks/useSiteTheme';
 import { GameGrid } from './components/GameGrid';
 import { WhyChooseUs } from './components/WhyChooseUs';
 import { HowItWorksSection } from './components/HowItWorksSection';
@@ -75,10 +76,17 @@ const MainContent = () => {
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const { isDark } = useSiteTheme();
+  const themeCls = isDark ? 'home-dark' : '';
+
+  // Re-trigger the page entrance animation whenever the visible page changes
+  const pageKey = [selectedGame?.id || '', isUserProfileOpen, isWalletModalOpen, isResellerDashboardOpen, isResellerLoginPageOpen, isResellerPageOpen, isReferralPageOpen, isContactPageOpen, isReviewsPageOpen, isLeaderboardPageOpen, isGameCatalogOpen, isBlogPageOpen].join('|');
+
   return (
-    <div className="min-h-screen bg-[#F8FAFF] flex flex-col justify-between pb-0 font-sans text-[#0f172a] overflow-x-hidden">
-      <div>
+    <div className={`min-h-screen ${isDark ? 'bg-[#0b0b10]' : 'bg-[#F8FAFF]'} flex flex-col justify-between pb-0 font-sans text-[#0f172a] overflow-x-hidden`}>
+      <div className={themeCls}>
         <Navbar />
+        <div key={pageKey} className="page-enter">
         {selectedGame ? (
           <GameTopupPage />
         ) : isUserProfileOpen ? (
@@ -149,6 +157,7 @@ const MainContent = () => {
             </ScrollReveal>
           </>
         )}
+        </div>
       </div>
 
       {/* Footer: Only visible on the main home page, not on sub-pages */}
@@ -306,15 +315,19 @@ const MainContent = () => {
 
 
       {/* Modals & Popups */}
-      <PopupAdModal />
-      <PolicyModal />
-      <AuthModal />
+      <div className={`${themeCls} contents`}>
+        <PopupAdModal />
+        <PolicyModal />
+        <AuthModal />
+      </div>
       <AdminDashboard />
-      <ImportantNoticeModal />
-      <SupportModal />
-      <DownloadAppModal />
-      <MobileBottomNav />
-      <ToastNotification />
+      <div className={`${themeCls} contents`}>
+        <ImportantNoticeModal />
+        <SupportModal />
+        <DownloadAppModal />
+        <MobileBottomNav />
+        <ToastNotification />
+      </div>
     </div>
   );
 };

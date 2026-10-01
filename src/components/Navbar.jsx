@@ -1,13 +1,14 @@
+import { useSiteTheme } from '../hooks/useSiteTheme';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { filterUserOrders } from '../utils/ownership';
 import {
   Gamepad2, Gift, BookOpen, Download, User, Wallet, ChevronDown,
   Headset, Menu, X, LogIn, UserPlus, Home, ShoppingBag, Smartphone,
-  Crown, ChevronRight, ArrowRight, Star, Zap, LogOut
-} from 'lucide-react';
+  Crown, ChevronRight, ArrowRight, Star, Zap, LogOut, Sun, Moon } from 'lucide-react';
 
 export const Navbar = () => {
+  const { isDark, toggleTheme } = useSiteTheme();
   const {
     setIsUserProfileOpen,
     openUserProfilePage,
@@ -116,11 +117,45 @@ export const Navbar = () => {
     { label: 'Download App', icon: Download, action: () => setIsDownloadAppModalOpen(true) },
   ];
 
+  const themeSwitch = (
+    <button
+      type="button"
+      onClick={toggleTheme}
+      role="switch"
+      aria-checked={isDark}
+      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      title={isDark ? 'Light mode' : 'Dark mode'}
+      className="relative shrink-0 w-[62px] h-9 rounded-full border border-slate-200 bg-slate-100 dark:border-white/15! dark:bg-white/10! cursor-pointer transition-colors overflow-hidden"
+    >
+      <Sun className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-amber-500" />
+      <Moon className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-white/60!" />
+      <span
+        className={`absolute top-1 left-1 w-7 h-7 rounded-full flex items-center justify-center shadow-md transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+          isDark ? 'translate-x-[26px] bg-[#e11d28] text-white' : 'translate-x-0 bg-white text-amber-500'
+        }`}
+      >
+        {isDark ? <Moon className="w-3.5 h-3.5" /> : <Sun className="w-3.5 h-3.5" />}
+      </span>
+    </button>
+  );
+
+  const themeSwitchCompact = (
+    <button
+      type="button"
+      onClick={toggleTheme}
+      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      title={isDark ? 'Light mode' : 'Dark mode'}
+      className="w-10 h-10 shrink-0 rounded-full border border-slate-200 bg-white text-amber-500 dark:border-white/15! dark:bg-white/10! dark:text-white! flex items-center justify-center cursor-pointer transition-all active:scale-90"
+    >
+      {isDark ? <Moon className="w-[18px] h-[18px]" /> : <Sun className="w-[18px] h-[18px]" />}
+    </button>
+  );
+
   const linkCls = (active) =>
     `relative flex items-center gap-2 h-10 px-4 rounded-full text-[13px] font-semibold whitespace-nowrap cursor-pointer transition-all duration-200 ${
       active
-        ? 'bg-white text-[#cc040a] shadow-[0_1px_2px_rgba(15,23,42,0.08),0_4px_12px_-4px_rgba(204,4,10,0.25)]'
-        : 'text-slate-600 hover:text-[#cc040a] hover:bg-white/80'
+        ? 'bg-white text-[#cc040a] shadow-[0_1px_2px_rgba(15,23,42,0.08),0_4px_12px_-4px_rgba(204,4,10,0.25)] dark:bg-[#e11d28]! dark:text-white! dark:shadow-[0_6px_18px_-6px_rgba(225,29,40,0.8)]!'
+        : 'text-slate-600 hover:text-[#cc040a] hover:bg-white/80 dark:text-white/65! dark:hover:text-white! dark:hover:bg-white/10!'
     }`;
 
   return (
@@ -129,8 +164,8 @@ export const Navbar = () => {
         <div
           className={`max-w-[1440px] mx-auto h-16 rounded-2xl sm:rounded-full flex items-center justify-between gap-3 pl-3 pr-2.5 sm:pl-4 border backdrop-blur-xl backdrop-saturate-150 transition-all duration-300 ${
             scrolled
-              ? 'bg-gradient-to-r from-red-50/95 via-white/90 to-rose-50/95 border-red-100 shadow-[0_12px_32px_-12px_rgba(204,4,10,0.25)]'
-              : 'bg-gradient-to-r from-red-50/80 via-white/75 to-rose-50/80 border-red-100/70 shadow-[0_4px_20px_-8px_rgba(204,4,10,0.15)]'
+              ? 'bg-gradient-to-r from-red-50/95 via-white/90 to-rose-50/95 border-red-100 shadow-[0_12px_32px_-12px_rgba(204,4,10,0.25)] dark:bg-none! dark:bg-[#0b0b10]/90! dark:border-[#e11d28]/45! dark:shadow-[0_14px_40px_-14px_rgba(225,29,40,0.55)]!'
+              : 'bg-gradient-to-r from-red-50/80 via-white/75 to-rose-50/80 border-red-100/70 shadow-[0_4px_20px_-8px_rgba(204,4,10,0.15)] dark:bg-none! dark:bg-[#0d0d13]/75! dark:border-white/10! dark:shadow-[0_6px_24px_-10px_rgba(0,0,0,0.7)]!'
           }`}
         >
 
@@ -139,20 +174,20 @@ export const Navbar = () => {
             onClick={() => { setSelectedGame(null); closeCatalog(); setIsMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             className="flex items-center gap-2.5 cursor-pointer group shrink-0"
           >
-            <div className="w-10 h-10 rounded-full bg-slate-950 ring-2 ring-white shadow-md flex items-center justify-center overflow-hidden group-hover:scale-105 transition-transform duration-300">
+            <div className="w-10 h-10 rounded-full bg-slate-950 ring-2 ring-white shadow-md dark:ring-[#e11d28]! dark:shadow-[0_0_18px_rgba(225,29,40,0.55)]! flex items-center justify-center overflow-hidden group-hover:scale-105 transition-transform duration-300">
               <img src="/mads-logo.jpg" alt="MADS TOPUP Logo" className="w-full h-full object-contain" />
             </div>
             <div className="flex flex-col leading-none">
-              <div className="flex items-center gap-1 font-heading font-extrabold text-[19px] tracking-tight text-slate-950">
+              <div className="flex items-center gap-1 font-heading font-extrabold text-[19px] tracking-tight text-slate-950 dark:text-white!">
                 <span>MADS</span>
-                <span className="text-[#cc040a]">TOPUP</span>
+                <span className="text-[#cc040a] dark:text-[#ff3b45]!">TOPUP</span>
               </div>
-              <span className="mt-1 text-[8px] font-bold text-slate-400 tracking-[0.22em] uppercase font-mono">EVERYGAME LK</span>
+              <span className="mt-1 text-[8px] font-bold text-slate-400 dark:text-white/40! tracking-[0.22em] uppercase font-mono">EVERYGAME LK</span>
             </div>
           </div>
 
           {/* ── DESKTOP NAV (segmented pill group) ── */}
-          <nav className="hidden lg:flex items-center gap-0.5 p-1 rounded-full bg-red-100/50 border border-red-100">
+          <nav className="hidden lg:flex items-center gap-0.5 p-1 rounded-full bg-red-100/50 border border-red-100 dark:bg-white/[0.05]! dark:border-white/10!">
             {desktopLinks.map(item => (
               <button key={item.label} onClick={item.action} className={linkCls(item.active)}>
                 <item.icon className="w-4 h-4" />
@@ -181,49 +216,50 @@ export const Navbar = () => {
 
           {/* ── DESKTOP RIGHT ── */}
           <div className="hidden lg:flex items-center gap-2 shrink-0">
+            {themeSwitch}
             {isUserLoggedIn ? (
               <>
                 {/* Wallets — one segmented control */}
-                <div className="flex items-stretch h-11 rounded-full overflow-hidden border border-slate-200 bg-white shadow-sm">
+                <div className="flex items-stretch h-11 rounded-full overflow-hidden border border-slate-200 bg-white shadow-sm dark:border-white/10! dark:bg-white/[0.05]! dark:shadow-none!">
                   <button onClick={() => handleWalletClick('ezcash')}
-                    className="group flex items-center gap-2 pl-3 pr-3.5 hover:bg-red-50 cursor-pointer transition-colors">
+                    className="group flex items-center gap-2 pl-3 pr-3.5 hover:bg-red-50 dark:hover:bg-white/10! cursor-pointer transition-colors">
                     <span className="w-6 h-6 rounded-full bg-[#cc040a] text-white flex items-center justify-center shrink-0">
                       <Wallet className="w-3 h-3" />
                     </span>
                     <span className="text-left leading-none">
-                      <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400">LKR</span>
-                      <span className="block text-[13px] font-extrabold text-slate-900 tabular-nums mt-0.5">{(userProfile.walletBalance || 0).toFixed(2)}</span>
+                      <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/40!">LKR</span>
+                      <span className="block text-[13px] font-extrabold text-slate-900 dark:text-white! tabular-nums mt-0.5">{(userProfile.walletBalance || 0).toFixed(2)}</span>
                     </span>
                   </button>
-                  <span className="w-px bg-slate-200 my-2" />
+                  <span className="w-px bg-slate-200 dark:bg-white/10! my-2" />
                   <button onClick={() => handleWalletClick('binance')}
-                    className="group flex items-center gap-2 pl-3 pr-3.5 hover:bg-emerald-50 cursor-pointer transition-colors">
+                    className="group flex items-center gap-2 pl-3 pr-3.5 hover:bg-red-50 dark:hover:bg-white/10! cursor-pointer transition-colors">
                     <span className="w-6 h-6 rounded-full bg-emerald-600 text-white font-extrabold text-[10px] italic flex items-center justify-center shrink-0">B</span>
                     <span className="text-left leading-none">
-                      <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400">USDT</span>
-                      <span className="block text-[13px] font-extrabold text-slate-900 tabular-nums mt-0.5">{(userProfile.walletUsdt || 0).toFixed(2)}</span>
+                      <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/40!">USDT</span>
+                      <span className="block text-[13px] font-extrabold text-slate-900 dark:text-white! tabular-nums mt-0.5">{(userProfile.walletUsdt || 0).toFixed(2)}</span>
                     </span>
                   </button>
                 </div>
 
                 {/* Profile */}
                 <button onClick={openUserProfilePage}
-                  className="group flex items-center gap-2.5 h-11 pl-1 pr-3 rounded-full bg-white border border-slate-200 hover:border-slate-300 shadow-sm cursor-pointer transition-all">
-                  <span className="w-9 h-9 rounded-full bg-[#cc040a] text-white font-bold text-xs flex items-center justify-center shrink-0 overflow-hidden ring-2 ring-white">
+                  className="group flex items-center gap-2.5 h-11 pl-1 pr-3 rounded-full bg-white border border-slate-200 hover:border-slate-300 shadow-sm dark:bg-white/[0.05]! dark:border-white/10! dark:hover:border-[#e11d28]/60! dark:shadow-none! cursor-pointer transition-all">
+                  <span className="w-9 h-9 rounded-full bg-[#cc040a] text-white font-bold text-xs flex items-center justify-center shrink-0 overflow-hidden ring-2 ring-white dark:ring-[#e11d28]/50!">
                     {userProfile.avatar
                       ? <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
                       : getInitials(userProfile.name, userProfile.email)}
                   </span>
-                  <span className="text-slate-800 font-bold text-[13px] group-hover:text-[#cc040a] transition-colors max-w-[96px] xl:max-w-[128px] truncate">
+                  <span className="text-slate-800 dark:text-white! font-bold text-[13px] group-hover:text-[#cc040a] dark:group-hover:text-[#ff6b73]! transition-colors max-w-[96px] xl:max-w-[128px] truncate">
                     {getCleanName(userProfile.name, userProfile.email)}
                   </span>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:translate-y-0.5 transition-transform shrink-0" />
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 dark:text-white/40! group-hover:translate-y-0.5 transition-transform shrink-0" />
                 </button>
               </>
             ) : (
               <>
                 <button onClick={() => openAuth('login')}
-                  className="h-11 px-5 rounded-full text-[13px] font-bold text-slate-700 hover:text-slate-950 hover:bg-slate-100 cursor-pointer transition-colors">
+                  className="h-11 px-5 rounded-full text-[13px] font-bold text-slate-700 hover:text-slate-950 hover:bg-slate-100 dark:text-white/80! dark:hover:text-white! dark:hover:bg-white/10! cursor-pointer transition-colors">
                   Login
                 </button>
                 <button onClick={() => openAuth('register')}
@@ -237,25 +273,26 @@ export const Navbar = () => {
 
           {/* ── MOBILE RIGHT ── */}
           <div className="lg:hidden flex items-center gap-1.5">
+            {themeSwitchCompact}
             {isUserLoggedIn && (
-              <div className="flex items-center h-10 rounded-full border border-slate-200 bg-white overflow-hidden shadow-sm">
+              <div className="flex items-center h-10 rounded-full border border-slate-200 bg-white overflow-hidden shadow-sm dark:border-white/10! dark:bg-white/[0.05]! dark:shadow-none!">
                 <button onClick={() => handleWalletClick('ezcash')}
-                  className="flex items-center gap-1.5 pl-2 pr-2.5 h-full active:bg-red-50 cursor-pointer">
+                  className="flex items-center gap-1.5 pl-2 pr-2.5 h-full active:bg-red-50 dark:active:bg-white/10! cursor-pointer">
                   <span className="w-5 h-5 rounded-full bg-[#cc040a] text-white flex items-center justify-center shrink-0">
                     <Wallet className="w-2.5 h-2.5" />
                   </span>
                   <span className="text-left leading-none">
-                    <span className="block text-[8px] font-bold uppercase tracking-wider text-slate-400">LKR</span>
-                    <span className="block text-[12px] font-extrabold text-slate-900 tabular-nums">{(userProfile.walletBalance || 0).toFixed(0)}</span>
+                    <span className="block text-[8px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/40!">LKR</span>
+                    <span className="block text-[12px] font-extrabold text-slate-900 dark:text-white! tabular-nums">{(userProfile.walletBalance || 0).toFixed(0)}</span>
                   </span>
                 </button>
-                <span className="w-px h-5 bg-slate-200" />
+                <span className="w-px h-5 bg-slate-200 dark:bg-white/10!" />
                 <button onClick={() => handleWalletClick('binance')}
-                  className="flex items-center gap-1.5 pl-2 pr-2.5 h-full active:bg-emerald-50 cursor-pointer">
+                  className="flex items-center gap-1.5 pl-2 pr-2.5 h-full active:bg-red-50 dark:active:bg-white/10! cursor-pointer">
                   <span className="w-5 h-5 rounded-full bg-emerald-600 text-white font-extrabold text-[9px] italic flex items-center justify-center shrink-0">B</span>
                   <span className="text-left leading-none">
-                    <span className="block text-[8px] font-bold uppercase tracking-wider text-slate-400">USDT</span>
-                    <span className="block text-[12px] font-extrabold text-slate-900 tabular-nums">{(userProfile.walletUsdt || 0).toFixed(2)}</span>
+                    <span className="block text-[8px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/40!">USDT</span>
+                    <span className="block text-[12px] font-extrabold text-slate-900 dark:text-white! tabular-nums">{(userProfile.walletUsdt || 0).toFixed(2)}</span>
                   </span>
                 </button>
               </div>
@@ -264,7 +301,7 @@ export const Navbar = () => {
             <button
               onClick={() => setIsMobileMenuOpen(true)}
               aria-label="Open Menu"
-              className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-950 hover:bg-[#cc040a] text-white transition-colors cursor-pointer shadow-md active:scale-95"
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-950 hover:bg-[#cc040a] dark:bg-[#e11d28]! dark:hover:bg-[#c8101b]! text-white transition-colors cursor-pointer shadow-md active:scale-95"
             >
               <Menu className="w-5 h-5" />
             </button>
@@ -286,11 +323,11 @@ export const Navbar = () => {
 
       {/* Panel */}
       <aside
-        className={`lg:hidden fixed top-2 right-2 bottom-2 z-[999] w-[320px] max-w-[calc(100vw-16px)] bg-white rounded-[1.75rem] flex flex-col overflow-hidden shadow-[0_30px_80px_-20px_rgba(9,13,22,0.5)] transition-transform duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-[110%]'}`}
+        className={`lg:hidden fixed top-2 right-2 bottom-2 z-[999] w-[320px] max-w-[calc(100vw-16px)] bg-white dark:bg-[#101016]! border border-transparent dark:border-white/10! rounded-[1.75rem] flex flex-col overflow-hidden shadow-[0_30px_80px_-20px_rgba(9,13,22,0.5)] transition-transform duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-[110%]'}`}
       >
 
         {/* Header */}
-        <div className="relative shrink-0 px-5 pt-5 pb-5 bg-gradient-to-br from-[#cc040a] via-red-600 to-[#8B0000] text-white overflow-hidden">
+        <div className="relative shrink-0 px-5 pt-5 pb-5 bg-gradient-to-br from-[#e11d28] via-[#c8101b] to-[#7a0105] text-white overflow-hidden">
           <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/10 blur-2xl pointer-events-none" />
           <div className="absolute inset-0 opacity-[0.06] pointer-events-none"
             style={{ backgroundImage: 'repeating-linear-gradient(45deg, #fff 0px, #fff 1px, transparent 1px, transparent 9px)' }} />
@@ -353,18 +390,18 @@ export const Navbar = () => {
         {isUserLoggedIn && (
           <div className="grid grid-cols-2 gap-2.5 px-4 pt-4 shrink-0">
             <button onClick={() => handleWalletClick('ezcash')}
-              className="text-left rounded-2xl border border-red-100 bg-red-50/70 hover:bg-red-50 p-3 transition-colors cursor-pointer active:scale-[0.98]">
-              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#cc040a]">
+              className="text-left rounded-2xl border border-red-100 bg-red-50/70 hover:bg-red-50 dark:border-[#e11d28]/30! dark:bg-[#e11d28]/10! dark:hover:bg-[#e11d28]/20! p-3 transition-colors cursor-pointer active:scale-[0.98]">
+              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#cc040a] dark:text-[#ff6b73]!">
                 <Wallet className="w-3 h-3" /> LKR
               </span>
-              <span className="block mt-1.5 text-lg font-extrabold font-heading text-slate-900 tabular-nums">{(userProfile.walletBalance || 0).toFixed(2)}</span>
+              <span className="block mt-1.5 text-lg font-extrabold font-heading text-slate-900 dark:text-white! tabular-nums">{(userProfile.walletBalance || 0).toFixed(2)}</span>
             </button>
             <button onClick={() => handleWalletClick('binance')}
-              className="text-left rounded-2xl border border-emerald-100 bg-emerald-50/70 hover:bg-emerald-50 p-3 transition-colors cursor-pointer active:scale-[0.98]">
-              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+              className="text-left rounded-2xl border border-emerald-100 bg-emerald-50/70 hover:bg-emerald-50 dark:border-emerald-400/30! dark:bg-emerald-500/10! dark:hover:bg-emerald-500/20! p-3 transition-colors cursor-pointer active:scale-[0.98]">
+              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400!">
                 <span className="w-3 h-3 rounded-full bg-emerald-600 text-white text-[7px] font-extrabold italic flex items-center justify-center">B</span> USDT
               </span>
-              <span className="block mt-1.5 text-lg font-extrabold font-heading text-slate-900 tabular-nums">{(userProfile.walletUsdt || 0).toFixed(2)}</span>
+              <span className="block mt-1.5 text-lg font-extrabold font-heading text-slate-900 dark:text-white! tabular-nums">{(userProfile.walletUsdt || 0).toFixed(2)}</span>
             </button>
           </div>
         )}
@@ -372,12 +409,12 @@ export const Navbar = () => {
         {/* Nav items */}
         {isUserLoggedIn ? (
           <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-            <div className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Menu</div>
+            <div className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-white/40!">Menu</div>
 
             {navItems.map((item, i) => (
               <button key={i} onClick={item.action}
                 className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-2xl text-left transition-colors duration-150 cursor-pointer group relative ${
-                  item.active ? 'bg-red-50' : 'hover:bg-slate-50'
+                  item.active ? 'bg-red-50 dark:bg-[#e11d28]/15!' : 'hover:bg-slate-50 dark:hover:bg-white/5!'
                 }`}>
                 {item.active && <span className="absolute left-0 top-3 bottom-3 w-1 rounded-r-full bg-[#cc040a]" />}
 
@@ -387,13 +424,13 @@ export const Navbar = () => {
                   <item.icon className={`w-[18px] h-[18px] ${item.active ? 'text-white' : item.color}`} />
                 </span>
 
-                <span className={`flex-1 text-[15px] font-semibold ${item.active ? 'text-[#cc040a]' : 'text-slate-700 group-hover:text-slate-950'}`}>
+                <span className={`flex-1 text-[15px] font-semibold ${item.active ? 'text-[#cc040a] dark:text-[#ff6b73]!' : 'text-slate-700 group-hover:text-slate-950 dark:text-white/75! dark:group-hover:text-white!'}`}>
                   {item.label}
                 </span>
 
                 {item.badge && (
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${
-                    item.badge === 'PARTNER' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-[#cc040a]'
+                    item.badge === 'PARTNER' ? 'bg-amber-100 text-amber-700 dark:bg-amber-400/20! dark:text-amber-300!' : 'bg-red-100 text-[#cc040a] dark:bg-[#e11d28]/20! dark:text-[#ff6b73]!'
                   }`}>
                     {item.badge}
                   </span>
@@ -405,19 +442,19 @@ export const Navbar = () => {
                   </span>
                 )}
 
-                <ChevronRight className={`w-4 h-4 shrink-0 transition-transform group-hover:translate-x-0.5 ${item.active ? 'text-[#cc040a]' : 'text-slate-300'}`} />
+                <ChevronRight className={`w-4 h-4 shrink-0 transition-transform group-hover:translate-x-0.5 ${item.active ? 'text-[#cc040a] dark:text-[#ff6b73]!' : 'text-slate-300 dark:text-white/25!'}`} />
               </button>
             ))}
 
-            <div className="mx-2 my-2 h-px bg-slate-100" />
+            <div className="mx-2 my-2 h-px bg-slate-100 dark:bg-white/10!" />
             <button
               onClick={() => { handleLogout && handleLogout(); setIsMobileMenuOpen(false); }}
-              className="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-2xl text-left transition-colors duration-150 cursor-pointer group hover:bg-red-50"
+              className="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-2xl text-left transition-colors duration-150 cursor-pointer group hover:bg-red-50 dark:hover:bg-[#e11d28]/15!"
             >
-              <span className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-red-50 group-hover:bg-[#cc040a] transition-colors">
+              <span className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-red-50 dark:bg-[#e11d28]/15! group-hover:bg-[#cc040a] dark:group-hover:bg-[#e11d28]! transition-colors">
                 <LogOut className="w-[18px] h-[18px] text-[#cc040a] group-hover:text-white transition-colors" />
               </span>
-              <span className="flex-1 text-[15px] font-semibold text-[#cc040a]">Logout</span>
+              <span className="flex-1 text-[15px] font-semibold text-[#cc040a] dark:text-[#ff6b73]!">Logout</span>
             </button>
           </nav>
         ) : (
@@ -425,9 +462,9 @@ export const Navbar = () => {
         )}
 
         {/* Footer */}
-        <div className="shrink-0 px-5 py-3.5 flex items-center justify-between border-t border-slate-100 bg-slate-50/70">
-          <span className="text-[11px] font-mono text-slate-400 font-medium">MADS TOPUP &copy; {new Date().getFullYear()}</span>
-          <span className="flex items-center gap-1.5 text-[11px] font-mono font-medium text-emerald-600">
+        <div className="shrink-0 px-5 py-3.5 flex items-center justify-between border-t border-slate-100 bg-slate-50/70 dark:border-white/10! dark:bg-white/[0.03]!">
+          <span className="text-[11px] font-mono text-slate-400 dark:text-white/40! font-medium">MADS TOPUP &copy; {new Date().getFullYear()}</span>
+          <span className="flex items-center gap-1.5 text-[11px] font-mono font-medium text-emerald-600 dark:text-emerald-400!">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             ONLINE
           </span>
