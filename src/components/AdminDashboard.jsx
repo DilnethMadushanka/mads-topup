@@ -1299,16 +1299,17 @@ export const AdminDashboard = () => {
               />
 
               {/* Welcome banner — summarises the live counters already computed above */}
-              <div className="relative rounded-3xl bg-gradient-to-br from-[#ef1c25] via-[#dc0b13] to-[#b8060d] text-white p-5 sm:p-7 overflow-hidden shadow-xl shadow-red-600/20">
-                <div className="absolute -top-20 -right-12 w-72 h-72 rounded-full bg-white/10 pointer-events-none" />
-                <div className="absolute -bottom-24 -left-10 w-64 h-64 rounded-full bg-white/10 pointer-events-none" />
+              <div className="relative rounded-3xl border-2 p-5 sm:p-7 overflow-hidden" style={cardStyle}>
+                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#ef1c25] via-[#cc040a] to-[#990207]" />
+                <div className="absolute -top-20 -right-12 w-72 h-72 rounded-full bg-[#cc040a]/5 pointer-events-none" />
+                <div className="absolute -bottom-24 -left-10 w-64 h-64 rounded-full bg-[#cc040a]/5 pointer-events-none" />
                 <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-5">
                   <div>
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 border border-white/25 text-[10px] font-black uppercase tracking-widest font-mono mb-2.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" /> Live
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#cc040a]/10 border border-[#cc040a]/20 text-[#cc040a] text-[10px] font-black uppercase tracking-widest font-mono mb-2.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live
                     </div>
-                    <h3 className="text-2xl sm:text-3xl font-black font-heading tracking-tight">Welcome back, Admin</h3>
-                    <p className="text-sm text-red-50 font-medium mt-1">
+                    <h3 className="text-2xl sm:text-3xl font-black font-heading tracking-tight" style={{ color: 'var(--adm-text)' }}>Welcome back, Admin</h3>
+                    <p className="text-sm font-medium mt-1" style={mutedStyle}>
                       {(pendingCount + pendingPaymentsCount + openTicketsCount + pendingResellersCount) > 0
                         ? `${pendingCount + pendingPaymentsCount + openTicketsCount + pendingResellersCount} items need your attention right now.`
                         : 'Everything is up to date — nothing is waiting on you.'}
@@ -1321,9 +1322,9 @@ export const AdminDashboard = () => {
                       { label: 'Tickets', count: openTicketsCount, tab: 'support' },
                       { label: 'Resellers', count: pendingResellersCount, tab: 'resellers' }
                     ].map(q => (
-                      <button key={q.tab} onClick={() => setAdminTab(q.tab)} className="text-left px-4 py-3 rounded-2xl bg-white/15 hover:bg-white/25 border border-white/25 backdrop-blur-md transition-all cursor-pointer">
-                        <div className="text-2xl font-black font-heading leading-none">{q.count}</div>
-                        <div className="text-[10px] font-black uppercase tracking-wider text-red-100 mt-1">{q.label}</div>
+                      <button key={q.tab} onClick={() => setAdminTab(q.tab)} className="text-left px-4 py-3 rounded-2xl border-2 hover:border-[#cc040a]/50 hover:-translate-y-0.5 transition-all cursor-pointer" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
+                        <div className={`text-2xl font-black font-heading leading-none ${q.count > 0 ? 'text-[#cc040a]' : ''}`} style={q.count > 0 ? undefined : { color: 'var(--adm-text)' }}>{q.count}</div>
+                        <div className="text-[10px] font-black uppercase tracking-wider mt-1" style={mutedStyle}>{q.label}</div>
                       </button>
                     ))}
                   </div>

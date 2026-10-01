@@ -228,16 +228,17 @@ Thank you for using MADS TOPUP Sri Lanka!
       <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-6">
 
         {/* PROFILE HERO */}
-        <div className="relative rounded-3xl bg-gradient-to-br from-[#ef1c25] via-[#dc0b13] to-[#b8060d] text-white shadow-2xl shadow-red-600/30 overflow-hidden">
-          <div className="absolute -top-24 -right-16 w-80 h-80 rounded-full bg-white/10 pointer-events-none"></div>
-          <div className="absolute -bottom-28 -left-16 w-72 h-72 rounded-full bg-white/10 pointer-events-none"></div>
-          <div className="absolute inset-0 opacity-[0.07] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '22px 22px' }}></div>
+        <div className="relative rounded-3xl bg-white text-slate-900 border-2 border-slate-200 shadow-sm overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#ef1c25] via-[#cc040a] to-[#990207]"></div>
+          <div className="absolute -top-24 -right-16 w-80 h-80 rounded-full bg-red-50 pointer-events-none"></div>
+          <div className="absolute -bottom-28 -left-16 w-72 h-72 rounded-full bg-red-50/70 pointer-events-none"></div>
+          <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #cc040a 1px, transparent 1px)', backgroundSize: '22px 22px' }}></div>
 
           <div className="relative z-10 p-6 sm:p-9 flex flex-col sm:flex-row sm:items-center gap-6">
             {/* Avatar */}
             <div className="relative shrink-0 self-center sm:self-auto">
-              <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full p-1.5 bg-gradient-to-br from-white to-red-200 shadow-2xl">
-                <div className="w-full h-full rounded-full bg-[#990207] flex items-center justify-center font-black text-4xl text-white overflow-hidden">
+              <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full p-1.5 bg-gradient-to-br from-[#ef1c25] to-[#990207] shadow-xl shadow-red-600/20">
+                <div className="w-full h-full rounded-full bg-white border-4 border-white flex items-center justify-center font-black text-4xl text-[#cc040a] overflow-hidden">
                   {userProfile.avatar ? (
                     <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
@@ -256,23 +257,23 @@ Thank you for using MADS TOPUP Sri Lanka!
 
             {/* Identity */}
             <div className="flex-1 min-w-0 text-center sm:text-left">
-              <div className="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/25 mb-2.5">
-                <Sparkles className="w-3 h-3 text-amber-300" />
+              <div className="inline-flex items-center gap-1.5 bg-red-50 text-[#cc040a] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-red-100 mb-2.5">
+                <Sparkles className="w-3 h-3" />
                 <span>Verified Member</span>
               </div>
               <h1 className="text-3xl sm:text-4xl font-black font-heading tracking-tight truncate">
                 {userProfile.name || 'Gamer Account'}
               </h1>
-              <p className="text-sm text-red-100 font-medium mt-1 truncate">
+              <p className="text-sm text-slate-500 font-medium mt-1 truncate">
                 {userProfile.email || 'user@madstopup.com'}
               </p>
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-3.5">
-                <span className="inline-flex items-center gap-1.5 bg-emerald-500/20 border border-emerald-300/40 text-emerald-100 px-3 py-1 rounded-full text-[11px] font-extrabold">
+                <span className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-1 rounded-full text-[11px] font-extrabold">
                   <ShieldCheck className="w-3.5 h-3.5" />
                   Account Linked & Secured
                 </span>
                 {userProfile.phone && (
-                  <span className="inline-flex items-center gap-1.5 bg-white/15 border border-white/25 px-3 py-1 rounded-full text-[11px] font-extrabold">
+                  <span className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-700 px-3 py-1 rounded-full text-[11px] font-extrabold">
                     <Phone className="w-3.5 h-3.5" />
                     {userProfile.phone}
                   </span>
@@ -284,7 +285,7 @@ Thank you for using MADS TOPUP Sri Lanka!
             <button
               onClick={handleLogout}
               title="Logout"
-              className="self-center sm:self-start px-4 py-2.5 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer backdrop-blur-md border border-white/20 shrink-0"
+              className="self-center sm:self-start px-4 py-2.5 rounded-xl bg-white hover:bg-red-50 text-slate-700 hover:text-[#cc040a] text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer border-2 border-slate-200 hover:border-[#cc040a]/40 shrink-0"
             >
               <LogOut className="w-4 h-4" />
               <span>Logout</span>

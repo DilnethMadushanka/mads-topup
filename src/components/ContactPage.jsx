@@ -111,23 +111,24 @@ export const ContactPage = () => {
         </div>
 
         {/* Hero Banner */}
-        <div className="relative rounded-3xl bg-gradient-to-br from-[#ef1c25] via-[#dc0b13] to-[#b8060d] text-white shadow-2xl shadow-red-600/25 overflow-hidden">
-          <div className="absolute -top-28 -right-16 w-96 h-96 rounded-full bg-white/10 pointer-events-none"></div>
-          <div className="absolute -bottom-32 -left-20 w-80 h-80 rounded-full bg-white/10 pointer-events-none"></div>
-          <div className="absolute inset-0 opacity-[0.07] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '22px 22px' }}></div>
+        <div className="relative rounded-3xl bg-white text-slate-900 border-2 border-slate-200 shadow-sm overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#ef1c25] via-[#cc040a] to-[#990207]"></div>
+          <div className="absolute -top-28 -right-16 w-96 h-96 rounded-full bg-red-50 pointer-events-none"></div>
+          <div className="absolute -bottom-32 -left-20 w-80 h-80 rounded-full bg-red-50/70 pointer-events-none"></div>
+          <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #cc040a 1px, transparent 1px)', backgroundSize: '22px 22px' }}></div>
 
           <div className="relative z-10 p-7 sm:p-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             <div className="lg:col-span-8 space-y-5 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/30 text-white text-xs font-black tracking-wider uppercase font-mono">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-50 border border-red-100 text-[#cc040a] text-xs font-black tracking-wider uppercase font-mono">
                 <Headphones className="w-3.5 h-3.5" />
                 <span>Support & Contact</span>
               </div>
 
               <div className="space-y-3">
                 <h1 className="text-4xl sm:text-6xl font-black tracking-tight font-heading leading-[1.05]">
-                  We're Here to <span className="underline decoration-white/40 decoration-4 underline-offset-8">Help You</span>
+                  We're Here to <span className="text-[#cc040a]">Help You</span>
                 </h1>
-                <p className="text-red-50 text-sm sm:text-base font-semibold leading-relaxed max-w-2xl mx-auto lg:mx-0">
+                <p className="text-slate-600 text-sm sm:text-base font-semibold leading-relaxed max-w-2xl mx-auto lg:mx-0">
                   Get in touch with our team through any channel — we respond fast, every day. Whether it's a top-up issue, payment question, or anything else — we've got you.
                 </p>
               </div>
@@ -135,14 +136,14 @@ export const ContactPage = () => {
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-1">
                 <button
                   onClick={() => setIsSupportOpen(true)}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-[#cc040a] font-black text-sm shadow-xl shadow-black/15 hover:scale-[1.03] active:scale-[0.98] transition-transform cursor-pointer"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#cc040a] hover:bg-[#b00308] text-white font-black text-sm shadow-lg shadow-red-600/25 hover:scale-[1.03] active:scale-[0.98] transition-all cursor-pointer"
                 >
                   <MessageSquare className="w-4 h-4" />
                   <span>Start Live Chat</span>
                 </button>
                 <a
                   href="https://wa.me/94740436276" target="_blank" rel="noreferrer"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-black/20 hover:bg-black/30 border border-white/30 text-white font-black text-sm backdrop-blur-md transition-colors"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white hover:bg-red-50 border-2 border-slate-200 hover:border-[#cc040a]/40 text-slate-800 hover:text-[#cc040a] font-black text-sm transition-colors"
                 >
                   <MessageCircle className="w-4 h-4" />
                   <span>WhatsApp Us</span>
@@ -157,9 +158,9 @@ export const ContactPage = () => {
                 { icon: Zap, label: 'Avg. Response < 5 min' },
                 { icon: Clock, label: '24 / 7 Support' },
               ].map(({ icon: Icon, label, dot }) => (
-                <div key={label} className="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 text-xs font-extrabold">
-                  <span className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-                    {dot ? <span className="w-2.5 h-2.5 rounded-full bg-emerald-300 animate-pulse"></span> : <Icon className="w-4 h-4" />}
+                <div key={label} className="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-extrabold">
+                  <span className="w-8 h-8 rounded-xl bg-red-50 text-[#cc040a] flex items-center justify-center shrink-0">
+                    {dot ? <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> : <Icon className="w-4 h-4" />}
                   </span>
                   <span>{label}</span>
                 </div>
@@ -247,14 +248,13 @@ export const ContactPage = () => {
           <div className="lg:col-span-4 space-y-5">
 
             {/* SUPPORT TIP BOX */}
-            <div className="relative bg-gradient-to-br from-[#ef1c25] to-[#b8060d] text-white rounded-3xl p-6 shadow-lg shadow-red-600/25 flex items-start gap-4 overflow-hidden">
-              <div className="absolute -top-8 -right-8 w-28 h-28 rounded-full bg-white/10 pointer-events-none"></div>
-              <div className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center shrink-0 relative">
-                <ShieldCheck className="w-6 h-6 text-white" />
+            <div className="relative bg-white text-slate-900 rounded-3xl p-6 border-2 border-slate-200 border-l-4 border-l-[#cc040a] shadow-sm flex items-start gap-4 overflow-hidden">
+              <div className="w-11 h-11 rounded-xl bg-red-50 flex items-center justify-center shrink-0 relative">
+                <ShieldCheck className="w-6 h-6 text-[#cc040a]" />
               </div>
               <div className="space-y-1 text-xs font-semibold leading-relaxed relative">
-                <strong className="block text-sm font-black font-heading">Support Tip</strong>
-                <p className="text-red-50">
+                <strong className="block text-sm font-black font-heading text-[#cc040a]">Support Tip</strong>
+                <p className="text-slate-600">
                   Always have your <strong>Order ID</strong> and <strong>Player ID (UID)</strong> ready when contacting us — it helps us resolve your issue instantly.
                 </p>
               </div>

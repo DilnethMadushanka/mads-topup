@@ -235,45 +235,45 @@ export const SupportModal = () => {
           }}>
 
             {/* Header — bright red hero */}
-            <div style={{ position: 'relative', flexShrink: 0, padding: '18px 18px 20px', background: 'linear-gradient(135deg,#ef1c25 0%,#dc0b13 55%,#b8060d 100%)', color: '#ffffff', overflow: 'hidden' }}>
-              <div style={{ position: 'absolute', top: -60, right: -40, width: 180, height: 180, borderRadius: '50%', background: 'rgba(255,255,255,0.12)', pointerEvents: 'none' }} />
-              <div style={{ position: 'absolute', bottom: -70, left: -30, width: 150, height: 150, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', pointerEvents: 'none' }} />
+            <div style={{ position: 'relative', flexShrink: 0, padding: '18px 18px 20px', background: '#ffffff', color: '#0f172a', overflow: 'hidden', borderBottom: '1px solid #e2e8f0' }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: 'linear-gradient(90deg,#ef1c25,#cc040a,#990207)' }} />
+              <div style={{ position: 'absolute', top: -60, right: -40, width: 180, height: 180, borderRadius: '50%', background: '#fff1f2', pointerEvents: 'none' }} />
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', gap: 8 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 11, minWidth: 0 }}>
                   {view !== 'list' && (
-                    <button onClick={() => setView('list')} aria-label="Back to tickets" style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 11, padding: '7px 8px', color: '#ffffff', cursor: 'pointer', display: 'flex', flexShrink: 0 }}>
+                    <button onClick={() => setView('list')} aria-label="Back to tickets" style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: 11, padding: '7px 8px', color: '#475569', cursor: 'pointer', display: 'flex', flexShrink: 0 }}>
                       <ChevronLeft style={{ width: 16, height: 16 }} />
                     </button>
                   )}
                   <div style={{ position: 'relative', flexShrink: 0 }}>
-                    <div style={{ width: 44, height: 44, borderRadius: 15, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 15, background: '#cc040a', boxShadow: '0 6px 16px rgba(204,4,10,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <Headset style={{ width: 21, height: 21, color: '#ffffff' }} />
                     </div>
-                    <span style={{ position: 'absolute', bottom: -2, right: -2, width: 13, height: 13, borderRadius: '50%', background: '#22c55e', border: '2.5px solid #dc0b13' }} />
+                    <span style={{ position: 'absolute', bottom: -2, right: -2, width: 13, height: 13, borderRadius: '50%', background: '#22c55e', border: '2.5px solid #ffffff' }} />
                   </div>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <h3 style={{ margin: 0, fontWeight: 900, fontSize: 15, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>MADS SUPPORT</h3>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 9, fontWeight: 900, color: '#ffffff', background: 'rgba(34,197,94,0.3)', border: '1px solid rgba(134,239,172,0.6)', padding: '2px 8px', borderRadius: 99 }}>
-                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80', animation: 'smPulse 1.6s ease-in-out infinite' }} />
+                      <h3 style={{ margin: 0, fontWeight: 900, fontSize: 15, letterSpacing: '0.02em', whiteSpace: 'nowrap', color: '#0f172a' }}>MADS SUPPORT</h3>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 9, fontWeight: 900, color: '#15803d', background: '#f0fdf4', border: '1px solid #86efac', padding: '2px 8px', borderRadius: 99 }}>
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#16a34a', animation: 'smPulse 1.6s ease-in-out infinite' }} />
                         ONLINE
                       </span>
                     </div>
-                    <p style={{ margin: '3px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <p style={{ margin: '3px 0 0', fontSize: 11, color: '#64748b', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       24/7 Live Support · {headerSubtitle}
                     </p>
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                   {view === 'list' && (
-                    <button onClick={() => setView('create')} style={{ background: '#ffffff', border: 'none', borderRadius: 11, padding: '8px 13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, fontWeight: 900, color: RED, boxShadow: '0 4px 14px rgba(0,0,0,0.18)' }}>
+                    <button onClick={() => setView('create')} style={{ background: RED, border: 'none', borderRadius: 11, padding: '8px 13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, fontWeight: 900, color: '#ffffff', boxShadow: '0 4px 14px rgba(204,4,10,0.3)' }}>
                       <Plus style={{ width: 14, height: 14 }} /> New
                     </button>
                   )}
-                  <button onClick={() => setIsMinimized(true)} title="Minimize" style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 10, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', cursor: 'pointer' }}>
+                  <button onClick={() => setIsMinimized(true)} title="Minimize" style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: 10, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569', cursor: 'pointer' }}>
                     <Minus style={{ width: 14, height: 14 }} />
                   </button>
-                  <button onClick={() => setIsSupportOpen(false)} title="Close" style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 10, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', cursor: 'pointer' }}>
+                  <button onClick={() => setIsSupportOpen(false)} title="Close" style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: 10, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569', cursor: 'pointer' }}>
                     <X style={{ width: 15, height: 15 }} />
                   </button>
                 </div>
