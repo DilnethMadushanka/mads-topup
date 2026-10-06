@@ -157,7 +157,7 @@ async function resolveUserWalletKey(uid, email, clientProfile) {
         if (data && (data.walletBalance !== undefined || data.walletUsdt !== undefined)) {
           const lkr = parseFloat(data.walletBalance || 0);
           const usdt = parseFloat(data.walletUsdt || 0);
-          if (lkr > 0 || usdt > 0 || (!clientProfile?.walletBalance && !clientProfile?.walletUsdt)) {
+          if (lkr > 0 || usdt > 0) {
             return {
               rtdbKey: uid,
               walletBalance: lkr,
@@ -171,7 +171,7 @@ async function resolveUserWalletKey(uid, email, clientProfile) {
   }
 
   // 2. Scan all users by email or uid field in RTDB
-  const lookupEmail = email || clientProfile?.email || (uid && uid.includes('@') ? uid : null);
+  const lookupEmail = email || (uid && uid.includes('@') ? uid : null);
   if (lookupEmail) {
     try {
       const allRes = await fetch(`${FIREBASE_RTDB_URL}/users.json`);
@@ -185,7 +185,7 @@ async function resolveUserWalletKey(uid, email, clientProfile) {
             if (emailMatch || uidMatch) {
               const lkr = parseFloat(userData.walletBalance || 0);
               const usdt = parseFloat(userData.walletUsdt || 0);
-              if (lkr > 0 || usdt > 0 || (!clientProfile?.walletBalance && !clientProfile?.walletUsdt)) {
+              if (lkr > 0 || usdt > 0) {
                 return {
                   rtdbKey: key,
                   walletBalance: lkr,
@@ -211,15 +211,9 @@ async function resolveUserWalletKey(uid, email, clientProfile) {
     };
   }
 
-  // 4. Fallback: use verified clientProfile if positive balance provided
-  if (clientProfile && (parseFloat(clientProfile.walletBalance || 0) > 0 || parseFloat(clientProfile.walletUsdt || 0) > 0)) {
-    return {
-      rtdbKey: uid || lookupEmail || 'usr_fallback',
-      walletBalance: parseFloat(clientProfile.walletBalance || 0),
-      walletUsdt: parseFloat(clientProfile.walletUsdt || 0),
-      source: 'client_profile'
-    };
-  }
+  // clientProfile is sent by the browser and can say anything, so it is never
+  // used as a balance source — trusting it let accounts with no deposited
+  // money place wallet orders.
 
   return { rtdbKey: uid || 'usr_unknown', walletBalance: 0, walletUsdt: 0, source: 'zero_default' };
 }
@@ -456,9 +450,13 @@ export default async function handler(req, res) {
       let maxDiscountLkr = MAX_PROMO_DISCOUNT_LKR;
       if (bodyObj?.isResellerOrder) {
         const verifiedReseller = await isApprovedReseller(authenticatedUser.uid, authenticatedUser.email);
-        if (verifiedReseller) {
-          maxDiscountLkr = Math.ceil(catalogPriceLkr * RESELLER_WHOLESALE_DISCOUNT_RATE) + 5;
+        if (!verifiedReseller) {
+          // A "Reseller Partner Wallet" order from an account that isn't an
+          // admin-approved reseller is refused outright.
+          console.warn(`[NON-RESELLER BLOCKED] ${authenticatedUser.uid} (${authenticatedUser.email}) attempted a reseller order`);
+          return res.status(403).json({ error: 'Reseller orders are only available to approved reseller accounts.' });
         }
+        maxDiscountLkr = Math.ceil(catalogPriceLkr * RESELLER_WHOLESALE_DISCOUNT_RATE) + 5;
       }
       if (numPriceLkr > catalogPriceLkr || numPriceLkr < catalogPriceLkr - maxDiscountLkr) {
         return res.status(400).json({ error: 'Price mismatch detected. Order rejected.' });

@@ -650,15 +650,8 @@ async function verifyFirebaseIdToken(idToken) {
     console.error('[Backend Auth Token Error]:', err.message);
   }
 
-  // Fallback for custom user profile tokens
-  if (cleanToken.length >= 3) {
-    return {
-      uid: cleanToken,
-      email: cleanToken.includes('@') ? cleanToken : 'user@madstopup.com',
-      emailVerified: true
-    };
-  }
-
+  // Anything else is not a valid token. (A previous fallback accepted any
+  // string of 3+ characters as a logged-in user.)
   return null;
 }
 
@@ -732,7 +725,7 @@ async function resolveUserWalletKey(uid, email, clientProfile) {
         if (data && (data.walletBalance !== undefined || data.walletUsdt !== undefined)) {
           const lkr = parseFloat(data.walletBalance || 0);
           const usdt = parseFloat(data.walletUsdt || 0);
-          if (lkr > 0 || usdt > 0 || (!clientProfile?.walletBalance && !clientProfile?.walletUsdt)) {
+          if (lkr > 0 || usdt > 0) {
             return {
               rtdbKey: uid,
               walletBalance: lkr,
@@ -748,7 +741,7 @@ async function resolveUserWalletKey(uid, email, clientProfile) {
   }
 
   // 2. Fallback: scan all users and match by email or uid field
-  const lookupEmail = email || clientProfile?.email || (uid && uid.includes('@') ? uid : null);
+  const lookupEmail = email || (uid && uid.includes('@') ? uid : null);
   if (lookupEmail) {
     try {
       const allRes = await fetch(`${FIREBASE_RTDB_URL}/users.json`);
@@ -762,7 +755,7 @@ async function resolveUserWalletKey(uid, email, clientProfile) {
             if (emailMatch || uidMatch) {
               const lkr = parseFloat(userData.walletBalance || 0);
               const usdt = parseFloat(userData.walletUsdt || 0);
-              if (lkr > 0 || usdt > 0 || (!clientProfile?.walletBalance && !clientProfile?.walletUsdt)) {
+              if (lkr > 0 || usdt > 0) {
                 console.log(`[RTDB Key Resolved] Found user by ${emailMatch ? 'email' : 'uid field'}: key=${key}`);
                 return {
                   rtdbKey: key,
@@ -780,20 +773,11 @@ async function resolveUserWalletKey(uid, email, clientProfile) {
     }
   }
 
-  // 3. Fallback: If RTDB access is blocked (e.g. 401 Permission Denied) or RTDB has 0 while client has verified balance
-  if (clientProfile && (parseFloat(clientProfile.walletBalance || 0) > 0 || parseFloat(clientProfile.walletUsdt || 0) > 0)) {
-    const lkr = parseFloat(clientProfile.walletBalance || 0);
-    const usdt = parseFloat(clientProfile.walletUsdt || 0);
-    console.log(`[RTDB Fallback] Using verified client profile balance for ${uid || lookupEmail}: Rs. ${lkr} LKR / $${usdt} USDT`);
-    return {
-      rtdbKey: uid || lookupEmail || 'usr_fallback',
-      walletBalance: lkr,
-      walletUsdt: usdt,
-      source: 'client_profile'
-    };
-  }
+  // The balance always comes from the database. clientProfile is sent by the
+  // browser and can say anything, so it is never used as a balance source —
+  // trusting it let accounts with no deposited money place wallet orders.
 
-  // 4. If uid was given but no record found, still return uid as key (will create fresh entry on PATCH)
+  // 3. If uid was given but no record found, still return uid as key (will create fresh entry on PATCH)
   if (uid) {
     return { rtdbKey: uid, walletBalance: 0, walletUsdt: 0, source: 'zero_default' };
   }
@@ -1039,9 +1023,13 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
       let maxDiscountLkr = MAX_PROMO_DISCOUNT_LKR;
       if (bodyObj?.isResellerOrder) {
         const verifiedReseller = await isApprovedReseller(authenticatedUser.uid, authenticatedUser.email);
-        if (verifiedReseller) {
-          maxDiscountLkr = Math.ceil(catalogPriceLkr * RESELLER_WHOLESALE_DISCOUNT_RATE) + 5;
+        if (!verifiedReseller) {
+          // A "Reseller Partner Wallet" order from an account that isn't an
+          // admin-approved reseller is refused outright.
+          console.warn(`[NON-RESELLER BLOCKED] ${authenticatedUser.uid} (${authenticatedUser.email}) attempted a reseller order`);
+          return res.status(403).json({ error: 'Reseller orders are only available to approved reseller accounts.' });
         }
+        maxDiscountLkr = Math.ceil(catalogPriceLkr * RESELLER_WHOLESALE_DISCOUNT_RATE) + 5;
       }
       if (numPriceLkr > catalogPriceLkr || numPriceLkr < catalogPriceLkr - maxDiscountLkr) {
         return res.status(400).json({ error: 'Price mismatch detected. Order rejected.' });
