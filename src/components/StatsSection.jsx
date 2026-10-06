@@ -95,10 +95,22 @@ const ProgressRing = ({ percent = 99, size = 64, color = '#cc040a', track = '#fe
 export const StatsSection = () => {
   const { orders } = useApp();
   const realOrdersCount = (orders || []).length;
+  const [registeredUsers, setRegisteredUsers] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/public-stats')
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        if (!cancelled && d && Number.isFinite(d.users)) setRegisteredUsers(d.users);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   const stats = [
     {
-      target: 250 + realOrdersCount,
+      target: registeredUsers ?? 250 + realOrdersCount,
       suffix: '+',
       formatComma: true,
       label: 'Happy Customers',

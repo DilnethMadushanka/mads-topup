@@ -1258,6 +1258,26 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
   }
 });
 
+// Public homepage stats: number of registered user accounts. Counted on the
+// server with a shallow read (keys only), so browsers never need to read the
+// users list. Cached for 5 minutes to keep database reads low.
+let publicStatsCache = { at: 0, data: null };
+app.get('/api/public-stats', rateLimiter(60, 60000), async (req, res) => {
+  try {
+    if (!publicStatsCache.data || Date.now() - publicStatsCache.at > 5 * 60 * 1000) {
+      const r = await fetch(rtdbUrl('users', { shallow: true }));
+      if (!r.ok) throw new Error(`RTDB users count failed: HTTP ${r.status}`);
+      const keys = await r.json();
+      publicStatsCache = { at: Date.now(), data: { users: keys ? Object.keys(keys).length : 0 } };
+    }
+    res.set('Cache-Control', 'public, max-age=300');
+    res.json(publicStatsCache.data);
+  } catch (e) {
+    if (publicStatsCache.data) return res.json(publicStatsCache.data);
+    res.status(500).json({ error: 'Stats unavailable' });
+  }
+});
+
 // Diagnostic IP Endpoint
 app.get('/api/ip', async (req, res) => {
   try {
