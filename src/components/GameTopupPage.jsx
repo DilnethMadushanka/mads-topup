@@ -101,7 +101,9 @@ export const GameTopupPage = () => {
       setIgnVerified(true);
       setVerifyModalData({
         ign: result.ign,
-        playerId: playerId
+        playerId: playerId,
+        zoneId: zoneId,
+        gameName: selectedGame.name
       });
       showToast(`Verified IGN: ${result.ign}`);
     } else {
@@ -1277,17 +1279,31 @@ export const GameTopupPage = () => {
             </div>
 
             {/* Title */}
-            <h3 className="text-2xl font-black text-slate-800 font-heading tracking-tight">
-              Account Verified!
-            </h3>
+            <div>
+              <h3 className="text-2xl font-black text-slate-800 font-heading tracking-tight">
+                Account Verified!
+              </h3>
+              <p className="text-xs font-semibold text-slate-500 mt-1">Please confirm this is your account</p>
+            </div>
 
-            {/* IGN & Player ID */}
-            <div className="space-y-1 py-1">
-              <div className="text-lg font-black text-slate-900 font-heading tracking-wide">
+            {/* IGN highlight box */}
+            <div className="relative rounded-2xl border-2 border-emerald-400/60 bg-emerald-50 px-4 pt-6 pb-4 shadow-inner">
+              <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-sm whitespace-nowrap">
+                In-Game Name
+              </span>
+              <div className="text-2xl sm:text-[28px] leading-tight font-black text-slate-900 font-heading tracking-wide break-words">
                 {verifyModalData.ign}
               </div>
-              <div className="text-xs font-bold text-slate-500 font-mono">
-                ID: {verifyModalData.playerId}
+              <div className="mt-3 pt-3 border-t border-dashed border-emerald-300 flex items-center justify-center gap-2 flex-wrap text-xs font-bold text-slate-500">
+                <span className="font-mono text-slate-700">
+                  ID: {verifyModalData.playerId}{verifyModalData.zoneId ? ` (${verifyModalData.zoneId})` : ''}
+                </span>
+                {verifyModalData.gameName && (
+                  <>
+                    <span className="text-slate-300">•</span>
+                    <span>{verifyModalData.gameName}</span>
+                  </>
+                )}
               </div>
             </div>
 
