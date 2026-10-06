@@ -36,7 +36,7 @@ import { ScrollReveal } from './hooks/useScrollReveal';
 import { Flame } from 'lucide-react';
 
 const MainContent = () => {
-  const { setIsAdminOpen, isUserProfileOpen, isWalletModalOpen, openUserProfilePage, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, isReferralPageOpen, isResellerPageOpen, isResellerLoginPageOpen, isResellerDashboardOpen, openResellerPage, openContactPage, openPolicyModal, selectedGame, isBlogPageOpen, openBlogPage, isLeaderboardPageOpen } = useApp();
+  const { userProfile, setIsAdminOpen, isUserProfileOpen, isWalletModalOpen, openUserProfilePage, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, isReferralPageOpen, isResellerPageOpen, isResellerLoginPageOpen, isResellerDashboardOpen, openResellerPage, openContactPage, openPolicyModal, selectedGame, isBlogPageOpen, openBlogPage, isLeaderboardPageOpen } = useApp();
 
   // Security: Prevent Right-Click Inspect Element & DevTools Keyboard Shortcuts
   React.useEffect(() => {
@@ -94,7 +94,9 @@ const MainContent = () => {
         ) : isWalletModalOpen ? (
           <WalletPage />
         ) : isResellerDashboardOpen ? (
-          <ResellerDashboard />
+          // Only reseller accounts get the dashboard (the server re-checks); anyone
+          // else who lands here (e.g. a saved page in sessionStorage) sees the login.
+          (userProfile?.isReseller || userProfile?.role === 'reseller') ? <ResellerDashboard /> : <ResellerLoginPage />
         ) : isResellerLoginPageOpen ? (
           <ResellerLoginPage />
         ) : isResellerPageOpen ? (
