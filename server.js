@@ -844,6 +844,7 @@ async function verifyFirebaseIdToken(idToken) {
 // a genuine 5% off catalog, which can exceed this on larger packages.
 const MAX_PROMO_DISCOUNT_LKR = 100;
 const RESELLER_WHOLESALE_DISCOUNT_RATE = 0.05;
+const MAX_ORDER_QUANTITY = 50;
 
 // Recompute the official price server-side from the catalog using the MooGold
 // product-id the client is actually asking us to order — the client-sent
@@ -1083,10 +1084,19 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
       // is an approved reseller. This check previously only existed on the
       // Vercel fallback (api/moogold.js), not here on the primary VPS path.
       const requestedProductId = bodyObj?.data?.['product-id'];
-      const catalogPriceLkr = getCatalogPriceLkr(requestedProductId);
-      if (catalogPriceLkr === null) {
+      const unitCatalogPriceLkr = getCatalogPriceLkr(requestedProductId);
+      if (unitCatalogPriceLkr === null) {
         return res.status(400).json({ error: 'Unrecognized product. Order rejected.' });
       }
+      // The cart sends one request per package with its quantity (e.g. 2x
+      // Weekly Pass = one order of quantity 2), and priceLkr is the total for
+      // that quantity — so the catalog price must be scaled the same way.
+      // MooGold delivers `quantity` units, so this is also what gets charged.
+      const requestedQty = Number(bodyObj?.data?.quantity ?? 1);
+      if (!Number.isInteger(requestedQty) || requestedQty < 1 || requestedQty > MAX_ORDER_QUANTITY) {
+        return res.status(400).json({ error: 'Invalid order quantity.' });
+      }
+      const catalogPriceLkr = unitCatalogPriceLkr * requestedQty;
       let maxDiscountLkr = MAX_PROMO_DISCOUNT_LKR;
       if (bodyObj?.isResellerOrder) {
         const verifiedReseller = await isApprovedReseller(authenticatedUser.uid, authenticatedUser.email);
