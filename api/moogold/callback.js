@@ -1,3 +1,4 @@
+import { rtdbUrl } from '../../lib/rtdbAdmin.js';
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -10,7 +11,6 @@ export default async function handler(req, res) {
   const payload = req.method === 'GET' ? req.query : req.body;
   console.log('[MooGold Serverless Callback Received]:', payload);
 
-  const FIREBASE_RTDB_URL = process.env.FIREBASE_DATABASE_URL || process.env.VITE_FIREBASE_DATABASE_URL || "https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app";
   const partnerOrderId = payload?.partnerOrderId || payload?.partner_order_id || payload?.data?.partnerOrderId;
   const orderId = payload?.order_id || payload?.orderId || payload?.data?.order_id;
   const rawStatus = payload?.status || payload?.data?.status;
@@ -18,14 +18,14 @@ export default async function handler(req, res) {
 
   if (partnerOrderId) {
     try {
-      const getRes = await fetch(`${FIREBASE_RTDB_URL}/moogoldProcessedOrders/${encodeURIComponent(partnerOrderId)}.json`);
+      const getRes = await fetch(rtdbUrl(`moogoldProcessedOrders/${partnerOrderId}`));
       const existing = getRes.ok ? await getRes.json() : null;
 
       const isComplete = status.includes('COMPLET') || status === 'SUCCESS';
       const isFailed = status.includes('FAIL') || status.includes('CANCEL') || status.includes('REFUND');
       const normalizedStatus = isComplete ? 'COMPLETED' : (isFailed ? 'FAILED' : (status || 'PROCESSING'));
 
-      await fetch(`${FIREBASE_RTDB_URL}/moogoldProcessedOrders/${encodeURIComponent(partnerOrderId)}.json`, {
+      await fetch(rtdbUrl(`moogoldProcessedOrders/${partnerOrderId}`), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

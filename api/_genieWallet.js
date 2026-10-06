@@ -7,7 +7,7 @@
 export const GENIE_DEFAULT_APP_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBJZCI6ImM5OWI0NTBkLTM4ZTktNDU1Ny04OWYxLTVjZGM5MWZkN2EwZiIsImNvbXBhbnlJZCI6IjY5OWMyOTRiZWM5YWFlMDAwMjA2NjAxNiIsImlhdCI6MTc3MTg0MjE0OSwiZXhwIjo0OTI3NTE1NzQ5fQ.LutDa2obyzXY6MsCGtrK3bPZHMrNpxI-T8Q4cCtKZo4';
 export const GENIE_DEFAULT_BASE_URL = 'https://api.geniebiz.lk';
 
-export const FIREBASE_RTDB_URL = process.env.FIREBASE_DATABASE_URL || process.env.VITE_FIREBASE_DATABASE_URL || "https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app";
+import { rtdbUrl, rtdbGet, findUserKey, adjustWallet } from '../lib/rtdbAdmin.js';
 
 export function getGenieAppKey() {
   let appKey = (process.env.GENIE_APP_KEY || process.env.VITE_GENIE_APP_KEY || GENIE_DEFAULT_APP_KEY).replace(/[\r\n\s]/g, '');
@@ -19,71 +19,40 @@ export function getGenieBaseUrl() {
   return (process.env.GENIE_BASE_URL || process.env.VITE_GENIE_BASE_URL || GENIE_DEFAULT_BASE_URL).replace(/[\r\n\s\/]+$/, '');
 }
 
-async function resolveUserWalletKey(uid, email) {
-  if (uid) {
-    try {
-      const res = await fetch(`${FIREBASE_RTDB_URL}/users/${encodeURIComponent(uid)}.json`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data) {
-          return { rtdbKey: uid, walletBalance: parseFloat(data.walletBalance || 0), walletUsdt: parseFloat(data.walletUsdt || 0) };
-        }
-      }
-    } catch (e) { console.warn('[Genie RTDB UID Read Warning]:', e.message); }
-  }
-
-  const lookupEmail = email || (uid && uid.includes('@') ? uid : null);
-  if (lookupEmail) {
-    try {
-      const allRes = await fetch(`${FIREBASE_RTDB_URL}/users.json`);
-      if (allRes.ok) {
-        const allUsers = await allRes.json();
-        if (allUsers && typeof allUsers === 'object') {
-          for (const [key, userData] of Object.entries(allUsers)) {
-            if (!userData) continue;
-            const emailMatch = userData.email && userData.email.toLowerCase() === lookupEmail.toLowerCase();
-            const uidMatch = userData.uid && (userData.uid === uid || userData.uid === lookupEmail);
-            if (emailMatch || uidMatch) {
-              return { rtdbKey: key, walletBalance: parseFloat(userData.walletBalance || 0), walletUsdt: parseFloat(userData.walletUsdt || 0) };
-            }
-          }
-        }
-      }
-    } catch (e) { console.warn('[Genie RTDB Scan Warning]:', e.message); }
-  }
-
-  if (uid) return { rtdbKey: uid, walletBalance: 0, walletUsdt: 0 };
-  return null;
-}
-
 async function creditUserWalletServer(uid, amountLkr, email) {
   if (!uid || !(amountLkr > 0)) return { success: false, reason: 'Invalid amount' };
-  const resolved = await resolveUserWalletKey(uid, email);
-  if (!resolved) return { success: false, reason: 'User wallet not found' };
-
-  const newLkr = parseFloat((resolved.walletBalance + amountLkr).toFixed(2));
   try {
-    await fetch(`${FIREBASE_RTDB_URL}/users/${encodeURIComponent(resolved.rtdbKey)}.json`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ walletBalance: newLkr, walletUsdt: resolved.walletUsdt, updatedAt: new Date().toISOString() })
-    });
+    let key = null;
+    try {
+      const own = await rtdbGet(`users/${uid}`);
+      if (own && typeof own === 'object') key = uid;
+    } catch (_) {}
+    if (!key) key = (await findUserKey(email || uid)) || uid;
+    const result = await adjustWallet(key, amountLkr, 0);
+    return { success: true, ...result };
   } catch (e) {
     console.error('[Genie Wallet Credit Error]:', e.message);
     return { success: false, reason: 'Database update failed' };
   }
-  return { success: true, newBalanceLkr: newLkr, newBalanceUsdt: resolved.walletUsdt };
+}
+
+// Genie card recharge bonus — mirrors getGenieBonus in WalletPage.jsx.
+function genieRechargeBonus(amountLkr) {
+  const n = parseFloat(amountLkr) || 0;
+  if (n >= 10000) return 200;
+  if (n >= 5000) return 100;
+  return 0;
 }
 
 export async function saveGenieTransactionRecord(transactionId, record) {
   try {
-    await fetch(`${FIREBASE_RTDB_URL}/genieTransactions/${encodeURIComponent(transactionId)}.json`, {
+    await fetch(rtdbUrl(`genieTransactions/${transactionId}`), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(record)
     });
     if (record.localId) {
-      await fetch(`${FIREBASE_RTDB_URL}/genieLocalIdIndex/${encodeURIComponent(record.localId)}.json`, {
+      await fetch(rtdbUrl(`genieLocalIdIndex/${record.localId}`), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(transactionId)
@@ -96,7 +65,7 @@ export async function saveGenieTransactionRecord(transactionId, record) {
 
 export async function getGenieTransactionRecord(transactionId) {
   try {
-    const res = await fetch(`${FIREBASE_RTDB_URL}/genieTransactions/${encodeURIComponent(transactionId)}.json`);
+    const res = await fetch(rtdbUrl(`genieTransactions/${transactionId}`));
     if (res.ok) return (await res.json()) || null;
   } catch (e) { console.warn('[Genie Transaction Read Warning]:', e.message); }
   return null;
@@ -104,7 +73,7 @@ export async function getGenieTransactionRecord(transactionId) {
 
 export async function resolveGenieTransactionIdByLocalId(localId) {
   try {
-    const res = await fetch(`${FIREBASE_RTDB_URL}/genieLocalIdIndex/${encodeURIComponent(localId)}.json`);
+    const res = await fetch(rtdbUrl(`genieLocalIdIndex/${localId}`));
     if (res.ok) return (await res.json()) || null;
   } catch (e) { /* not found */ }
   return null;
@@ -127,7 +96,7 @@ export async function recordGenieManualPaymentToRtdb(transactionId, record) {
       createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
       timestamp: new Date().toISOString()
     };
-    await fetch(`${FIREBASE_RTDB_URL}/manual_payments/${encodeURIComponent(payId)}.json`, {
+    await fetch(rtdbUrl(`manual_payments/${payId}`), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -188,7 +157,7 @@ export async function verifyAndCreditGenieTransaction(transactionId) {
   // Credit using the amount stored at transaction-creation time, never a
   // value read back from Genie/webhook — same anti-tampering principle as
   // the MooGold order-price check in api/moogold.js.
-  const creditResult = await creditUserWalletServer(record.uid, record.amountLkr, record.email);
+  const creditResult = await creditUserWalletServer(record.uid, record.amountLkr + genieRechargeBonus(record.amountLkr), record.email);
   if (!creditResult.success) {
     console.error(`[Genie Credit Failed] txn=${transactionId} user=${record.uid || record.email} reason=${creditResult.reason}`);
     return { success: false, error: creditResult.reason || 'Wallet credit failed', isPaid: true };

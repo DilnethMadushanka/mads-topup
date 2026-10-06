@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { auth } from '../services/firebaseAuth';
+import { getUserAuthToken } from '../services/serverApi';
 import { X, Wallet, Copy, Check, Clipboard, DollarSign, Gift, ArrowRight, XCircle, Ban, Key, Clock, RefreshCw, Zap, Building2, Upload, Image } from 'lucide-react';
 
 export const WalletModal = () => {
@@ -225,9 +226,11 @@ export const WalletModal = () => {
     setIsEzCashVerifying(true);
 
     try {
+      // Signed-in token so the server can credit this account itself on auto-approval.
+      const token = await getUserAuthToken(userProfile);
       const res = await fetch('/api/ezcash/verify-rn', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({
           rnNumber: cleanRn,
           amount: amt,

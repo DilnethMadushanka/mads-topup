@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { auth } from '../services/firebaseAuth';
+import { getUserAuthToken } from '../services/serverApi';
 import {
   Wallet, Copy, Check, ArrowLeft, Zap, Clock, Crown,
   Building2, Upload, ChevronRight, X, RefreshCw, AlertTriangle,
@@ -232,7 +233,9 @@ export const WalletPage = () => {
     const resellerCode = userProfile?.resellerCode || '';
     setIsEzCashVerifying(true);
     try {
-      const res = await fetch('/api/ezcash/verify-rn', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rnNumber: cleanRn, amount: amt, userEmail }) });
+      // Signed-in token so the server can credit this account itself on auto-approval.
+      const token = await getUserAuthToken(userProfile);
+      const res = await fetch('/api/ezcash/verify-rn', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ rnNumber: cleanRn, amount: amt, userEmail }) });
       const resData = await res.json();
       if (resData.verified && resData.autoApproved) {
         creditUserWallet(amt, 0);

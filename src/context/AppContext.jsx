@@ -4,6 +4,8 @@ import { GAMES_DATA } from '../data/games';
 import { getMoongoldConfig, saveMoongoldConfig } from '../services/moongoldApi';
 import { getR2Config, saveR2Config } from '../services/storageService';
 import { auth, onAuthStateChanged, logoutGoogle, getRedirectResult } from '../services/firebaseAuth';
+import { postServerApi } from '../services/serverApi';
+import { getAdminToken } from '../services/adminSession';
 import { 
   syncUserProfileToFirestore, updateUserProfileInFirestore, subscribeUserProfile, 
   saveOrderToFirestore, subscribeAllUsersFromFirestore, subscribeOrdersFromFirestore, updateOrderStatusInFirestore,
@@ -14,7 +16,7 @@ import {
   savePopupAdConfigToFirestore, subscribePopupAdConfigFromFirestore, DEFAULT_POPUP_AD_CONFIG,
   saveSupportTicketToFirestore, updateSupportTicketInFirestore, subscribeSupportTicketsFromFirestore,
   saveReviewToFirestore, subscribeReviewsFromFirestore,
-  saveReferralClick, lookupReferrerByCode, processReferralCashback
+  saveReferralClick
 } from '../services/firestoreService';
 
 
@@ -748,45 +750,8 @@ export const AppProvider = ({ children }) => {
     const saveKey = userProfile?.uid || userProfile?.resellerCode || userProfile?.email || 'guest';
     saveOrderToFirestore(saveKey, newOrder);
 
-    // ── Referral cashback: credit referrer 1.5% on this user's first order ──
-    // Only runs if a pending referral code was captured from the URL on load,
-    // and has not yet been paid out (guarded by 'mads_ref_used' localStorage flag).
-    const pendingRef = (() => { try { return localStorage.getItem('mads_pending_ref'); } catch(_) { return null; } })();
-    const refAlreadyPaid = (() => { try { return !!localStorage.getItem('mads_ref_used'); } catch(_) { return true; } })();
-
-    if (pendingRef && !refAlreadyPaid && newOrder.priceLkr && newOrder.status !== 'FAILED') {
-      // Mark as paid first (optimistic) to prevent double-credit on rapid re-renders
-      try { localStorage.setItem('mads_ref_used', '1'); localStorage.removeItem('mads_pending_ref'); } catch(_) {}
-
-      // Async — does not block order placement
-      (async () => {
-        try {
-          const referrer = await lookupReferrerByCode(pendingRef);
-          if (referrer) {
-            const cashback = await processReferralCashback(
-              referrer.uid,
-              referrer.email,
-              newOrder.priceLkr,
-              pendingRef,
-              userProfile?.email || saveKey
-            );
-            if (cashback > 0) {
-              // Update the referrer's balance in the local usersList if they are in it
-              setUsersList(prev => prev.map(u => {
-                if ((referrer.uid && u.uid === referrer.uid) || (referrer.email && u.email && u.email.toLowerCase() === referrer.email.toLowerCase())) {
-                  return { ...u, walletBalance: (u.walletBalance || 0) + cashback };
-                }
-                return u;
-              }));
-            }
-          }
-        } catch (e) {
-          console.warn('[referral] cashback processing error:', e);
-          // If something fails, revert the paid flag so it can retry
-          try { localStorage.removeItem('mads_ref_used'); localStorage.setItem('mads_pending_ref', pendingRef); } catch(_) {}
-        }
-      })();
-    }
+    // The 1.5% referral cashback is paid by the server when the order is
+    // dispatched (dispatchMoongoldOrder sends the pending referral code).
   };
 
   const updateOrderStatus = (orderId, newStatus, moongoldRef = null) => {
@@ -910,14 +875,9 @@ export const AppProvider = ({ children }) => {
         walletBalance: updatedLkr,
         walletUsdt: updatedUsdt
       };
-      // Only persist to DB for POSITIVE credits (deposits, voucher redemptions, etc.)
-      // Negative calls (deductions) must NOT write to DB — the backend server already
-      // deducted atomically in Firebase RTDB, and the real-time listener will sync the
-      // accurate server balance. Writing a locally-computed negative value would overwrite
-      // the server's authoritative balance with a potentially stale or double-deducted value.
-      if (prev.uid && (amountLkr > 0 || amountUsdt > 0)) {
-        updateUserProfileInFirestore(prev.uid, { walletBalance: updatedLkr, walletUsdt: updatedUsdt });
-      }
+      // Local display only — the server has already saved the real balance
+      // (browsers can't write wallet balances), and the real-time listener
+      // will sync the exact value.
       return nextProfile;
     });
     if (amountLkr > 0 || amountUsdt > 0) {
@@ -1063,35 +1023,12 @@ export const AppProvider = ({ children }) => {
     };
   }, [isAdminAuthenticated]);
 
-  // Find the real RTDB key for a user. The admin list uses `uid`, but some accounts
-  // are stored under another key (phone / email). Returns null when no record exists,
-  // so an update can never create a stray half-empty user node.
-  const resolveRtdbUserKey = async (rtdbMod, rtdb, uid) => {
-    const direct = await rtdbMod.get(rtdbMod.ref(rtdb, `users/${uid}`));
-    if (direct.exists()) return uid;
-    const all = await rtdbMod.get(rtdbMod.ref(rtdb, 'users'));
-    if (all.exists()) {
-      for (const [key, val] of Object.entries(all.val())) {
-        if (val && String(val.uid || '') === String(uid)) return key;
-      }
-    }
-    return null;
-  };
-
   // Persist a partial update for one user. Returns true only if it really saved.
+  // Badge / block changes are saved by the server (admin session required).
   const saveAdminUserField = async (uid, fields) => {
-    try {
-      const { rtdb } = await import('../services/firebaseAuth');
-      if (!rtdb) return false;
-      const rtdbMod = await import('firebase/database');
-      const key = await resolveRtdbUserKey(rtdbMod, rtdb, uid);
-      if (!key) return false;
-      await rtdbMod.update(rtdbMod.ref(rtdb, `users/${key}`), fields);
-      return true;
-    } catch (e) {
-      console.warn('saveAdminUserField failed:', e);
-      return false;
-    }
+    const { ok, data } = await postServerApi('/api/admin/user-fields', { identifier: uid, fields }, getAdminToken());
+    if (!ok) console.warn('saveAdminUserField failed:', data?.error);
+    return ok;
   };
 
   const verifyUserAccount = async (uid) => {
@@ -1157,16 +1094,14 @@ export const AppProvider = ({ children }) => {
     balanceUpdateDebounceRef.current.set(debounceKey, now);
 
     // 1. Write balance adjustment to DB (RTDB & Firestore) across UID, Email, Reseller Code, or Security Key
-    if (opts && opts.strict) {
-      try {
-        await creditUserWalletInDatabase(cleanId, lkrAmount, usdtAmount, { strict: true });
-      } catch (e) {
-        balanceUpdateDebounceRef.current.delete(debounceKey);
-        showToast(`Credit failed — nothing was saved. (${e.message || 'database error'})`, 'error');
-        return false;
-      }
-    } else {
-      await creditUserWalletInDatabase(cleanId, lkrAmount, usdtAmount);
+    // Always strict: the server does the credit, so surface any failure
+    // (e.g. expired admin session) instead of showing a false success.
+    try {
+      await creditUserWalletInDatabase(cleanId, lkrAmount, usdtAmount, { strict: true });
+    } catch (e) {
+      balanceUpdateDebounceRef.current.delete(debounceKey);
+      showToast(`Credit failed — nothing was saved. (${e.message || 'database error'})`, 'error');
+      return false;
     }
 
     // 2. Update local usersList state
