@@ -1,6 +1,17 @@
 import { db, rtdb } from './firebaseAuth.js';
 import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, query, where, getDocs } from 'firebase/firestore';
-import { ref as dbRef, get as rtdbGet, set as rtdbSet, update as rtdbUpdate, onValue as rtdbOnValue, runTransaction as rtdbRunTransaction } from 'firebase/database';
+import { ref as dbRef, get as rtdbGet, set as rtdbSet, update as rtdbUpdate, onValue as rtdbOnValue } from 'firebase/database';
+import { postServerApi, getUserAuthToken } from './serverApi.js';
+import { getAdminToken } from './adminSession.js';
+
+// Fields only the server may change (database.rules.json rejects browser
+// writes to them). Stripped from every profile write made from the browser.
+const SERVER_ONLY_USER_FIELDS = ['walletBalance', 'walletUsdt', 'isReseller', 'resellerStatus', 'role', 'status'];
+const stripServerOnlyFields = (data) => {
+  const clean = { ...(data || {}) };
+  for (const k of SERVER_ONLY_USER_FIELDS) delete clean[k];
+  return clean;
+};
 
 /**
  * SHA-256 password hashing using Web Crypto API (runs in browser & Node).
@@ -431,71 +442,6 @@ export const getResellerProfileByKey = (keyOrCode) => {
   return null;
 };
 
-export const deductResellerWalletBalance = async (uid, amountLkr) => {
-  if (!uid || !amountLkr) return false;
-
-  // Update in Realtime Database (source of truth)
-  if (rtdb) {
-    try {
-      const userRef = dbRef(rtdb, `users/${uid}`);
-      const snap = await rtdbGet(userRef);
-      if (snap.exists()) {
-        const userData = snap.val();
-        const curLkr = parseFloat(userData.walletBalance || 0);
-        const curUsdt = parseFloat(userData.walletUsdt || 0);
-
-        // LKR and USDT wallets are independent — deduct from whichever has sufficient balance
-        if (curLkr >= amountLkr) {
-          // Deduct from LKR wallet
-          const newLkr = parseFloat((curLkr - amountLkr).toFixed(2));
-          await rtdbUpdate(userRef, { walletBalance: newLkr, updatedAt: new Date().toISOString() });
-          // Update in-memory registry
-          for (const [, profile] of activeResellerRegistry.entries()) {
-            if (profile.uid === uid) profile.walletBalance = newLkr;
-          }
-        } else if ((curUsdt * 305) >= amountLkr) {
-          // Deduct from USDT wallet
-          const reqUsdt = parseFloat((amountLkr / 305).toFixed(6));
-          const newUsdt = parseFloat(Math.max(0, curUsdt - reqUsdt).toFixed(6));
-          await rtdbUpdate(userRef, { walletUsdt: newUsdt, updatedAt: new Date().toISOString() });
-          for (const [, profile] of activeResellerRegistry.entries()) {
-            if (profile.uid === uid) profile.walletUsdt = newUsdt;
-          }
-        } else {
-          // Bug 5 fix: insufficient balance — return false immediately, do NOT fall through to Firestore
-          console.warn(`[deductResellerWalletBalance] Insufficient balance for uid ${uid}: needed Rs.${amountLkr}, has Rs.${curLkr} LKR / $${curUsdt} USDT`);
-          return false;
-        }
-      } else {
-        // User not found in RTDB — cannot deduct safely
-        return false;
-      }
-    } catch (e) { console.warn('deductResellerWalletBalance RTDB note:', e); }
-  }
-
-  // Bug 5 fix: Firestore is a secondary mirror — only sync after confirmed RTDB deduction
-  // We re-read from Firestore and write the same values RTDB already applied
-  if (db) {
-    try {
-      const userRef = doc(db, 'users', uid);
-      const docSnap = await getDoc(userRef);
-      if (docSnap.exists()) {
-        const curData = docSnap.data();
-        const curLkr = parseFloat(curData.walletBalance || 0);
-        const curUsdt = parseFloat(curData.walletUsdt || 0);
-        if (curLkr >= amountLkr) {
-          await setDoc(userRef, { walletBalance: parseFloat((curLkr - amountLkr).toFixed(2)), updatedAt: new Date().toISOString() }, { merge: true });
-        } else if ((curUsdt * 305) >= amountLkr) {
-          const reqUsdt = parseFloat((amountLkr / 305).toFixed(6));
-          await setDoc(userRef, { walletUsdt: parseFloat(Math.max(0, curUsdt - reqUsdt).toFixed(6)), updatedAt: new Date().toISOString() }, { merge: true });
-        }
-        // If Firestore also doesn't have enough, it's a sync lag — RTDB already succeeded, so we don't block
-      }
-    } catch (e) { console.warn('deductResellerWalletBalance Firestore note:', e); }
-  }
-  return true;
-};
-
 /**
  * Sync or create user profile document in Firestore & Realtime Database
  */
@@ -526,11 +472,12 @@ export const syncUserProfileToFirestore = async (user) => {
           name: user.name || 'Verified Gamer',
           email: user.email || '',
           phone: user.phone || '',
-          walletBalance: user.walletBalance || 0,
-          walletUsdt: user.walletUsdt || 0,
+          // New accounts always start empty; only the server adds money.
+          walletBalance: 0,
+          walletUsdt: 0,
           resellerCode: creds.resellerCode,
           securityKey: creds.securityKey,
-          isReseller: user.isReseller || false,
+          isReseller: false,
           avatar: user.photoURL || user.avatar || '',
           savedIds: user.savedIds || [],
           createdAt: user.createdAt || new Date().toISOString()
@@ -605,8 +552,10 @@ export const syncUserProfileToFirestore = async (user) => {
 /**
  * Save user profile updates to Database
  */
-export const updateUserProfileInFirestore = async (uid, updatedData) => {
+export const updateUserProfileInFirestore = async (uid, rawData) => {
   if (!uid) return;
+  const updatedData = stripServerOnlyFields(rawData);
+  if (!Object.keys(updatedData).length) return;
 
   // Realtime Database SDK
   if (rtdb) {
@@ -814,242 +763,39 @@ export const updateUserPasswordInFirestore = async (identifier, newPassword) => 
  */
 export const creditUserWalletInDatabase = async (identifier, lkrAmount, usdtAmount = 0, opts = {}) => {
   if (!identifier || (!lkrAmount && !usdtAmount)) return false;
-  const cleanId = String(identifier).trim();
-  const cleanIdUpper = cleanId.toUpperCase();
-  const cleanIdLower = cleanId.toLowerCase();
-
-  let targetUid = null;
-
-  // 1. Check in-memory registry first
-  for (const [key, profile] of activeResellerRegistry.entries()) {
-    if (!profile) continue;
-    const matchUid = profile.uid && String(profile.uid).toUpperCase() === cleanIdUpper;
-    const matchEmail = profile.email && String(profile.email).toLowerCase() === cleanIdLower;
-    const matchCode = profile.resellerCode && String(profile.resellerCode).toUpperCase() === cleanIdUpper;
-    const matchSecKey = profile.securityKey && String(profile.securityKey).toUpperCase() === cleanIdUpper;
-
-    if (matchUid || matchEmail || matchCode || matchSecKey) {
-      targetUid = profile.uid;
-      break;
-    }
-  }
-
-  // 2. Search & Update Realtime Database (RTDB) users node
-  if (rtdb) {
-    try {
-      const usersRef = dbRef(rtdb, 'users');
-      const snapshot = await rtdbGet(usersRef);
-      if (snapshot.exists()) {
-        const usersData = snapshot.val();
-        for (const [uidKey, userObj] of Object.entries(usersData)) {
-          if (!userObj) continue;
-          const matchUid = uidKey.toUpperCase() === cleanIdUpper || (userObj.uid && String(userObj.uid).toUpperCase() === cleanIdUpper);
-          const matchEmail = userObj.email && String(userObj.email).toLowerCase() === cleanIdLower;
-          const matchCode = userObj.resellerCode && String(userObj.resellerCode).toUpperCase() === cleanIdUpper;
-          const matchSecKey = userObj.securityKey && String(userObj.securityKey).toUpperCase() === cleanIdUpper;
-
-          if (matchUid || matchEmail || matchCode || matchSecKey) {
-            targetUid = userObj.uid || uidKey;
-            const curLkr = parseFloat(userObj.walletBalance || 0);
-            const curUsdt = parseFloat(userObj.walletUsdt || 0);
-
-            // Atomic read-modify-write: the credit is applied on top of the balance
-            // that is in the database at commit time, so a concurrent wallet spend
-            // (top-up deduction) can never be overwritten by a stale admin credit.
-            const userRtdbRef = dbRef(rtdb, `users/${targetUid}`);
-            const txResult = await rtdbRunTransaction(userRtdbRef, (cur) => {
-              const base = (cur && typeof cur === 'object') ? cur : null;
-              const baseLkr = base ? parseFloat(base.walletBalance || 0) : curLkr;
-              const baseUsdt = base ? parseFloat(base.walletUsdt || 0) : curUsdt;
-              return {
-                ...(base || {}),
-                walletBalance: Math.max(0, baseLkr + (lkrAmount || 0)),
-                walletUsdt: Math.max(0, baseUsdt + (usdtAmount || 0)),
-                updatedAt: new Date().toISOString()
-              };
-            });
-            const committed = txResult && txResult.snapshot && txResult.snapshot.val();
-            const newLkr = committed ? parseFloat(committed.walletBalance || 0) : Math.max(0, curLkr + (lkrAmount || 0));
-            const newUsdt = committed ? parseFloat(committed.walletUsdt || 0) : Math.max(0, curUsdt + (usdtAmount || 0));
-
-            // Update in-memory userObj & registry
-            userObj.walletBalance = newLkr;
-            userObj.walletUsdt = newUsdt;
-            registerResellerInRegistry(userObj);
-            break;
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('RTDB wallet credit note:', e.message);
-      if (opts.strict) throw e;
-    }
-  }
-
-  // 3. Search & Update Firestore users collection
-  if (db) {
-    try {
-      if (targetUid) {
-        const userRef = doc(db, 'users', targetUid);
-        const docSnap = await getDoc(userRef);
-        const curData = docSnap.exists() ? docSnap.data() : {};
-        const curLkr = parseFloat(curData.walletBalance || 0);
-        const curUsdt = parseFloat(curData.walletUsdt || 0);
-        const newLkr = Math.max(0, curLkr + (lkrAmount || 0));
-        const newUsdt = Math.max(0, curUsdt + (usdtAmount || 0));
-        await setDoc(userRef, { walletBalance: newLkr, walletUsdt: newUsdt, updatedAt: new Date().toISOString() }, { merge: true });
-      } else {
-        const usersCol = collection(db, 'users');
-        const qEmail = query(usersCol, where('email', '==', cleanIdLower));
-        const qSnap = await getDocs(qEmail);
-        for (const d of qSnap.docs) {
-          const curData = d.data();
-          const curLkr = parseFloat(curData.walletBalance || 0);
-          const curUsdt = parseFloat(curData.walletUsdt || 0);
-          const newLkr = Math.max(0, curLkr + (lkrAmount || 0));
-          const newUsdt = Math.max(0, curUsdt + (usdtAmount || 0));
-          await setDoc(doc(db, 'users', d.id), { walletBalance: newLkr, walletUsdt: newUsdt, updatedAt: new Date().toISOString() }, { merge: true });
-          // CRITICAL FIX: Also write to RTDB using the Firestore doc ID as the UID,
-          // so the serverless API (which reads RTDB at /users/{uid}) can see the balance.
-          if (rtdb) {
-            try {
-              const userRtdbRef = dbRef(rtdb, `users/${d.id}`);
-              await rtdbUpdate(userRtdbRef, {
-                walletBalance: newLkr,
-                walletUsdt: newUsdt,
-                email: curData.email || cleanIdLower,
-                uid: d.id,
-                updatedAt: new Date().toISOString()
-              });
-              targetUid = d.id; // mark found
-            } catch (rtdbErr) {
-              console.warn('RTDB sync from Firestore email credit:', rtdbErr.message);
-            }
-          }
-          break; // Only process the first matching document
-        }
-      }
-    } catch (err) {
-      console.warn('Firestore wallet credit note:', err.message);
-    }
-  }
-
-  if (opts.strict && !targetUid) throw new Error('User not found in database');
-  return targetUid;
+  return adminWalletRequest({ identifier: String(identifier).trim(), mode: 'credit', lkr: lkrAmount || 0, usdt: usdtAmount || 0 }, opts);
 };
 
 /**
- * Set exact user wallet balance in Realtime Database & Firestore by UID, Email, Reseller Code, or Security Key
+ * Set exact user wallet balance (admin only) by UID, Email, Reseller Code, or Security Key
  */
 export const setUserExactBalanceInDatabase = async (identifier, exactLkr, exactUsdt, opts = {}) => {
   if (!identifier) return false;
-  const cleanId = String(identifier).trim();
-  const cleanIdUpper = cleanId.toUpperCase();
-  const cleanIdLower = cleanId.toLowerCase();
+  return adminWalletRequest({
+    identifier: String(identifier).trim(),
+    mode: 'set',
+    lkr: Math.max(0, parseFloat(exactLkr) || 0),
+    usdt: Math.max(0, parseFloat(exactUsdt) || 0)
+  }, opts);
+};
 
-  const targetLkr = Math.max(0, parseFloat(exactLkr) || 0);
-  const targetUsdt = Math.max(0, parseFloat(exactUsdt) || 0);
-
-  let targetUid = null;
-
-  // 1. Check in-memory registry first
-  for (const [key, profile] of activeResellerRegistry.entries()) {
-    if (!profile) continue;
-    const matchUid = profile.uid && String(profile.uid).toUpperCase() === cleanIdUpper;
-    const matchEmail = profile.email && String(profile.email).toLowerCase() === cleanIdLower;
-    const matchCode = profile.resellerCode && String(profile.resellerCode).toUpperCase() === cleanIdUpper;
-    const matchSecKey = profile.securityKey && String(profile.securityKey).toUpperCase() === cleanIdUpper;
-
-    if (matchUid || matchEmail || matchCode || matchSecKey) {
-      targetUid = profile.uid;
-      break;
+// Wallet changes are made by the server (admin session required). Returns
+// the user's database key, or false/throws (strict) on failure.
+const adminWalletRequest = async (body, opts = {}) => {
+  const { ok, data } = await postServerApi('/api/admin/wallet', body, getAdminToken());
+  if (!ok || !data?.success) {
+    const message = data?.error || 'Wallet update failed';
+    console.warn('Admin wallet update failed:', message);
+    if (opts.strict) throw new Error(message);
+    return false;
+  }
+  for (const [, profile] of activeResellerRegistry.entries()) {
+    if (profile && profile.uid === data.key) {
+      profile.walletBalance = data.newBalanceLkr;
+      profile.walletUsdt = data.newBalanceUsdt;
     }
   }
-
-  // 2. Realtime Database
-  if (rtdb) {
-    try {
-      const usersRef = dbRef(rtdb, 'users');
-      const snapshot = await rtdbGet(usersRef);
-      if (snapshot.exists()) {
-        const usersData = snapshot.val();
-        for (const [uidKey, userObj] of Object.entries(usersData)) {
-          if (!userObj) continue;
-          const matchUid = uidKey.toUpperCase() === cleanIdUpper || (userObj.uid && String(userObj.uid).toUpperCase() === cleanIdUpper);
-          const matchEmail = userObj.email && String(userObj.email).toLowerCase() === cleanIdLower;
-          const matchCode = userObj.resellerCode && String(userObj.resellerCode).toUpperCase() === cleanIdUpper;
-          const matchSecKey = userObj.securityKey && String(userObj.securityKey).toUpperCase() === cleanIdUpper;
-
-          if (matchUid || matchEmail || matchCode || matchSecKey) {
-            targetUid = userObj.uid || uidKey;
-            // Write to BOTH the actual RTDB key path (uidKey) AND the stored uid field
-            // path — the user's client subscribes to users/{firebaseAuthUid} which can
-            // differ from the RTDB key when the account was created via custom login.
-            // Writing both paths ensures the real-time listener always fires and the
-            // UI balance updates instantly without requiring a page reload.
-            const pathsToWrite = new Set([uidKey, targetUid].filter(Boolean));
-            for (const p of pathsToWrite) {
-              const refToWrite = dbRef(rtdb, `users/${p}`);
-              await rtdbUpdate(refToWrite, {
-                walletBalance: targetLkr,
-                walletUsdt: targetUsdt,
-                updatedAt: new Date().toISOString()
-              });
-            }
-
-            userObj.walletBalance = targetLkr;
-            userObj.walletUsdt = targetUsdt;
-            registerResellerInRegistry(userObj);
-            break;
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('RTDB exact wallet balance note:', e.message);
-      if (opts.strict) throw e;
-    }
-  }
-
-  // 3. Firestore
-  if (db) {
-    try {
-      if (targetUid) {
-        const userRef = doc(db, 'users', targetUid);
-        await setDoc(userRef, { walletBalance: targetLkr, walletUsdt: targetUsdt, updatedAt: new Date().toISOString() }, { merge: true });
-      } else {
-        const usersCol = collection(db, 'users');
-        const qEmail = query(usersCol, where('email', '==', cleanIdLower));
-        const qSnap = await getDocs(qEmail);
-        for (const d of qSnap.docs) {
-          const curData = d.data();
-          await setDoc(doc(db, 'users', d.id), { walletBalance: targetLkr, walletUsdt: targetUsdt, updatedAt: new Date().toISOString() }, { merge: true });
-          // Also write to RTDB using the Firestore doc ID as the UID,
-          // so the serverless API (which reads RTDB at /users/{uid}) can see the balance.
-          if (rtdb) {
-            try {
-              const userRtdbRef = dbRef(rtdb, `users/${d.id}`);
-              await rtdbUpdate(userRtdbRef, {
-                walletBalance: targetLkr,
-                walletUsdt: targetUsdt,
-                email: curData.email || cleanIdLower,
-                uid: d.id,
-                updatedAt: new Date().toISOString()
-              });
-              targetUid = d.id; // mark found
-            } catch (rtdbErr) {
-              console.warn('RTDB sync from Firestore email exact-balance:', rtdbErr.message);
-            }
-          }
-          break; // Only process the first matching document
-        }
-      }
-    } catch (err) {
-      console.warn('Firestore exact wallet balance note:', err.message);
-    }
-  }
-
-  if (opts.strict && !targetUid) throw new Error('User not found in database');
-  return targetUid;
+  return data.key;
 };
 
 /**
@@ -1445,40 +1191,23 @@ export const updateResellerApplicationStatusInFirestore = async (appId, userId, 
         updatedAt: new Date().toISOString()
       });
       if (newStatus === 'APPROVED') {
-        const targetUids = new Set();
-        if (userId) targetUids.add(userId);
-        
-        // Find matching user by app email in RTDB
+        let approvedAppEmail = '';
         try {
           const appSnap = await rtdbGet(appRef);
           if (appSnap.exists()) {
             const appVal = appSnap.val();
-            const appEmail = appVal?.emailAddress || appVal?.email || appVal?.userEmail;
-            if (appEmail) {
-              const cleanAppEmail = appEmail.trim().toLowerCase();
-              const usersSnap = await rtdbGet(dbRef(rtdb, 'users'));
-              if (usersSnap.exists()) {
-                const allUsers = usersSnap.val();
-                for (const [uId, uObj] of Object.entries(allUsers)) {
-                  if (uObj?.email && uObj.email.trim().toLowerCase() === cleanAppEmail) {
-                    targetUids.add(uId);
-                  }
-                }
-              }
-            }
+            approvedAppEmail = (appVal?.emailAddress || appVal?.email || appVal?.userEmail || '').trim().toLowerCase();
           }
         } catch (e) {}
 
-        for (const uId of targetUids) {
-          const userRef = dbRef(rtdb, `users/${uId}`);
-          await rtdbUpdate(userRef, { 
-            isReseller: true, 
-            role: 'Reseller Partner', 
-            resellerStatus: 'APPROVED',
-            resellerCode,
-            securityKey
-          });
-        }
+        // The reseller flag itself is granted by the server.
+        const { ok, data } = await postServerApi('/api/admin/reseller-approve', {
+          userId,
+          email: approvedAppEmail,
+          resellerCode,
+          securityKey
+        }, getAdminToken());
+        if (!ok) console.warn('Reseller approval was not saved:', data?.error);
       }
     } catch (e) {
       console.warn('RTDB reseller app status update note:', e);
@@ -1592,13 +1321,11 @@ export const subscribeCustomGamePricesFromFirestore = (callback) => {
 export const saveVouchersToFirestore = async (vouchersList) => {
   if (!Array.isArray(vouchersList)) return false;
 
-  if (rtdb) {
-    try {
-      const vRef = dbRef(rtdb, 'settings/vouchers');
-      await rtdbSet(vRef, vouchersList);
-    } catch (e) {
-      console.warn('RTDB vouchers save note:', e);
-    }
+  // Saved by the server (admin session required) — browsers can't write vouchers.
+  const { ok, data } = await postServerApi('/api/admin/vouchers', { vouchers: vouchersList }, getAdminToken());
+  if (!ok) {
+    console.warn('Vouchers save failed:', data?.error);
+    return false;
   }
 
   if (db) {
@@ -1660,167 +1387,19 @@ export const subscribeVouchersFromFirestore = (callback) => {
   };
 };
 
-const DEFAULT_VOUCHERS_LIST = [
-  { code: 'MADS-GIFT-500', value: 500, currency: 'LKR', maxUses: 100, usedCount: 14, active: true, usedByUsers: [] },
-  { code: 'WELCOME100', value: 100, currency: 'LKR', maxUses: 500, usedCount: 88, active: true, usedByUsers: [] },
-  { code: 'BINANCE-USDT-5', value: 5, currency: 'USDT', maxUses: 50, usedCount: 12, active: true, usedByUsers: [] }
-];
-
-const VOUCHER_REJECT_MESSAGES = {
-  invalid: 'Invalid or non-existent voucher code!',
-  inactive: 'This voucher code is inactive or expired!',
-  maxed: 'This voucher code has reached its maximum usage limit!',
-  already_used: 'You have already redeemed this voucher code!'
-};
-
 /**
- * Atomic & Anti-Exploit Voucher Redemption function
- * Verifies code, checks max uses, enforces one redemption per user, updates database, and credits user wallet.
- *
- * Runs the read-check-write as a single Firebase RTDB transaction (not a
- * plain get-then-set) — a plain get-then-set here is a classic
- * check-then-act race: two requests for the same voucher (two tabs, two
- * devices, or just a fast double-click) can both read the "not yet used /
- * under max uses" state before either write commits, so both would pass
- * validation and both credit the wallet, bypassing the one-per-user guard
- * and the global maxUses cap. RTDB's transaction() re-runs this callback
- * against the live server value if it changed since the read, guaranteeing
- * only one concurrent caller can win any given voucher slot.
+ * Redeem a voucher. The server checks the code, enforces one redemption per
+ * user and the global max-uses cap, and credits the wallet.
  */
 export const redeemVoucherInDatabase = async (voucherCode, userProfile) => {
   if (!voucherCode || !userProfile) {
     return { success: false, message: 'Please log in to redeem voucher codes!' };
   }
-
-  const cleanCode = String(voucherCode).trim().toUpperCase();
-  const userId = userProfile.uid || userProfile.id;
-  const userEmail = (userProfile.email || '').toLowerCase();
-
-  if (!userId && !userEmail) {
-    return { success: false, message: 'User identification missing. Please re-login.' };
-  }
-
-  if (!rtdb) {
-    return { success: false, message: 'Voucher system is unavailable right now. Please try again shortly.' };
-  }
-
-  // Populated by the transaction callback below — the ONLY reliable way to
-  // know why/whether THIS caller's attempt actually redeemed the voucher,
-  // since the callback may re-run multiple times against fresher server
-  // state before committing (or aborting).
-  let outcome = { status: 'invalid' };
-
-  let txResult;
-  try {
-    const vRef = dbRef(rtdb, 'settings/vouchers');
-    txResult = await rtdbRunTransaction(vRef, (currentVal) => {
-      let vouchersList;
-      if (Array.isArray(currentVal)) vouchersList = currentVal.slice();
-      else if (currentVal && typeof currentVal === 'object') vouchersList = Object.values(currentVal);
-      else vouchersList = DEFAULT_VOUCHERS_LIST.map(v => ({ ...v, usedByUsers: [...v.usedByUsers] }));
-
-      const voucherIndex = vouchersList.findIndex(v => v && v.code && String(v.code).toUpperCase() === cleanCode);
-      if (voucherIndex === -1) {
-        outcome = { status: 'invalid' };
-        return; // abort — nothing to write
-      }
-
-      const voucher = vouchersList[voucherIndex];
-      if (!voucher.active) {
-        outcome = { status: 'inactive' };
-        return;
-      }
-      if (voucher.maxUses && (voucher.usedCount || 0) >= voucher.maxUses) {
-        outcome = { status: 'maxed' };
-        return;
-      }
-
-      const usedBy = voucher.usedByUsers || [];
-      const hasUsedBefore = usedBy.some(id =>
-        (userEmail && String(id).toLowerCase() === userEmail) ||
-        (userId && String(id) === String(userId))
-      );
-      if (hasUsedBefore) {
-        outcome = { status: 'already_used' };
-        return;
-      }
-
-      const newUsedCount = (voucher.usedCount || 0) + 1;
-      const updatedUsedBy = [...usedBy, userId, userEmail].filter(Boolean);
-      const updatedActive = voucher.maxUses ? newUsedCount < voucher.maxUses : true;
-      const updatedVoucher = { ...voucher, usedCount: newUsedCount, usedByUsers: updatedUsedBy, active: updatedActive };
-      vouchersList[voucherIndex] = updatedVoucher;
-
-      outcome = { status: 'redeemed', voucher };
-      return vouchersList;
-    });
-  } catch (e) {
-    console.warn('Voucher redemption transaction error:', e);
-    return { success: false, message: 'Could not redeem this voucher right now. Please try again.' };
-  }
-
-  if (!txResult?.committed || outcome.status !== 'redeemed') {
-    return { success: false, message: VOUCHER_REJECT_MESSAGES[outcome.status] || 'Could not redeem this voucher. Please try again.' };
-  }
-
-  const voucher = outcome.voucher;
-
-  // Credit User Wallet in Database FIRST — only reached if the transaction
-  // above actually committed THIS caller's redemption. This must not be
-  // blocked by anything best-effort below it (see note on the Firestore
-  // mirror write just below).
-  const lkrAmount = voucher.currency === 'USDT' ? 0 : parseFloat(voucher.value || 0);
-  const usdtAmount = voucher.currency === 'USDT' ? parseFloat(voucher.value || 0) : 0;
-  await creditUserWalletInDatabase(userId || userEmail, lkrAmount, usdtAmount);
-
-  // Mirror the final committed list to Firestore for admin visibility only
-  // (best-effort — RTDB's transaction above is the source of truth). This is
-  // intentionally NOT awaited: Cloud Firestore is disabled for this Firebase
-  // project (confirmed — every Firestore call here fails/hangs), and an
-  // awaited call that never resolves would block the wallet credit above
-  // (which is exactly what happened when this was awaited and placed before
-  // the credit call — the voucher redeemed but the wallet was never
-  // credited because this call hung indefinitely).
-  if (db && txResult.snapshot?.exists()) {
-    const finalList = txResult.snapshot.val();
-    const asList = Array.isArray(finalList) ? finalList : Object.values(finalList || {});
-    const vDocRef = doc(db, 'settings', 'vouchers');
-    setDoc(vDocRef, { list: asList, updatedAt: new Date().toISOString() }, { merge: true })
-      .catch(e => console.warn('Firestore vouchers mirror note:', e));
-  }
-
-  // Save voucher redemption audit log
-  const logRecord = {
-    userId: userId || 'N/A',
-    userEmail: userEmail || 'N/A',
-    userName: userProfile.name || userProfile.username || 'Gamer',
-    voucherCode: cleanCode,
-    value: voucher.value,
-    currency: voucher.currency,
-    redeemedAt: new Date().toISOString()
-  };
-
-  if (rtdb) {
-    try {
-      const logsRef = dbRef(rtdb, `vouchers_log/${Date.now()}`);
-      await rtdbSet(logsRef, logRecord);
-    } catch (e) {}
-  }
-
-  if (db) {
-    // Not awaited — Firestore is disabled for this project, so an awaited
-    // call here would hang the whole function indefinitely (the user's
-    // wallet was already credited above; this is a best-effort audit copy).
-    const logsCol = collection(db, 'vouchers_log');
-    addDoc(logsCol, logRecord).catch(() => {});
-  }
-
-  return {
-    success: true,
-    message: `Voucher ${cleanCode} redeemed! Credited ${voucher.currency} ${voucher.value} to your wallet.`,
-    value: voucher.value,
-    currency: voucher.currency
-  };
+  const token = await getUserAuthToken(userProfile);
+  if (!token) return { success: false, message: 'Please log in to redeem voucher codes!' };
+  const { data } = await postServerApi('/api/vouchers/redeem', { code: String(voucherCode).trim() }, token);
+  if (data && typeof data.success === 'boolean') return data;
+  return { success: false, message: 'Could not redeem this voucher right now. Please try again.' };
 };
 
 /**
@@ -2137,7 +1716,7 @@ export const subscribeReviewsFromFirestore = (callback) => {
    ================================================================
    - saveReferralClick      : called when a new user lands via /ref/:code
    - lookupReferrerByCode   : resolves a referral code → referrer uid/email
-   - processReferralCashback: credits 1.5% cashback to referrer on COMPLETED order
+   - the 1.5% referrer cashback is paid by the server (server.js payReferralCashback)
    ================================================================ */
 
 /**
@@ -2224,45 +1803,4 @@ export const lookupReferrerByCode = async (referralCode) => {
   }
 
   return null;
-};
-
-/**
- * Credit 1.5% of the completed order's priceLkr to the referrer's wallet.
- * @param {string} referrerUid     - UID of the user who shared the link
- * @param {string} referrerEmail   - Email of the referrer (fallback identifier)
- * @param {number} orderPriceLkr   - The completed order amount in LKR
- * @param {string} referralCode    - The referral code used (for logging)
- * @param {string} newUserEmail    - Email of the friend who placed the order
- * @returns {number} cashback amount credited (0 if not processed)
- */
-export const processReferralCashback = async (
-  referrerUid, referrerEmail, orderPriceLkr, referralCode, newUserEmail
-) => {
-  if ((!referrerUid && !referrerEmail) || !orderPriceLkr) return 0;
-
-  const cashback = Math.round(parseFloat(orderPriceLkr) * 0.015); // 1.5%
-  if (cashback <= 0) return 0;
-
-  const identifier = referrerUid || referrerEmail;
-  await creditUserWalletInDatabase(identifier, cashback, 0);
-
-  // Audit log in RTDB
-  if (rtdb) {
-    try {
-      const logRef = dbRef(rtdb, `referrals_cashback/${Date.now()}`);
-      await rtdbSet(logRef, {
-        referrerUid: referrerUid || '',
-        referrerEmail: referrerEmail || '',
-        referralCode: referralCode || '',
-        newUserEmail: newUserEmail || '',
-        cashbackLkr: cashback,
-        orderAmountLkr: orderPriceLkr,
-        creditedAt: new Date().toISOString()
-      });
-    } catch (e) {
-      console.warn('[referral] RTDB cashback log:', e.message);
-    }
-  }
-
-  return cashback;
 };

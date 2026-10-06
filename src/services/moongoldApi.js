@@ -380,13 +380,13 @@ export const dispatchMoongoldOrder = async (orderData) => {
     : (orderData.package?.priceLkr || 0);
   const paymentId = orderData.payment?.id || orderData.paymentMethod || 'wallet';
 
-  const clientProfile = {
-    uid: targetUid,
-    email: targetEmail,
-    walletBalance: parseFloat(userProfile?.walletBalance || 0),
-    walletUsdt: parseFloat(userProfile?.walletUsdt || 0),
-    name: userProfile?.name || ''
-  };
+  // Pending referral code from a /ref link — the server pays the referrer's
+  // cashback on this user's first successful order.
+  const referralCode = (() => {
+    try {
+      return localStorage.getItem('mads_ref_used') ? '' : (localStorage.getItem('mads_pending_ref') || '');
+    } catch (_) { return ''; }
+  })();
 
   const bodyObj = {
     path,
@@ -394,7 +394,7 @@ export const dispatchMoongoldOrder = async (orderData) => {
     partnerOrderId,
     priceLkr,
     paymentId,
-    clientProfile,
+    referralCode,
     // Only ever WIDENS the server's price-tolerance check after it
     // independently re-verifies the caller is a real approved reseller —
     // this flag alone grants nothing.
@@ -409,13 +409,16 @@ export const dispatchMoongoldOrder = async (orderData) => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${idToken}`
       },
-      body: JSON.stringify({ path, bodyObj, priceLkr, paymentId, clientProfile })
+      body: JSON.stringify({ path, bodyObj, priceLkr, paymentId })
     });
 
     const data = await proxyRes.json().catch(() => ({}));
 
     if (proxyRes.ok) {
       if (data && (data.status === 'processing' || data.status === 'true' || data.status === true || data.status === 1 || data.order_id)) {
+        if (referralCode) {
+          try { localStorage.setItem('mads_ref_used', '1'); localStorage.removeItem('mads_pending_ref'); } catch (_) {}
+        }
         return {
           success: true,
           moongoldRef: data.order_id || partnerOrderId,

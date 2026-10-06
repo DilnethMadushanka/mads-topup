@@ -10,6 +10,7 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { initTelegramBot, getTelegramBotHealthStatus, forceTelegramBotRefresh } from './src/services/telegramBotService.js';
 import { lookupFreePlayerIgn } from './src/services/playerLookup.js';
 import { GAMES_DATA } from './src/data/games.js';
+import { rtdbUrl, rtdbGet, rtdbPut, rtdbPatch, rtdbTransaction, findUserKey, adjustWallet, spendWallet } from './lib/rtdbAdmin.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -363,6 +364,187 @@ app.post('/api/admin/logout', (req, res) => {
   res.json({ success: true });
 });
 
+// ─────────────────────────────────────────────────────────────────────────
+// Server-side wallet & account management. Browsers can no longer write
+// walletBalance / walletUsdt / isReseller / resellerStatus / role / status
+// (see database.rules.json), so every admin action that changes them, and
+// every customer action that adds money, goes through these endpoints.
+// ─────────────────────────────────────────────────────────────────────────
+
+// Admin: credit or set a user's wallet. identifier = uid, email, reseller
+// code or security key.
+app.post('/api/admin/wallet', requireAdminSession, async (req, res) => {
+  try {
+    const { identifier, mode } = req.body || {};
+    const lkr = Number(req.body?.lkr) || 0;
+    const usdt = Number(req.body?.usdt) || 0;
+    if (!identifier || !['credit', 'set'].includes(mode)) {
+      return res.status(400).json({ error: 'identifier and mode (credit|set) are required.' });
+    }
+    const key = await findUserKey(identifier);
+    if (!key) return res.status(404).json({ error: 'User not found in database' });
+
+    let result;
+    if (mode === 'credit') {
+      result = await adjustWallet(key, lkr, usdt);
+    } else {
+      const target = { lkr: Math.max(0, lkr), usdt: Math.max(0, usdt) };
+      const user = await rtdbGet(`users/${key}`);
+      // Some accounts have a second record under their auth uid; keep both in step.
+      const keys = new Set([key]);
+      if (user?.uid && user.uid !== key) {
+        const other = await rtdbGet(`users/${user.uid}`).catch(() => null);
+        if (other && typeof other === 'object') keys.add(user.uid);
+      }
+      for (const k of keys) {
+        await rtdbPatch(`users/${k}`, { walletBalance: target.lkr, walletUsdt: target.usdt, updatedAt: new Date().toISOString() });
+      }
+      result = { newBalanceLkr: target.lkr, newBalanceUsdt: target.usdt };
+    }
+    console.log(`[Admin Wallet] ${mode} ${identifier} (key: ${key}) LKR ${lkr} / USDT ${usdt} → Rs. ${result.newBalanceLkr} / $${result.newBalanceUsdt}`);
+    res.json({ success: true, key, ...result });
+  } catch (e) {
+    console.error('[Admin Wallet Error]:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Admin: verify badge and block/unblock.
+app.post('/api/admin/user-fields', requireAdminSession, async (req, res) => {
+  try {
+    const { identifier, fields } = req.body || {};
+    const update = {};
+    if (fields && typeof fields.isVerified === 'boolean') update.isVerified = fields.isVerified;
+    if (fields && ['ACTIVE', 'BLOCKED'].includes(fields.status)) update.status = fields.status;
+    if (!identifier || !Object.keys(update).length) {
+      return res.status(400).json({ error: 'identifier and a supported field (isVerified, status) are required.' });
+    }
+    const key = await findUserKey(identifier);
+    if (!key) return res.status(404).json({ error: 'User not found in database' });
+    await rtdbPatch(`users/${key}`, update);
+    res.json({ success: true, key });
+  } catch (e) {
+    console.error('[Admin User Fields Error]:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Admin: grant reseller access to the applicant's account(s).
+app.post('/api/admin/reseller-approve', requireAdminSession, async (req, res) => {
+  try {
+    const { userId, email, resellerCode, securityKey } = req.body || {};
+    const keys = new Set();
+    if (userId) {
+      const own = await rtdbGet(`users/${userId}`).catch(() => null);
+      if (own && typeof own === 'object') keys.add(userId);
+    }
+    if (email) {
+      const all = await rtdbGet('users');
+      const target = String(email).trim().toLowerCase();
+      for (const [k, u] of Object.entries(all || {})) {
+        if (u?.email && String(u.email).trim().toLowerCase() === target) keys.add(k);
+      }
+    }
+    if (!keys.size) return res.status(404).json({ error: 'No user account found for this application.' });
+    for (const k of keys) {
+      await rtdbPatch(`users/${k}`, {
+        isReseller: true,
+        role: 'Reseller Partner',
+        resellerStatus: 'APPROVED',
+        ...(resellerCode ? { resellerCode } : {}),
+        ...(securityKey ? { securityKey } : {})
+      });
+    }
+    res.json({ success: true, keys: [...keys] });
+  } catch (e) {
+    console.error('[Admin Reseller Approve Error]:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Admin: save the voucher list.
+app.post('/api/admin/vouchers', requireAdminSession, async (req, res) => {
+  try {
+    const list = req.body?.vouchers;
+    if (!Array.isArray(list)) return res.status(400).json({ error: 'vouchers must be an array.' });
+    await rtdbPut('settings/vouchers', list);
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[Admin Vouchers Error]:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+const VOUCHER_REJECT_MESSAGES = {
+  invalid: 'Invalid or non-existent voucher code!',
+  inactive: 'This voucher code is inactive or expired!',
+  maxed: 'This voucher code has reached its maximum usage limit!',
+  already_used: 'You have already redeemed this voucher code!'
+};
+
+// Customer: redeem a voucher. The voucher list and the wallet are both
+// updated here, with compare-and-set so a voucher slot is only ever used once.
+app.post('/api/vouchers/redeem', rateLimiter(10, 60000), async (req, res) => {
+  try {
+    const user = await verifyFirebaseIdToken(req.headers.authorization || '');
+    if (!user) return res.status(401).json({ success: false, message: 'Please log in to redeem voucher codes!' });
+    const cleanCode = String(req.body?.code || '').trim().toUpperCase();
+    if (!cleanCode) return res.status(400).json({ success: false, message: VOUCHER_REJECT_MESSAGES.invalid });
+
+    const userId = user.uid;
+    const userEmail = String(user.email || '').toLowerCase();
+    const walletKey = await resolveUserWalletKey(userId, userEmail);
+    if (!walletKey) return res.status(404).json({ success: false, message: 'User account not found. Please re-login.' });
+
+    let outcome = { status: 'invalid' };
+    const tx = await rtdbTransaction('settings/vouchers', (current) => {
+      const list = Array.isArray(current) ? current.slice() : (current && typeof current === 'object' ? Object.values(current) : []);
+      const idx = list.findIndex(v => v && v.code && String(v.code).toUpperCase() === cleanCode);
+      if (idx === -1) { outcome = { status: 'invalid' }; return undefined; }
+      const voucher = list[idx];
+      if (!voucher.active) { outcome = { status: 'inactive' }; return undefined; }
+      if (voucher.maxUses && (voucher.usedCount || 0) >= voucher.maxUses) { outcome = { status: 'maxed' }; return undefined; }
+      const usedBy = voucher.usedByUsers || [];
+      const used = usedBy.some(id => (userEmail && String(id).toLowerCase() === userEmail) || String(id) === String(userId));
+      if (used) { outcome = { status: 'already_used' }; return undefined; }
+      const usedCount = (voucher.usedCount || 0) + 1;
+      list[idx] = {
+        ...voucher,
+        usedCount,
+        usedByUsers: [...usedBy, userId, userEmail].filter(Boolean),
+        active: voucher.maxUses ? usedCount < voucher.maxUses : true
+      };
+      outcome = { status: 'redeemed', voucher };
+      return list;
+    });
+    if (!tx.committed || outcome.status !== 'redeemed') {
+      return res.json({ success: false, message: VOUCHER_REJECT_MESSAGES[outcome.status] || 'Could not redeem this voucher. Please try again.' });
+    }
+
+    const voucher = outcome.voucher;
+    const value = parseFloat(voucher.value) || 0;
+    const result = voucher.currency === 'USDT'
+      ? await adjustWallet(walletKey, 0, value)
+      : await adjustWallet(walletKey, value, 0);
+
+    await rtdbPut(`vouchers_log/${Date.now()}`, {
+      userId, userEmail: userEmail || 'N/A', voucherCode: cleanCode,
+      value: voucher.value, currency: voucher.currency, redeemedAt: new Date().toISOString()
+    }).catch(() => {});
+
+    res.json({
+      success: true,
+      message: `Voucher ${cleanCode} redeemed! Credited ${voucher.currency} ${voucher.value} to your wallet.`,
+      value: voucher.value,
+      currency: voucher.currency,
+      ...result
+    });
+  } catch (e) {
+    console.error('[Voucher Redeem Error]:', e.message);
+    res.status(500).json({ success: false, message: 'Could not redeem this voucher right now. Please try again.' });
+  }
+});
+
 // Direct OTP Email sending API endpoint with rate limiter & sanitization
 app.post('/api/send-otp', rateLimiter(10, 60000), async (req, res) => {
   try {
@@ -655,8 +837,6 @@ async function verifyFirebaseIdToken(idToken) {
   return null;
 }
 
-// User Wallet Database Helpers (Realtime Database REST Integration)
-const FIREBASE_RTDB_URL = process.env.FIREBASE_DATABASE_URL || process.env.VITE_FIREBASE_DATABASE_URL || "https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app";
 
 // The largest discount any legitimate promo code (TopupModal.jsx WELCOME50 /
 // LAUNCH100) can knock off a package's catalog price. Approved resellers get
@@ -686,14 +866,14 @@ function getCatalogPriceLkr(productId) {
 async function isApprovedReseller(uid, email) {
   try {
     if (uid) {
-      const res = await fetch(`${FIREBASE_RTDB_URL}/users/${encodeURIComponent(uid)}.json`);
+      const res = await fetch(rtdbUrl(`users/${uid}`));
       if (res.ok) {
         const data = await res.json();
         if (data && data.isReseller && data.resellerStatus === 'APPROVED') return true;
       }
     }
     if (email) {
-      const allRes = await fetch(`${FIREBASE_RTDB_URL}/users.json`);
+      const allRes = await fetch(rtdbUrl(`users`));
       if (allRes.ok) {
         const allUsers = await allRes.json();
         if (allUsers && typeof allUsers === 'object') {
@@ -711,141 +891,40 @@ async function isApprovedReseller(uid, email) {
   return false;
 }
 
-/**
- * Resolve the actual RTDB key for a user — tries uid directly, then scans by email.
- * Returns { rtdbKey, walletBalance, walletUsdt } or null if not found.
- */
-async function resolveUserWalletKey(uid, email, clientProfile) {
-  // 1. Try direct UID lookup first
+// Resolve which RTDB user record a wallet operation applies to: the
+// authenticated uid's own record when it exists, otherwise a record matching
+// the authenticated email. Balances only ever come from the database.
+async function resolveUserWalletKey(uid, email) {
   if (uid) {
     try {
-      const res = await fetch(`${FIREBASE_RTDB_URL}/users/${encodeURIComponent(uid)}.json`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data && (data.walletBalance !== undefined || data.walletUsdt !== undefined)) {
-          const lkr = parseFloat(data.walletBalance || 0);
-          const usdt = parseFloat(data.walletUsdt || 0);
-          if (lkr > 0 || usdt > 0) {
-            return {
-              rtdbKey: uid,
-              walletBalance: lkr,
-              walletUsdt: usdt,
-              source: 'rtdb_uid'
-            };
-          }
-        }
+      const own = await rtdbGet(`users/${uid}`);
+      if (own && typeof own === 'object') {
+        const hasBalance = (parseFloat(own.walletBalance) || 0) > 0 || (parseFloat(own.walletUsdt) || 0) > 0;
+        if (hasBalance || !email) return uid;
       }
     } catch (e) {
       console.warn('[Backend RTDB UID Read Warning]:', e.message);
     }
   }
-
-  // 2. Fallback: scan all users and match by email or uid field
-  const lookupEmail = email || (uid && uid.includes('@') ? uid : null);
-  if (lookupEmail) {
+  if (email) {
     try {
-      const allRes = await fetch(`${FIREBASE_RTDB_URL}/users.json`);
-      if (allRes.ok) {
-        const allUsers = await allRes.json();
-        if (allUsers && typeof allUsers === 'object') {
-          for (const [key, userData] of Object.entries(allUsers)) {
-            if (!userData) continue;
-            const emailMatch = userData.email && userData.email.toLowerCase() === lookupEmail.toLowerCase();
-            const uidMatch = userData.uid && (userData.uid === uid || userData.uid === lookupEmail);
-            if (emailMatch || uidMatch) {
-              const lkr = parseFloat(userData.walletBalance || 0);
-              const usdt = parseFloat(userData.walletUsdt || 0);
-              if (lkr > 0 || usdt > 0) {
-                console.log(`[RTDB Key Resolved] Found user by ${emailMatch ? 'email' : 'uid field'}: key=${key}`);
-                return {
-                  rtdbKey: key,
-                  walletBalance: lkr,
-                  walletUsdt: usdt,
-                  source: 'rtdb_email'
-                };
-              }
-            }
-          }
-        }
-      }
+      const key = await findUserKey(email);
+      if (key) return key;
     } catch (e) {
       console.warn('[Backend RTDB Scan Warning]:', e.message);
     }
   }
-
-  // The balance always comes from the database. clientProfile is sent by the
-  // browser and can say anything, so it is never used as a balance source —
-  // trusting it let accounts with no deposited money place wallet orders.
-
-  // 3. If uid was given but no record found, still return uid as key (will create fresh entry on PATCH)
-  if (uid) {
-    return { rtdbKey: uid, walletBalance: 0, walletUsdt: 0, source: 'zero_default' };
-  }
-
-  return null;
+  return uid || null;
 }
 
-async function getUserWalletData(uid, email, clientProfile) {
-  const result = await resolveUserWalletKey(uid, email, clientProfile);
-  if (result) return { walletBalance: result.walletBalance, walletUsdt: result.walletUsdt };
-  return { walletBalance: 0, walletUsdt: 0 };
-}
-
-async function deductUserWallet(uid, priceLkr, email, clientProfile) {
+async function deductUserWallet(uid, priceLkr, email) {
   if (!uid || priceLkr <= 0) return { success: false, reason: 'Invalid amount' };
   try {
-    const resolved = await resolveUserWalletKey(uid, email, clientProfile);
-    if (!resolved) return { success: false, reason: 'User wallet not found' };
-
-    const { rtdbKey } = resolved;
-
-    // Accounts blocked by an admin must not spend wallet funds. Fail-open on any
-    // lookup error so a database hiccup can never break a normal top-up.
-    try {
-      const stRes = await fetch(`${FIREBASE_RTDB_URL}/users/${encodeURIComponent(rtdbKey)}/status.json`);
-      if (stRes.ok && (await stRes.json()) === 'BLOCKED') {
-        console.warn(`[BLOCKED ACCOUNT] Wallet spend refused for UID ${uid} (key: ${rtdbKey})`);
-        return { success: false, reason: 'Your account has been blocked. Please contact support.' };
-      }
-    } catch (e) {
-      console.warn('[Blocked-status check skipped]:', e.message);
-    }
-
-    // LKR and USDT wallets are INDEPENDENT — never recalculate one from the other
-    let newLkr = resolved.walletBalance;
-    let newUsdt = resolved.walletUsdt;
-    let usedCurrency = null;
-
-    console.log(`[Wallet Check] User ${uid} (key: ${rtdbKey}, source: ${resolved.source}) — LKR: ${newLkr}, USDT: ${newUsdt}, Required: Rs.${priceLkr}`);
-
-    if (newLkr >= priceLkr) {
-      // Pay with LKR — only touch walletBalance, leave walletUsdt unchanged
-      newLkr = parseFloat((newLkr - priceLkr).toFixed(2));
-      usedCurrency = 'LKR';
-    } else if ((newUsdt * 305) >= priceLkr) {
-      // Pay with USDT — only touch walletUsdt, leave walletBalance unchanged
-      const reqUsdt = priceLkr / 305;
-      newUsdt = parseFloat(Math.max(0, newUsdt - reqUsdt).toFixed(6));
-      usedCurrency = 'USDT';
-    } else {
-      return { success: false, reason: `Insufficient wallet balance. Required: Rs. ${priceLkr.toFixed(2)}, Available: Rs. ${resolved.walletBalance.toFixed(2)} LKR / $${resolved.walletUsdt.toFixed(2)} USDT` };
-    }
-
-    try {
-      await fetch(`${FIREBASE_RTDB_URL}/users/${encodeURIComponent(rtdbKey)}.json`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          walletBalance: newLkr,
-          walletUsdt: newUsdt,
-          updatedAt: new Date().toISOString()
-        })
-      });
-    } catch (e) {
-      console.warn('[Backend RTDB Deduct Patch Note]:', e.message);
-    }
-
-    return { success: true, newBalanceLkr: newLkr, newBalanceUsdt: newUsdt, usedCurrency, rtdbKey };
+    const rtdbKey = await resolveUserWalletKey(uid, email);
+    if (!rtdbKey) return { success: false, reason: 'User wallet not found' };
+    const result = await spendWallet(rtdbKey, priceLkr);
+    console.log(`[Wallet Check] User ${uid} (key: ${rtdbKey}) — Required: Rs.${priceLkr} — ${result.success ? 'OK' : result.reason}`);
+    return { ...result, rtdbKey };
   } catch (e) {
     console.error('[Backend RTDB Deduct Error]:', e.message);
   }
@@ -855,90 +934,79 @@ async function deductUserWallet(uid, priceLkr, email, clientProfile) {
 async function refundUserWallet(uid, priceLkr, usedCurrency = 'LKR', email, rtdbKey) {
   if (!uid || priceLkr <= 0) return;
   try {
-    // Use the resolved key if provided (from deductResult), otherwise resolve fresh
-    let resolvedKey = rtdbKey;
-    let current;
-    if (resolvedKey) {
-      try {
-        const res = await fetch(`${FIREBASE_RTDB_URL}/users/${encodeURIComponent(resolvedKey)}.json`);
-        const data = res.ok ? await res.json() : {};
-        current = { walletBalance: parseFloat((data && data.walletBalance) || 0), walletUsdt: parseFloat((data && data.walletUsdt) || 0) };
-      } catch (e) {
-        current = { walletBalance: 0, walletUsdt: 0 };
-      }
-    } else {
-      const resolved = await resolveUserWalletKey(uid, email);
-      resolvedKey = resolved ? resolved.rtdbKey : uid;
-      current = resolved || { walletBalance: 0, walletUsdt: 0 };
-    }
-
-    let patchBody;
-    if (usedCurrency === 'USDT') {
-      // Refund back to USDT wallet — user originally paid from USDT
-      const reqUsdt = priceLkr / 305;
-      const newUsdt = parseFloat((current.walletUsdt + reqUsdt).toFixed(6));
-      patchBody = {
-        walletBalance: current.walletBalance, // LKR untouched
-        walletUsdt: newUsdt,
-        updatedAt: new Date().toISOString()
-      };
-      console.log(`[Backend Refund Success] Refunded $${reqUsdt.toFixed(6)} USDT to user ${uid} (key: ${resolvedKey}). New USDT: ${newUsdt}`);
-    } else {
-      // Refund back to LKR wallet (default)
-      const newLkr = parseFloat((current.walletBalance + priceLkr).toFixed(2));
-      patchBody = {
-        walletBalance: newLkr,
-        walletUsdt: current.walletUsdt, // USDT untouched
-        updatedAt: new Date().toISOString()
-      };
-      console.log(`[Backend Refund Success] Refunded Rs. ${priceLkr} to user ${uid} (key: ${resolvedKey}). New LKR: ${newLkr}`);
-    }
-
-    try {
-      await fetch(`${FIREBASE_RTDB_URL}/users/${encodeURIComponent(resolvedKey)}.json`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patchBody)
-      });
-    } catch (e) {
-      console.warn('[Backend RTDB Refund Patch Note]:', e.message);
-    }
+    const key = rtdbKey || await resolveUserWalletKey(uid, email);
+    if (!key) return;
+    const result = usedCurrency === 'USDT'
+      ? await adjustWallet(key, 0, priceLkr / 305)
+      : await adjustWallet(key, priceLkr, 0);
+    console.log(`[Backend Refund Success] Refunded Rs. ${priceLkr} (${usedCurrency}) to user ${uid} (key: ${key}). New LKR: ${result.newBalanceLkr}`);
   } catch (e) {
     console.error('[Backend Refund Error]:', e.message);
   }
 }
 
 /**
- * Credit a user's wallet server-side. Mirrors deductUserWallet but adds instead
- * of subtracts. Used by payment webhooks/IPN callbacks so a successful deposit
- * is never dependent on the customer's browser staying open.
+ * Credit a user's wallet server-side. Used by payment webhooks/IPN callbacks
+ * so a successful deposit is never dependent on the customer's browser.
  */
-async function creditUserWalletServer(uid, amountLkr, email, clientProfile) {
+async function creditUserWalletServer(uid, amountLkr, email) {
   if (!uid || !(amountLkr > 0)) return { success: false, reason: 'Invalid amount' };
   try {
-    const resolved = await resolveUserWalletKey(uid, email, clientProfile);
-    if (!resolved) return { success: false, reason: 'User wallet not found' };
-
-    const { rtdbKey } = resolved;
-    const newLkr = parseFloat((resolved.walletBalance + amountLkr).toFixed(2));
-    const newUsdt = resolved.walletUsdt;
-
-    await fetch(`${FIREBASE_RTDB_URL}/users/${encodeURIComponent(rtdbKey)}.json`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        walletBalance: newLkr,
-        walletUsdt: newUsdt,
-        updatedAt: new Date().toISOString()
-      })
-    });
-
-    console.log(`[Backend Wallet Credit] +Rs. ${amountLkr} to user ${uid} (key: ${rtdbKey}). New LKR balance: ${newLkr}`);
-    return { success: true, newBalanceLkr: newLkr, newBalanceUsdt: newUsdt, rtdbKey };
+    const rtdbKey = await resolveUserWalletKey(uid, email);
+    if (!rtdbKey) return { success: false, reason: 'User wallet not found' };
+    const result = await adjustWallet(rtdbKey, amountLkr, 0);
+    console.log(`[Backend Wallet Credit] +Rs. ${amountLkr} to user ${uid} (key: ${rtdbKey}). New LKR balance: ${result.newBalanceLkr}`);
+    return { success: true, ...result, rtdbKey };
   } catch (e) {
     console.error('[Backend Wallet Credit Error]:', e.message);
     return { success: false, reason: 'Database update failed' };
   }
+}
+
+const safeKey = (v) => String(v || '').trim().replace(/[.#$\[\]\/]/g, '_');
+
+// 1.5% of a referred user's first paid order goes to the referrer. Runs on
+// the server after MooGold accepts the order, at most once per referred
+// user (referralPayouts/{uid}), and never for self-referrals.
+async function payReferralCashback(uid, email, orderPriceLkr, referralCode) {
+  const cleanCode = String(referralCode || '').trim().toUpperCase();
+  const cashback = Math.round((Number(orderPriceLkr) || 0) * 0.015);
+  if (!uid || !cleanCode || cashback <= 0) return;
+
+  const all = await rtdbGet('users');
+  let referrerKey = null;
+  let referrer = null;
+  for (const [key, u] of Object.entries(all || {})) {
+    if (!u || typeof u !== 'object') continue;
+    const namePart = (u.displayName || u.name || 'USER').replace(/\s+/g, '').slice(0, 3).toUpperCase();
+    const uidSuffix = String(u.uid || key).slice(-4);
+    if (`MADS-${namePart}${uidSuffix}` === cleanCode) {
+      referrerKey = key;
+      referrer = u;
+      break;
+    }
+  }
+  if (!referrerKey) return;
+  const isSelf = referrerKey === uid || referrer.uid === uid ||
+    (email && referrer.email && String(referrer.email).toLowerCase() === String(email).toLowerCase());
+  if (isSelf) return;
+
+  const claim = await rtdbTransaction(`referralPayouts/${safeKey(uid)}`, (cur) => (cur ? undefined : {
+    referralCode: cleanCode, referrerKey, cashbackLkr: cashback, orderAmountLkr: orderPriceLkr, createdAt: new Date().toISOString()
+  }));
+  if (!claim.committed) return;
+
+  await adjustWallet(referrerKey, cashback, 0);
+  await rtdbPut(`referrals_cashback/${Date.now()}`, {
+    referrerUid: referrer.uid || referrerKey,
+    referrerEmail: referrer.email || '',
+    referralCode: cleanCode,
+    newUserEmail: email || uid,
+    cashbackLkr: cashback,
+    orderAmountLkr: orderPriceLkr,
+    creditedAt: new Date().toISOString()
+  }).catch(() => {});
+  console.log(`[Referral Cashback] +Rs. ${cashback} to ${referrerKey} for ${uid}'s first order`);
 }
 
 // MooGold Reseller API Secure Proxy Endpoint (Server-Side Authentication & Balance Enforcement)
@@ -953,7 +1021,7 @@ const moogoldProcessingLocks = new Set();
 
 async function getMoogoldOrderRecord(partnerOrderId) {
   try {
-    const res = await fetch(`${FIREBASE_RTDB_URL}/moogoldProcessedOrders/${encodeURIComponent(partnerOrderId)}.json`);
+    const res = await fetch(rtdbUrl(`moogoldProcessedOrders/${partnerOrderId}`));
     if (res.ok) return (await res.json()) || null;
   } catch (e) {
     console.warn('[MooGold Order Record Read Warning]:', e.message);
@@ -963,7 +1031,7 @@ async function getMoogoldOrderRecord(partnerOrderId) {
 
 async function saveMoogoldOrderRecord(partnerOrderId, record) {
   try {
-    await fetch(`${FIREBASE_RTDB_URL}/moogoldProcessedOrders/${encodeURIComponent(partnerOrderId)}.json`, {
+    await fetch(rtdbUrl(`moogoldProcessedOrders/${partnerOrderId}`), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(record)
@@ -976,8 +1044,7 @@ async function saveMoogoldOrderRecord(partnerOrderId, record) {
 app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
   const partnerOrderId = req.body?.bodyObj?.partnerOrderId || null;
   try {
-    const { path: apiPath, bodyObj, priceLkr, paymentId, clientProfile: rawClientProfile } = req.body || {};
-    const clientProfile = rawClientProfile || bodyObj?.clientProfile || req.body?.userProfile || null;
+    const { path: apiPath, bodyObj, priceLkr, paymentId } = req.body || {};
 
     if (!apiPath || !bodyObj) {
       return res.status(400).json({ error: 'Missing path or bodyObj', received: req.body });
@@ -1055,8 +1122,7 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
       }
 
       // Perform atomic backend wallet deduction BEFORE calling MooGold
-      // Pass uid, email and clientProfile so resolveUserWalletKey can find the correct balance
-      deductResult = await deductUserWallet(authenticatedUser.uid, numPriceLkr, authenticatedUser.email, clientProfile);
+      deductResult = await deductUserWallet(authenticatedUser.uid, numPriceLkr, authenticatedUser.email);
       if (!deductResult.success) {
         console.warn(`[INSUFFICIENT BALANCE BLOCKED] User ${authenticatedUser.uid} (${authenticatedUser.email}) attempted order without balance. Required: Rs. ${numPriceLkr}`);
         if (partnerOrderId) await saveMoogoldOrderRecord(partnerOrderId, { status: 'FAILED', uid: authenticatedUser.uid, priceLkr: numPriceLkr, reason: deductResult.reason, createdAt: new Date().toISOString() });
@@ -1132,6 +1198,13 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
     if (isOrderCreation && !isSuccess) {
       console.warn(`[MOOGOLD ORDER FAILED] Reverting & Refund Rs. ${numPriceLkr} to UID ${authenticatedUser.uid} via ${deductResult.usedCurrency || 'LKR'}`);
       await refundUserWallet(authenticatedUser.uid, numPriceLkr, deductResult.usedCurrency || 'LKR', authenticatedUser.email, deductResult.rtdbKey);
+    }
+
+    // Referral cashback for the referrer on this user's first paid order.
+    const referralCode = bodyObj?.referralCode || req.body?.referralCode;
+    if (isOrderCreation && isSuccess && deductResult?.success && referralCode) {
+      payReferralCashback(authenticatedUser.uid, authenticatedUser.email, numPriceLkr, referralCode)
+        .catch(e => console.warn('[Referral Cashback Error]:', e.message));
     }
 
     res.status(apiRes.status);
@@ -1227,9 +1300,10 @@ const receivedEzCashSmsLog = new Map();
 const usedEzCashRnNumbers = new Set();
 
 // Automated EZ Cash RN Deposit Verification Endpoint (Admin Approval Mode)
-app.post('/api/ezcash/verify-rn', rateLimiter(15, 60000), (req, res) => {
+app.post('/api/ezcash/verify-rn', rateLimiter(15, 60000), async (req, res) => {
   try {
     const { rnNumber, amount, userEmail } = req.body || {};
+    const authUser = await verifyFirebaseIdToken(req.headers.authorization || '');
     const cleanRn = sanitizeString(String(rnNumber || ''), 20);
     const cleanEmail = sanitizeString(String(userEmail || ''), 100);
 
@@ -1245,11 +1319,19 @@ app.post('/api/ezcash/verify-rn', rateLimiter(15, 60000), (req, res) => {
 
     // Check if matching SMS was received via Webhook
     const smsLog = receivedEzCashSmsLog.get(cleanRn);
-    if (smsLog && smsLog.status !== 'REDEEMED' && Math.abs((smsLog.amountLkr || 0) - amtLkr) < 1) {
+    if (authUser && smsLog && smsLog.status !== 'REDEEMED' && Math.abs((smsLog.amountLkr || 0) - amtLkr) < 1) {
       smsLog.status = 'REDEEMED';
-      smsLog.redeemedBy = userEmail || 'Gamer';
+      smsLog.redeemedBy = authUser.email || userEmail || 'Gamer';
       smsLog.redeemedAt = new Date().toISOString();
       usedEzCashRnNumbers.add(cleanRn);
+
+      // The server credits the wallet itself (the browser can no longer).
+      const credit = await creditUserWalletServer(authUser.uid, smsLog.amountLkr, authUser.email);
+      if (!credit.success) {
+        smsLog.status = 'UNCLAIMED';
+        usedEzCashRnNumbers.delete(cleanRn);
+        return res.status(500).json({ verified: false, error: credit.reason || 'Wallet credit failed. Please try again.' });
+      }
 
       return res.json({
         verified: true,
@@ -1257,6 +1339,8 @@ app.post('/api/ezcash/verify-rn', rateLimiter(15, 60000), (req, res) => {
         status: 'VERIFIED',
         amountLkr: amtLkr,
         rnNumber: cleanRn,
+        newBalanceLkr: credit.newBalanceLkr,
+        newBalanceUsdt: credit.newBalanceUsdt,
         message: `⚡ EZ Cash RN ${cleanRn} verified against Dialog SMS Webhook!`
       });
     }
@@ -1281,6 +1365,16 @@ app.post('/api/ezcash/verify-rn', rateLimiter(15, 60000), (req, res) => {
 // EZ Cash SMS Gateway Webhook Endpoint (Receives Dialog SMS from SMS Forwarder / iPhone Shortcut / Gateway)
 app.post('/api/ezcash/webhook', (req, res) => {
   try {
+    // Only the SMS forwarder may log payments: it must send EZCASH_WEBHOOK_SECRET
+    // as ?key=... or an x-webhook-key header. Without this anyone could post a
+    // fake "payment received" SMS and get auto-approved wallet credit.
+    const expectedKey = (process.env.EZCASH_WEBHOOK_SECRET || '').trim();
+    const givenKey = String(req.query?.key || req.headers['x-webhook-key'] || '').trim();
+    if (!expectedKey || givenKey.length !== expectedKey.length ||
+        !crypto.timingSafeEqual(Buffer.from(givenKey), Buffer.from(expectedKey))) {
+      console.warn('[EZ Cash Webhook] Rejected request without a valid key');
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
     const { smsText, message, sender, body } = req.body || {};
     const textContent = smsText || message || body || JSON.stringify(req.body);
     console.log(`[EZ Cash SMS Webhook Received]:`, textContent);
@@ -1338,13 +1432,13 @@ const genieCreditLocks = new Set();
 
 async function saveGenieTransactionRecord(transactionId, record) {
   try {
-    await fetch(`${FIREBASE_RTDB_URL}/genieTransactions/${encodeURIComponent(transactionId)}.json`, {
+    await fetch(rtdbUrl(`genieTransactions/${transactionId}`), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(record)
     });
     if (record.localId) {
-      await fetch(`${FIREBASE_RTDB_URL}/genieLocalIdIndex/${encodeURIComponent(record.localId)}.json`, {
+      await fetch(rtdbUrl(`genieLocalIdIndex/${record.localId}`), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(transactionId)
@@ -1357,7 +1451,7 @@ async function saveGenieTransactionRecord(transactionId, record) {
 
 async function getGenieTransactionRecord(transactionId) {
   try {
-    const res = await fetch(`${FIREBASE_RTDB_URL}/genieTransactions/${encodeURIComponent(transactionId)}.json`);
+    const res = await fetch(rtdbUrl(`genieTransactions/${transactionId}`));
     if (res.ok) return (await res.json()) || null;
   } catch (e) {
     console.warn('[Genie Transaction Read Warning]:', e.message);
@@ -1367,7 +1461,7 @@ async function getGenieTransactionRecord(transactionId) {
 
 async function resolveGenieTransactionIdByLocalId(localId) {
   try {
-    const res = await fetch(`${FIREBASE_RTDB_URL}/genieLocalIdIndex/${encodeURIComponent(localId)}.json`);
+    const res = await fetch(rtdbUrl(`genieLocalIdIndex/${localId}`));
     if (res.ok) return (await res.json()) || null;
   } catch (e) { /* not found */ }
   return null;
@@ -1382,6 +1476,14 @@ async function resolveGenieTransactionIdByLocalId(localId) {
  * CREDITED and becomes a no-op. This is what makes crediting NOT depend
  * solely on the customer's browser completing the redirect flow.
  */
+// Genie card recharge bonus — mirrors getGenieBonus in WalletPage.jsx.
+function genieRechargeBonus(amountLkr) {
+  const n = parseFloat(amountLkr) || 0;
+  if (n >= 10000) return 200;
+  if (n >= 5000) return 100;
+  return 0;
+}
+
 async function verifyAndCreditGenieTransaction(transactionId) {
   if (!transactionId) return { success: false, error: 'Missing transactionId' };
 
@@ -1443,7 +1545,9 @@ async function verifyAndCreditGenieTransaction(transactionId) {
     // Credit using the amount WE stored at transaction-creation time, never a
     // value read back from Genie/webhook — same anti-tampering principle as
     // the MooGold order-price check.
-    const creditResult = await creditUserWalletServer(record.uid, record.amountLkr, record.email, null);
+    // Includes the recharge bonus (previously added by the customer's
+    // browser, which can no longer write wallet balances).
+    const creditResult = await creditUserWalletServer(record.uid, record.amountLkr + genieRechargeBonus(record.amountLkr), record.email);
     if (!creditResult.success) {
       console.error(`[Genie Credit Failed] txn=${transactionId} user=${record.uid || record.email} reason=${creditResult.reason}`);
       return { success: false, error: creditResult.reason || 'Wallet credit failed', isPaid: true };
@@ -1466,7 +1570,7 @@ async function recordGenieManualPaymentToRtdb(transactionId, record) {
       createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
       timestamp: new Date().toISOString()
     };
-    await fetch(`${FIREBASE_RTDB_URL}/manual_payments/${encodeURIComponent(payId)}.json`, {
+    await fetch(rtdbUrl(`manual_payments/${payId}`), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -1746,7 +1850,7 @@ app.listen(PORT, () => {
   // Periodic background check (every 60s) for recent PENDING Genie transactions
   setInterval(async () => {
     try {
-      const res = await fetch(`${FIREBASE_RTDB_URL}/genieTransactions.json`);
+      const res = await fetch(rtdbUrl(`genieTransactions`));
       if (!res.ok) return;
       const allTxns = await res.json();
       if (!allTxns || typeof allTxns !== 'object') return;

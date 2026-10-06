@@ -2,7 +2,8 @@ import { createRequire } from 'module';
 import crypto from 'crypto';
 import { GAMES_DATA } from '../data/games.js';
 import { lookupFreePlayerIgn } from './playerLookup.js';
-import { getResellerProfileByKey, getResellerProfileByKeyAsync, deductResellerWalletBalance, saveOrderToFirestore } from './firestoreService.js';
+import { getResellerProfileByKey, getResellerProfileByKeyAsync, saveOrderToFirestore } from './firestoreService.js';
+import { findUserKey, spendWallet, adjustWallet } from '../../lib/rtdbAdmin.js';
 
 const require = createRequire(import.meta.url);
 const TelegramBot = require('node-telegram-bot-api');
@@ -1064,12 +1065,19 @@ Examples:
           };
           try { await saveOrderToFirestore(freshReseller.uid || reseller.uid, pendingOrder); } catch (e) {}
 
+          // Take the money first (atomic, server-side), refund if MooGold fails.
+          const walletKey = await findUserKey(freshReseller.uid || reseller.uid).catch(() => null);
+          const spend = walletKey
+            ? await spendWallet(walletKey, wholesalePrice).catch(e => ({ success: false, reason: e.message }))
+            : { success: false, reason: 'Reseller wallet not found' };
+          if (!spend.success) {
+            try { await saveOrderToFirestore(freshReseller.uid || reseller.uid, { ...pendingOrder, status: 'FAILED', error: spend.reason, failedAt: new Date().toISOString() }); } catch (e) {}
+            return safeReply(ctx, `❌ TOP-UP FAILED\n\n📦 Order Ref: ${orderId}\n⚠️ ${spend.reason}`);
+          }
+
           const mgResult = await sendMoongoldLiveOrder(matchedGame, pkgInfo, idArg, zoneArg, orderId);
 
           if (mgResult.success) {
-            // Deduct wholesale price from reseller wallet
-            const deductOk = await deductResellerWalletBalance(freshReseller.uid || reseller.uid, wholesalePrice).catch(() => false);
-
             // Bug 6+2 fix: fetch confirmed post-deduction balance from DB
             let confirmedBalance = Math.max(0, currentBalance - wholesalePrice);
             try {
@@ -1135,6 +1143,12 @@ Order placed live on MooGold Reseller Portal & credited instantly!
 
             return;
           } else {
+            try {
+              if (spend.usedCurrency === 'USDT') await adjustWallet(walletKey, 0, wholesalePrice / 305);
+              else await adjustWallet(walletKey, wholesalePrice, 0);
+            } catch (e) {
+              console.error(`[Telegram Bot] Refund failed for ${walletKey} order ${orderId}:`, e.message);
+            }
             const failedOrder = {
               ...pendingOrder,
               status: 'FAILED',

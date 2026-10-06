@@ -4,12 +4,24 @@
       ".read": true,
       "$uid": {
         ".write": "newData.exists()",
-        ".validate": "newData.hasChildren()",
+        ".validate": "newData.hasChildren() && (!data.child('walletBalance').exists() || newData.child('walletBalance').exists()) && (!data.child('walletUsdt').exists() || newData.child('walletUsdt').exists()) && (!data.child('isReseller').exists() || newData.child('isReseller').exists()) && (!data.child('resellerStatus').exists() || newData.child('resellerStatus').exists()) && (!data.child('role').exists() || newData.child('role').exists()) && (!data.child('status').exists() || newData.child('status').exists())",
         "walletBalance": {
-          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000"
+          ".validate": "newData.isNumber() && ((!data.exists() && newData.val() == 0) || newData.val() == data.val())"
         },
         "walletUsdt": {
-          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000"
+          ".validate": "newData.isNumber() && ((!data.exists() && newData.val() == 0) || newData.val() == data.val())"
+        },
+        "isReseller": {
+          ".validate": "newData.isBoolean() && (newData.val() == data.val() || newData.val() == false)"
+        },
+        "resellerStatus": {
+          ".validate": "newData.val() == data.val() || (newData.isString() && newData.val() != 'APPROVED')"
+        },
+        "role": {
+          ".validate": "newData.val() == data.val() || (newData.isString() && newData.val() != 'reseller' && newData.val() != 'Reseller Partner' && newData.val() != 'admin')"
+        },
+        "status": {
+          ".validate": "newData.val() == data.val() || (!data.exists() && newData.val() == 'ACTIVE')"
         }
       }
     },
@@ -43,26 +55,20 @@
     "settings": {
       ".read": true,
       "$id": {
-        ".write": "newData.exists()"
+        ".write": "$id != 'vouchers' && newData.exists()"
       }
     },
     "genieTransactions": {
       ".read": true,
-      "$id": {
-        ".write": "newData.exists()"
-      }
+      ".write": false
     },
     "genieLocalIdIndex": {
       ".read": true,
-      "$id": {
-        ".write": "newData.exists()"
-      }
+      ".write": false
     },
     "moogoldProcessedOrders": {
       ".read": true,
-      "$id": {
-        ".write": "newData.exists()"
-      }
+      ".write": false
     },
     "supportTickets": {
       ".read": true,
@@ -80,9 +86,7 @@
     },
     "vouchers_log": {
       ".read": true,
-      "$id": {
-        ".write": "newData.exists()"
-      }
+      ".write": false
     }
   }
 }
