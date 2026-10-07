@@ -220,6 +220,7 @@ export const TopupModal = () => {
 
       if (!moongoldResult.success) {
         setIsSubmitting(false);
+        if (moongoldResult.blocked) return;
 
         // Record failed order in Firestore & State for transparency
         const failedOrder = {
