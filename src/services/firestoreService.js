@@ -596,6 +596,24 @@ export const updateUserProfileInFirestore = async (uid, rawData) => {
 /**
  * Verify user password during login
  */
+export const ACCOUNT_BLOCKED_MESSAGE = 'Your account has been blocked. Please contact support.';
+
+// True when any user record for this uid or email is BLOCKED (a person can
+// have several records; the admin's Block button marks one of them).
+export const isAccountBlockedAsync = async (uid, email) => {
+  const cleanUid = String(uid || '').trim();
+  const cleanEmail = String(email || '').trim().toLowerCase();
+  if (!cleanUid && !cleanEmail) return false;
+  const res = await fetch('https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/users.json');
+  if (!res.ok) return false;
+  const allUsers = await res.json();
+  if (!allUsers || typeof allUsers !== 'object') return false;
+  return Object.entries(allUsers).some(([key, u]) => u && u.status === 'BLOCKED' && (
+    (cleanUid && (key === cleanUid || u.uid === cleanUid)) ||
+    (cleanEmail && String(u.email || '').trim().toLowerCase() === cleanEmail)
+  ));
+};
+
 export const verifyUserLoginAsync = async (identifier, passwordInput) => {
   if (!identifier || !passwordInput) return { success: false, message: 'Please enter username and password!' };
 
@@ -656,6 +674,14 @@ export const verifyUserLoginAsync = async (identifier, passwordInput) => {
             // Auto-migrate: save hashed version silently
             const hashed = await hashPassword(passwordInput);
             updateUserProfileInFirestore(matchedUid, { password: hashed });
+          }
+          // Blocked accounts can't log in. The admin's Block button marks one
+          // record, so any other record with the same email counts too.
+          const matchedEmail = String(matchedUser.email || '').trim().toLowerCase();
+          const isBlocked = matchedUser.status === 'BLOCKED' || (matchedEmail && Object.values(allUsers).some(u =>
+            u && u.status === 'BLOCKED' && String(u.email || '').trim().toLowerCase() === matchedEmail));
+          if (isBlocked) {
+            return { success: false, blocked: true, message: ACCOUNT_BLOCKED_MESSAGE };
           }
           return { success: true, user: { ...matchedUser, uid: matchedUid } };
         }

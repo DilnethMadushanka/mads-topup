@@ -438,6 +438,12 @@ export const dispatchMoongoldOrder = async (orderData) => {
         };
       }
     } else {
+      if (data && data.blocked) {
+        // The server refused because this account is blocked — AppContext
+        // logs the user out, and callers don't record a failed order.
+        try { window.dispatchEvent(new Event('mads:account-blocked')); } catch (_) {}
+        return { success: false, blocked: true, status: 'FAILED', message: data.error || 'Your account has been blocked.' };
+      }
       return {
         success: false,
         moongoldRef: partnerOrderId,

@@ -230,6 +230,7 @@ export const GameTopupPage = () => {
       let allSuccess = true;
       let lastRef = null;
       let lastErrMsg = '';
+      let blockedAccount = false;
       let lastNewBalanceLkr = undefined;
       let lastNewBalanceUsdt = undefined;
 
@@ -263,6 +264,7 @@ export const GameTopupPage = () => {
           } else {
             allSuccess = false;
             lastErrMsg = res.message || 'Provider dispatch failed';
+            blockedAccount = Boolean(res.blocked);
             break;
           }
         } catch (err) {
@@ -281,6 +283,7 @@ export const GameTopupPage = () => {
 
       if (!moongoldResult.success) {
         setIsSubmitting(false);
+        if (blockedAccount) return;
 
         // Record failed order in Firestore & State for transparency
         const failedOrder = {

@@ -16,7 +16,7 @@ import {
   savePopupAdConfigToFirestore, subscribePopupAdConfigFromFirestore, DEFAULT_POPUP_AD_CONFIG,
   saveSupportTicketToFirestore, updateSupportTicketInFirestore, subscribeSupportTicketsFromFirestore,
   saveReviewToFirestore, subscribeReviewsFromFirestore,
-  saveReferralClick
+  saveReferralClick, isAccountBlockedAsync, ACCOUNT_BLOCKED_MESSAGE
 } from '../services/firestoreService';
 
 
@@ -498,6 +498,42 @@ export const AppProvider = ({ children }) => {
 
     showToast('Logged out successfully!');
   };
+
+  // Blocked accounts are logged out: when their live profile says BLOCKED,
+  // when a check at login/page load finds any of their records blocked, or
+  // when the server refuses an order because the account is blocked.
+  const blockedLogoutRef = React.useRef(false);
+  const logoutBlockedAccount = async () => {
+    if (blockedLogoutRef.current) return;
+    blockedLogoutRef.current = true;
+    try {
+      await handleLogout();
+      showToast(ACCOUNT_BLOCKED_MESSAGE, 'error');
+    } finally {
+      blockedLogoutRef.current = false;
+    }
+  };
+
+  useEffect(() => {
+    if (isLoggedIn && userProfile?.status === 'BLOCKED') logoutBlockedAccount();
+  }, [isLoggedIn, userProfile?.status]);
+
+  useEffect(() => {
+    const uid = userProfile?.uid;
+    const email = userProfile?.email;
+    if (!isLoggedIn || (!uid && !email)) return undefined;
+    let cancelled = false;
+    isAccountBlockedAsync(uid, email)
+      .then((blocked) => { if (blocked && !cancelled) logoutBlockedAccount(); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [isLoggedIn, userProfile?.uid, userProfile?.email]);
+
+  useEffect(() => {
+    const onBlocked = () => logoutBlockedAccount();
+    window.addEventListener('mads:account-blocked', onBlocked);
+    return () => window.removeEventListener('mads:account-blocked', onBlocked);
+  }, []);
 
   // Orders
   const [orders, setOrders] = useState(() => {

@@ -10,7 +10,7 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { initTelegramBot, getTelegramBotHealthStatus, forceTelegramBotRefresh } from './src/services/telegramBotService.js';
 import { lookupFreePlayerIgn } from './src/services/playerLookup.js';
 import { GAMES_DATA } from './src/data/games.js';
-import { rtdbUrl, rtdbGet, rtdbPut, rtdbPatch, rtdbTransaction, findUserKey, adjustWallet, spendWallet } from './lib/rtdbAdmin.js';
+import { rtdbUrl, rtdbGet, rtdbPut, rtdbPatch, rtdbTransaction, findUserKey, adjustWallet, spendWallet, isUserBlocked } from './lib/rtdbAdmin.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -488,6 +488,7 @@ app.post('/api/vouchers/redeem', rateLimiter(10, 60000), async (req, res) => {
   try {
     const user = await verifyFirebaseIdToken(req.headers.authorization || '');
     if (!user) return res.status(401).json({ success: false, message: 'Please log in to redeem voucher codes!' });
+    if (await rejectIfBlocked(user, res)) return;
     const cleanCode = String(req.body?.code || '').trim().toUpperCase();
     if (!cleanCode) return res.status(400).json({ success: false, message: VOUCHER_REJECT_MESSAGES.invalid });
 
@@ -860,6 +861,24 @@ function getCatalogPriceLkr(productId) {
   return null;
 }
 
+const BLOCKED_ACCOUNT_MESSAGE = 'Your account has been blocked. Please contact support.';
+
+// Sends a 403 and returns true when the authenticated caller's account is
+// blocked. If the database can't be read the request is let through; the
+// wallet spend still refuses blocked accounts on its own.
+async function rejectIfBlocked(user, res) {
+  try {
+    if (await isUserBlocked(user?.uid, user?.email)) {
+      console.warn(`[BLOCKED ACCOUNT] ${user?.uid} (${user?.email}) was refused`);
+      res.status(403).json({ success: false, verified: false, blocked: true, error: BLOCKED_ACCOUNT_MESSAGE, message: BLOCKED_ACCOUNT_MESSAGE });
+      return true;
+    }
+  } catch (e) {
+    console.warn('[Blocked check warning]:', e.message);
+  }
+  return false;
+}
+
 // Confirms the authenticated caller is a real, admin-approved reseller —
 // never trust a client-sent "isResellerOrder" flag on its own, since that
 // alone would let anyone claim reseller pricing. Mirrors resolveUserWalletKey's
@@ -1063,6 +1082,8 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
     }
 
     console.log(`[AUTHENTICATED REQUEST] UID: ${authenticatedUser.uid}, Email: ${authenticatedUser.email}, Path: ${apiPath}`);
+
+    if (await rejectIfBlocked(authenticatedUser, res)) return;
 
     // 2. HARDENED WALLET VERIFICATION FOR ORDER CREATION
     const isOrderCreation = apiPath === 'order/create_order';
@@ -1334,6 +1355,7 @@ app.post('/api/ezcash/verify-rn', rateLimiter(15, 60000), async (req, res) => {
   try {
     const { rnNumber, amount, userEmail } = req.body || {};
     const authUser = await verifyFirebaseIdToken(req.headers.authorization || '');
+    if (authUser && await rejectIfBlocked(authUser, res)) return;
     const cleanRn = sanitizeString(String(rnNumber || ''), 20);
     const cleanEmail = sanitizeString(String(userEmail || ''), 100);
 
