@@ -770,7 +770,12 @@ export const subscribeOrdersFromFirestore = (uid, callback) => {
       unsubRtdb = rtdbOnValue(ordersRef, (snapshot) => {
         if (snapshot.exists()) {
           const data = snapshot.val();
-          const list = Object.keys(data).map(key => ({ ...data[key], key }));
+          const all = Object.keys(data).map(key => ({ ...data[key], key }));
+          // The server writes its own record of every order (source: 'server');
+          // show it only when the browser never saved its own copy.
+          const clientIds = new Set(all.filter(o => o.source !== 'server')
+            .flatMap(o => [o.partnerOrderId, ...(Array.isArray(o.partnerOrderIds) ? o.partnerOrderIds : [])]).filter(Boolean));
+          const list = all.filter(o => o.source !== 'server' || !clientIds.has(o.partnerOrderId));
           const filtered = uid ? list.filter(o => o.userId === uid || o.userEmail === uid) : list;
           if (filtered.length > 0) callback(filtered);
         }
