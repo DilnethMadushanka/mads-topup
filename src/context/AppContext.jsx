@@ -1598,11 +1598,14 @@ export const AppProvider = ({ children }) => {
       securityKey: targetApp?.securityKey
     });
 
-    const resellerCode = creds.resellerCode;
-    const securityKey = creds.securityKey;
+    let resellerCode = creds.resellerCode;
+    let securityKey = creds.securityKey;
 
     const targetFirestoreId = targetApp?.firestoreId || (targetId && targetId !== targetUserId ? targetId : null);
-    updateResellerApplicationStatusInFirestore(targetId || targetUserId, targetUserId, newStatus, targetFirestoreId, securityKey, resellerCode);
+    const approval = await updateResellerApplicationStatusInFirestore(targetId || targetUserId, targetUserId, newStatus, targetFirestoreId, securityKey, resellerCode);
+    // The server keeps an account's existing codes; the email must match them.
+    if (approval?.resellerCode) resellerCode = approval.resellerCode;
+    if (approval?.securityKey) securityKey = approval.securityKey;
     
     if (newStatus === 'APPROVED') {
       // Bug 8: Update usersList so the approved user's record reflects reseller status

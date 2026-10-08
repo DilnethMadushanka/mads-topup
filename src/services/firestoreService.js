@@ -1059,20 +1059,18 @@ export const updateResellerApplicationStatusInFirestore = async (appId, userId, 
     securityKey: targetSecurityKey,
     resellerCode: targetResellerCode
   });
-  const securityKey = creds.securityKey;
-  const resellerCode = creds.resellerCode;
+  let securityKey = creds.securityKey;
+  let resellerCode = creds.resellerCode;
+  let approval = null;
 
   if (rtdb) {
     try {
       const appRef = dbRef(rtdb, `reseller_applications/${appId}`);
-      // APPROVED is written by the server (the rules refuse it from browsers).
+      // Application status is written by the server (browsers can only
+      // create an application).
       if (newStatus !== 'APPROVED') {
-        await rtdbUpdate(appRef, {
-          status: newStatus,
-          resellerCode,
-          securityKey,
-          updatedAt: new Date().toISOString()
-        });
+        const { ok, data } = await postServerApi('/api/admin/reseller-status', { appId, status: newStatus }, getAdminToken());
+        if (!ok) console.warn('Reseller status was not saved:', data?.error);
       }
       if (newStatus === 'APPROVED') {
         let approvedAppEmail = '';
@@ -1093,11 +1091,16 @@ export const updateResellerApplicationStatusInFirestore = async (appId, userId, 
           securityKey
         }, getAdminToken());
         if (!ok) console.warn('Reseller approval was not saved:', data?.error);
+        else approval = data;
       }
     } catch (e) {
       console.warn('RTDB reseller app status update note:', e);
     }
   }
+
+  // The server keeps an account's existing codes; use what it saved.
+  if (approval?.resellerCode) resellerCode = approval.resellerCode;
+  if (approval?.securityKey) securityKey = approval.securityKey;
 
   if (db) {
     try {
@@ -1127,6 +1130,7 @@ export const updateResellerApplicationStatusInFirestore = async (appId, userId, 
       console.warn('Firestore reseller status update note:', err);
     }
   }
+  return approval;
 };
 
 /**

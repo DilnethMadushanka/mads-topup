@@ -627,46 +627,73 @@ app.post('/api/admin/user-fields', requireAdminSession, async (req, res) => {
   }
 });
 
-// Admin: grant reseller access to the applicant's account(s).
+// Admin: grant reseller access to the account that applied. The account is
+// read from the stored application (never from the browser), and only that
+// one record is upgraded: a second record carrying the same email (anyone
+// can create one) never becomes a reseller.
 app.post('/api/admin/reseller-approve', requireAdminSession, async (req, res) => {
   try {
-    const { userId, email, resellerCode, securityKey, appId } = req.body || {};
-    const keys = new Set();
-    if (userId) {
-      const own = await rtdbGet(`users/${userId}`).catch(() => null);
-      if (own && typeof own === 'object') keys.add(userId);
+    const { appId, resellerCode, securityKey } = req.body || {};
+    if (!appId || !/^[A-Za-z0-9_-]{1,80}$/.test(String(appId))) return res.status(400).json({ error: 'A valid appId is required.' });
+    const application = await rtdbGet(`reseller_applications/${appId}`);
+    if (!application || typeof application !== 'object') return res.status(404).json({ error: 'Application not found.' });
+
+    let key = null;
+    const appUid = String(application.userId || application.uid || '');
+    if (appUid && /^[A-Za-z0-9_-]{1,128}$/.test(appUid)) {
+      const own = await rtdbGet(`users/${appUid}`).catch(() => null);
+      if (own && typeof own === 'object') key = appUid;
     }
-    if (email) {
-      const all = await rtdbGet('users');
-      const target = String(email).trim().toLowerCase();
-      for (const [k, u] of Object.entries(all || {})) {
-        if (u?.email && String(u.email).trim().toLowerCase() === target) keys.add(k);
-      }
+    if (!key) {
+      const target = String(application.emailAddress || application.email || application.userEmail || '').trim().toLowerCase();
+      const all = target ? await rtdbGet('users') : null;
+      const matches = Object.entries(all || {}).filter(([, u]) => u?.email && String(u.email).trim().toLowerCase() === target).map(([k]) => k);
+      if (matches.length > 1) return res.status(409).json({ error: `More than one account uses ${target}. Approve from the user's own account record instead.` });
+      key = matches[0] || null;
     }
-    if (!keys.size) return res.status(404).json({ error: 'No user account found for this application.' });
-    for (const k of keys) {
-      await rtdbPatch(`users/${k}`, {
-        isReseller: true,
-        role: 'Reseller Partner',
-        resellerStatus: 'APPROVED',
-        ...(resellerCode ? { resellerCode } : {}),
-        ...(securityKey ? { securityKey } : {})
-      });
+    if (!key) return res.status(404).json({ error: 'No user account found for this application.' });
+
+    const user = await rtdbGet(`users/${key}`);
+    const update = { isReseller: true, role: 'Reseller Partner', resellerStatus: 'APPROVED' };
+    for (const [field, value, re] of [['resellerCode', resellerCode, /^RS-[A-Z0-9]{4,12}$/], ['securityKey', securityKey, /^MADS-SEC-[A-Z0-9]{6,16}$/]]) {
+      if (user?.[field]) continue;
+      if (!re.test(String(value || ''))) continue;
+      const owner = await findUserKey(value);
+      if (!owner || owner === key) update[field] = value;
     }
+    await rtdbPatch(`users/${key}`, update);
+    const finalUser = { ...user, ...update };
     // The application's APPROVED status is also written only here; the
     // database rules stop browsers from setting it.
-    if (appId) {
-      await rtdbPatch(`reseller_applications/${appId}`, {
-        status: 'APPROVED',
-        ...(resellerCode ? { resellerCode } : {}),
-        ...(securityKey ? { securityKey } : {}),
-        updatedAt: new Date().toISOString()
-      });
-    }
-    res.json({ success: true, keys: [...keys] });
+    await rtdbPatch(`reseller_applications/${appId}`, {
+      status: 'APPROVED',
+      approvedKey: key,
+      ...(finalUser.resellerCode ? { resellerCode: finalUser.resellerCode } : {}),
+      ...(finalUser.securityKey ? { securityKey: finalUser.securityKey } : {}),
+      updatedAt: new Date().toISOString()
+    });
+    console.log(`[Reseller Approved] ${appId} → ${key}`);
+    res.json({ success: true, keys: [key], resellerCode: finalUser.resellerCode, securityKey: finalUser.securityKey });
   } catch (e) {
     console.error('[Admin Reseller Approve Error]:', e.message);
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: 'Could not approve this application.' });
+  }
+});
+
+// Admin: set any other application status (browsers can only create one).
+app.post('/api/admin/reseller-status', requireAdminSession, async (req, res) => {
+  try {
+    const { appId, status } = req.body || {};
+    if (!appId || !/^[A-Za-z0-9_-]{1,80}$/.test(String(appId)) || !['PENDING', 'REJECTED', 'SUSPENDED'].includes(status)) {
+      return res.status(400).json({ error: 'A valid appId and status are required.' });
+    }
+    const application = await rtdbGet(`reseller_applications/${appId}`);
+    if (!application) return res.status(404).json({ error: 'Application not found.' });
+    await rtdbPatch(`reseller_applications/${appId}`, { status, updatedAt: new Date().toISOString() });
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[Admin Reseller Status Error]:', e.message);
+    res.status(500).json({ error: 'Could not update this application.' });
   }
 });
 
