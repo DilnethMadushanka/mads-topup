@@ -5,27 +5,11 @@ async function verifyFirebaseIdToken(idToken) {
   const cleanToken = idToken.startsWith('Bearer ') ? idToken.slice(7).trim() : idToken.trim();
   if (!cleanToken) return null;
 
-  // Handle WEB_SESSION tokens for custom-login users (not Firebase Auth)
-  // Format: WEB_SESSION:uid|email  (new)  or  WEB_SESSION:uid_or_email  (legacy)
-  if (cleanToken.startsWith('WEB_SESSION:')) {
-    const rawId = cleanToken.slice(12).trim();
-    if (rawId) {
-      if (rawId.includes('|')) {
-        const [uid, email] = rawId.split('|');
-        return {
-          uid: uid.trim() || email.trim(),
-          email: email.trim() || (uid.includes('@') ? uid.trim() : `${uid.trim()}@madstopup.com`),
-          emailVerified: true,
-          isWebSession: true
-        };
-      }
-      return {
-        uid: rawId,
-        email: rawId.includes('@') ? rawId : `${rawId}@madstopup.com`,
-        emailVerified: true,
-        isWebSession: true
-      };
-    }
+  // Password-login sessions are signed by the VPS (server.js, lib/session.js),
+  // which holds the key and verifies them on every order. This function only
+  // forwards them; on its own it serves read-only product calls.
+  if (cleanToken.startsWith('MADS1.') && cleanToken.split('.').length === 3) {
+    return { uid: '', email: '', emailVerified: false, isWebSession: true };
   }
 
   const apiKey = process.env.FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY || "AIzaSyAzgbA7GdTY5Dv2CtgY8cVOswkpfcQpNcE";

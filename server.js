@@ -10,6 +10,8 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { initTelegramBot, getTelegramBotHealthStatus, forceTelegramBotRefresh } from './src/services/telegramBotService.js';
 import { lookupFreePlayerIgn } from './src/services/playerLookup.js';
 import { GAMES_DATA } from './src/data/games.js';
+import { isSessionToken, verifySession, signSession } from './lib/session.js';
+import { verifyPasswordLogin, setPasswordForEmail, publicProfile } from './lib/userAuth.js';
 import { rtdbUrl, rtdbGet, rtdbPut, rtdbPatch, rtdbTransaction, findUserKey, adjustWallet, spendWallet, isUserBlocked } from './lib/rtdbAdmin.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -73,8 +75,11 @@ const rateLimitStore = new Map();
 function rateLimiter(maxRequests = 30, windowMs = 60000) {
   return (req, res, next) => {
     const clientIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
+    // Counted per endpoint, so browsing the site doesn't use up the
+    // allowance for logging in or ordering.
+    const limitKey = `${clientIp}|${req.path}`;
     const now = Date.now();
-    const record = rateLimitStore.get(clientIp) || { count: 0, resetTime: now + windowMs };
+    const record = rateLimitStore.get(limitKey) || { count: 0, resetTime: now + windowMs };
 
     if (now > record.resetTime) {
       record.count = 1;
@@ -83,7 +88,7 @@ function rateLimiter(maxRequests = 30, windowMs = 60000) {
       record.count += 1;
     }
 
-    rateLimitStore.set(clientIp, record);
+    rateLimitStore.set(limitKey, record);
 
     if (record.count > maxRequests) {
       return res.status(429).json({ error: 'Too many network requests. Please try again in 1 minute.' });
@@ -432,7 +437,7 @@ app.post('/api/admin/user-fields', requireAdminSession, async (req, res) => {
 // Admin: grant reseller access to the applicant's account(s).
 app.post('/api/admin/reseller-approve', requireAdminSession, async (req, res) => {
   try {
-    const { userId, email, resellerCode, securityKey } = req.body || {};
+    const { userId, email, resellerCode, securityKey, appId } = req.body || {};
     const keys = new Set();
     if (userId) {
       const own = await rtdbGet(`users/${userId}`).catch(() => null);
@@ -453,6 +458,16 @@ app.post('/api/admin/reseller-approve', requireAdminSession, async (req, res) =>
         resellerStatus: 'APPROVED',
         ...(resellerCode ? { resellerCode } : {}),
         ...(securityKey ? { securityKey } : {})
+      });
+    }
+    // The application's APPROVED status is also written only here; the
+    // database rules stop browsers from setting it.
+    if (appId) {
+      await rtdbPatch(`reseller_applications/${appId}`, {
+        status: 'APPROVED',
+        ...(resellerCode ? { resellerCode } : {}),
+        ...(securityKey ? { securityKey } : {}),
+        updatedAt: new Date().toISOString()
       });
     }
     res.json({ success: true, keys: [...keys] });
@@ -546,31 +561,88 @@ app.post('/api/vouchers/redeem', rateLimiter(10, 60000), async (req, res) => {
   }
 });
 
-// Direct OTP Email sending API endpoint with rate limiter & sanitization
-app.post('/api/send-otp', rateLimiter(10, 60000), async (req, res) => {
+// Username/password and reseller login. The server checks the password and
+// returns a signed session token, which the browser sends on top-ups.
+app.post('/api/auth/login', rateLimiter(10, 60000), async (req, res) => {
   try {
-    const rawEmail = req.body?.email;
-    const rawOtp = req.body?.otp;
-    const rawName = req.body?.name;
-
-    const email = sanitizeString(rawEmail, 100);
-    const otp = sanitizeString(rawOtp, 10);
-    const rawSanitName = sanitizeString(rawName, 50);
-
-    if (!email || !otp) {
-      return res.status(400).json({ error: 'Missing email or otp' });
+    const identifier = sanitizeString(String(req.body?.identifier || ''), 120);
+    const password = String(req.body?.password || '').slice(0, 200);
+    const result = await verifyPasswordLogin(identifier, password);
+    if (!result.success) {
+      return res.status(result.blocked ? 403 : 401).json({ success: false, blocked: Boolean(result.blocked), message: result.message });
     }
-
-    let displayName = rawSanitName || '';
-    if (!displayName || displayName.includes('@')) {
-      if (email.includes('@')) {
-        const uPart = email.split('@')[0];
-        displayName = uPart.charAt(0).toUpperCase() + uPart.slice(1);
-      } else {
-        displayName = 'Gamer';
-      }
+    const token = signSession({ uid: result.key, email: result.user.email || '' });
+    if (!token) {
+      console.error('[Auth Login] FIREBASE_DB_SECRET / SESSION_SECRET not set — cannot issue sessions');
+      return res.status(503).json({ success: false, message: 'Login is temporarily unavailable. Please try again later.' });
     }
+    res.json({ success: true, token, user: publicProfile(result.key, result.user) });
+  } catch (e) {
+    console.error('[Auth Login Error]:', e.message);
+    res.status(500).json({ success: false, message: 'Login failed. Please try again.' });
+  }
+});
 
+// Password reset: the server makes and checks the code (it used to be made
+// and checked in the browser, so anyone could reset anyone's password).
+const passwordResetCodes = new Map(); // email -> { hash, expires, attempts }
+const RESET_CODE_TTL_MS = 15 * 60 * 1000;
+const hashResetCode = (code) => crypto.createHash('sha256').update(String(code)).digest('hex');
+
+app.post('/api/auth/reset-request', rateLimiter(5, 60000), async (req, res) => {
+  try {
+    const email = sanitizeString(String(req.body?.email || ''), 100).trim().toLowerCase();
+    if (!email || !email.includes('@')) return res.status(400).json({ success: false, message: 'Please enter a valid email address.' });
+    const users = await rtdbGet('users');
+    const exists = Object.values(users && typeof users === 'object' ? users : {})
+      .some(u => u && String(u.email || '').trim().toLowerCase() === email);
+    // Same reply whether or not the email has an account.
+    if (exists) {
+      const code = String(crypto.randomInt(100000, 1000000));
+      passwordResetCodes.set(email, { hash: hashResetCode(code), expires: Date.now() + RESET_CODE_TTL_MS, attempts: 0 });
+      const name = email.split('@')[0];
+      const sent = await sendOtpEmail(email, code, name.charAt(0).toUpperCase() + name.slice(1));
+      if (!sent.success) return res.status(503).json({ success: false, message: 'Email service temporarily unavailable. Please try again.' });
+    }
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[Password Reset Request Error]:', e.message);
+    res.status(500).json({ success: false, message: 'Could not send the reset code. Please try again.' });
+  }
+});
+
+app.post('/api/auth/reset-confirm', rateLimiter(10, 60000), async (req, res) => {
+  try {
+    const email = sanitizeString(String(req.body?.email || ''), 100).trim().toLowerCase();
+    const code = String(req.body?.code || '').trim();
+    const newPassword = String(req.body?.newPassword || '');
+    if (newPassword.length < 8 || newPassword.length > 200 || newPassword.startsWith('sha256:')) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 8 characters!' });
+    }
+    const entry = passwordResetCodes.get(email);
+    if (!entry || Date.now() > entry.expires || entry.attempts >= 5) {
+      passwordResetCodes.delete(email);
+      return res.status(400).json({ success: false, message: 'This code has expired. Please request a new one.' });
+    }
+    entry.attempts += 1;
+    const given = Buffer.from(hashResetCode(code));
+    if (!crypto.timingSafeEqual(Buffer.from(entry.hash), given)) {
+      return res.status(400).json({ success: false, message: 'Invalid verification code! Please check your email inbox.' });
+    }
+    passwordResetCodes.delete(email);
+    const updated = await setPasswordForEmail(email, newPassword);
+    if (!updated) return res.status(404).json({ success: false, message: 'No account found with that email.' });
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[Password Reset Confirm Error]:', e.message);
+    res.status(500).json({ success: false, message: 'Could not update the password. Please try again.' });
+  }
+});
+
+// Direct OTP Email sending API endpoint with rate limiter & sanitization
+// Sends a 6-digit code email (signup verification and password reset).
+// Returns { success, provider?, messageId? }.
+async function sendOtpEmail(email, otp, displayName) {
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; background-color: #0f172a; color: #ffffff; padding: 24px; border-radius: 16px; max-width: 500px; margin: 0 auto;">
         <div style="text-align: center; margin-bottom: 20px;">
@@ -615,7 +687,7 @@ app.post('/api/send-otp', rateLimiter(10, 60000), async (req, res) => {
           html: emailHtml
         });
         console.log(`[Zoho Mail OTP Sent] Successfully sent to ${email} via ${zohoUser}`, info?.messageId);
-        return res.json({ success: true, provider: 'Zoho Mail SMTP', messageId: info?.messageId });
+        return { success: true, provider: 'Zoho Mail SMTP', messageId: info?.messageId };
       } catch (z465Err) {
         console.warn('[Zoho OTP Note]:', z465Err.message);
       }
@@ -635,15 +707,43 @@ app.post('/api/send-otp', rateLimiter(10, 60000), async (req, res) => {
         });
         if (data?.id && !data?.error) {
           console.log(`[Resend OTP Sent] Sent to ${email}, id: ${data?.id}`);
-          return res.json({ success: true, provider: 'Resend API', messageId: data?.id });
+          return { success: true, provider: 'Resend API', messageId: data?.id };
         }
       } catch (rErr) {
         console.warn('[Resend OTP Error]:', rErr.message);
       }
     }
 
-    // Both providers failed
     console.error('[OTP Email] Both Zoho SMTP and Resend failed — OTP not delivered to', email);
+    return { success: false };
+}
+
+app.post('/api/send-otp', rateLimiter(10, 60000), async (req, res) => {
+  try {
+    const rawEmail = req.body?.email;
+    const rawOtp = req.body?.otp;
+    const rawName = req.body?.name;
+
+    const email = sanitizeString(rawEmail, 100);
+    const otp = sanitizeString(rawOtp, 10);
+    const rawSanitName = sanitizeString(rawName, 50);
+
+    if (!email || !otp) {
+      return res.status(400).json({ error: 'Missing email or otp' });
+    }
+
+    let displayName = rawSanitName || '';
+    if (!displayName || displayName.includes('@')) {
+      if (email.includes('@')) {
+        const uPart = email.split('@')[0];
+        displayName = uPart.charAt(0).toUpperCase() + uPart.slice(1);
+      } else {
+        displayName = 'Gamer';
+      }
+    }
+
+    const sent = await sendOtpEmail(email, otp, displayName);
+    if (sent.success) return res.json(sent);
     return res.status(503).json({ success: false, error: 'Email service temporarily unavailable. Please try again.' });
   } catch (err) {
     console.error('Mail OTP Error:', err);
@@ -788,28 +888,20 @@ async function verifyFirebaseIdToken(idToken) {
   const cleanToken = idToken.startsWith('Bearer ') ? idToken.slice(7).trim() : idToken.trim();
   if (!cleanToken) return null;
 
-  // Handle WEB_SESSION fallback tokens generated for custom web user logins
-  // Format: WEB_SESSION:uid|email  (new format with pipe separator)
-  // Format: WEB_SESSION:uid_or_email  (legacy single-value format)
+  // Username/password and reseller logins carry a server-signed session
+  // (lib/session.js). The old unsigned WEB_SESSION:uid|email token is no
+  // longer accepted: anyone could write one for any account.
+  if (isSessionToken(cleanToken)) {
+    const session = verifySession(cleanToken);
+    if (!session) return null;
+    // The email on a password account is whatever was typed at signup, so it
+    // is not used to find wallets or reseller status (email: ''); only the
+    // account's own record (uid) is.
+    return { uid: session.uid, email: '', displayEmail: session.email, emailVerified: false, isPasswordSession: true };
+  }
   if (cleanToken.startsWith('WEB_SESSION:')) {
-    const rawId = cleanToken.slice(12).trim();
-    if (rawId) {
-      // New format: uid|email
-      if (rawId.includes('|')) {
-        const [uid, email] = rawId.split('|');
-        return {
-          uid: uid.trim() || email.trim(),
-          email: email.trim() || (uid.includes('@') ? uid.trim() : `${uid.trim()}@madstopup.com`),
-          emailVerified: true
-        };
-      }
-      // Legacy format: single uid or email
-      return {
-        uid: rawId,
-        email: rawId.includes('@') ? rawId : `${rawId}@madstopup.com`,
-        emailVerified: true
-      };
-    }
+    console.warn('[Auth] Rejected a legacy WEB_SESSION token');
+    return null;
   }
 
   const apiKey = process.env.FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY || "AIzaSyAzgbA7GdTY5Dv2CtgY8cVOswkpfcQpNcE";
@@ -868,7 +960,7 @@ const BLOCKED_ACCOUNT_MESSAGE = 'Your account has been blocked. Please contact s
 // wallet spend still refuses blocked accounts on its own.
 async function rejectIfBlocked(user, res) {
   try {
-    if (await isUserBlocked(user?.uid, user?.email)) {
+    if (await isUserBlocked(user?.uid, user?.email || user?.displayEmail)) {
       console.warn(`[BLOCKED ACCOUNT] ${user?.uid} (${user?.email}) was refused`);
       res.status(403).json({ success: false, verified: false, blocked: true, error: BLOCKED_ACCOUNT_MESSAGE, message: BLOCKED_ACCOUNT_MESSAGE });
       return true;

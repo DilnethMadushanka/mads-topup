@@ -4,7 +4,7 @@ import { GAMES_DATA } from '../data/games';
 import { getMoongoldConfig, saveMoongoldConfig } from '../services/moongoldApi';
 import { getR2Config, saveR2Config } from '../services/storageService';
 import { auth, onAuthStateChanged, logoutGoogle, getRedirectResult } from '../services/firebaseAuth';
-import { postServerApi } from '../services/serverApi';
+import { postServerApi, clearSessionToken } from '../services/serverApi';
 import { getAdminToken } from '../services/adminSession';
 import { 
   syncUserProfileToFirestore, updateUserProfileInFirestore, subscribeUserProfile, 
@@ -480,6 +480,7 @@ export const AppProvider = ({ children }) => {
     if (typeof window !== 'undefined') {
       try {
         localStorage.removeItem('mads_user_profile');
+        clearSessionToken();
         sessionStorage.clear();
       } catch (e) {}
     }
@@ -528,6 +529,25 @@ export const AppProvider = ({ children }) => {
       .catch(() => {});
     return () => { cancelled = true; };
   }, [isLoggedIn, userProfile?.uid, userProfile?.email]);
+
+  // A password login from before signed sessions (or an expired session)
+  // can't place orders any more — log out and ask for a fresh login.
+  const sessionExpiredRef = React.useRef(false);
+  useEffect(() => {
+    const onExpired = async () => {
+      if (sessionExpiredRef.current || (auth && auth.currentUser)) return;
+      sessionExpiredRef.current = true;
+      try {
+        await handleLogout();
+        showToast('Please log in again to continue.', 'error');
+        openAuth('login');
+      } finally {
+        sessionExpiredRef.current = false;
+      }
+    };
+    window.addEventListener('mads:session-expired', onExpired);
+    return () => window.removeEventListener('mads:session-expired', onExpired);
+  }, []);
 
   useEffect(() => {
     const onBlocked = () => logoutBlockedAccount();

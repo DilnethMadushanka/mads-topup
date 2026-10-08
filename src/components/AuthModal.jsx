@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { loginWithGoogle, resetPasswordEmail } from '../services/firebaseAuth';
-import { syncUserProfileToFirestore, updateUserProfileInFirestore, getResellerProfileByKeyAsync, verifyUserLoginAsync, updateUserPasswordInFirestore } from '../services/firestoreService';
+import { loginWithGoogle } from '../services/firebaseAuth';
+import { syncUserProfileToFirestore, updateUserProfileInFirestore, getResellerProfileByKeyAsync, verifyUserLoginAsync, requestPasswordResetCode, confirmPasswordReset } from '../services/firestoreService';
 import { X, Eye, EyeOff, Shield, Zap, Clock, User, Mail, Phone, Lock, Check, Send, LogIn, ArrowRight, Loader2 } from 'lucide-react';
 
 export const AuthModal = () => {
@@ -35,7 +35,6 @@ export const AuthModal = () => {
 
   // Forgot Password State
   const [resetEmail, setResetEmail] = useState('');
-  const [resetOtp, setResetOtp] = useState('');
   const [enteredResetOtp, setEnteredResetOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
@@ -43,6 +42,7 @@ export const AuthModal = () => {
   const [isSendingReset, setIsSendingReset] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
+  // The server makes, emails and checks the reset code.
   const handleSendPasswordReset = async (e) => {
     if (e) e.preventDefault();
     const targetEmail = (resetEmail || username || email || '').trim();
@@ -51,100 +51,15 @@ export const AuthModal = () => {
       return;
     }
     setIsSendingReset(true);
-
     try {
-      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-      setResetOtp(otpCode);
-      try {
-        sessionStorage.setItem('mads_reset_otp', otpCode);
-        sessionStorage.setItem('mads_reset_email', targetEmail);
-      } catch (e) {}
-
-      let sentSuccess = false;
-
-      // 1. Send Firebase password reset email link
-      try {
-        const fbRes = await resetPasswordEmail(targetEmail);
-        if (fbRes && fbRes.success) {
-          sentSuccess = true;
-          console.log('[Firebase Password Reset Link Sent to Inbox]');
-        }
-      } catch (e) {}
-
-      // Derive recipient name immediately — skip the 3s blocking DB lookup
-      let recipientName = 'Gamer';
-      if (username && !username.includes('@')) {
-        recipientName = username;
-      } else if (targetEmail.includes('@')) {
-        const uPart = targetEmail.split('@')[0];
-        recipientName = uPart.charAt(0).toUpperCase() + uPart.slice(1);
+      try { sessionStorage.setItem('mads_reset_email', targetEmail); } catch (e) {}
+      const result = await requestPasswordResetCode(targetEmail);
+      if (!result.success) {
+        showToast(result.message || 'Error sending reset code. Please try again.', 'error');
+        return;
       }
-
-      // 2. Send OTP via both endpoints in PARALLEL (6s timeout each, was 8s sequential)
-      const makeResetOtpRequest = (endpoint) => {
-        const controller = new AbortController();
-        const tid = setTimeout(() => controller.abort(), 6000);
-        return fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: targetEmail, otp: otpCode, name: recipientName }),
-          signal: controller.signal
-        }).then(r => { clearTimeout(tid); return r; })
-          .catch(err => { clearTimeout(tid); throw err; });
-      };
-
-      try {
-        const winner = await Promise.any([
-          makeResetOtpRequest('/api/send-otp'),
-          makeResetOtpRequest('https://madstopup.com/api/send-otp')
-        ]);
-        if (winner.ok) {
-          const data = await winner.json().catch(() => ({}));
-          if (data?.success) {
-            sentSuccess = true;
-            console.log('[Password Reset OTP Sent via server]', data);
-          }
-        }
-      } catch (parallelErr) {
-        console.warn('[Reset OTP server endpoints unavailable]:', parallelErr.message);
-      }
-
-      // 3. Fallback to EmailJS for instant delivery of 6-digit OTP code
-      if (!sentSuccess) {
-        const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_42ovub5';
-        const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_e9m409d';
-        const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'UL_Cr3VmylKk8r2Dp';
-
-        try {
-          let emailjsModule;
-          try { emailjsModule = await import('@emailjs/browser'); } catch (e) {}
-          const emailjsLib = emailjsModule?.default || emailjsModule || window.emailjs;
-
-          if (emailjsLib && typeof emailjsLib.send === 'function') {
-            if (typeof emailjsLib.init === 'function') {
-              try { emailjsLib.init(publicKey); } catch (e) {}
-            }
-            await emailjsLib.send(
-              serviceId,
-              templateId,
-              {
-                to_email: targetEmail,
-                email: targetEmail,
-                otp_code: otpCode,
-                passcode: otpCode,
-                user_name: recipientName,
-                time: '15 mins'
-              },
-              publicKey
-            );
-            sentSuccess = true;
-            console.log('[Password Reset OTP Sent via EmailJS]');
-          }
-        } catch (emailjsErr) {}
-      }
-
       setIsResetCodeSent(true);
-      showToast(`Password reset link & 6-digit verification code sent to ${targetEmail}! Check your inbox.`);
+      showToast(`If ${targetEmail} has an account, a 6-digit code has been sent to it. Check your inbox.`);
     } catch (error) {
       console.error('Password reset handler error:', error);
       showToast('Error sending reset code. Please try again.', 'error');
@@ -156,17 +71,10 @@ export const AuthModal = () => {
   const handleConfirmPasswordReset = async (e) => {
     if (e) e.preventDefault();
 
-    const storedOtp = resetOtp || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('mads_reset_otp') : '');
     const targetEmail = (resetEmail || username || email || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('mads_reset_email') : '') || '').trim();
 
     if (!enteredResetOtp) {
       showToast('Please enter the 6-digit verification code sent to your email!', 'error');
-      return;
-    }
-
-    const cleanEntered = (enteredResetOtp || '').toString().trim();
-    if (cleanEntered !== storedOtp) {
-      showToast('Invalid verification code! Please check your email inbox.', 'error');
       return;
     }
 
@@ -189,21 +97,18 @@ export const AuthModal = () => {
     setIsUpdatingPassword(true);
 
     try {
-      const updateTask = updateUserPasswordInFirestore(targetEmail, newPassword);
-      const timeoutTask = new Promise((res) => setTimeout(() => res(true), 2800));
-
-      await Promise.race([updateTask, timeoutTask]);
-
+      const result = await confirmPasswordReset(targetEmail, enteredResetOtp, newPassword);
+      if (!result.success) {
+        showToast(result.message || 'Failed to update password. Please try again.', 'error');
+        return;
+      }
       showToast('Password updated successfully! Please log in with your updated password. ✅');
       setPassword(newPassword);
       setIsResetCodeSent(false);
       setEnteredResetOtp('');
       setNewPassword('');
       setConfirmNewPassword('');
-      try {
-        sessionStorage.removeItem('mads_reset_otp');
-        sessionStorage.removeItem('mads_reset_email');
-      } catch (e) {}
+      try { sessionStorage.removeItem('mads_reset_email'); } catch (e) {}
       setAuthMode('login');
     } catch (err) {
       console.error('Password update error:', err);
@@ -453,9 +358,13 @@ export const AuthModal = () => {
 
     setIsLoggedIn(true);
     const savedProfile = await syncUserProfileToFirestore(newAccountData);
+    // Log in through the server to get a signed session for top-ups.
+    const loginRes = await verifyUserLoginAsync(newAccountData.email, password);
+    if (!loginRes.success) console.warn('Post-signup login note:', loginRes.message);
+    const { password: _pw, ...profileWithoutPassword } = savedProfile || newAccountData;
     setUserProfile(prev => ({
       ...prev,
-      ...(savedProfile || newAccountData)
+      ...profileWithoutPassword
     }));
 
     showToast(`Account created successfully! Welcome ${username}. ✅`);

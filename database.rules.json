@@ -4,7 +4,7 @@
       ".read": true,
       "$uid": {
         ".write": "newData.exists()",
-        ".validate": "newData.hasChildren() && (!data.child('walletBalance').exists() || newData.child('walletBalance').exists()) && (!data.child('walletUsdt').exists() || newData.child('walletUsdt').exists()) && (!data.child('isReseller').exists() || newData.child('isReseller').exists()) && (!data.child('resellerStatus').exists() || newData.child('resellerStatus').exists()) && (!data.child('role').exists() || newData.child('role').exists()) && (!data.child('status').exists() || newData.child('status').exists())",
+        ".validate": "newData.hasChildren() && (!data.child('walletBalance').exists() || newData.child('walletBalance').exists()) && (!data.child('walletUsdt').exists() || newData.child('walletUsdt').exists()) && (!data.child('isReseller').exists() || newData.child('isReseller').exists()) && (!data.child('resellerStatus').exists() || newData.child('resellerStatus').exists()) && (!data.child('role').exists() || newData.child('role').exists()) && (!data.child('status').exists() || newData.child('status').exists()) && (!data.child('password').exists() || newData.child('password').exists())",
         "walletBalance": {
           ".validate": "newData.isNumber() && ((!data.exists() && newData.val() == 0) || newData.val() == data.val())"
         },
@@ -22,6 +22,9 @@
         },
         "status": {
           ".validate": "newData.val() == data.val() || (!data.exists() && newData.val() == 'ACTIVE')"
+        },
+        "password": {
+          ".validate": "newData.isString() && ((!data.exists() && !data.parent().exists()) || newData.val() == data.val())"
         }
       }
     },
@@ -43,7 +46,10 @@
       ".read": true,
       "$id": {
         ".write": "newData.exists()",
-        ".validate": "newData.hasChildren()"
+        ".validate": "newData.hasChildren()",
+        "status": {
+          ".validate": "newData.val() == data.val() || newData.val() != 'APPROVED'"
+        }
       }
     },
     "siteConfig": {
