@@ -47,8 +47,8 @@
     "manual_payments": {
       ".read": true,
       "$id": {
-        ".write": "newData.exists()",
-        ".validate": "newData.hasChildren()"
+        ".write": "!data.exists() && newData.exists()",
+        ".validate": "newData.hasChildren() && !newData.child('credited').exists() && !newData.child('creditedTo').exists()"
       }
     },
     "reseller_applications": {

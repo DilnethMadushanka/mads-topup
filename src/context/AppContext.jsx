@@ -11,7 +11,7 @@ import {
   saveOrderToFirestore, subscribeAllUsersFromFirestore, subscribeOrdersFromFirestore, updateOrderStatusInFirestore,
   saveResellerApplicationToFirestore, subscribeResellerApplicationsFromFirestore, updateResellerApplicationStatusInFirestore,
   saveCustomGamePricesToFirestore, subscribeCustomGamePricesFromFirestore, generateUniqueSecurityKey, ensureResellerCredentials,
-  saveManualPaymentToFirestore, updateManualPaymentStatusInFirestore, subscribeManualPaymentsFromFirestore, creditUserWalletInDatabase, setUserExactBalanceInDatabase,
+  saveManualPaymentToFirestore, updateManualPaymentStatusInFirestore, approveManualPaymentOnServer, subscribeManualPaymentsFromFirestore, creditUserWalletInDatabase, setUserExactBalanceInDatabase,
   saveVouchersToFirestore, subscribeVouchersFromFirestore, redeemVoucherInDatabase,
   savePopupAdConfigToFirestore, subscribePopupAdConfigFromFirestore, DEFAULT_POPUP_AD_CONFIG,
   saveSupportTicketToFirestore, updateSupportTicketInFirestore, subscribeSupportTicketsFromFirestore,
@@ -1249,39 +1249,27 @@ export const AppProvider = ({ children }) => {
   const approveManualPayment = async (paymentId) => {
     const pay = manualPayments.find(p => p.id === paymentId);
     if (!pay) return;
-    // Idempotency guard against double-crediting: checked/set synchronously
-    // via a ref (not React state) so two Approve clicks fired back-to-back —
-    // before either state update re-renders and hides the button — can't
-    // both pass this check. React state (pay.status === 'VERIFIED') alone
-    // isn't enough here because both calls would read the same stale value.
+    // Guard against a double click firing two requests; the server also
+    // refuses to credit the same deposit twice.
     if (approvingPaymentIdsRef.current.has(paymentId) || pay.status === 'VERIFIED') return;
     approvingPaymentIdsRef.current.add(paymentId);
 
-    setManualPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status: 'VERIFIED' } : p));
-    updateManualPaymentStatusInFirestore(paymentId, 'VERIFIED');
-    
-    // 24H Launch Wallet Recharge Bonus Calculation
-    let bonusLkr = 0;
-    const amt = parseFloat(pay.amount) || 0;
-    if (pay.currency !== 'USDT') {
-      if (amt >= 20000) bonusLkr = 600;
-      else if (amt >= 10000) bonusLkr = 250;
-      else if (amt >= 5000) bonusLkr = 100;
-    }
-
-    const totalLkr = pay.currency === 'USDT' ? 0 : (amt + bonusLkr);
-    const totalUsdt = pay.currency === 'USDT' ? amt : 0;
-
-    // 1. Write balance to DB once via updateUserBalance (which internally calls creditUserWalletInDatabase)
-    // NOTE: Do NOT call creditUserWalletInDatabase here separately — updateUserBalance already does that,
-    // calling it again would DOUBLE the credit in the database.
-    await updateUserBalance(pay.userId || pay.userEmail || pay.resellerCode, totalLkr, totalUsdt);
-
-    if (pay.currency === 'USDT') {
-      showToast(`Payment ${paymentId} approved! Credited $${pay.amount} USDT to ${pay.userName}`);
-    } else {
-      const bonusMsg = bonusLkr > 0 ? ` (+Rs. ${bonusLkr} Launch Bonus)` : '';
-      showToast(`Payment ${paymentId} approved! Credited Rs. ${totalLkr.toLocaleString()} LKR${bonusMsg} to ${pay.userName}`);
+    try {
+      // The server reads the amount and account from the stored deposit and
+      // credits it once (with the launch bonus), so nothing here is trusted.
+      const result = await approveManualPaymentOnServer(paymentId);
+      if (!result.ok) {
+        showToast(result.error || 'Could not approve this deposit.', 'error');
+        return;
+      }
+      setManualPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status: 'VERIFIED', credited: true } : p));
+      if (result.creditedUsdt > 0) {
+        showToast(`Payment ${paymentId} approved! Credited $${result.creditedUsdt} USDT to ${pay.userName}`);
+      } else {
+        showToast(`Payment ${paymentId} approved! Credited Rs. ${Number(result.creditedLkr || 0).toLocaleString()} LKR to ${pay.userName}`);
+      }
+    } finally {
+      approvingPaymentIdsRef.current.delete(paymentId);
     }
   };
 
