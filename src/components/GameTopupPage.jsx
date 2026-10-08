@@ -232,6 +232,7 @@ export const GameTopupPage = () => {
       let lastErrMsg = '';
       let blockedAccount = false;
       let lastPartnerOrderId = null;
+      const partnerOrderIds = [];
       let lastNewBalanceLkr = undefined;
       let lastNewBalanceUsdt = undefined;
 
@@ -261,10 +262,12 @@ export const GameTopupPage = () => {
           if (res.success) {
             lastRef = res.moongoldRef;
             lastPartnerOrderId = res.partnerOrderId || lastPartnerOrderId;
+            if (res.partnerOrderId) partnerOrderIds.push(res.partnerOrderId);
             if (res.newBalanceLkr !== undefined) lastNewBalanceLkr = res.newBalanceLkr;
             if (res.newBalanceUsdt !== undefined) lastNewBalanceUsdt = res.newBalanceUsdt;
           } else {
             allSuccess = false;
+            if (res.moongoldRef) partnerOrderIds.push(res.moongoldRef);
             lastErrMsg = res.message || 'Provider dispatch failed';
             blockedAccount = Boolean(res.blocked);
             break;
@@ -281,6 +284,7 @@ export const GameTopupPage = () => {
         status: allSuccess ? 'COMPLETED' : 'FAILED',
         moongoldRef: lastRef,
         partnerOrderId: lastPartnerOrderId,
+        partnerOrderIds,
         message: lastErrMsg
       };
 
@@ -306,6 +310,7 @@ export const GameTopupPage = () => {
           status: 'FAILED',
           moongoldRef: moongoldResult.moongoldRef || 'GATEWAY_FAILED',
           failureReason: moongoldResult.message || 'Provider dispatch failed',
+          partnerOrderIds: moongoldResult.partnerOrderIds || [],
           createdAt: new Date().toISOString()
         };
 
@@ -350,6 +355,7 @@ export const GameTopupPage = () => {
       // Lets the database rules check a COMPLETED order against the
       // server's own record of the dispatch.
       partnerOrderId: moongoldResult.partnerOrderId || null,
+      partnerOrderIds: moongoldResult.partnerOrderIds || [],
       createdAt: new Date().toISOString()
     };
 

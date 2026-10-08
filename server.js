@@ -1155,6 +1155,45 @@ async function payReferralCashback(uid, email, orderPriceLkr, referralCode) {
 // same attempt.
 const moogoldProcessingLocks = new Set();
 
+// The admin panel lists orders/ records, which browsers write after an order.
+// A caller that skips that step (a script hitting /api/moogold directly) would
+// leave no trace there, so the server writes its own record for every order.
+// The browser hides it when it already has its own order with the same
+// partnerOrderId (see subscribeOrdersFromFirestore).
+async function saveServerOrderRecord(partnerOrderId, { user, bodyObj, priceLkr, status, moongoldRef, reason, ip }) {
+  try {
+    const data = bodyObj?.data || {};
+    const productId = String(data['product-id'] || '');
+    let game = null, pkg = null;
+    for (const g of GAMES_DATA) {
+      const found = (g.packages || []).find(p => String(p.moongoldProductId) === productId);
+      if (found) { game = g; pkg = found; break; }
+    }
+    const id = 'SRV-' + String(partnerOrderId).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 70);
+    await rtdbPut(`orders/${id}`, {
+      id,
+      source: 'server',
+      partnerOrderId,
+      userId: user?.uid || '',
+      userEmail: user?.email || user?.displayEmail || '',
+      gameId: game?.id || '',
+      gameName: game?.name || `Product ${productId}`,
+      packageName: pkg ? `${pkg.name}${Number(data.quantity) > 1 ? ` x${data.quantity}` : ''}` : productId,
+      playerId: String(data['User ID'] || data['Player ID'] || data['Character ID'] || ''),
+      zoneId: String(data['Server'] || data['Server ID'] || ''),
+      paymentMethod: bodyObj?.isResellerOrder ? 'Reseller Wallet' : 'MADS Wallet Balance',
+      priceLkr,
+      status,
+      moongoldRef: moongoldRef || '',
+      failureReason: reason || null,
+      ip: ip || '',
+      createdAt: new Date().toISOString()
+    });
+  } catch (e) {
+    console.warn('[Server Order Record Warning]:', e.message);
+  }
+}
+
 async function getMoogoldOrderRecord(partnerOrderId) {
   try {
     const res = await fetch(rtdbUrl(`moogoldProcessedOrders/${partnerOrderId}`));
@@ -1178,7 +1217,10 @@ async function saveMoogoldOrderRecord(partnerOrderId, record) {
 }
 
 app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
-  const partnerOrderId = req.body?.bodyObj?.partnerOrderId || null;
+  // Every order gets an id, so a request that leaves it out (a script calling
+  // this endpoint directly) still gets a server record and an admin entry.
+  const partnerOrderId = req.body?.bodyObj?.partnerOrderId
+    || (req.body?.path === 'order/create_order' ? `srv-${Date.now()}-${crypto.randomBytes(4).toString('hex')}` : null);
   try {
     const { path: apiPath, bodyObj, priceLkr, paymentId } = req.body || {};
 
@@ -1346,6 +1388,16 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
 
     if (isOrderCreation && !isSuccess) {
       console.error(`[MOOGOLD ORDER REJECTED] product-id=${moongoldPayload.data?.['product-id']} category=${moongoldPayload.data?.category} reason="${jsonResult?.message || jsonResult?.error || text}"`);
+    }
+
+    if (isOrderCreation && deductResult?.success && partnerOrderId) {
+      await saveServerOrderRecord(partnerOrderId, {
+        user: authenticatedUser, bodyObj, priceLkr: numPriceLkr,
+        status: isSuccess ? 'COMPLETED' : 'FAILED',
+        moongoldRef: jsonResult?.order_id ? String(jsonResult.order_id) : '',
+        reason: isSuccess ? null : (jsonResult?.message || jsonResult?.error || `HTTP ${apiRes.status}`),
+        ip: req.headers['x-forwarded-for'] || req.socket?.remoteAddress || ''
+      });
     }
 
     // 4. REFUND USER IF MOOGOLD ORDER FAILED — refund to the same wallet they paid from
