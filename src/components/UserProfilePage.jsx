@@ -74,7 +74,6 @@ export const UserProfilePage = () => {
     setUserProfile(prev => ({
       ...prev,
       name: editName,
-      email: editEmail,
       phone: editPhone
     }));
     setIsEditMode(false);
@@ -395,7 +394,7 @@ Thank you for using MADS TOPUP Sri Lanka!
                   <label className="text-[11px] font-black text-slate-500 uppercase tracking-wider block mb-2">Email Address</label>
                   <div className="relative">
                     <Mail className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                    <input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className={inputCls} />
+                    <input type="email" value={editEmail} readOnly title="Your login email can't be changed here. Contact support to change it." className={`${inputCls} opacity-70 cursor-not-allowed`} />
                   </div>
                 </div>
               </div>

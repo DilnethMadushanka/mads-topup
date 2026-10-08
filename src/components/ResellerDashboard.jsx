@@ -46,7 +46,7 @@ export const ResellerDashboard = () => {
   // Store Settings Form State
   const [storeName, setStoreName] = useState(userProfile?.storeName || `${userProfile?.name || 'Gamer'}'s TopUp Store`);
   const [whatsappContact, setWhatsappContact] = useState(userProfile?.phone || '');
-  const [storeEmail, setStoreEmail] = useState(userProfile?.email || '');
+  const [storeEmail, setStoreEmail] = useState(userProfile?.storeEmail || userProfile?.email || '');
 
   const profileWithCreds = ensureResellerCredentials(userProfile) || {};
   const resellerWalletId = profileWithCreds.resellerCode || userProfile?.resellerCode || 'RS-OFFICIAL';
@@ -278,12 +278,12 @@ export const ResellerDashboard = () => {
       ...prev,
       storeName,
       phone: whatsappContact,
-      email: storeEmail
+      storeEmail
     }));
     // Bug 6: Persist to Firestore so settings survive page refresh
     if (userProfile?.uid) {
       try {
-        await updateUserProfileInFirestore(userProfile.uid, { storeName, phone: whatsappContact, email: storeEmail });
+        await updateUserProfileInFirestore(userProfile.uid, { storeName, phone: whatsappContact, storeEmail });
       } catch (err) {
         console.warn('[ResellerDashboard] Store profile DB save note:', err);
       }

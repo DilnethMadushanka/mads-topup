@@ -4,7 +4,7 @@
       ".read": true,
       "$uid": {
         ".write": "newData.exists()",
-        ".validate": "newData.hasChildren() && (!data.child('walletBalance').exists() || newData.child('walletBalance').exists()) && (!data.child('walletUsdt').exists() || newData.child('walletUsdt').exists()) && (!data.child('isReseller').exists() || newData.child('isReseller').exists()) && (!data.child('resellerStatus').exists() || newData.child('resellerStatus').exists()) && (!data.child('role').exists() || newData.child('role').exists()) && (!data.child('status').exists() || newData.child('status').exists()) && (!data.child('password').exists() || newData.child('password').exists())",
+        ".validate": "newData.hasChildren() && (!data.child('walletBalance').exists() || newData.child('walletBalance').exists()) && (!data.child('walletUsdt').exists() || newData.child('walletUsdt').exists()) && (!data.child('isReseller').exists() || newData.child('isReseller').exists()) && (!data.child('resellerStatus').exists() || newData.child('resellerStatus').exists()) && (!data.child('role').exists() || newData.child('role').exists()) && (!data.child('status').exists() || newData.child('status').exists()) && (!data.child('password').exists() || newData.child('password').exists()) && (!data.child('email').exists() || newData.child('email').val() == data.child('email').val()) && (!data.child('uid').exists() || newData.child('uid').val() == data.child('uid').val())",
         "walletBalance": {
           ".validate": "newData.isNumber() && ((!data.exists() && newData.val() == 0) || newData.val() == data.val())"
         },
@@ -24,6 +24,12 @@
           ".validate": "newData.val() == data.val() || (!data.exists() && newData.val() == 'ACTIVE')"
         },
         "password": {
+          ".validate": "newData.isString() && ((!data.exists() && !data.parent().exists()) || newData.val() == data.val())"
+        },
+        "email": {
+          ".validate": "newData.isString() && ((!data.exists() && !data.parent().exists()) || newData.val() == data.val())"
+        },
+        "uid": {
           ".validate": "newData.isString() && ((!data.exists() && !data.parent().exists()) || newData.val() == data.val())"
         }
       }
