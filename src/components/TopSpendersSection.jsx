@@ -35,7 +35,9 @@ async function fetchTopSpenders() {
     const uidToEmail = {}; // track uid→email for cross-dedup
 
     flatOrders.forEach(order => {
-      if (!order || ['FAILED', 'REFUNDED', 'CANCELLED'].includes(order.status)) return;
+      // Only orders that really went through count. Anyone can create a
+      // PENDING order, so counting those would let people fake their way up.
+      if (!order || order.status !== 'COMPLETED') return;
       if (order.createdAt) {
         try {
           const d = new Date(order.createdAt);
