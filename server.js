@@ -70,6 +70,9 @@ function sanitizeString(input, maxLength = 150) {
     .substring(0, maxLength);
 }
 
+// Shown to callers when something fails; the real error stays in the server log.
+const SERVER_ERROR = 'Something went wrong. Please try again.';
+
 // In-Memory Rate Limiting Protection Middleware against Brute-Force & Spam Request Attacks
 // The caller's IP. The x-forwarded-for header can be sent by anyone, so only
 // the entries added by our own proxies count: with TRUST_PROXY_HOPS=1 (nginx
@@ -428,7 +431,7 @@ app.post('/api/admin/wallet', requireAdminSession, async (req, res) => {
     res.json({ success: true, key, ...result });
   } catch (e) {
     console.error('[Admin Wallet Error]:', e.message);
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: SERVER_ERROR });
   }
 });
 
@@ -483,7 +486,7 @@ app.post('/api/admin/custom-prices', requireAdminSession, async (req, res) => {
     res.json({ success: true, prices: clean });
   } catch (e) {
     console.error('[Admin Prices Error]:', e.message);
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: SERVER_ERROR });
   }
 });
 
@@ -626,7 +629,7 @@ app.post('/api/admin/order-status', requireAdminSession, async (req, res) => {
     res.json({ success: true });
   } catch (e) {
     console.error('[Admin Order Status Error]:', e.message);
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: SERVER_ERROR });
   }
 });
 
@@ -651,7 +654,7 @@ app.post('/api/admin/user-fields', requireAdminSession, async (req, res) => {
     res.json({ success: true, key });
   } catch (e) {
     console.error('[Admin User Fields Error]:', e.message);
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: SERVER_ERROR });
   }
 });
 
@@ -805,7 +808,7 @@ app.post('/api/admin/vouchers', requireAdminSession, async (req, res) => {
     res.json({ success: true });
   } catch (e) {
     console.error('[Admin Vouchers Error]:', e.message);
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: SERVER_ERROR });
   }
 });
 
@@ -1213,7 +1216,7 @@ app.post('/api/send-reseller-approval', rateLimiter(10, 60000), requireAdminSess
     return res.json({ success: false, simulated: true, error: lastError || 'SMTP connection failed' });
   } catch (err) {
     console.error('Mail Reseller Approval Error:', err);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: SERVER_ERROR });
   }
 });
 
@@ -1790,7 +1793,7 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
       // concurrent duplicate during this same failure).
       await saveMoogoldOrderRecord(partnerOrderId, { status: 'FAILED', reason: err.message, createdAt: new Date().toISOString() }).catch(() => {});
     }
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: SERVER_ERROR });
   } finally {
     if (partnerOrderId) moogoldProcessingLocks.delete(partnerOrderId);
   }
@@ -1817,13 +1820,14 @@ app.get('/api/public-stats', rateLimiter(60, 60000), async (req, res) => {
 });
 
 // Diagnostic IP Endpoint
-app.get('/api/ip', async (req, res) => {
+app.get('/api/ip', requireAdminSession, async (req, res) => {
   try {
     const ipRes = await fetch('https://api.ipify.org?format=json');
     const ipData = await ipRes.json();
     res.json({ ip: ipData.ip, timestamp: new Date().toISOString() });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    console.error(`[API Error] ${req.path}:`, e.message);
+    res.status(500).json({ error: SERVER_ERROR });
   }
 });
 
@@ -1849,7 +1853,7 @@ app.post('/api/binance/verify-order', async (req, res) => {
     });
   } catch (err) {
     console.error('[Binance Verify Error]:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: SERVER_ERROR });
   }
 });
 
@@ -1859,7 +1863,8 @@ app.post('/api/binance/webhook', (req, res) => {
     console.log(`[Binance Instant Webhook Received]:`, req.body);
     res.json({ returnCode: 'SUCCESS', returnMessage: null });
   } catch (e) {
-    res.status(500).json({ returnCode: 'FAIL', returnMessage: e.message });
+    console.error(`[API Error] ${req.path}:`, e.message);
+    res.status(500).json({ returnCode: 'FAIL', returnMessage: SERVER_ERROR });
   }
 });
 
@@ -2044,7 +2049,8 @@ app.post('/api/ezcash/webhook', (req, res) => {
 
     res.json({ success: true, message: 'SMS logged successfully' });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    console.error(`[API Error] ${req.path}:`, e.message);
+    res.status(500).json({ error: SERVER_ERROR });
   }
 });
 
@@ -2058,7 +2064,8 @@ app.get('/api/ezcash/webhook-logs', requireAdminSession, (req, res) => {
       logs: logs
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(`[API Error] ${req.path}:`, err.message);
+    res.status(500).json({ error: SERVER_ERROR });
   }
 });
 
@@ -2350,7 +2357,7 @@ app.post('/api/genie/create-transaction', rateLimiter(15, 60000), async (req, re
     }
   } catch (err) {
     console.error('[Geniebiz Create Error]:', err);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: SERVER_ERROR });
   }
 });
 
@@ -2378,7 +2385,7 @@ app.post('/api/genie/verify-status', rateLimiter(30, 60000), async (req, res) =>
     return res.json({ ...result, transactionId });
   } catch (err) {
     console.error('[Geniebiz Verify Error]:', err);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: SERVER_ERROR });
   }
 });
 
@@ -2431,7 +2438,8 @@ app.get('/api/player-lookup', async (req, res) => {
     }
     return res.json({ success: false, message: 'Player ID or Zone not found', ign: `Player ${id}` });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    console.error(`[API Error] ${req.path}:`, err.message);
+    res.status(500).json({ success: false, error: SERVER_ERROR });
   }
 });
 
@@ -2445,22 +2453,24 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 // Express endpoint for Telegram Bot 24/7 Health Status
-app.get('/api/telegram/status', (req, res) => {
+app.get('/api/telegram/status', requireAdminSession, (req, res) => {
   try {
     const health = getTelegramBotHealthStatus();
     res.json({ success: true, ...health });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    console.error(`[API Error] ${req.path}:`, err.message);
+    res.status(500).json({ success: false, error: SERVER_ERROR });
   }
 });
 
 // Express endpoint to trigger Manual Telegram Bot Refresh & Health Check
-app.all('/api/telegram/refresh', async (req, res) => {
+app.all('/api/telegram/refresh', requireAdminSession, async (req, res) => {
   try {
     const health = await forceTelegramBotRefresh();
     res.json({ success: true, ...health });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    console.error(`[API Error] ${req.path}:`, err.message);
+    res.status(500).json({ success: false, error: SERVER_ERROR });
   }
 });
 
