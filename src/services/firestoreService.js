@@ -1,12 +1,12 @@
 import { db, rtdb } from './firebaseAuth.js';
 import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { ref as dbRef, get as rtdbGet, set as rtdbSet, update as rtdbUpdate, onValue as rtdbOnValue } from 'firebase/database';
-import { postServerApi, getUserAuthToken } from './serverApi.js';
+import { postServerApi, getUserAuthToken, setSessionToken } from './serverApi.js';
 import { getAdminToken } from './adminSession.js';
 
 // Fields only the server may change (database.rules.json rejects browser
 // writes to them). Stripped from every profile write made from the browser.
-const SERVER_ONLY_USER_FIELDS = ['walletBalance', 'walletUsdt', 'isReseller', 'resellerStatus', 'role', 'status'];
+const SERVER_ONLY_USER_FIELDS = ['walletBalance', 'walletUsdt', 'isReseller', 'resellerStatus', 'role', 'status', 'password'];
 const stripServerOnlyFields = (data) => {
   const clean = { ...(data || {}) };
   for (const k of SERVER_ONLY_USER_FIELDS) delete clean[k];
@@ -614,174 +614,33 @@ export const isAccountBlockedAsync = async (uid, email) => {
   ));
 };
 
+// Username/password and reseller login. The server checks the password and
+// returns a signed session token (stored for later top-ups). The browser no
+// longer compares passwords against the public users list itself.
 export const verifyUserLoginAsync = async (identifier, passwordInput) => {
   if (!identifier || !passwordInput) return { success: false, message: 'Please enter username and password!' };
-
-  const cleanId = String(identifier).trim().toLowerCase();
-  
-  try {
-    const res = await fetch('https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/users.json');
-    if (res.ok) {
-      const allUsers = await res.json();
-      if (allUsers) {
-        let matchedUid = null;
-        let matchedUser = null;
-
-        for (const [uId, uData] of Object.entries(allUsers)) {
-          if (!uData) continue;
-          const uEmail = String(uData.email || '').trim().toLowerCase();
-          const uName = String(uData.name || uData.username || '').trim().toLowerCase();
-          const uCode = String(uData.resellerCode || '').trim().toLowerCase();
-          const uSec = String(uData.securityKey || '').trim().toLowerCase();
-
-          if (uEmail === cleanId || uName === cleanId || uCode === cleanId || uSec === cleanId || String(uId).toLowerCase() === cleanId) {
-            matchedUid = uId;
-            matchedUser = uData;
-            break;
-          }
-        }
-
-        if (matchedUser && matchedUid) {
-          // Accounts created via Google Sign-In never have a password field
-          // (see AuthModal.jsx handleGoogleAuth / syncUserProfileToFirestore).
-          // This branch used to silently BIND whatever password was typed here
-          // to any such account on its first login attempt — meaning anyone
-          // who merely knew a Google-authenticated user's email could type it
-          // into this form with an arbitrary password and permanently gain
-          // password-based access to that real account. There is no
-          // legitimate flow that creates an account without a password and
-          // expects it to be set this way (regular signup always sets one —
-          // see AuthModal.jsx handleRegisterSubmit), so this must be a hard
-          // failure, not an auto-bind.
-          if (!matchedUser.password) {
-            return { success: false, message: 'This account has no password set (it may use Google Sign-In). Please use "Sign in with Google" or reset your password.' };
-          }
-
-          // Check password if set in user profile — support both hashed (sha256:...) and legacy plain text
-          const storedPw = String(matchedUser.password);
-          const isHashed = storedPw.startsWith('sha256:');
-          if (isHashed) {
-            // Compare hashed vs hashed
-            const inputHash = await hashPassword(passwordInput);
-            if (inputHash !== storedPw) {
-              return { success: false, message: 'Incorrect password! Please enter your updated password.' };
-            }
-          } else {
-            // Legacy plain text — compare, then auto-migrate to hash
-            if (storedPw !== String(passwordInput)) {
-              return { success: false, message: 'Incorrect password! Please enter your updated password.' };
-            }
-            // Auto-migrate: save hashed version silently
-            const hashed = await hashPassword(passwordInput);
-            updateUserProfileInFirestore(matchedUid, { password: hashed });
-          }
-          // Blocked accounts can't log in. The admin's Block button marks one
-          // record, so any other record with the same email counts too.
-          const matchedEmail = String(matchedUser.email || '').trim().toLowerCase();
-          const isBlocked = matchedUser.status === 'BLOCKED' || (matchedEmail && Object.values(allUsers).some(u =>
-            u && u.status === 'BLOCKED' && String(u.email || '').trim().toLowerCase() === matchedEmail));
-          if (isBlocked) {
-            return { success: false, blocked: true, message: ACCOUNT_BLOCKED_MESSAGE };
-          }
-          return { success: true, user: { ...matchedUser, uid: matchedUid } };
-        }
-      }
-    }
-  } catch (err) {
-    console.warn('Verify login note:', err);
+  const { ok, data } = await postServerApi('/api/auth/login', { identifier: String(identifier).trim(), password: String(passwordInput) });
+  if (ok && data?.success && data.token) {
+    setSessionToken(data.token);
+    return { success: true, user: data.user };
   }
-
-  // No matching account found (or the lookup failed) — this must be a hard
-  // failure. It used to return success: true with a null user, which let
-  // AuthModal.jsx log the caller in as a freshly fabricated identity for ANY
-  // username/password that didn't match a real account — no registration,
-  // no password check, at all.
-  return { success: false, message: 'No account found with that username or email. Please check your details or register.' };
+  return {
+    success: false,
+    blocked: Boolean(data?.blocked),
+    message: data?.message || data?.error || 'Login failed. Please try again.'
+  };
 };
 
-/**
- * Update user password in Database across RTDB & Firestore
- */
-export const updateUserPasswordInFirestore = async (identifier, newPassword) => {
-  if (!identifier || !newPassword) return false;
-  const cleanId = String(identifier).trim().toLowerCase();
+// Password reset: the server emails a code and checks it (the code used to
+// be made and checked in the browser, so anyone could reset any password).
+export const requestPasswordResetCode = async (email) => {
+  const { ok, data } = await postServerApi('/api/auth/reset-request', { email: String(email || '').trim() });
+  return { success: ok && Boolean(data?.success), message: data?.message || data?.error };
+};
 
-  let updated = false;
-
-  // 1. Direct Firestore collection query by email
-  if (db) {
-    try {
-      const q = query(collection(db, 'users'), where('email', '==', cleanId));
-      const snap = await Promise.race([
-        getDocs(q),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Firestore query timeout')), 3000))
-      ]);
-
-      if (snap && !snap.empty) {
-        for (const userDoc of snap.docs) {
-          const uId = userDoc.id;
-          await updateUserProfileInFirestore(uId, { password: await hashPassword(newPassword), updatedAt: new Date().toISOString() });
-          updated = true;
-        }
-      }
-    } catch (e) {
-      console.warn('Firestore password update note:', e.message);
-    }
-  }
-
-  // 2. Query Realtime DB with AbortController timeout safeguard
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3500);
-
-    const res = await fetch('https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/users.json', {
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-
-    if (res.ok) {
-      const allUsers = await res.json();
-      if (allUsers) {
-        for (const [uId, uData] of Object.entries(allUsers)) {
-          if (!uData) continue;
-          const uEmail = String(uData.email || '').trim().toLowerCase();
-          const uName = String(uData.name || uData.username || '').trim().toLowerCase();
-
-          if (uEmail === cleanId || uName === cleanId || String(uId).toLowerCase() === cleanId) {
-            await updateUserProfileInFirestore(uId, { password: await hashPassword(newPassword), updatedAt: new Date().toISOString() });
-            updated = true;
-
-            // Non-blocking background update for reseller applications
-            setTimeout(async () => {
-              try {
-                const appsRes = await fetch('https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/reseller_applications.json');
-                if (appsRes.ok) {
-                  const appsData = await appsRes.json();
-                  if (appsData) {
-                    for (const [appId, app] of Object.entries(appsData)) {
-                      if (app && (String(app.emailAddress || app.email).trim().toLowerCase() === uEmail || app.userId === uId)) {
-                        await fetch(`https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/reseller_applications/${appId}.json`, {
-                          method: 'PATCH',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ password: await hashPassword(newPassword), updatedAt: new Date().toISOString() })
-                        });
-                      }
-                    }
-                  }
-                }
-              } catch (e) {}
-            }, 0);
-
-            break;
-          }
-        }
-      }
-    }
-  } catch (err) {
-    console.warn('RTDB password update note:', err.message);
-  }
-
-  return true;
+export const confirmPasswordReset = async (email, code, newPassword) => {
+  const { ok, data } = await postServerApi('/api/auth/reset-confirm', { email: String(email || '').trim(), code: String(code || '').trim(), newPassword });
+  return { success: ok && Boolean(data?.success), message: data?.message || data?.error };
 };
 
 /**
@@ -1210,12 +1069,15 @@ export const updateResellerApplicationStatusInFirestore = async (appId, userId, 
   if (rtdb) {
     try {
       const appRef = dbRef(rtdb, `reseller_applications/${appId}`);
-      await rtdbUpdate(appRef, {
-        status: newStatus,
-        resellerCode,
-        securityKey,
-        updatedAt: new Date().toISOString()
-      });
+      // APPROVED is written by the server (the rules refuse it from browsers).
+      if (newStatus !== 'APPROVED') {
+        await rtdbUpdate(appRef, {
+          status: newStatus,
+          resellerCode,
+          securityKey,
+          updatedAt: new Date().toISOString()
+        });
+      }
       if (newStatus === 'APPROVED') {
         let approvedAppEmail = '';
         try {
@@ -1228,6 +1090,7 @@ export const updateResellerApplicationStatusInFirestore = async (appId, userId, 
 
         // The reseller flag itself is granted by the server.
         const { ok, data } = await postServerApi('/api/admin/reseller-approve', {
+          appId,
           userId,
           email: approvedAppEmail,
           resellerCode,

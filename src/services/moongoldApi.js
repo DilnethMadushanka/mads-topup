@@ -3,6 +3,7 @@
 // Reseller Portal: https://reseller.moogold.com
 
 import { auth } from './firebaseAuth.js';
+import { getSessionToken, notifySessionExpired } from './serverApi.js';
 
 export const getMoongoldConfig = () => {
   if (typeof localStorage !== 'undefined') {
@@ -296,17 +297,11 @@ export const dispatchMoongoldOrder = async (orderData) => {
     }
   }
 
-  // Fallback for custom web logins (Username/Password or Reseller profiles where auth.currentUser is null)
-  const userProfile = orderData.userProfile || orderData.user || null;
-  const targetUid = orderData.userId || userProfile?.uid || auth?.currentUser?.uid || '';
-  const targetEmail = orderData.userEmail || userProfile?.email || auth?.currentUser?.email || '';
-
-  if (!idToken && (targetUid || targetEmail)) {
-    // Include both uid and email in WEB_SESSION token so the server can resolve the correct RTDB key
-    idToken = `WEB_SESSION:${targetUid || targetEmail}|${targetEmail}`;
-  }
+  // Username/password and reseller logins use their signed session.
+  if (!idToken) idToken = getSessionToken();
 
   if (!idToken) {
+    notifySessionExpired();
     return {
       success: false,
       status: 'FAILED',
@@ -438,6 +433,7 @@ export const dispatchMoongoldOrder = async (orderData) => {
         };
       }
     } else {
+      if (proxyRes.status === 401) notifySessionExpired();
       if (data && data.blocked) {
         // The server refused because this account is blocked — AppContext
         // logs the user out, and callers don't record a failed order.

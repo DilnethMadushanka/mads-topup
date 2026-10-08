@@ -3,7 +3,8 @@ import crypto from 'crypto';
 import { GAMES_DATA } from '../data/games.js';
 import { lookupFreePlayerIgn } from './playerLookup.js';
 import { getResellerProfileByKey, getResellerProfileByKeyAsync, saveOrderToFirestore } from './firestoreService.js';
-import { findUserKey, spendWallet, adjustWallet } from '../../lib/rtdbAdmin.js';
+import { findUserKey, spendWallet, adjustWallet, rtdbGet } from '../../lib/rtdbAdmin.js';
+import { verifyPasswordLogin } from '../../lib/userAuth.js';
 
 const require = createRequire(import.meta.url);
 const TelegramBot = require('node-telegram-bot-api');
@@ -493,7 +494,7 @@ export function initTelegramBot() {
           { command: 'ff', description: '🔥 Check Free Fire IGN (/ff 1017871735)' },
           { command: 'ml', description: '⚔️ Check MLBB IGN (/ml 84218845 2168)' },
           { command: 'pubg', description: '🪂 Check PUBG Mobile IGN (/pubg 512345678)' },
-          { command: 'auth', description: '🔑 Link Reseller Wallet (/auth SecurityKey)' },
+          { command: 'auth', description: '🔑 Link Reseller Wallet (/auth SecurityKey Password)' },
           { command: 'topup', description: '⚡ Execute Topup (/topup ff 1017871735 100)' },
           { command: 'balance', description: '💰 View Wallet Balance & Security Key' },
           { command: 'deposit', description: '📥 Wallet Recharge Info (EZ Cash, Binance)' },
@@ -514,8 +515,8 @@ export function initTelegramBot() {
 Support for ALL games on website: Mobile Legends, Free Fire, PUBG Mobile, Blood Strike, Delta Force & Garena Shells!
 
 🔑 1. Reseller Authentication:
-• /auth <SecurityKey> or /link <SecurityKey>
-  (e.g. /auth MADS-SEC-50048A92 or /link RS-048A92)
+• /auth <SecurityKey> <Password> or /link <SecurityKey> <Password>
+  (e.g. /auth MADS-SEC-50048A92 YourPassword)
 
 🎮 2. Live Player IGN Lookup (All Games):
 • /ml <ID> <Zone> - Mobile Legends (e.g. /ml 84218845 2168)
@@ -546,8 +547,7 @@ Support for ALL games on website: Mobile Legends, Free Fire, PUBG Mobile, Blood 
 ℹ️ MADS TOPUP BOT COMMAND GUIDE (ALL GAMES)
 
 🔑 1. Account Link:
-• /auth MADS-SEC-50048A92
-• /link RS-048A92
+• /auth MADS-SEC-50048A92 YourPassword
 
 🎮 2. Live IGN Lookup:
 • /ml 84218845 2168
@@ -662,16 +662,17 @@ Telegram long-polling connection is 100% active 24/7!
 
         if (!chatId) return;
 
-        // Bug 1 fix: guard against missing key argument before any parsing
-        if (parts.length < 2) {
-          return safeReply(ctx, '❌ Error: Please specify your unique Security Key or Reseller Code.\nUsage: /auth MADS-SEC-50048A92\nExample: /link RS-048A92');
-        }
-
+        // Linking needs the account password as well as the key: security keys
+        // and reseller codes are visible in the public users list, so a key on
+        // its own let anyone spend a reseller's wallet.
         const keyArg = (parts[1] || '').trim();
-
-        if (!keyArg || keyArg.startsWith('/')) {
-          return safeReply(ctx, '❌ Error: Please specify your unique Security Key or Reseller Code.\nUsage: /auth MADS-SEC-50048A92');
+        const passwordArg = parts.slice(2).join(' ').trim();
+        if (!keyArg || keyArg.startsWith('/') || !passwordArg) {
+          return safeReply(ctx, '❌ Error: Please send your Security Key and your account password.\nUsage: /auth MADS-SEC-50048A92 YourPassword');
         }
+
+        // Don't leave the password sitting in the chat.
+        try { const msgId = ctx.message_id || ctx.message?.message_id; if (msgId) await bot.deleteMessage(chatId, msgId); } catch (e) {}
 
         const now = Date.now();
         const rateData = authRateLimiter.get(chatId) || { failedAttempts: 0, lockoutUntil: 0 };
@@ -680,7 +681,13 @@ Telegram long-polling connection is 100% active 24/7!
           return safeReply(ctx, `🛡️ SECURITY LOCKOUT ACTIVATED\n\nToo many failed auth attempts. Chat locked for ${waitMins} minute(s) to prevent key brute-forcing.`);
         }
 
-        const reseller = await getResellerProfileByKeyAsync(keyArg);
+        const login = await verifyPasswordLogin(keyArg, passwordArg);
+        const isApproved = login.success && login.user?.isReseller && login.user?.resellerStatus === 'APPROVED';
+        const reseller = isApproved ? { ...login.user, uid: login.key, walletKey: login.key, password: undefined } : null;
+
+        if (login.blocked) {
+          return safeReply(ctx, '❌ This account has been blocked. Please contact support.');
+        }
 
         if (reseller) {
           boundChatSessions.set(chatId, reseller);
@@ -711,10 +718,9 @@ Your Telegram chat is now bound to your Reseller Wallet! You can use /topup for 
           const failText = `
 ❌ AUTHENTICATION FAILED
 
-Invalid Security Key or Reseller Code (${keyArg}). [Attempt ${rateData.failedAttempts}/5]
-Please copy your unique Security Key from your MADS TOPUP Reseller Dashboard and try again.
+Wrong Security Key or password, or this is not an approved reseller account. [Attempt ${rateData.failedAttempts}/5]
 
-Usage: /auth MADS-SEC-50048A92
+Usage: /auth MADS-SEC-50048A92 YourPassword
           `.trim();
           return safeReply(ctx, failText);
         }
@@ -820,8 +826,8 @@ ${zone ? `🌐 Zone ID: ${zone}\n` : ''}ℹ️ Status: ID formatting valid. Read
 Your Telegram chat is not bound to a verified Reseller Account.
 
 🔑 Please link your reseller wallet first:
-Send: /auth <SecurityKey>
-(Example: /auth MADS-SEC-50048A92)
+Send: /auth <SecurityKey> <Password>
+(Example: /auth MADS-SEC-50048A92 YourPassword)
           `.trim();
           return safeReply(ctx, unauthMsg);
         }
@@ -832,7 +838,7 @@ Send: /auth <SecurityKey>
           try {
             const freshReseller = await getResellerProfileByKeyAsync(keyToQuery);
             if (freshReseller) {
-              reseller = freshReseller;
+              reseller = { ...freshReseller, walletKey: reseller.walletKey };
               boundChatSessions.set(chatId, reseller);
             }
           } catch (e) {
@@ -914,20 +920,13 @@ Send: /auth <SecurityKey>
 
         let reseller = (chatId ? boundChatSessions.get(chatId) : null);
 
-        let firstArg = parts[1] || '';
-        if (!reseller && firstArg) {
-          const potentialKeyReseller = await getResellerProfileByKeyAsync(firstArg);
-          if (potentialKeyReseller) {
-            reseller = potentialKeyReseller;
-            boundChatSessions.set(chatId, reseller);
-            parts.splice(1, 1);
-          }
-        } else if (reseller) {
+        // Only a chat linked with /auth (key + password) can top up.
+        if (reseller) {
           const keyToQuery = reseller.securityKey || reseller.resellerCode || reseller.uid;
           if (keyToQuery) {
             const freshReseller = await getResellerProfileByKeyAsync(keyToQuery);
             if (freshReseller) {
-              reseller = freshReseller;
+              reseller = { ...freshReseller, walletKey: reseller.walletKey };
               boundChatSessions.set(chatId, reseller);
             }
           }
@@ -941,8 +940,8 @@ Your Telegram chat is not bound to a verified MADS TOPUP Reseller Account.
 
 🔑 How to Link Your Reseller Account:
 1️⃣ Get your unique Security Key from your MADS TOPUP Reseller Dashboard.
-2️⃣ Send command: /auth <SecurityKey>
-   (Example: /auth MADS-SEC-50048A92)
+2️⃣ Send command: /auth <SecurityKey> <Password>
+   (Example: /auth MADS-SEC-50048A92 YourPassword)
 
 Once authenticated, your Telegram chat will be linked and authorized for instant top-ups!
           `.trim();
@@ -1066,7 +1065,14 @@ Examples:
           try { await saveOrderToFirestore(freshReseller.uid || reseller.uid, pendingOrder); } catch (e) {}
 
           // Take the money first (atomic, server-side), refund if MooGold fails.
-          const walletKey = await findUserKey(freshReseller.uid || reseller.uid).catch(() => null);
+          // Spend only from the account that was verified at /auth, and only
+          // while it is still an approved reseller.
+          const walletKey = reseller.walletKey || null;
+          const walletRecord = walletKey ? await rtdbGet(`users/${walletKey}`).catch(() => null) : null;
+          if (!walletRecord || !walletRecord.isReseller || walletRecord.resellerStatus !== 'APPROVED') {
+            boundChatSessions.delete(chatId);
+            return safeReply(ctx, '🔒 Please link your reseller account again: /auth <SecurityKey> <Password>');
+          }
           const spend = walletKey
             ? await spendWallet(walletKey, wholesalePrice).catch(e => ({ success: false, reason: e.message }))
             : { success: false, reason: 'Reseller wallet not found' };
@@ -1084,7 +1090,7 @@ Examples:
               const postDeductProfile = await getResellerProfileByKeyAsync(keyToQuery);
               if (postDeductProfile && postDeductProfile.walletBalance !== undefined) {
                 confirmedBalance = postDeductProfile.walletBalance;
-                boundChatSessions.set(chatId, postDeductProfile);
+                boundChatSessions.set(chatId, { ...postDeductProfile, walletKey: reseller.walletKey });
               }
             } catch (e) {}
 

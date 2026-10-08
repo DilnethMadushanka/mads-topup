@@ -27,10 +27,31 @@ export const postServerApi = async (path, body, token) => {
   return last;
 };
 
+// Signed session from /api/auth/login, for username/password and reseller
+// logins (Google logins use their Firebase ID token instead).
+const SESSION_KEY = 'mads_session_token';
+
+export const setSessionToken = (token) => {
+  try { if (token) localStorage.setItem(SESSION_KEY, token); } catch (_) {}
+};
+
+export const getSessionToken = () => {
+  try { return localStorage.getItem(SESSION_KEY) || null; } catch (_) { return null; }
+};
+
+export const clearSessionToken = () => {
+  try { localStorage.removeItem(SESSION_KEY); } catch (_) {}
+};
+
+// Asks AppContext to log the user out and ask them to log in again (their
+// login predates signed sessions, or the session expired).
+export const notifySessionExpired = () => {
+  try { window.dispatchEvent(new Event('mads:session-expired')); } catch (_) {}
+};
+
 // Auth token for customer-facing server calls: a Firebase ID token for
-// Google sign-ins, otherwise the legacy WEB_SESSION token used by
-// username/password and reseller logins (same scheme as moongoldApi.js).
-export const getUserAuthToken = async (userProfile) => {
+// Google sign-ins, otherwise the signed session from a password login.
+export const getUserAuthToken = async () => {
   const { auth } = await import('./firebaseAuth.js');
   if (auth && auth.currentUser) {
     try {
@@ -39,8 +60,8 @@ export const getUserAuthToken = async (userProfile) => {
       console.warn('Could not retrieve Auth ID Token:', e.message);
     }
   }
-  const uid = userProfile?.uid || auth?.currentUser?.uid || '';
-  const email = userProfile?.email || auth?.currentUser?.email || '';
-  if (uid || email) return `WEB_SESSION:${uid || email}|${email}`;
+  const session = getSessionToken();
+  if (session) return session;
+  notifySessionExpired();
   return null;
 };
