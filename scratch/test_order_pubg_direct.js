@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 
-const partnerId = 'f27cabc8d2c2122bbedacabce632db68';
-const secretKey = 'PM67SGqyed';
+const partnerId = process.env.MOONGOLD_PARTNER_ID || '';
+const secretKey = process.env.MOONGOLD_SECRET_KEY || '';
 const baseUrl = 'https://moogold.com/wp-json/v1/api';
 
 async function dispatchPubgOrder() {
