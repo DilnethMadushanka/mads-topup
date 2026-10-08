@@ -3,7 +3,7 @@ import { Bot } from 'node-telegram-bot-api';
 import puppeteer from 'puppeteer';
 
 // 1. Get Telegram Bot Token from process.env or fallback to user token
-const token = process.env.TELEGRAM_BOT_TOKEN || '8721752035:AAHT3qzLWgytmhk8ApCEAEHVrTfD3iujgr0';
+const token = process.env.TELEGRAM_BOT_TOKEN;
 
 // 2. Initialize Telegram Bot
 const bot = new Bot(token);
