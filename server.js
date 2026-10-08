@@ -1186,6 +1186,13 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
       return res.status(400).json({ error: 'Missing path or bodyObj', received: req.body });
     }
 
+    // MooGold credentials come only from the server's .env. Check before any
+    // wallet deduction so a missing key never charges a customer.
+    if (!(process.env.MOONGOLD_PARTNER_ID || process.env.VITE_MOONGOLD_PARTNER_ID) || !(process.env.MOONGOLD_SECRET_KEY || process.env.VITE_MOONGOLD_SECRET_KEY)) {
+      console.error('[MooGold] MOONGOLD_PARTNER_ID or MOONGOLD_SECRET_KEY is not set in .env');
+      return res.status(503).json({ error: 'Top-up service is temporarily unavailable. Please try again shortly.' });
+    }
+
     // 1. HARDENED AUTHENTICATION: Require valid Firebase Auth ID Token
     const authHeader = req.headers.authorization || req.headers.Authorization || '';
     const authenticatedUser = await verifyFirebaseIdToken(authHeader);
@@ -1282,8 +1289,8 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
     }
 
     // 3. EXECUTE SIGNED MOOGOLD API REQUEST
-    const partnerId = process.env.MOONGOLD_PARTNER_ID || process.env.VITE_MOONGOLD_PARTNER_ID || 'f27cabc8d2c2122bbedacabce632db68';
-    const secretKey = process.env.MOONGOLD_SECRET_KEY || process.env.VITE_MOONGOLD_SECRET_KEY || 'PM67SGqyed';
+    const partnerId = process.env.MOONGOLD_PARTNER_ID || process.env.VITE_MOONGOLD_PARTNER_ID || '';
+    const secretKey = process.env.MOONGOLD_SECRET_KEY || process.env.VITE_MOONGOLD_SECRET_KEY || '';
     const baseUrl = 'https://moogold.com/wp-json/v1/api';
 
     // MooGold's documented request shape is { path, data } (see the
