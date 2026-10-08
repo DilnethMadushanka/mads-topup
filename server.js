@@ -441,6 +441,71 @@ app.post('/api/admin/custom-prices', requireAdminSession, async (req, res) => {
   }
 });
 
+// Admin: approve a deposit (manual_payments) and credit the wallet. The
+// amount, currency and account are read here from the stored record, never
+// taken from the browser, and a "credited" flag set in the same transaction
+// as the status change means a deposit can only ever be credited once.
+const depositBonusLkr = (amt) => (amt >= 20000 ? 600 : amt >= 10000 ? 250 : amt >= 5000 ? 100 : 0);
+app.post('/api/admin/manual-payment/approve', requireAdminSession, async (req, res) => {
+  const payId = String(req.body?.payId || '');
+  if (!/^[A-Za-z0-9_-]{1,80}$/.test(payId)) return res.status(400).json({ error: 'A valid payId is required.' });
+  try {
+    const claim = await rtdbTransaction(`manual_payments/${payId}`, (cur) => {
+      if (!cur || typeof cur !== 'object' || cur.credited) return undefined;
+      if (!['PENDING', 'REJECTED'].includes(cur.status)) return undefined;
+      return { ...cur, status: 'VERIFIED', credited: true, creditedAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    });
+    if (!claim.committed) {
+      const cur = claim.value;
+      const why = !cur ? 'Deposit not found.' : cur.credited ? 'This deposit was already credited.' : `Deposit is ${cur.status}, not pending.`;
+      return res.status(409).json({ error: why });
+    }
+    const pay = claim.value;
+    const amount = Number(pay.amount) || 0;
+    const isUsdt = pay.currency === 'USDT';
+    const lkr = isUsdt ? 0 : amount + depositBonusLkr(amount);
+    const usdt = isUsdt ? amount : 0;
+    let key = null;
+    for (const id of [pay.userId, pay.userEmail, pay.resellerCode]) {
+      if (id && !key) key = await findUserKey(id);
+    }
+    if (!key || !(amount > 0)) {
+      await rtdbPatch(`manual_payments/${payId}`, { status: pay.status === 'VERIFIED' ? 'PENDING' : pay.status, credited: null, creditedAt: null });
+      return res.status(400).json({ error: key ? 'Deposit amount is invalid.' : 'The account for this deposit was not found.' });
+    }
+    // Undo the claim if the credit itself fails, so the admin can retry.
+    let result;
+    try {
+      result = await adjustWallet(key, lkr, usdt);
+    } catch (e) {
+      await rtdbPatch(`manual_payments/${payId}`, { status: 'PENDING', credited: null, creditedAt: null });
+      throw e;
+    }
+    await rtdbPatch(`manual_payments/${payId}`, { creditedTo: key, creditedLkr: lkr, creditedUsdt: usdt });
+    console.log(`[Deposit Approved] ${payId} → ${key} +Rs. ${lkr} / $${usdt}`);
+    res.json({ success: true, key, creditedLkr: lkr, creditedUsdt: usdt, ...result });
+  } catch (e) {
+    console.error('[Deposit Approve Error]:', e.message);
+    res.status(500).json({ error: 'Could not approve this deposit. Please try again.' });
+  }
+});
+
+// Admin: reject a deposit. Rejecting never removes money; a credited
+// deposit stays marked credited, so it can't be approved and paid again.
+app.post('/api/admin/manual-payment/reject', requireAdminSession, async (req, res) => {
+  const payId = String(req.body?.payId || '');
+  if (!/^[A-Za-z0-9_-]{1,80}$/.test(payId)) return res.status(400).json({ error: 'A valid payId is required.' });
+  try {
+    const cur = await rtdbGet(`manual_payments/${payId}`);
+    if (!cur) return res.status(404).json({ error: 'Deposit not found.' });
+    await rtdbPatch(`manual_payments/${payId}`, { status: 'REJECTED', updatedAt: new Date().toISOString() });
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[Deposit Reject Error]:', e.message);
+    res.status(500).json({ error: 'Could not reject this deposit.' });
+  }
+});
+
 // Admin: change an order's status. Browsers can't edit existing orders
 // (database rules), so the admin panel's Approve / Moongold buttons use this.
 const ORDER_STATUSES = ['PENDING', 'PENDING_VERIFICATION', 'PROCESSING', 'COMPLETED', 'FAILED', 'REFUNDED', 'CANCELLED'];
@@ -1857,6 +1922,7 @@ async function recordGenieManualPaymentToRtdb(transactionId, record) {
       currency: 'LKR',
       slipUrl: '',
       status: 'VERIFIED',
+      credited: true,
       createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
       timestamp: new Date().toISOString()
     };

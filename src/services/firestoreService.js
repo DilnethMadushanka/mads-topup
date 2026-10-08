@@ -868,16 +868,19 @@ export const saveManualPaymentToFirestore = async (payment) => {
 /**
  * Update manual payment status in Database
  */
+// Deposits are approved and credited on the server, which reads the amount
+// and account from the stored record. Browsers can't edit deposits.
+export const approveManualPaymentOnServer = async (paymentId) => {
+  const { ok, data } = await postServerApi('/api/admin/manual-payment/approve', { payId: paymentId }, getAdminToken());
+  return { ok, ...(data || {}) };
+};
+
 export const updateManualPaymentStatusInFirestore = async (paymentId, newStatus) => {
   if (!paymentId) return;
 
-  if (rtdb) {
-    try {
-      const payRef = dbRef(rtdb, `manual_payments/${paymentId}`);
-      await rtdbUpdate(payRef, { status: newStatus, updatedAt: new Date().toISOString() });
-    } catch (e) {
-      console.warn('RTDB manual payment status update note:', e);
-    }
+  if (newStatus === 'REJECTED') {
+    const { ok, data } = await postServerApi('/api/admin/manual-payment/reject', { payId: paymentId }, getAdminToken());
+    if (!ok) console.warn('Deposit was not rejected:', data?.error);
   }
 
   if (db) {
