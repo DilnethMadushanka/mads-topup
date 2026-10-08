@@ -691,12 +691,14 @@ export const AppProvider = ({ children }) => {
     if (!isAdminAuthenticated) return;
     const unsubAll = subscribeAllUsersFromFirestore((remoteUsersList) => {
       if (remoteUsersList && remoteUsersList.length > 0) {
+        // The database is the source of truth: accounts deleted there must not
+        // linger from this browser's cached copy (they inflate admin totals).
         setUsersList(prev => {
-          const merged = [...prev];
+          const merged = [];
           remoteUsersList.forEach(ru => {
-            const index = merged.findIndex(u => (ru.uid && u.uid === ru.uid) || (ru.email && u.email && u.email.toLowerCase() === ru.email.toLowerCase()));
-            if (index >= 0) {
-              merged[index] = { ...merged[index], ...ru };
+            const cached = prev.find(u => (ru.uid && u.uid === ru.uid) || (ru.email && u.email && u.email.toLowerCase() === ru.email.toLowerCase()));
+            if (cached) {
+              merged.push({ ...cached, ...ru });
             } else {
               merged.push({
                 uid: ru.uid || `USR-${Math.floor(10000 + Math.random() * 90000)}`,
