@@ -67,7 +67,7 @@
     "settings": {
       ".read": true,
       "$id": {
-        ".write": "$id != 'vouchers' && newData.exists()"
+        ".write": "$id != 'vouchers' && $id != 'customPrices' && newData.exists()"
       }
     },
     "genieTransactions": {

@@ -1141,14 +1141,9 @@ export const updateResellerApplicationStatusInFirestore = async (appId, userId, 
 export const saveCustomGamePricesToFirestore = async (customPricesMap) => {
   if (!customPricesMap) return false;
 
-  if (rtdb) {
-    try {
-      const pricesRef = dbRef(rtdb, 'settings/customPrices');
-      await rtdbSet(pricesRef, customPricesMap);
-    } catch (e) {
-      console.warn('RTDB custom prices save note:', e);
-    }
-  }
+  // The server charges these prices, so only it may store them (admin session).
+  const { ok, data } = await postServerApi('/api/admin/custom-prices', { prices: customPricesMap }, getAdminToken());
+  if (!ok) throw new Error(data?.error || 'Prices were not saved');
 
   if (db) {
     try {

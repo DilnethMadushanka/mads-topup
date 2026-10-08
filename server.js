@@ -414,6 +414,33 @@ app.post('/api/admin/wallet', requireAdminSession, async (req, res) => {
   }
 });
 
+// Admin: save package price overrides ({ packageId: priceLkr }). Browsers
+// can't write settings/customPrices (database rules), because the server
+// charges these prices.
+app.post('/api/admin/custom-prices', requireAdminSession, async (req, res) => {
+  try {
+    const input = req.body?.prices;
+    if (!input || typeof input !== 'object' || Array.isArray(input)) {
+      return res.status(400).json({ error: 'prices must be an object of packageId: priceLkr' });
+    }
+    const known = new Set(GAMES_DATA.flatMap(g => (g.packages || []).map(p => p.id)));
+    const clean = {};
+    for (const [id, value] of Object.entries(input)) {
+      const price = Number(value);
+      if (!known.has(id) || !(price > 0)) continue;
+      if (price > 1000000) return res.status(400).json({ error: `Invalid price for ${id}` });
+      clean[id] = Math.round(price);
+    }
+    await rtdbPut('settings/customPrices', clean);
+    customPricesCache = { at: Date.now(), map: clean };
+    console.log(`[Admin Prices] Saved ${Object.keys(clean).length} custom package prices`);
+    res.json({ success: true, prices: clean });
+  } catch (e) {
+    console.error('[Admin Prices Error]:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Admin: change an order's status. Browsers can't edit existing orders
 // (database rules), so the admin panel's Approve / Moongold buttons use this.
 const ORDER_STATUSES = ['PENDING', 'PENDING_VERIFICATION', 'PROCESSING', 'COMPLETED', 'FAILED', 'REFUNDED', 'CANCELLED'];
@@ -959,7 +986,6 @@ async function verifyFirebaseIdToken(idToken) {
 // LAUNCH100) can knock off a package's catalog price. Approved resellers get
 // a wider band (see isApprovedReseller below) since their wholesale price is
 // a genuine 5% off catalog, which can exceed this on larger packages.
-const MAX_PROMO_DISCOUNT_LKR = 100;
 const RESELLER_WHOLESALE_DISCOUNT_RATE = 0.05;
 const MAX_ORDER_QUANTITY = 50;
 
@@ -967,12 +993,31 @@ const MAX_ORDER_QUANTITY = 50;
 // product-id the client is actually asking us to order — the client-sent
 // priceLkr can never be trusted (it can be freely edited in devtools/replayed
 // requests), so it's only used to sanity-check against this value below.
-function getCatalogPriceLkr(productId) {
+// Admin price changes (settings/customPrices, keyed by package id) override
+// the built-in catalog. Only the server can write that node, through
+// /api/admin/custom-prices.
+let customPricesCache = { at: 0, map: {} };
+async function getCustomPrices() {
+  if (Date.now() - customPricesCache.at < 30000) return customPricesCache.map;
+  try {
+    const map = (await rtdbGet('settings/customPrices')) || {};
+    customPricesCache = { at: Date.now(), map: typeof map === 'object' ? map : {} };
+  } catch (e) {
+    console.warn('[Custom Prices Read Warning]:', e.message);
+  }
+  return customPricesCache.map;
+}
+
+async function getCatalogPriceLkr(productId) {
   if (!productId) return null;
   const productIdStr = String(productId);
+  const overrides = await getCustomPrices();
   for (const game of GAMES_DATA) {
     const pkg = (game.packages || []).find(p => String(p.moongoldProductId) === productIdStr);
-    if (pkg && pkg.priceLkr > 0) return pkg.priceLkr;
+    if (!pkg) continue;
+    const override = Number(overrides?.[pkg.id]);
+    if (override > 0) return override;
+    if (pkg.priceLkr > 0) return pkg.priceLkr;
   }
   return null;
 }
@@ -1270,7 +1315,7 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
       // is an approved reseller. This check previously only existed on the
       // Vercel fallback (api/moogold.js), not here on the primary VPS path.
       const requestedProductId = bodyObj?.data?.['product-id'];
-      const unitCatalogPriceLkr = getCatalogPriceLkr(requestedProductId);
+      const unitCatalogPriceLkr = await getCatalogPriceLkr(requestedProductId);
       if (unitCatalogPriceLkr === null) {
         return res.status(400).json({ error: 'Unrecognized product. Order rejected.' });
       }
@@ -1283,18 +1328,24 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
         return res.status(400).json({ error: 'Invalid order quantity.' });
       }
       const catalogPriceLkr = unitCatalogPriceLkr * requestedQty;
-      let maxDiscountLkr = MAX_PROMO_DISCOUNT_LKR;
-      if (bodyObj?.isResellerOrder) {
-        const verifiedReseller = await isApprovedReseller(authenticatedUser.uid, authenticatedUser.email);
-        if (!verifiedReseller) {
-          // A "Reseller Partner Wallet" order from an account that isn't an
-          // admin-approved reseller is refused outright.
-          console.warn(`[NON-RESELLER BLOCKED] ${authenticatedUser.uid} (${authenticatedUser.email}) attempted a reseller order`);
-          return res.status(403).json({ error: 'Reseller orders are only available to approved reseller accounts.' });
-        }
-        maxDiscountLkr = Math.ceil(catalogPriceLkr * RESELLER_WHOLESALE_DISCOUNT_RATE) + 5;
+      // The only discount the site offers is the approved-reseller 5%
+      // (rounded per unit by the site, or on the total by the reseller
+      // panel). Anything cheaper is a tampered price: there used to be a flat
+      // Rs. 100 allowance here, which let any order under Rs. 100 (e.g. 5
+      // Diamonds at Rs. 40) be bought for Rs. 1.
+      const verifiedReseller = await isApprovedReseller(authenticatedUser.uid, authenticatedUser.email);
+      if (bodyObj?.isResellerOrder && !verifiedReseller) {
+        // A "Reseller Partner Wallet" order from an account that isn't an
+        // admin-approved reseller is refused outright.
+        console.warn(`[NON-RESELLER BLOCKED] ${authenticatedUser.uid} (${authenticatedUser.email}) attempted a reseller order`);
+        return res.status(403).json({ error: 'Reseller orders are only available to approved reseller accounts.' });
       }
-      if (numPriceLkr > catalogPriceLkr || numPriceLkr < catalogPriceLkr - maxDiscountLkr) {
+      const minPriceLkr = verifiedReseller
+        ? Math.min(Math.round(unitCatalogPriceLkr * (1 - RESELLER_WHOLESALE_DISCOUNT_RATE)) * requestedQty,
+                   Math.round(catalogPriceLkr * (1 - RESELLER_WHOLESALE_DISCOUNT_RATE)))
+        : catalogPriceLkr;
+      if (numPriceLkr > catalogPriceLkr || numPriceLkr < minPriceLkr) {
+        console.warn(`[PRICE TAMPER BLOCKED] ${authenticatedUser.uid} product-id=${requestedProductId} qty=${requestedQty} sent Rs. ${numPriceLkr}, minimum Rs. ${minPriceLkr}`);
         return res.status(400).json({ error: 'Price mismatch detected. Order rejected.' });
       }
 
