@@ -6,7 +6,7 @@ import { getAdminToken } from './adminSession.js';
 
 // Fields only the server may change (database.rules.json rejects browser
 // writes to them). Stripped from every profile write made from the browser.
-const SERVER_ONLY_USER_FIELDS = ['walletBalance', 'walletUsdt', 'isReseller', 'resellerStatus', 'role', 'status', 'password'];
+const SERVER_ONLY_USER_FIELDS = ['walletBalance', 'walletUsdt', 'isReseller', 'resellerStatus', 'role', 'status', 'password', 'email', 'uid'];
 const stripServerOnlyFields = (data) => {
   const clean = { ...(data || {}) };
   for (const k of SERVER_ONLY_USER_FIELDS) delete clean[k];
