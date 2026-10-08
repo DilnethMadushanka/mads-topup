@@ -1,17 +1,8 @@
 import { db, rtdb } from './firebaseAuth.js';
 import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { ref as dbRef, get as rtdbGet, set as rtdbSet, update as rtdbUpdate, onValue as rtdbOnValue } from 'firebase/database';
-import { postServerApi, getUserAuthToken, setSessionToken } from './serverApi.js';
+import { postServerApi, getUserAuthToken, getSessionToken, setSessionToken } from './serverApi.js';
 import { getAdminToken } from './adminSession.js';
-
-// Fields only the server may change (database.rules.json rejects browser
-// writes to them). Stripped from every profile write made from the browser.
-const SERVER_ONLY_USER_FIELDS = ['walletBalance', 'walletUsdt', 'isReseller', 'resellerStatus', 'role', 'status', 'password', 'email', 'uid', 'sessionsValidAfter'];
-const stripServerOnlyFields = (data) => {
-  const clean = { ...(data || {}) };
-  for (const k of SERVER_ONLY_USER_FIELDS) delete clean[k];
-  return clean;
-};
 
 /**
  * SHA-256 password hashing using Web Crypto API (runs in browser & Node).
@@ -460,7 +451,7 @@ export const syncUserProfileToFirestore = async (user) => {
         if (!profileData.securityKey || !profileData.resellerCode) {
           const creds = ensureResellerCredentials(profileData);
           profileData = { ...profileData, ...creds };
-          await rtdbUpdate(userRtdbRef, {
+          await updateUserProfileInFirestore(user.uid, {
             securityKey: creds.securityKey,
             resellerCode: creds.resellerCode
           });
@@ -552,40 +543,40 @@ export const syncUserProfileToFirestore = async (user) => {
 /**
  * Save user profile updates to Database
  */
+const PROFILE_FIELDS = ['name', 'phone', 'avatar', 'storeName', 'storeEmail', 'provider', 'savedIds', 'resellerCode', 'securityKey'];
+const lastSentProfile = new Map();
 export const updateUserProfileInFirestore = async (uid, rawData) => {
   if (!uid) return;
-  const updatedData = stripServerOnlyFields(rawData);
-  if (!Object.keys(updatedData).length) return;
-
-  // Realtime Database SDK
-  if (rtdb) {
-    try {
-      const userRtdbRef = dbRef(rtdb, `users/${uid}`);
-      await Promise.race([
-        rtdbUpdate(userRtdbRef, updatedData),
-        new Promise((res) => setTimeout(res, 1800))
-      ]);
-    } catch (e) {
-      console.warn('RTDB update note:', e);
-    }
-  }
-
-  // Direct REST API PATCH for 100% guarantee even if Firebase SDK hangs
+  // Browsers can't edit users records directly any more (database rules);
+  // the server saves only the caller's own editable fields.
+  const fields = {};
+  for (const k of PROFILE_FIELDS) if (rawData && rawData[k] !== undefined) fields[k] = rawData[k];
+  if (!Object.keys(fields).length) return;
+  const sig = JSON.stringify(fields);
+  const prev = lastSentProfile.get(uid) || {};
+  const changed = Object.fromEntries(Object.entries(fields).filter(([k, v]) => JSON.stringify(prev[k]) !== JSON.stringify(v)));
+  if (!Object.keys(changed).length) return;
   try {
-    fetch(`https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/users/${uid}.json`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedData)
-    }).catch(() => {});
-  } catch (e) {}
-
-  // Firestore SDK
+    // Quiet token lookup: a profile save must never log the user out (e.g.
+    // during signup, before the session exists).
+    const { auth } = await import('./firebaseAuth.js');
+    const token = auth?.currentUser ? await auth.currentUser.getIdToken().catch(() => null) : getSessionToken();
+    if (!token) return;
+    const res = await fetch('/api/user/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ fields: changed })
+    });
+    if (res.ok) lastSentProfile.set(uid, JSON.parse(sig));
+  } catch (e) {
+    console.warn('Profile save note:', e);
+  }
+  // Keep the Firestore copy in step, since the profile listener reads it too.
   if (db) {
     try {
-      const userRef = doc(db, 'users', uid);
       await Promise.race([
-        setDoc(userRef, updatedData, { merge: true }),
-        new Promise((res) => setTimeout(res, 1800))
+        setDoc(doc(db, 'users', uid), changed, { merge: true }),
+        new Promise((r) => setTimeout(r, 1800))
       ]);
     } catch (error) {
       console.warn('Firestore update note:', error);

@@ -441,6 +441,50 @@ app.post('/api/admin/custom-prices', requireAdminSession, async (req, res) => {
   }
 });
 
+// Signed-in users update their own profile here. Browsers can only create
+// a new users record (database rules); every later change comes through
+// this endpoint, which writes only to the caller's own record and only the
+// fields below. Reseller code and security key can be set once, if missing.
+const USER_EDITABLE_FIELDS = { name: 100, phone: 30, avatar: 400000, storeName: 100, storeEmail: 120, provider: 30 };
+app.post('/api/user/profile', rateLimiter(60, 60000), async (req, res) => {
+  try {
+    const authUser = await verifyFirebaseIdToken(req.headers.authorization || '');
+    if (!authUser) return res.status(401).json({ error: 'Please log in again.' });
+    const key = authUser.uid;
+    const cur = await rtdbGet(`users/${key}`);
+    if (!cur || typeof cur !== 'object') return res.status(404).json({ error: 'Account not found.' });
+    if (cur.status === 'BLOCKED') return res.status(403).json({ error: 'This account is blocked.' });
+
+    const input = req.body?.fields && typeof req.body.fields === 'object' ? req.body.fields : {};
+    const update = {};
+    for (const [field, max] of Object.entries(USER_EDITABLE_FIELDS)) {
+      if (input[field] === undefined) continue;
+      if (typeof input[field] !== 'string' || input[field].length > max) return res.status(400).json({ error: `Invalid ${field}.` });
+      update[field] = input[field];
+    }
+    if (input.savedIds !== undefined) {
+      const ids = Array.isArray(input.savedIds) ? input.savedIds : [];
+      if (ids.length > 50 || JSON.stringify(ids).length > 20000) return res.status(400).json({ error: 'Too many saved IDs.' });
+      update.savedIds = ids;
+    }
+    if (!cur.resellerCode && /^RS-[A-Z0-9]{4,12}$/.test(String(input.resellerCode || ''))) {
+      const owner = await findUserKey(input.resellerCode);
+      if (!owner || owner === key) update.resellerCode = input.resellerCode;
+    }
+    if (!cur.securityKey && /^MADS-SEC-[A-Z0-9]{6,16}$/.test(String(input.securityKey || ''))) {
+      const owner = await findUserKey(input.securityKey);
+      if (!owner || owner === key) update.securityKey = input.securityKey;
+    }
+    if (!Object.keys(update).length) return res.json({ success: true, updated: [] });
+    update.updatedAt = new Date().toISOString();
+    await rtdbPatch(`users/${key}`, update);
+    res.json({ success: true, updated: Object.keys(update) });
+  } catch (e) {
+    console.error('[User Profile Error]:', e.message);
+    res.status(500).json({ error: 'Could not save your profile. Please try again.' });
+  }
+});
+
 // Admin: approve a deposit (manual_payments) and credit the wallet. The
 // amount, currency and account are read here from the stored record, never
 // taken from the browser, and a "credited" flag set in the same transaction
