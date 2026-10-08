@@ -71,13 +71,31 @@ function sanitizeString(input, maxLength = 150) {
 }
 
 // In-Memory Rate Limiting Protection Middleware against Brute-Force & Spam Request Attacks
+// The caller's IP. The x-forwarded-for header can be sent by anyone, so only
+// the entries added by our own proxies count: with TRUST_PROXY_HOPS=1 (nginx
+// in front, the default) that is the last entry. Earlier entries are
+// whatever the client claimed and are ignored.
+const TRUST_PROXY_HOPS = Math.max(0, parseInt(process.env.TRUST_PROXY_HOPS ?? '1', 10) || 0);
+function clientIp(req) {
+  const socketIp = req.socket?.remoteAddress || 'unknown';
+  if (!TRUST_PROXY_HOPS) return socketIp;
+  const chain = String(req.headers['x-forwarded-for'] || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (!chain.length) return socketIp;
+  return chain[Math.max(0, chain.length - TRUST_PROXY_HOPS)];
+}
+
 const rateLimitStore = new Map();
+// Drop expired counters so the store can't grow without limit.
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, r] of rateLimitStore) if (now > r.resetTime) rateLimitStore.delete(k);
+}, 5 * 60 * 1000).unref();
 function rateLimiter(maxRequests = 30, windowMs = 60000) {
   return (req, res, next) => {
-    const clientIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
+    const ip = clientIp(req);
     // Counted per endpoint, so browsing the site doesn't use up the
     // allowance for logging in or ordering.
-    const limitKey = `${clientIp}|${req.path}`;
+    const limitKey = `${ip}|${req.path}`;
     const now = Date.now();
     const record = rateLimitStore.get(limitKey) || { count: 0, resetTime: now + windowMs };
 
@@ -1416,13 +1434,13 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
     const authenticatedUser = await verifyFirebaseIdToken(authHeader);
 
     if (!authenticatedUser) {
-      console.warn(`[UNAUTHORIZED ACCESS BLOCKED] Direct unauthenticated attempt to /api/moogold (Path: ${apiPath}, IP: ${req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown'})`);
+      console.warn(`[UNAUTHORIZED ACCESS BLOCKED] Direct unauthenticated attempt to /api/moogold (Path: ${apiPath}, IP: ${clientIp(req)})`);
       return res.status(401).json({
         error: 'Unauthorized! You must be logged in to access top-up services.'
       });
     }
 
-    console.log(`[AUTHENTICATED REQUEST] UID: ${authenticatedUser.uid}, Email: ${authenticatedUser.email || authenticatedUser.displayEmail || ''}, Path: ${apiPath}, IP: ${req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown'}`);
+    console.log(`[AUTHENTICATED REQUEST] UID: ${authenticatedUser.uid}, Email: ${authenticatedUser.email || authenticatedUser.displayEmail || ''}, Path: ${apiPath}, IP: ${clientIp(req)}`);
 
     if (await rejectIfBlocked(authenticatedUser, res)) return;
 
@@ -1578,7 +1596,7 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
         status: isSuccess ? 'COMPLETED' : 'FAILED',
         moongoldRef: jsonResult?.order_id ? String(jsonResult.order_id) : '',
         reason: isSuccess ? null : (jsonResult?.message || jsonResult?.error || `HTTP ${apiRes.status}`),
-        ip: req.headers['x-forwarded-for'] || req.socket?.remoteAddress || ''
+        ip: clientIp(req)
       });
     }
 
