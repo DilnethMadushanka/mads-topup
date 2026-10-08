@@ -1076,7 +1076,7 @@ Examples:
           // while it is still an approved reseller.
           const walletKey = reseller.walletKey || null;
           const walletRecord = walletKey ? await rtdbGet(`users/${walletKey}`).catch(() => null) : null;
-          if (!walletRecord || !walletRecord.isReseller || walletRecord.resellerStatus !== 'APPROVED') {
+          if (!walletRecord || walletRecord.status === 'BLOCKED' || !walletRecord.isReseller || walletRecord.resellerStatus !== 'APPROVED') {
             boundChatSessions.delete(chatId);
             return safeReply(ctx, '🔒 Please link your reseller account again: /auth <SecurityKey> <Password>');
           }

@@ -471,7 +471,12 @@ app.post('/api/admin/user-fields', requireAdminSession, async (req, res) => {
     const { identifier, fields } = req.body || {};
     const update = {};
     if (fields && typeof fields.isVerified === 'boolean') update.isVerified = fields.isVerified;
-    if (fields && ['ACTIVE', 'BLOCKED'].includes(fields.status)) update.status = fields.status;
+    if (fields && ['ACTIVE', 'BLOCKED'].includes(fields.status)) {
+      update.status = fields.status;
+      // Blocking or unblocking logs the account out everywhere, so a session
+      // someone else took over stops working even after an unblock.
+      update.sessionsValidAfter = Date.now();
+    }
     if (!identifier || !Object.keys(update).length) {
       return res.status(400).json({ error: 'identifier and a supported field (isVerified, status) are required.' });
     }
@@ -945,6 +950,13 @@ async function verifyFirebaseIdToken(idToken) {
   if (isSessionToken(cleanToken)) {
     const session = verifySession(cleanToken);
     if (!session) return null;
+    // Sessions issued before the account's sessionsValidAfter (set when the
+    // password is reset or the account is blocked/unblocked) are logged out.
+    const validAfter = Number(await rtdbGet(`users/${session.uid}/sessionsValidAfter`).catch(() => 0)) || 0;
+    if (validAfter && session.iat < validAfter) {
+      console.warn(`[Auth] Rejected a revoked session for ${session.uid}`);
+      return null;
+    }
     // The email on a password account is whatever was typed at signup, so it
     // is not used to find wallets or reseller status (email: ''); only the
     // account's own record (uid) is.
