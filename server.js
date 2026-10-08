@@ -725,6 +725,77 @@ app.post('/api/admin/reseller-status', requireAdminSession, async (req, res) => 
   }
 });
 
+// Support tickets. Browsers can only create a ticket; replies and status
+// changes come through here, so nobody can post as "MADS Support Team" or
+// rewrite someone else's ticket.
+const TICKET_STATUSES = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
+const TICKET_PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
+const ticketKeyOk = (id) => /^[A-Za-z0-9_-]{1,60}$/.test(String(id || ''));
+const cleanAttachment = (url) => (/^https:\/\//i.test(String(url || '')) ? String(url).slice(0, 1000) : null);
+async function appendTicketMessage(ticketId, sender, senderName, text, attachmentUrl) {
+  const now = new Date().toISOString();
+  return rtdbTransaction(`supportTickets/${ticketId}`, (cur) => {
+    if (!cur || typeof cur !== 'object') return undefined;
+    const messages = Array.isArray(cur.messages) ? cur.messages : Object.values(cur.messages || {});
+    if (messages.length >= 200) return undefined;
+    const status = sender === 'admin'
+      ? (cur.status === 'OPEN' ? 'IN_PROGRESS' : cur.status)
+      : (cur.status === 'RESOLVED' || cur.status === 'CLOSED' ? 'OPEN' : cur.status);
+    return {
+      ...cur, status, updatedAt: now,
+      messages: [...messages, { id: 'MSG-' + Date.now(), sender, senderName, text, attachmentUrl: attachmentUrl || null, timestamp: now }]
+    };
+  });
+}
+
+app.post('/api/tickets/message', rateLimiter(20, 60000), async (req, res) => {
+  try {
+    const authUser = await verifyFirebaseIdToken(req.headers.authorization || '');
+    if (!authUser) return res.status(401).json({ error: 'Please log in to reply.' });
+    const { ticketId, attachmentUrl } = req.body || {};
+    const text = String(req.body?.text || '').trim().slice(0, 4000);
+    if (!ticketKeyOk(ticketId) || !text) return res.status(400).json({ error: 'A ticket and a message are required.' });
+    const ticket = await rtdbGet(`supportTickets/${ticketId}`);
+    if (!ticket || ticket.userId !== authUser.uid) return res.status(404).json({ error: 'Ticket not found.' });
+    const r = await appendTicketMessage(ticketId, 'user', String(ticket.userName || 'Customer').slice(0, 100), text, cleanAttachment(attachmentUrl));
+    if (!r.committed) return res.status(409).json({ error: 'Could not add your reply.' });
+    res.json({ success: true, ticket: r.value });
+  } catch (e) {
+    console.error('[Ticket Message Error]:', e.message);
+    res.status(500).json({ error: 'Could not send your reply.' });
+  }
+});
+
+app.post('/api/admin/tickets/message', requireAdminSession, async (req, res) => {
+  try {
+    const { ticketId, attachmentUrl } = req.body || {};
+    const text = String(req.body?.text || '').trim().slice(0, 4000);
+    if (!ticketKeyOk(ticketId) || !text) return res.status(400).json({ error: 'A ticket and a message are required.' });
+    const r = await appendTicketMessage(ticketId, 'admin', 'MADS Support Team', text, cleanAttachment(attachmentUrl));
+    if (!r.committed) return res.status(404).json({ error: 'Ticket not found.' });
+    res.json({ success: true, ticket: r.value });
+  } catch (e) {
+    console.error('[Admin Ticket Message Error]:', e.message);
+    res.status(500).json({ error: 'Could not send the reply.' });
+  }
+});
+
+app.post('/api/admin/tickets/update', requireAdminSession, async (req, res) => {
+  try {
+    const { ticketId, status, priority } = req.body || {};
+    const update = {};
+    if (TICKET_STATUSES.includes(status)) update.status = status;
+    if (TICKET_PRIORITIES.includes(priority)) update.priority = priority;
+    if (!ticketKeyOk(ticketId) || !Object.keys(update).length) return res.status(400).json({ error: 'A ticket and a valid status or priority are required.' });
+    if (!(await rtdbGet(`supportTickets/${ticketId}`))) return res.status(404).json({ error: 'Ticket not found.' });
+    await rtdbPatch(`supportTickets/${ticketId}`, { ...update, updatedAt: new Date().toISOString() });
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[Admin Ticket Update Error]:', e.message);
+    res.status(500).json({ error: 'Could not update the ticket.' });
+  }
+});
+
 // Admin: save the voucher list.
 app.post('/api/admin/vouchers', requireAdminSession, async (req, res) => {
   try {

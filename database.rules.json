@@ -67,9 +67,7 @@
     },
     "settings": {
       ".read": true,
-      "$id": {
-        ".write": "$id != 'vouchers' && $id != 'customPrices' && newData.exists()"
-      }
+      ".write": false
     },
     "genieTransactions": {
       ".read": true,
@@ -86,14 +84,21 @@
     "supportTickets": {
       ".read": true,
       "$id": {
-        ".write": "newData.exists()",
-        ".validate": "newData.hasChildren()"
+        ".write": "!data.exists() && newData.exists()",
+        ".validate": "newData.hasChildren()",
+        "messages": {
+          "$m": {
+            "sender": {
+              ".validate": "newData.val() != 'admin'"
+            }
+          }
+        }
       }
     },
     "reviews": {
       ".read": true,
       "$id": {
-        ".write": "newData.exists()",
+        ".write": "!data.exists() && newData.exists()",
         ".validate": "newData.hasChildren()"
       }
     },
