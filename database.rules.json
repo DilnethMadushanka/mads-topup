@@ -102,6 +102,10 @@
     "vouchers_log": {
       ".read": true,
       ".write": false
+    },
+    "userSecrets": {
+      ".read": false,
+      ".write": false
     }
   }
 }
