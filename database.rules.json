@@ -63,9 +63,7 @@
     },
     "siteConfig": {
       ".read": true,
-      "$id": {
-        ".write": "newData.exists()"
-      }
+      ".write": false
     },
     "settings": {
       ".read": true,
