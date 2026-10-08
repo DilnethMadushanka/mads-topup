@@ -1330,14 +1330,12 @@ export const savePopupAdConfigToFirestore = async (config) => {
   // Report the truth: success means the config reached at least one live database.
   let attempted = false;
   let published = false;
-  if (rtdb) {
-    attempted = true;
-    try {
-      await rtdbSet(dbRef(rtdb, 'siteConfig/popupAd'), clean);
-      published = true;
-    } catch (e) {
-      console.warn('[PopupAd] Realtime DB publish failed:', e?.message || e);
-    }
+  // Published by the server (the rules stop browsers writing siteConfig).
+  attempted = true;
+  {
+    const { ok, data } = await postServerApi('/api/admin/popup-ad', { config: clean }, getAdminToken());
+    if (ok) published = true;
+    else console.warn('[PopupAd] Publish failed:', data?.error);
   }
   if (db) {
     attempted = true;

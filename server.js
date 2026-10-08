@@ -432,6 +432,34 @@ app.post('/api/admin/wallet', requireAdminSession, async (req, res) => {
   }
 });
 
+// Admin: publish the home page popup ad. Browsers can't write siteConfig
+// (database rules), so a visitor can't show everyone a fake popup.
+app.post('/api/admin/popup-ad', requireAdminSession, async (req, res) => {
+  try {
+    const c = req.body?.config || {};
+    const link = String(c.buttonLink || '#catalog').slice(0, 500);
+    const image = String(c.imageUrl || '');
+    if (!/^(#|\/|https:\/\/)/i.test(link)) return res.status(400).json({ error: 'Button link must start with #, / or https://' });
+    if (image && !/^(https:\/\/|data:image\/)/i.test(image)) return res.status(400).json({ error: 'Image must be an https:// link.' });
+    const clean = {
+      enabled: Boolean(c.enabled),
+      title: String(c.title || '').slice(0, 200),
+      description: String(c.description || '').slice(0, 1000),
+      imageUrl: image,
+      buttonText: String(c.buttonText || '').slice(0, 60),
+      buttonLink: link,
+      badge: String(c.badge || '').slice(0, 60),
+      showOncePerSession: Boolean(c.showOncePerSession),
+    };
+    if (JSON.stringify(clean).length > 900 * 1024) return res.status(400).json({ error: 'Popup is too large. Upload the image so it is stored as a link.' });
+    await rtdbPut('siteConfig/popupAd', clean);
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[Admin Popup Ad Error]:', e.message);
+    res.status(500).json({ error: 'Could not publish the popup.' });
+  }
+});
+
 // Admin: save package price overrides ({ packageId: priceLkr }). Browsers
 // can't write settings/customPrices (database rules), because the server
 // charges these prices.
