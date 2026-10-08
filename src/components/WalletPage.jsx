@@ -19,6 +19,7 @@ export const WalletPage = () => {
   const [binancePayId, setBinancePayId] = useState('');
   const [binanceAmount, setBinanceAmount] = useState('10');
   const [ezCashRnNumber, setEzCashRnNumber] = useState('');
+  const [ezCashPayerPhone, setEzCashPayerPhone] = useState('');
   const [ezCashAmount, setEzCashAmount] = useState('1000');
   const [voucherCode, setVoucherCode] = useState('');
   const [isCopied, setIsCopied] = useState(false);
@@ -224,30 +225,34 @@ export const WalletPage = () => {
 
   const handleEzCashSubmit = async (e) => {
     e.preventDefault();
-    const cleanRn = String(ezCashRnNumber || '').trim();
+    const cleanRn = String(ezCashRnNumber || '').replace(/\D/g, '');
     if (!cleanRn || cleanRn.length < 10) { showToast('Please enter a valid 14-digit RN Number!', 'error'); return; }
+    const phoneDigits = String(ezCashPayerPhone || '').replace(/\D/g, '');
+    if (phoneDigits.length < 9) { showToast('Please enter the mobile number you sent the EZ Cash from!', 'error'); return; }
     const amt = parseFloat(ezCashAmount) || 1000;
     const userEmail = userProfile?.email || auth?.currentUser?.email || '';
     const userName = userProfile?.name || auth?.currentUser?.displayName || (userEmail ? userEmail.split('@')[0] : 'Gamer');
     const userId = userProfile?.uid || auth?.currentUser?.uid || '';
     const resellerCode = userProfile?.resellerCode || '';
+    const pendingRecord = () => ({ id: 'PAY-' + Math.floor(1000 + Math.random() * 9000), userId, userEmail, userName, resellerCode, method: 'EZ Cash', referenceNumber: cleanRn, payerPhone: '0' + phoneDigits.slice(-9), amount: amt, currency: 'LKR', slipUrl: '', status: 'PENDING', createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16) });
     setIsEzCashVerifying(true);
     try {
       // Signed-in token so the server can credit this account itself on auto-approval.
       const token = await getUserAuthToken(userProfile);
-      const res = await fetch('/api/ezcash/verify-rn', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ rnNumber: cleanRn, amount: amt, userEmail }) });
-      const resData = await res.json();
+      const res = await fetch('/api/ezcash/verify-rn', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ rnNumber: cleanRn, amount: amt, payerPhone: phoneDigits }) });
+      const resData = await res.json().catch(() => ({}));
+      if (!res.ok) { showToast(resData.error || 'Could not submit this RN. Please try again.', 'error'); return; }
       if (resData.verified && resData.autoApproved) {
-        creditUserWallet(amt, 0);
-        addManualPayment({ id: 'PAY-' + Math.floor(1000 + Math.random() * 9000), userId, userEmail, userName, resellerCode, method: 'EZ Cash (Automated)', referenceNumber: cleanRn, amount: amt, currency: 'LKR', slipUrl: '', status: 'VERIFIED', createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16) });
-        showToast(`⚡ EZ CASH VERIFIED! +Rs. ${amt.toLocaleString()} LKR credited!`);
+        // The server already credited the wallet and saved the deposit record.
+        creditUserWallet(Number(resData.amountLkr) || amt, 0);
+        showToast(`⚡ EZ CASH VERIFIED! +Rs. ${(Number(resData.amountLkr) || amt).toLocaleString()} LKR credited!`);
       } else {
-        addManualPayment({ id: 'PAY-' + Math.floor(1000 + Math.random() * 9000), userId, userEmail, userName, resellerCode, method: 'EZ Cash', referenceNumber: cleanRn, amount: amt, currency: 'LKR', slipUrl: '', status: 'PENDING', createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16) });
+        addManualPayment(pendingRecord());
         showToast('EZ Cash deposit submitted for admin verification.');
       }
       setEzCashRnNumber('');
     } catch {
-      addManualPayment({ id: 'PAY-' + Math.floor(1000 + Math.random() * 9000), userId, userEmail, userName, resellerCode, method: 'EZ Cash', referenceNumber: cleanRn, amount: amt, currency: 'LKR', slipUrl: '', status: 'PENDING', createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16) });
+      addManualPayment(pendingRecord());
       showToast('EZ Cash submitted for admin verification.'); setEzCashRnNumber('');
     } finally { setIsEzCashVerifying(false); }
   };
@@ -569,7 +574,7 @@ export const WalletPage = () => {
               {/* ── EZ CASH MANUAL ── */}
               {activePanel === 'ezcash' && (() => {
                 const rnLen = String(ezCashRnNumber || '').trim().length;
-                const rnOk = rnLen >= 10;
+                const rnOk = rnLen >= 10 && String(ezCashPayerPhone || '').replace(/\D/g, '').length >= 9;
                 const eAmt = parseFloat(ezCashAmount) || 0;
                 return (
                 <form onSubmit={handleEzCashSubmit} className="space-y-5">
@@ -609,6 +614,12 @@ export const WalletPage = () => {
                       <input type="text" value={ezCashRnNumber} onChange={e => setEzCashRnNumber(e.target.value)} placeholder="e.g. 20260910XXXXXXXX" className={inputCls + ' font-mono tracking-wider pr-16'} maxLength={16} />
                       <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-black font-mono px-2 py-1 rounded-md ${rnOk ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400'}`}>{rnLen}/14</span>
                     </div>
+                  </div>
+
+                  <div className={cardCls}>
+                    {stepHead(4, 'Mobile number you paid from')}
+                    <input type="tel" value={ezCashPayerPhone} onChange={e => setEzCashPayerPhone(e.target.value)} placeholder="e.g. 077XXXXXXX" className={inputCls + ' font-mono tracking-wider'} maxLength={15} />
+                    <p className="text-[11px] text-slate-500 font-medium mt-2">The eZ Cash number the money was sent from. We match it with the payment so nobody else can use your RN.</p>
                   </div>
 
                   <div className="flex items-center justify-between bg-red-50/60 border border-red-100 rounded-2xl px-4 py-3">

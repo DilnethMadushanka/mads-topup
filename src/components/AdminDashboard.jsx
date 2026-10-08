@@ -1655,6 +1655,10 @@ export const AdminDashboard = () => {
                           <span>{p.referenceNumber}</span>
                           <button type="button" onClick={() => { navigator.clipboard.writeText(p.referenceNumber); showToast(`Copied: ${p.referenceNumber}`); }} className="p-1 rounded cursor-pointer" style={faintStyle}><Copy className="w-3 h-3" /></button>
                         </div>
+                        {isEz && p.payerPhone && <div className="mt-1 text-[10px] font-mono" style={faintStyle}>Paid from {p.payerPhone}</div>}
+                        {isEz && matchedSms && (matchedSms.payerPhones || []).length > 0 && p.payerPhone && !(matchedSms.payerPhones || []).includes(String(p.payerPhone).replace(/\D/g, '').slice(-9)) && (
+                          <div className="mt-1 text-[10px] text-red-400 font-extrabold flex items-center gap-1"><AlertTriangle className="w-3 h-3" /><span>SMS shows a different number: possible stolen RN</span></div>
+                        )}
                         {isEz && (matchedSms ? (
                           <div className="mt-1 text-[10px] text-emerald-400 font-extrabold flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /><span>SMS Matched (Rs. {(matchedSms.amountLkr || 0).toLocaleString()})</span></div>
                         ) : (

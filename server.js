@@ -473,12 +473,22 @@ app.post('/api/admin/manual-payment/approve', requireAdminSession, async (req, r
       await rtdbPatch(`manual_payments/${payId}`, { status: pay.status === 'VERIFIED' ? 'PENDING' : pay.status, credited: null, creditedAt: null });
       return res.status(400).json({ error: key ? 'Deposit amount is invalid.' : 'The account for this deposit was not found.' });
     }
+    // The same RN / Binance id can't be credited twice (e.g. someone copies a
+    // paid customer's RN into their own deposit request).
+    const refKey = paymentRefKey(pay.method, pay.referenceNumber);
+    const usedBy = refKey ? (await findCreditedPaymentRef(refKey, payId)) : null;
+    const refClaim = usedBy ? { ok: false, by: usedBy } : await claimPaymentRef(refKey, payId);
+    if (!refClaim.ok) {
+      await rtdbPatch(`manual_payments/${payId}`, { status: 'PENDING', credited: null, creditedAt: null });
+      return res.status(409).json({ error: `This reference number was already credited on ${refClaim.by}.` });
+    }
     // Undo the claim if the credit itself fails, so the admin can retry.
     let result;
     try {
       result = await adjustWallet(key, lkr, usdt);
     } catch (e) {
       await rtdbPatch(`manual_payments/${payId}`, { status: 'PENDING', credited: null, creditedAt: null });
+      await releasePaymentRef(refKey, payId).catch(() => {});
       throw e;
     }
     await rtdbPatch(`manual_payments/${payId}`, { creditedTo: key, creditedLkr: lkr, creditedUsdt: usdt });
@@ -1649,18 +1659,66 @@ app.post('/api/binance/webhook', (req, res) => {
   }
 });
 
+// Payment reference helpers. A deposit reference (EZ Cash RN, Binance
+// order/pay id) can be credited only once: usedPaymentRefs/{key} records which
+// deposit used it, and older approved deposits are checked as well.
+const phoneTail = (v) => { const d = String(v || '').replace(/\D/g, ''); return d.length >= 9 ? d.slice(-9) : ''; };
+const EZCASH_MERCHANT_TAIL = phoneTail(process.env.EZCASH_MERCHANT_NUMBER || '0740436276');
+function phonesInSms(text) {
+  const found = [...String(text || '').matchAll(/(?<!\d)(?:\+?94|0)7\d{8}(?!\d)/g)].map(m => phoneTail(m[0]));
+  return [...new Set(found)].filter(p => p && p !== EZCASH_MERCHANT_TAIL);
+}
+function paymentRefKey(method, ref) {
+  const m = String(method || '').toLowerCase();
+  if (m.includes('ez')) {
+    const rn = String(ref || '').replace(/\D/g, '');
+    return rn.length >= 10 ? `ezcash_${rn.slice(0, 20)}` : null;
+  }
+  if (m.includes('binance')) {
+    const clean = String(ref || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    return clean.length >= 8 ? `binance_${clean.slice(0, 120)}` : null;
+  }
+  return null;
+}
+// Returns the id of another deposit that already credited this reference.
+async function findCreditedPaymentRef(refKey, exceptPayId) {
+  if (!refKey) return null;
+  const used = await rtdbGet(`usedPaymentRefs/${refKey}`);
+  if (used?.payId && used.payId !== exceptPayId) return used.payId;
+  const all = await rtdbGet('manual_payments');
+  for (const [id, p] of Object.entries(all || {})) {
+    if (!p || typeof p !== 'object' || id === exceptPayId) continue;
+    if ((p.status === 'VERIFIED' || p.credited) && paymentRefKey(p.method, p.referenceNumber) === refKey) return id;
+  }
+  return null;
+}
+async function claimPaymentRef(refKey, payId) {
+  if (!refKey) return { ok: true };
+  const r = await rtdbTransaction(`usedPaymentRefs/${refKey}`, (cur) => (cur?.payId && cur.payId !== payId ? undefined : { payId, at: new Date().toISOString() }));
+  return { ok: r.committed || r.value?.payId === payId, by: r.value?.payId };
+}
+async function releasePaymentRef(refKey, payId) {
+  if (!refKey) return;
+  const cur = await rtdbGet(`usedPaymentRefs/${refKey}`);
+  if (cur?.payId === payId) await rtdbPut(`usedPaymentRefs/${refKey}`, null);
+}
+
 // Memory store for received Dialog EZ Cash SMS records via Webhook
 const receivedEzCashSmsLog = new Map();
-const usedEzCashRnNumbers = new Set();
 
-// Automated EZ Cash RN Deposit Verification Endpoint (Admin Approval Mode)
+// Automated EZ Cash RN Deposit Verification Endpoint
+// An RN only proves that *someone* paid, so it is tied to the payer: the
+// customer must give the mobile number they paid from, and the wallet is
+// credited automatically only when Dialog's SMS shows that same number.
+// Anything else goes to the admin queue with the number shown next to it.
 app.post('/api/ezcash/verify-rn', rateLimiter(15, 60000), async (req, res) => {
   try {
-    const { rnNumber, amount, userEmail } = req.body || {};
+    const { rnNumber, amount, payerPhone } = req.body || {};
     const authUser = await verifyFirebaseIdToken(req.headers.authorization || '');
-    if (authUser && await rejectIfBlocked(authUser, res)) return;
-    const cleanRn = sanitizeString(String(rnNumber || ''), 20);
-    const cleanEmail = sanitizeString(String(userEmail || ''), 100);
+    if (!authUser) return res.status(401).json({ verified: false, error: 'Please log in again to submit a deposit.' });
+    if (await rejectIfBlocked(authUser, res)) return;
+    const cleanRn = String(rnNumber || '').replace(/\D/g, '').slice(0, 20);
+    const payerTail = phoneTail(payerPhone);
 
     if (!cleanRn || cleanRn.length < 10) {
       return res.status(400).json({
@@ -1668,51 +1726,76 @@ app.post('/api/ezcash/verify-rn', rateLimiter(15, 60000), async (req, res) => {
         error: 'Please enter a valid 14-digit Dialog EZ Cash RN Transaction Number.'
       });
     }
+    if (!payerTail) {
+      return res.status(400).json({ verified: false, error: 'Please enter the mobile number you sent the EZ Cash from.' });
+    }
+
+    const refKey = paymentRefKey('EZ Cash', cleanRn);
+    const usedBy = await findCreditedPaymentRef(refKey, null);
+    if (usedBy) {
+      console.warn(`[EZ Cash RN Reused] RN ${cleanRn} already credited on ${usedBy}; tried by ${authUser.uid}`);
+      return res.status(409).json({ verified: false, error: 'This RN number has already been used.' });
+    }
 
     const amtLkr = parseFloat(amount) || 1000;
-    console.log(`[EZ Cash Deposit Submitted] RN: ${cleanRn}, Amount: Rs. ${amtLkr}, User: ${userEmail}`);
+    console.log(`[EZ Cash Deposit Submitted] RN: ${cleanRn}, Amount: Rs. ${amtLkr}, User: ${authUser.uid}, From: ...${payerTail.slice(-4)}`);
 
-    // Check if matching SMS was received via Webhook
     const smsLog = receivedEzCashSmsLog.get(cleanRn);
-    if (authUser && smsLog && smsLog.status !== 'REDEEMED' && Math.abs((smsLog.amountLkr || 0) - amtLkr) < 1) {
+    const smsPhones = smsLog?.payerPhones || [];
+    const phoneMatches = smsPhones.includes(payerTail);
+    if (smsLog && smsLog.status !== 'REDEEMED' && phoneMatches && Math.abs((smsLog.amountLkr || 0) - amtLkr) < 1) {
+      const payId = `PAY-EZ-${cleanRn}`;
+      const claim = await claimPaymentRef(refKey, payId);
+      if (!claim.ok) return res.status(409).json({ verified: false, error: 'This RN number has already been used.' });
       smsLog.status = 'REDEEMED';
-      smsLog.redeemedBy = authUser.email || userEmail || 'Gamer';
+      smsLog.redeemedBy = authUser.email || authUser.displayEmail || authUser.uid;
       smsLog.redeemedAt = new Date().toISOString();
-      usedEzCashRnNumbers.add(cleanRn);
 
       // The server credits the wallet itself (the browser can no longer).
       const credit = await creditUserWalletServer(authUser.uid, smsLog.amountLkr, authUser.email);
       if (!credit.success) {
         smsLog.status = 'UNCLAIMED';
-        usedEzCashRnNumbers.delete(cleanRn);
+        await releasePaymentRef(refKey, payId).catch(() => {});
         return res.status(500).json({ verified: false, error: credit.reason || 'Wallet credit failed. Please try again.' });
       }
+      const now = new Date().toISOString();
+      await rtdbPut(`manual_payments/${payId}`, {
+        id: payId, userId: authUser.uid, userEmail: authUser.email || authUser.displayEmail || '', userName: String(authUser.email || authUser.displayEmail || 'Gamer').split('@')[0],
+        method: 'EZ Cash (Automated)', referenceNumber: cleanRn, payerPhone: `0${payerTail}`,
+        amount: smsLog.amountLkr, currency: 'LKR', slipUrl: '', status: 'VERIFIED',
+        credited: true, creditedAt: now, creditedTo: credit.rtdbKey, creditedLkr: smsLog.amountLkr, creditedUsdt: 0,
+        createdAt: now.replace('T', ' ').substring(0, 16)
+      }).catch(e => console.error('[EZ Cash] Could not save deposit record:', e.message));
 
       return res.json({
         verified: true,
         autoApproved: true,
         status: 'VERIFIED',
-        amountLkr: amtLkr,
+        amountLkr: smsLog.amountLkr,
         rnNumber: cleanRn,
         newBalanceLkr: credit.newBalanceLkr,
         newBalanceUsdt: credit.newBalanceUsdt,
-        message: `⚡ EZ Cash RN ${cleanRn} verified against Dialog SMS Webhook!`
+        message: `EZ Cash RN ${cleanRn} verified.`
       });
     }
+    if (smsLog && smsPhones.length && !phoneMatches) {
+      console.warn(`[EZ Cash Phone Mismatch] RN ${cleanRn} was paid from another number; submitted by ${authUser.uid}`);
+    }
 
-    // Route directly to Admin Queue for Manual Admin Approval
+    // Route to the admin queue for manual approval.
     return res.json({
       verified: false,
       autoApproved: false,
       status: 'PENDING_ADMIN_VERIFICATION',
       amountLkr: amtLkr,
       rnNumber: cleanRn,
+      payerPhone: `0${payerTail}`,
       matchedSms: !!smsLog,
-      message: 'EZ Cash deposit submitted! Pending 1-click Admin Verification.'
+      message: 'EZ Cash deposit submitted! Pending Admin Verification.'
     });
   } catch (err) {
     console.error('[EZ Cash Verify Error]:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Could not check this RN. Please try again.' });
   }
 });
 
@@ -1746,6 +1829,7 @@ app.post('/api/ezcash/webhook', (req, res) => {
         rnNumber: rnNo,
         amountLkr: parsedAmt,
         rawSms: textContent,
+        payerPhones: phonesInSms(textContent),
         sender: sender || 'Dialog EZ Cash Gateway',
         status: existing?.status || 'UNCLAIMED',
         redeemedBy: existing?.redeemedBy || null,
