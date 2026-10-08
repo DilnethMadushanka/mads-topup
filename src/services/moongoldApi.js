@@ -417,6 +417,7 @@ export const dispatchMoongoldOrder = async (orderData) => {
         return {
           success: true,
           moongoldRef: data.order_id || partnerOrderId,
+          partnerOrderId,
           status: 'COMPLETED',
           message: data.message || 'Order created successfully!',
           newBalanceLkr: data.newBalanceLkr,

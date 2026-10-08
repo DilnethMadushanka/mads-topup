@@ -249,6 +249,7 @@ export const ResellerDashboard = () => {
       status: 'COMPLETED',
       isResellerOrder: true,
       moongoldRef: moongoldResult.moongoldRef,
+      partnerOrderId: moongoldResult.partnerOrderId || null,
       createdAt: new Date().toISOString()
     };
 

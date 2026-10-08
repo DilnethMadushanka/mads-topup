@@ -31,8 +31,8 @@
     "orders": {
       ".read": true,
       "$id": {
-        ".write": "newData.exists()",
-        ".validate": "newData.hasChildren()"
+        ".write": "!data.exists() && newData.exists()",
+        ".validate": "newData.hasChildren() && (newData.child('status').val() != 'COMPLETED' || (newData.child('partnerOrderId').isString() && (root.child('moogoldProcessedOrders').child(newData.child('partnerOrderId').val()).child('status').val() == 'COMPLETED' || root.child('moogoldProcessedOrders').child(newData.child('partnerOrderId').val()).child('status').val() == 'PROCESSING')))"
       }
     },
     "manual_payments": {

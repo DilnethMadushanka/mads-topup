@@ -812,12 +812,9 @@ export const updateOrderStatusInFirestore = async (orderId, newStatus, moongoldR
     updatedAt: new Date().toISOString()
   };
 
-  if (rtdb) {
-    try {
-      const orderRef = dbRef(rtdb, `orders/${orderId}`);
-      await rtdbUpdate(orderRef, updatePayload);
-    } catch (e) { console.warn('RTDB order status update note:', e); }
-  }
+  // Existing orders can only be changed by the server (admin session).
+  const { ok, data } = await postServerApi('/api/admin/order-status', { orderId, status: newStatus, moongoldRef }, getAdminToken());
+  if (!ok) console.warn('Order status was not saved:', data?.error);
 
   // Also update Firestore orders collection (was missing before)
   if (db) {

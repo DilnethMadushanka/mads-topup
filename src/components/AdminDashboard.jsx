@@ -1151,10 +1151,11 @@ export const AdminDashboard = () => {
   ];
 
   const activityFeed = [];
-  safeOrders.slice(0, 25).forEach(o => activityFeed.push({ id: `ord-${o.id}`, ts: o.createdAt, icon: ShoppingCart, color: '#38bdf8', title: `Order ${o.id} — ${o.gameName || 'Top-up'}`, sub: `${o.status} • ${formatLkr(o.priceLkr)}` }));
-  safePayments.slice(0, 25).forEach(p => activityFeed.push({ id: `pay-${p.id}`, ts: p.createdAt, icon: FileCheck, color: '#34d399', title: `Deposit ${p.id} — ${p.userName || p.userEmail || 'Customer'}`, sub: `${p.method} • ${p.amount} ${p.currency} • ${p.status}` }));
-  safeTickets.slice(0, 25).forEach(t => activityFeed.push({ id: `tck-${t.id}`, ts: t.updatedAt || t.createdAt, icon: Headset, color: '#fb7185', title: `Ticket ${t.id} — ${t.subject}`, sub: `${t.status} • Priority ${t.priority}` }));
-  safeResellerApps.slice(0, 25).forEach(a => activityFeed.push({ id: `app-${a.id || a.firestoreId}`, ts: a.submittedAt, icon: Crown, color: '#fbbf24', title: `Reseller Application — ${a.storeName}`, sub: `${a.status}` }));
+  // Each row says whose account it is and opens its details when tapped.
+  safeOrders.slice(0, 25).forEach(o => activityFeed.push({ id: `ord-${o.id || o.key}`, ts: o.createdAt, icon: ShoppingCart, color: '#38bdf8', title: `Order ${o.id || '(no ID)'} — ${o.gameName || 'Top-up'}`, sub: `${o.userEmail || o.userId || 'Unknown account'} • ${o.paymentMethod || 'Unknown payment'} • ${o.status || 'NO STATUS'} • ${formatLkr(o.priceLkr)}`, onOpen: () => setSelectedInspectOrder(o) }));
+  safePayments.slice(0, 25).forEach(p => activityFeed.push({ id: `pay-${p.id}`, ts: p.createdAt, icon: FileCheck, color: '#34d399', title: `Deposit ${p.id} — ${p.userName || p.userEmail || 'Customer'}`, sub: `${p.userEmail || p.userId || 'Unknown account'} • ${p.method} • ${p.amount} ${p.currency} • ${p.status}`, onOpen: () => setSelectedReceiptPay(p) }));
+  safeTickets.slice(0, 25).forEach(t => activityFeed.push({ id: `tck-${t.id}`, ts: t.updatedAt || t.createdAt, icon: Headset, color: '#fb7185', title: `Ticket ${t.id} — ${t.subject}`, sub: `${t.userEmail || t.userName || ''}${t.userEmail || t.userName ? ' • ' : ''}${t.status} • Priority ${t.priority}`, onOpen: () => setAdminTab('support') }));
+  safeResellerApps.slice(0, 25).forEach(a => activityFeed.push({ id: `app-${a.id || a.firestoreId}`, ts: a.submittedAt, icon: Crown, color: '#fbbf24', title: `Reseller Application — ${a.storeName}`, sub: `${a.emailAddress || a.email || ''}${a.emailAddress || a.email ? ' • ' : ''}${a.status}`, onOpen: () => setAdminTab('resellers') }));
   const sortedActivity = activityFeed.filter(i => i.ts && !isNaN(new Date(i.ts).getTime())).sort((a, b) => new Date(b.ts) - new Date(a.ts)).slice(0, 8);
 
   const commandResults = (() => {
@@ -1506,7 +1507,7 @@ export const AdminDashboard = () => {
                       {sortedActivity.map(item => {
                         const Icon = item.icon;
                         return (
-                          <div key={item.id} className="flex items-center gap-3 py-2 border-b last:border-0" style={{ borderColor: 'var(--adm-border)' }}>
+                          <div key={item.id} role="button" tabIndex={0} onClick={item.onOpen} onKeyDown={(e) => { if (e.key === 'Enter') item.onOpen?.(); }} className="flex items-center gap-3 py-2 border-b last:border-0 cursor-pointer hover:opacity-80" style={{ borderColor: 'var(--adm-border)' }}>
                             <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${item.color}20`, color: item.color }}>
                               <Icon className="w-4 h-4" />
                             </div>
@@ -2316,15 +2317,38 @@ export const AdminDashboard = () => {
           </>}
         >
           <div className="space-y-2 text-xs font-mono rounded-2xl border p-4" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
+            <div style={mutedStyle}>Account: <strong style={{ color: 'var(--adm-text)' }}>{selectedInspectOrder.userEmail || 'N/A'}</strong></div>
+            <div style={mutedStyle}>User ID: <strong style={{ color: 'var(--adm-text)' }}>{selectedInspectOrder.userId || 'N/A'}</strong></div>
+            {selectedInspectOrder.userName && <div style={mutedStyle}>Name: <strong style={{ color: 'var(--adm-text)' }}>{selectedInspectOrder.userName}</strong></div>}
             <div style={mutedStyle}>Game: <strong style={{ color: 'var(--adm-text)' }}>{selectedInspectOrder.gameName}</strong></div>
             <div style={mutedStyle}>Package: <strong style={{ color: 'var(--adm-text)' }}>{selectedInspectOrder.packageName}</strong></div>
-            <div style={mutedStyle}>Player ID: <strong className="text-red-400">{selectedInspectOrder.playerId}</strong></div>
+            <div style={mutedStyle}>Player ID: <strong className="text-red-400">{selectedInspectOrder.playerId}{selectedInspectOrder.zoneId ? ` (${selectedInspectOrder.zoneId})` : ''}</strong></div>
             <div style={mutedStyle}>IGN: <strong className="text-amber-400">{selectedInspectOrder.ign || 'N/A'}</strong></div>
             <div style={mutedStyle}>Payment Method: <strong className="text-emerald-400">{selectedInspectOrder.paymentMethod}</strong></div>
             <div style={mutedStyle}>Amount: <strong style={{ color: 'var(--adm-text)' }}>{formatLkr(selectedInspectOrder.priceLkr)}</strong></div>
+            {selectedInspectOrder.originalPriceLkr != null && selectedInspectOrder.originalPriceLkr !== selectedInspectOrder.priceLkr && (
+              <div style={mutedStyle}>Catalog Price: <strong style={{ color: 'var(--adm-text)' }}>{formatLkr(selectedInspectOrder.originalPriceLkr)}</strong></div>
+            )}
             <div style={mutedStyle}>Status: <strong className="text-sky-400">{selectedInspectOrder.status}</strong></div>
+            {selectedInspectOrder.failureReason && <div style={mutedStyle}>Failure Reason: <strong className="text-red-400">{selectedInspectOrder.failureReason}</strong></div>}
+            <div style={mutedStyle}>MooGold Ref: <span>{selectedInspectOrder.moongoldRef || 'N/A'}</span></div>
+            {selectedInspectOrder.isResellerOrder && <div style={mutedStyle}>Type: <strong className="text-amber-400">Reseller order</strong></div>}
             <div style={mutedStyle}>Created At: <span>{selectedInspectOrder.createdAt}</span></div>
           </div>
+          {(() => {
+            const o = selectedInspectOrder;
+            const owner = safeUsers.find(u => (o.userId && (u.uid === o.userId || u.resellerCode === o.userId)) || (o.userEmail && String(u.email || '').toLowerCase() === String(o.userEmail).toLowerCase()));
+            if (!owner) return null;
+            return (
+              <div className="mt-3 rounded-2xl border p-4 text-xs space-y-1" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
+                <div className="font-black uppercase text-[10px] tracking-wider mb-1" style={mutedStyle}>Account now</div>
+                <div style={mutedStyle}>Name: <strong style={{ color: 'var(--adm-text)' }}>{owner.name || 'N/A'}</strong></div>
+                <div style={mutedStyle}>Wallet: <strong style={{ color: 'var(--adm-text)' }}>{formatLkr(owner.walletBalance || 0)} • ${Number(owner.walletUsdt || 0).toFixed(2)}</strong></div>
+                <div style={mutedStyle}>Status: <strong className={owner.status === 'BLOCKED' ? 'text-red-400' : 'text-emerald-400'}>{owner.status || 'ACTIVE'}</strong>{owner.isReseller ? ' • Reseller' : ''}</div>
+                <button onClick={() => { setSelectedInspectOrder(null); setSelectedInspectUser(owner); }} className="mt-2 px-3 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer border" style={{ borderColor: 'var(--adm-border)', ...mutedStyle }}>Open account</button>
+              </div>
+            );
+          })()}
         </ModalShell>
       )}
 

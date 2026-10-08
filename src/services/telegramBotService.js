@@ -3,10 +3,17 @@ import crypto from 'crypto';
 import { GAMES_DATA } from '../data/games.js';
 import { lookupFreePlayerIgn } from './playerLookup.js';
 import { getResellerProfileByKey, getResellerProfileByKeyAsync, saveOrderToFirestore } from './firestoreService.js';
-import { findUserKey, spendWallet, adjustWallet, rtdbGet } from '../../lib/rtdbAdmin.js';
+import { findUserKey, spendWallet, adjustWallet, rtdbGet, rtdbPut } from '../../lib/rtdbAdmin.js';
 import { verifyPasswordLogin } from '../../lib/userAuth.js';
 
 const require = createRequire(import.meta.url);
+// Bot orders are written with the database secret: browsers can't update an
+// existing order, and the bot moves its own orders PROCESSING -> COMPLETED.
+const saveBotOrder = async (uid, order) => {
+  if (!order?.id) return;
+  await rtdbPut(`orders/${order.id}`, { ...order, userId: uid || 'guest', timestamp: new Date().toISOString() });
+};
+
 const TelegramBot = require('node-telegram-bot-api');
 
 let botInstance = null;
@@ -1062,7 +1069,7 @@ Examples:
             moongoldRef: null,
             createdAt: new Date().toISOString()
           };
-          try { await saveOrderToFirestore(freshReseller.uid || reseller.uid, pendingOrder); } catch (e) {}
+          try { await saveBotOrder(reseller.walletKey || freshReseller.uid || reseller.uid, pendingOrder); } catch (e) {}
 
           // Take the money first (atomic, server-side), refund if MooGold fails.
           // Spend only from the account that was verified at /auth, and only
@@ -1077,7 +1084,7 @@ Examples:
             ? await spendWallet(walletKey, wholesalePrice).catch(e => ({ success: false, reason: e.message }))
             : { success: false, reason: 'Reseller wallet not found' };
           if (!spend.success) {
-            try { await saveOrderToFirestore(freshReseller.uid || reseller.uid, { ...pendingOrder, status: 'FAILED', error: spend.reason, failedAt: new Date().toISOString() }); } catch (e) {}
+            try { await saveBotOrder(reseller.walletKey || freshReseller.uid || reseller.uid, { ...pendingOrder, status: 'FAILED', error: spend.reason, failedAt: new Date().toISOString() }); } catch (e) {}
             return safeReply(ctx, `❌ TOP-UP FAILED\n\n📦 Order Ref: ${orderId}\n⚠️ ${spend.reason}`);
           }
 
@@ -1100,7 +1107,7 @@ Examples:
               moongoldRef: mgResult.moongoldRef,
               completedAt: new Date().toISOString()
             };
-            try { await saveOrderToFirestore(freshReseller.uid || reseller.uid, completedOrder); } catch (e) {}
+            try { await saveBotOrder(reseller.walletKey || freshReseller.uid || reseller.uid, completedOrder); } catch (e) {}
 
             const successMsg = `
 ✅ TOP-UP SUCCESSFUL!
@@ -1161,7 +1168,7 @@ Order placed live on MooGold Reseller Portal & credited instantly!
               error: mgResult.error,
               failedAt: new Date().toISOString()
             };
-            try { await saveOrderToFirestore(freshReseller.uid || reseller.uid, failedOrder); } catch (e) {}
+            try { await saveBotOrder(reseller.walletKey || freshReseller.uid || reseller.uid, failedOrder); } catch (e) {}
 
             const failMsg = `
 ❌ TOP-UP GATEWAY FAILURE
