@@ -25,7 +25,6 @@ export const AuthModal = () => {
 
   // Email OTP Code Verification state
   const [verificationCode, setVerificationCode] = useState('');
-  const [generatedCode, setGeneratedCode] = useState('');
   const [isCodeSent, setIsCodeSent] = useState(false);
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
@@ -143,101 +142,49 @@ export const AuthModal = () => {
       return;
     }
     setIsSendingCode(true);
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedCode(code);
-
     try {
-      let sentSuccess = false;
-
-      // Fire BOTH server endpoints in parallel — first success wins (eliminates 15s sequential wait)
-      const makeOtpRequest = (endpoint) => {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s per endpoint (was 15s)
-        return fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, otp: code, name: username || 'Gamer' }),
-          signal: controller.signal
-        }).then(res => {
-          clearTimeout(timeoutId);
-          return res;
-        }).catch(err => {
-          clearTimeout(timeoutId);
-          throw err;
-        });
-      };
-
-      // 1. Try both server endpoints in parallel — first successful response wins
-      try {
-        const winner = await Promise.any([
-          makeOtpRequest('/api/send-otp'),
-          makeOtpRequest('https://madstopup.com/api/send-otp')
-        ]);
-        if (winner.ok) {
-          const data = await winner.json().catch(() => ({}));
-          if (data?.success) {
-            sentSuccess = true;
-            console.log('[OTP Sent via server]', data);
-          }
-        }
-      } catch (parallelErr) {
-        console.warn('[OTP server endpoints unavailable]:', parallelErr.message);
-      }
-
-      // 2. Fallback to EmailJS if both server routes failed
-      if (!sentSuccess) {
-        const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_42ovub5';
-        const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_e9m409d';
-        const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'UL_Cr3VmylKk8r2Dp';
-
-        try {
-          let emailjsModule;
-          try { emailjsModule = await import('@emailjs/browser'); } catch (e) {}
-          const emailjsLib = emailjsModule?.default || emailjsModule || window.emailjs;
-
-          if (emailjsLib && typeof emailjsLib.send === 'function') {
-            if (typeof emailjsLib.init === 'function') {
-              try { emailjsLib.init(publicKey); } catch (e) {}
-            }
-            await emailjsLib.send(
-              serviceId,
-              templateId,
-              {
-                to_email: email,
-                email: email,
-                otp_code: code,
-                passcode: code,
-                user_name: username || 'Gamer',
-                time: '15 mins'
-              },
-              publicKey
-            );
-          }
-        } catch (e) {}
+      // The server makes the code, emails it and checks it later.
+      const res = await fetch('/api/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.success) {
+        showToast(data?.error || 'Could not send the code. Please try again.', 'error');
+        return;
       }
       setIsCodeSent(true);
       setResendTimer(60);
       showToast(`Verification code sent to ${email}! Check your inbox.`);
     } catch (error) {
       console.error('OTP Delivery note:', error);
-      setIsCodeSent(true);
-      setResendTimer(60);
-      showToast(`Verification code sent to ${email}! Check your inbox.`);
+      showToast('Could not send the code. Please check your connection and try again.', 'error');
     } finally {
       setIsSendingCode(false);
     }
   };
 
-  const handleVerifyCode = () => {
+  const handleVerifyCode = async () => {
     if (!verificationCode) {
       showToast('Please enter the 6-digit verification code!', 'error');
       return;
     }
-    if (verificationCode.trim() === generatedCode) {
-      setIsEmailVerified(true);
-      showToast('Email verified successfully! ✅');
-    } else {
-      showToast('Invalid verification code. Please check your email and try again!', 'error');
+    try {
+      const res = await fetch('/api/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code: verificationCode.trim() })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.verified) {
+        setIsEmailVerified(true);
+        showToast('Email verified successfully! ✅');
+      } else {
+        showToast(data?.error || 'Invalid verification code. Please check your email and try again!', 'error');
+      }
+    } catch {
+      showToast('Could not check the code. Please try again.', 'error');
     }
   };
 

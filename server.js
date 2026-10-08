@@ -911,37 +911,53 @@ async function sendOtpEmail(email, otp, displayName) {
     return { success: false };
 }
 
-app.post('/api/send-otp', rateLimiter(10, 60000), async (req, res) => {
+// Signup email check. The server makes the code and checks it (the browser
+// used to choose the code, so this endpoint could email any text to anyone
+// and the check itself happened in the browser).
+const signupOtps = new Map(); // email -> { hash, expires, attempts, sentAt }
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of signupOtps) if (now > v.expires) signupOtps.delete(k);
+}, 5 * 60 * 1000).unref();
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+app.post('/api/send-otp', rateLimiter(5, 60000), async (req, res) => {
   try {
-    const rawEmail = req.body?.email;
-    const rawOtp = req.body?.otp;
-    const rawName = req.body?.name;
-
-    const email = sanitizeString(rawEmail, 100);
-    const otp = sanitizeString(rawOtp, 10);
-    const rawSanitName = sanitizeString(rawName, 50);
-
-    if (!email || !otp) {
-      return res.status(400).json({ error: 'Missing email or otp' });
+    const email = sanitizeString(String(req.body?.email || ''), 100).toLowerCase();
+    if (!EMAIL_RE.test(email)) return res.status(400).json({ success: false, error: 'Please enter a valid email address.' });
+    const prev = signupOtps.get(email);
+    if (prev && Date.now() - prev.sentAt < 60000) {
+      return res.status(429).json({ success: false, error: 'Please wait a minute before asking for another code.' });
     }
+    const code = crypto.randomInt(100000, 1000000).toString();
+    signupOtps.set(email, { hash: hashResetCode(code), expires: Date.now() + RESET_CODE_TTL_MS, attempts: 0, sentAt: Date.now() });
+    const local = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '').slice(0, 20);
+    const displayName = local ? local.charAt(0).toUpperCase() + local.slice(1) : 'Gamer';
 
-    let displayName = rawSanitName || '';
-    if (!displayName || displayName.includes('@')) {
-      if (email.includes('@')) {
-        const uPart = email.split('@')[0];
-        displayName = uPart.charAt(0).toUpperCase() + uPart.slice(1);
-      } else {
-        displayName = 'Gamer';
-      }
-    }
-
-    const sent = await sendOtpEmail(email, otp, displayName);
-    if (sent.success) return res.json(sent);
+    const sent = await sendOtpEmail(email, code, displayName);
+    if (sent.success) return res.json({ success: true });
+    signupOtps.delete(email);
     return res.status(503).json({ success: false, error: 'Email service temporarily unavailable. Please try again.' });
   } catch (err) {
     console.error('Mail OTP Error:', err);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ success: false, error: 'Could not send the code. Please try again.' });
   }
+});
+
+app.post('/api/verify-otp', rateLimiter(10, 60000), (req, res) => {
+  const email = sanitizeString(String(req.body?.email || ''), 100).toLowerCase();
+  const code = String(req.body?.code || '').trim();
+  const entry = signupOtps.get(email);
+  if (!entry || Date.now() > entry.expires || entry.attempts >= 5) {
+    return res.status(400).json({ verified: false, error: 'This code has expired. Please ask for a new one.' });
+  }
+  entry.attempts += 1;
+  const given = Buffer.from(hashResetCode(code));
+  if (!crypto.timingSafeEqual(given, Buffer.from(entry.hash))) {
+    return res.status(400).json({ verified: false, error: 'Invalid verification code. Please check your email and try again!' });
+  }
+  signupOtps.delete(email);
+  res.json({ verified: true });
 });
 
 // Reseller Approval Email Endpoint
