@@ -2176,11 +2176,17 @@ async function recordGenieManualPaymentToRtdb(transactionId, record) {
 // Create Genie Business IPG Transaction
 app.post('/api/genie/create-transaction', rateLimiter(15, 60000), async (req, res) => {
   try {
-    const { amount, userId, userEmail, userName, redirectUrl, orderRef } = req.body || {};
-    const numAmount = parseFloat(amount);
+    const { amount, userName, redirectUrl, orderRef } = req.body || {};
+    // The account to credit comes from the login, never from the request.
+    const authUser = await verifyFirebaseIdToken(req.headers.authorization || '');
+    if (!authUser) return res.status(401).json({ error: 'Please log in again to deposit.' });
+    if (await rejectIfBlocked(authUser, res)) return;
+    const userId = authUser.uid;
+    const userEmail = authUser.email || authUser.displayEmail || '';
+    const numAmount = Math.round(parseFloat(amount) * 100) / 100;
 
-    if (!numAmount || numAmount <= 0) {
-      return res.status(400).json({ error: 'Please specify a valid payment amount.' });
+    if (!numAmount || numAmount < 50 || numAmount > 500000) {
+      return res.status(400).json({ error: 'Please enter an amount between Rs. 50 and Rs. 500,000.' });
     }
 
     let appKey = (process.env.GENIE_APP_KEY || process.env.VITE_GENIE_APP_KEY || GENIE_DEFAULT_APP_KEY).replace(/[\r\n\s]/g, '');
@@ -2191,10 +2197,11 @@ app.post('/api/genie/create-transaction', rateLimiter(15, 60000), async (req, re
 
     const cleanEmail = sanitizeString(userEmail || 'customer@madstopup.com', 100);
     const cleanName = sanitizeString(userName || 'MADS Gamer', 100);
-    const localId = orderRef || ('ORD-GENIE-' + Date.now());
+    const localId = /^[A-Za-z0-9_-]{1,60}$/.test(String(orderRef || '')) ? orderRef : ('ORD-GENIE-' + Date.now());
 
-    let returnUrl = redirectUrl || 'https://madstopup.com/wallet?genie=success';
-    if (!returnUrl.startsWith('https://')) {
+    // After paying, the customer may only be sent back to this site.
+    let returnUrl = String(redirectUrl || '');
+    if (!/^https:\/\/(www\.)?madstopup\.com(\/|$)/i.test(returnUrl)) {
       returnUrl = 'https://madstopup.com/wallet?genie=success';
     }
     const sep = returnUrl.includes('?') ? '&' : '?';
