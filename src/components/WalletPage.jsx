@@ -136,9 +136,11 @@ export const WalletPage = () => {
       const userName = userProfile?.name || auth?.currentUser?.displayName || 'Gamer';
       const localId = 'DEP-GENIE-' + Date.now();
       const returnUrl = `${window.location.origin}/wallet?genie=success&orderRef=${encodeURIComponent(localId)}`;
+      const token = await getUserAuthToken(userProfile);
+      if (!token) { showToast('Please log in again to deposit.', 'error'); return; }
       const response = await fetch('/api/genie/create-transaction', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ amount: amt, userId, userEmail, userName, redirectUrl: returnUrl, orderRef: localId })
       });
       const resData = await response.json();
