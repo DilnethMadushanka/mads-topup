@@ -4,7 +4,7 @@ import { GAMES_DATA } from '../data/games';
 import { getMoongoldConfig, saveMoongoldConfig } from '../services/moongoldApi';
 import { getR2Config, saveR2Config } from '../services/storageService';
 import { auth, onAuthStateChanged, logoutGoogle, getRedirectResult } from '../services/firebaseAuth';
-import { postServerApi, clearSessionToken } from '../services/serverApi';
+import { postServerApi, clearSessionToken, getUserAuthToken } from '../services/serverApi';
 import { getAdminToken } from '../services/adminSession';
 import { 
   syncUserProfileToFirestore, updateUserProfileInFirestore, subscribeUserProfile, 
@@ -1414,7 +1414,7 @@ export const AppProvider = ({ children }) => {
 
   const createSupportTicket = ({ subject, category, message, orderId, attachmentUrl }) => {
     const newTicket = {
-      id: 'TCK-' + Math.floor(1000 + Math.random() * 9000),
+      id: 'TCK-' + Date.now().toString().slice(-6) + Math.floor(10 + Math.random() * 90),
       userId: userProfile?.uid || 'USR-' + Math.floor(10000 + Math.random() * 90000),
       userEmail: userProfile?.email || 'customer@madstopup.com',
       userName: userProfile?.name || 'Verified Gamer',
@@ -1448,39 +1448,25 @@ export const AppProvider = ({ children }) => {
     return newTicket;
   };
 
-  const sendTicketMessage = (ticketId, text, senderRole = 'user', attachmentUrl = null) => {
-    setSupportTickets(prev => prev.map(tck => {
-      if (tck.id === ticketId) {
-        const newMessage = {
-          id: 'MSG-' + Date.now(),
-          sender: senderRole,
-          senderName: senderRole === 'admin' ? 'MADS Support Team' : (tck.userName || 'Customer'),
-          text,
-          attachmentUrl: attachmentUrl || null,
-          timestamp: new Date().toISOString()
-        };
-        const updated = {
-          ...tck,
-          // Bug 3 fix: don't blindly reset to 'OPEN' on every user reply.
-          // Only reopen if the ticket was RESOLVED or CLOSED; leave IN_PROGRESS unchanged.
-          status: senderRole === 'admin'
-            ? (tck.status === 'OPEN' ? 'IN_PROGRESS' : tck.status)
-            : (tck.status === 'RESOLVED' || tck.status === 'CLOSED' ? 'OPEN' : tck.status),
-          updatedAt: new Date().toISOString(),
-          messages: [...tck.messages, newMessage]
-        };
-        // Persist full updated ticket to Firestore
-        saveSupportTicketToFirestore(updated);
-        return updated;
-      }
-      return tck;
-    }));
+  const sendTicketMessage = async (ticketId, text, senderRole = 'user', attachmentUrl = null) => {
+    // Replies are saved by the server (browsers can only create a ticket).
+    const isAdmin = senderRole === 'admin';
+    const token = isAdmin ? getAdminToken() : await getUserAuthToken(userProfile);
+    const { ok, data } = await postServerApi(isAdmin ? '/api/admin/tickets/message' : '/api/tickets/message', { ticketId, text, attachmentUrl }, token);
+    if (!ok || !data?.ticket) {
+      showToast(data?.error || 'Could not send the reply. Please try again.', 'error');
+      return;
+    }
+    setSupportTickets(prev => prev.map(tck => (tck.id === ticketId ? { ...tck, ...data.ticket } : tck)));
+    // Keep the Firestore copy in step (the ticket listener also reads it).
+    saveSupportTicketToFirestore(data.ticket).catch(() => {});
   };
 
   const updateTicketStatus = (ticketId, newStatus) => {
     setSupportTickets(prev => prev.map(tck => {
       if (tck.id === ticketId) {
         const updated = { ...tck, status: newStatus, updatedAt: new Date().toISOString() };
+        postServerApi('/api/admin/tickets/update', { ticketId, status: newStatus }, getAdminToken());
         updateSupportTicketInFirestore(ticketId, { status: newStatus, updatedAt: updated.updatedAt });
         return updated;
       }
@@ -1493,6 +1479,7 @@ export const AppProvider = ({ children }) => {
     setSupportTickets(prev => prev.map(tck => {
       if (tck.id === ticketId) {
         const updated = { ...tck, priority: newPriority, updatedAt: new Date().toISOString() };
+        postServerApi('/api/admin/tickets/update', { ticketId, priority: newPriority }, getAdminToken());
         updateSupportTicketInFirestore(ticketId, { priority: newPriority, updatedAt: updated.updatedAt });
         return updated;
       }
