@@ -103,6 +103,10 @@
       ".read": true,
       ".write": false
     },
+    "usedPaymentRefs": {
+      ".read": false,
+      ".write": false
+    },
     "userSecrets": {
       ".read": false,
       ".write": false

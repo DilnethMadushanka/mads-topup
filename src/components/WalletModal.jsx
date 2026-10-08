@@ -22,6 +22,7 @@ export const WalletModal = () => {
   const [binancePayId, setBinancePayId] = useState('');
   const [binanceAmount, setBinanceAmount] = useState('10');
   const [ezCashRnNumber, setEzCashRnNumber] = useState('');
+  const [ezCashPayerPhone, setEzCashPayerPhone] = useState('');
   const [ezCashAmount, setEzCashAmount] = useState('1000');
   const [voucherCode, setVoucherCode] = useState('');
   const [isCopied, setIsCopied] = useState(false);
@@ -212,96 +213,36 @@ export const WalletModal = () => {
 
   const handleEzCashSubmit = async (e) => {
     e.preventDefault();
-    const cleanRn = String(ezCashRnNumber || '').trim();
-    if (!cleanRn || cleanRn.length < 10) {
-      showToast('Please enter a valid 14-digit RN Transaction Number!', 'error');
-      return;
-    }
+    const cleanRn = String(ezCashRnNumber || '').replace(/\D/g, '');
+    if (!cleanRn || cleanRn.length < 10) { showToast('Please enter a valid 14-digit RN Number!', 'error'); return; }
+    const phoneDigits = String(ezCashPayerPhone || '').replace(/\D/g, '');
+    if (phoneDigits.length < 9) { showToast('Please enter the mobile number you sent the EZ Cash from!', 'error'); return; }
     const amt = parseFloat(ezCashAmount) || 1000;
     const userEmail = userProfile?.email || auth?.currentUser?.email || '';
-    const userName = userProfile?.name || auth?.currentUser?.displayName || (userEmail ? userEmail.split('@')[0] : 'Registered Gamer');
+    const userName = userProfile?.name || auth?.currentUser?.displayName || (userEmail ? userEmail.split('@')[0] : 'Gamer');
     const userId = userProfile?.uid || auth?.currentUser?.uid || '';
     const resellerCode = userProfile?.resellerCode || '';
-
+    const pendingRecord = () => ({ id: 'PAY-' + Math.floor(1000 + Math.random() * 9000), userId, userEmail, userName, resellerCode, method: 'EZ Cash', referenceNumber: cleanRn, payerPhone: '0' + phoneDigits.slice(-9), amount: amt, currency: 'LKR', slipUrl: '', status: 'PENDING', createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16) });
     setIsEzCashVerifying(true);
-
     try {
       // Signed-in token so the server can credit this account itself on auto-approval.
       const token = await getUserAuthToken(userProfile);
-      const res = await fetch('/api/ezcash/verify-rn', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({
-          rnNumber: cleanRn,
-          amount: amt,
-          userEmail: userEmail
-        })
-      });
-
-      const resData = await res.json();
-
+      const res = await fetch('/api/ezcash/verify-rn', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ rnNumber: cleanRn, amount: amt, payerPhone: phoneDigits }) });
+      const resData = await res.json().catch(() => ({}));
+      if (!res.ok) { showToast(resData.error || 'Could not submit this RN. Please try again.', 'error'); return; }
       if (resData.verified && resData.autoApproved) {
-        creditUserWallet(amt, 0);
-
-        addManualPayment({
-          id: 'PAY-' + Math.floor(1000 + Math.random() * 9000),
-          userId,
-          userEmail,
-          userName,
-          resellerCode,
-          method: 'EZ Cash (Automated)',
-          referenceNumber: cleanRn,
-          amount: amt,
-          currency: 'LKR',
-          slipUrl: '',
-          status: 'VERIFIED',
-          createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
-        });
-
-        showToast(`⚡ EZ CASH RN VERIFIED! +Rs. ${amt.toLocaleString()} LKR credited to your wallet instantly!`);
-        setEzCashRnNumber('');
-        setIsWalletModalOpen(false);
+        // The server already credited the wallet and saved the deposit record.
+        creditUserWallet(Number(resData.amountLkr) || amt, 0);
+        showToast(`⚡ EZ CASH VERIFIED! +Rs. ${(Number(resData.amountLkr) || amt).toLocaleString()} LKR credited!`);
       } else {
-        addManualPayment({
-          id: 'PAY-' + Math.floor(1000 + Math.random() * 9000),
-          userId,
-          userEmail,
-          userName,
-          resellerCode,
-          method: 'EZ Cash',
-          referenceNumber: cleanRn,
-          amount: amt,
-          currency: 'LKR',
-          slipUrl: '',
-          status: 'PENDING',
-          createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
-        });
-        showToast('EZ Cash deposit request submitted! Admin will verify and credit your wallet.');
-        setEzCashRnNumber('');
-        setIsWalletModalOpen(false);
+        addManualPayment(pendingRecord());
+        showToast('EZ Cash deposit submitted for admin verification.');
       }
-    } catch (err) {
-      console.warn('EZ Cash verify note:', err.message);
-      addManualPayment({
-        id: 'PAY-' + Math.floor(1000 + Math.random() * 9000),
-        userId,
-        userEmail,
-        userName,
-        resellerCode,
-        method: 'EZ Cash',
-        referenceNumber: cleanRn,
-        amount: amt,
-        currency: 'LKR',
-        slipUrl: '',
-        status: 'PENDING',
-        createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
-      });
-      showToast('EZ Cash deposit request submitted! Admin will verify and credit your wallet.');
-      setEzCashRnNumber('');
-      setIsWalletModalOpen(false);
-    } finally {
-      setIsEzCashVerifying(false);
-    }
+      setEzCashRnNumber(''); setIsWalletModalOpen(false);
+    } catch {
+      addManualPayment(pendingRecord());
+      showToast('EZ Cash submitted for admin verification.'); setEzCashRnNumber(''); setIsWalletModalOpen(false);
+    } finally { setIsEzCashVerifying(false); }
   };
 
   const [isRedeemingVoucher, setIsRedeemingVoucher] = useState(false);
@@ -705,6 +646,23 @@ export const WalletModal = () => {
                   />
                   <p className="text-[10px] text-slate-400 font-medium mt-1">
                     Find your 14-digit RN number in the confirmation SMS or Genie App history.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="font-extrabold text-slate-700 block mb-1.5">
+                    Mobile Number You Paid From
+                  </label>
+                  <input
+                    type="tel"
+                    placeholder="e.g. 077XXXXXXX"
+                    value={ezCashPayerPhone}
+                    onChange={(e) => setEzCashPayerPhone(e.target.value)}
+                    maxLength={15}
+                    className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-mono font-semibold text-slate-900 focus:outline-none focus:border-red-500 shadow-xs"
+                  />
+                  <p className="text-[10px] text-slate-400 font-medium mt-1">
+                    The eZ Cash number the money was sent from, so nobody else can use your RN.
                   </p>
                 </div>
 
