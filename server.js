@@ -1191,13 +1191,13 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
     const authenticatedUser = await verifyFirebaseIdToken(authHeader);
 
     if (!authenticatedUser) {
-      console.warn(`[UNAUTHORIZED ACCESS BLOCKED] Direct unauthenticated attempt to /api/moogold (Path: ${apiPath})`);
+      console.warn(`[UNAUTHORIZED ACCESS BLOCKED] Direct unauthenticated attempt to /api/moogold (Path: ${apiPath}, IP: ${req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown'})`);
       return res.status(401).json({
         error: 'Unauthorized! You must be logged in to access top-up services.'
       });
     }
 
-    console.log(`[AUTHENTICATED REQUEST] UID: ${authenticatedUser.uid}, Email: ${authenticatedUser.email}, Path: ${apiPath}`);
+    console.log(`[AUTHENTICATED REQUEST] UID: ${authenticatedUser.uid}, Email: ${authenticatedUser.email || authenticatedUser.displayEmail || ''}, Path: ${apiPath}, IP: ${req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown'}`);
 
     if (await rejectIfBlocked(authenticatedUser, res)) return;
 
