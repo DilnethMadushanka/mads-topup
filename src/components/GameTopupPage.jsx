@@ -231,6 +231,7 @@ export const GameTopupPage = () => {
       let lastRef = null;
       let lastErrMsg = '';
       let blockedAccount = false;
+      let lastPartnerOrderId = null;
       let lastNewBalanceLkr = undefined;
       let lastNewBalanceUsdt = undefined;
 
@@ -259,6 +260,7 @@ export const GameTopupPage = () => {
           const res = await dispatchMoongoldOrder(orderPayload);
           if (res.success) {
             lastRef = res.moongoldRef;
+            lastPartnerOrderId = res.partnerOrderId || lastPartnerOrderId;
             if (res.newBalanceLkr !== undefined) lastNewBalanceLkr = res.newBalanceLkr;
             if (res.newBalanceUsdt !== undefined) lastNewBalanceUsdt = res.newBalanceUsdt;
           } else {
@@ -278,6 +280,7 @@ export const GameTopupPage = () => {
         success: allSuccess,
         status: allSuccess ? 'COMPLETED' : 'FAILED',
         moongoldRef: lastRef,
+        partnerOrderId: lastPartnerOrderId,
         message: lastErrMsg
       };
 
@@ -344,6 +347,9 @@ export const GameTopupPage = () => {
       status: finalStatus,
       moongoldRef: moongoldResult.moongoldRef || (selectedPayment.id === 'wallet' ? ('MG-' + Math.floor(10000000 + Math.random() * 90000000)) : 'PENDING_ADMIN_VERIFICATION'),
       receiptUrl: receiptR2Url || null,
+      // Lets the database rules check a COMPLETED order against the
+      // server's own record of the dispatch.
+      partnerOrderId: moongoldResult.partnerOrderId || null,
       createdAt: new Date().toISOString()
     };
 

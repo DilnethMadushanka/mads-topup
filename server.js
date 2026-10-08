@@ -414,6 +414,30 @@ app.post('/api/admin/wallet', requireAdminSession, async (req, res) => {
   }
 });
 
+// Admin: change an order's status. Browsers can't edit existing orders
+// (database rules), so the admin panel's Approve / Moongold buttons use this.
+const ORDER_STATUSES = ['PENDING', 'PENDING_VERIFICATION', 'PROCESSING', 'COMPLETED', 'FAILED', 'REFUNDED', 'CANCELLED'];
+app.post('/api/admin/order-status', requireAdminSession, async (req, res) => {
+  try {
+    const { orderId, status, moongoldRef } = req.body || {};
+    if (!orderId || !/^[A-Za-z0-9_-]{1,80}$/.test(String(orderId)) || !ORDER_STATUSES.includes(status)) {
+      return res.status(400).json({ error: 'A valid orderId and status are required.' });
+    }
+    const existing = await rtdbGet(`orders/${orderId}`);
+    if (!existing) return res.status(404).json({ error: 'Order not found' });
+    await rtdbPatch(`orders/${orderId}`, {
+      status,
+      ...(moongoldRef ? { moongoldRef: String(moongoldRef).slice(0, 100) } : {}),
+      updatedAt: new Date().toISOString(),
+      updatedBy: 'admin'
+    });
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[Admin Order Status Error]:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Admin: verify badge and block/unblock.
 app.post('/api/admin/user-fields', requireAdminSession, async (req, res) => {
   try {
