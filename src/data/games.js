@@ -220,9 +220,9 @@ export const GAMES_DATA = [
     popular: true,
     moongoldCode: 'GARENA_SHELLS',
     packages: [
-      { id: 'gs-320', name: '320 Shells', amount: 320, bonus: 'Instant PIN (SG)', priceLkr: 2750, priceUsd: 8.95, moongoldProductId: '122274', image: '/gift_cards/shell.png', isPopular: false },
-      { id: 'gs-960', name: '960 Shells', amount: 960, bonus: 'Instant PIN (SG)', priceLkr: 8250, priceUsd: 26.85, moongoldProductId: '122276', image: '/gift_cards/shell.png', isPopular: true },
-      { id: 'gs-1600', name: '1600 Shells', amount: 1600, bonus: 'Instant PIN (SG)', priceLkr: 13750, priceUsd: 44.75, moongoldProductId: '122277', image: '/gift_cards/shell.png', isPopular: false }
+      { id: 'gs-320', name: '320 Shells', amount: 320, bonus: 'Instant PIN (SG)', priceLkr: 2950, moongoldCost: 2628, priceUsd: 7.73, moongoldProductId: '122274', image: '/gift_cards/shell.png', isPopular: false },
+      { id: 'gs-960', name: '960 Shells', amount: 960, bonus: 'Instant PIN (SG)', priceLkr: 8840, moongoldCost: 7888, priceUsd: 23.20, moongoldProductId: '122276', image: '/gift_cards/shell.png', isPopular: true },
+      { id: 'gs-1600', name: '1600 Shells', amount: 1600, bonus: 'Instant PIN (SG)', priceLkr: 14580, moongoldCost: 13015, priceUsd: 38.28, moongoldProductId: '122277', image: '/gift_cards/shell.png', isPopular: false }
     ]
   },
   {
