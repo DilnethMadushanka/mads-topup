@@ -856,7 +856,7 @@
 .home-dark .bg-amber-200\/80 { background-color: rgba(245, 158, 11, 0.26); }
 .home-dark .bg-amber-200\/90 { background-color: rgba(245, 158, 11, 0.26); }
 .home-dark .bg-amber-200\/95 { background-color: rgba(245, 158, 11, 0.26); }
-.home-dark .text-amber-500, .home-dark .text-amber-600, .home-dark .text-amber-700, .home-dark .text-amber-800, .home-dark .text-amber-900 { color: #fbbf24; }
+.home-dark .text-amber-500, .home-dark .text-amber-600, .home-dark .text-amber-700, .home-dark .text-amber-800, .home-dark .text-amber-900, .home-dark .text-amber-950 { color: #fbbf24; }
 .home-dark .border-amber-100, .home-dark .border-amber-200, .home-dark .border-amber-300 { border-color: rgba(245, 158, 11, 0.35); }
 .home-dark .hover\:bg-amber-50:hover, .home-dark .hover\:bg-amber-100:hover { background-color: rgba(245, 158, 11, 0.24); }
 .home-dark .hover\:border-amber-200:hover, .home-dark .hover\:border-amber-300:hover { border-color: rgba(245, 158, 11, 0.6); }
