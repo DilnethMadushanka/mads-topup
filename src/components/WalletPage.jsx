@@ -5,7 +5,7 @@ import { getUserAuthToken } from '../services/serverApi';
 import {
   Wallet, Copy, Check, ArrowLeft, Zap, Clock, Crown,
   Building2, Upload, ChevronRight, X, RefreshCw, AlertTriangle,
-  CreditCard, Smartphone, DollarSign, Gift
+  CreditCard, Smartphone, DollarSign, Gift, Coins, Landmark
 } from 'lucide-react';
 
 export const WalletPage = () => {
@@ -347,10 +347,10 @@ export const WalletPage = () => {
   );
 
   const methods = [
-    { id: 'genie',   icon: '💳', label: 'Card & eZ Cash', sub: 'Instant automated credit',     badge: 'INSTANT' },
-    { id: 'ezcash',  icon: '📱', label: 'EZ Cash Manual', sub: 'Submit RN number for credit',  badge: 'FAST' },
-    { id: 'binance', icon: '🔶', label: 'Binance Pay',    sub: 'Pay with USDT crypto',         badge: 'USDT' },
-    { id: 'bank',    icon: '🏦', label: 'Bank Transfer',  sub: 'HNB bank deposit',             badge: 'MANUAL' },
+    { id: 'genie',   icon: '💳', Icon: CreditCard, tone: 'blue',  label: 'Card & eZ Cash', sub: 'Instant automated credit',     badge: 'INSTANT', featured: true },
+    { id: 'ezcash',  icon: '📱', Icon: Smartphone, tone: 'teal',  label: 'EZ Cash Manual', sub: 'Submit RN number for credit',  badge: 'FAST' },
+    { id: 'binance', icon: '🔶', Icon: Coins,      tone: 'gold',  label: 'Binance Pay',    sub: 'Pay with USDT crypto',         badge: 'USDT' },
+    { id: 'bank',    icon: '🏦', Icon: Landmark,   tone: 'violet', label: 'Bank Transfer', sub: 'HNB bank deposit',             badge: 'MANUAL' },
   ];
   const activeMethod = methods.find(m => m.id === activePanel);
 
@@ -424,28 +424,26 @@ export const WalletPage = () => {
           <div className="space-y-5">
 
             {/* Section heading */}
-            <div className="flex items-center justify-between">
+            <div className="wm-head">
+              <span className="wm-head-ico"><Wallet /></span>
               <div>
-                <h2 className="text-lg font-black text-slate-900 font-heading leading-none">Recharge Wallet</h2>
-                <div className="w-12 h-1 bg-[#1677ff] rounded-full mt-1.5 mb-1.5"></div>
-                <p className="text-xs text-slate-500 font-medium">Select your preferred payment method</p>
+                <h2 className="wm-head-title">Recharge Wallet</h2>
+                <p className="wm-head-sub">Select your preferred payment method</p>
               </div>
             </div>
 
             {/* ── METHOD CARDS ── */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {methods.map(m => (
-                <button key={m.id} onClick={() => setActivePanel(m.id)}
-                  className="group bg-white rounded-2xl p-4 text-left border-2 border-slate-200 hover:border-[#1677ff]/50 hover:shadow-md hover:shadow-brand-600/5 transition-all cursor-pointer active:scale-[0.99] flex items-center gap-4">
-                  <div className="w-14 h-14 shrink-0 rounded-2xl bg-slate-100 group-hover:bg-[#1677ff] flex items-center justify-center text-2xl transition-colors">{m.icon}</div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-black text-slate-900 font-heading leading-tight">{m.label}</div>
-                    <div className="text-xs text-slate-500 font-medium mt-0.5 leading-snug">{m.sub}</div>
-                    <span className="inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-brand-50 text-[#1677ff] border border-brand-100">
-                      <Zap className="w-2.5 h-2.5" />{m.badge}
-                    </span>
-                  </div>
-                  <ChevronRight className="w-5 h-5 shrink-0 text-slate-300 group-hover:text-[#1677ff] group-hover:translate-x-0.5 transition-all" />
+            <div className="wm-grid">
+              {methods.map(({ id, Icon, tone, label, sub, badge, featured }) => (
+                <button key={id} onClick={() => setActivePanel(id)} className={`wm-card is-${tone}${featured ? ' is-featured' : ''}`}>
+                  <Icon className="wm-mark" aria-hidden="true" />
+                  <span className="wm-ico"><Icon /></span>
+                  <span className="wm-body">
+                    <span className="wm-title">{label}{featured && <em>Fastest</em>}</span>
+                    <span className="wm-sub">{sub}</span>
+                    <span className="wm-badge"><Zap />{badge}</span>
+                  </span>
+                  <span className="wm-go" aria-hidden="true"><ChevronRight /></span>
                 </button>
               ))}
             </div>
