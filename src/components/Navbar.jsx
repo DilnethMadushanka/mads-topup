@@ -155,7 +155,7 @@ export const Navbar = () => {
 
   return (
     <>
-      <header className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/85 border-b border-slate-200/80 shadow-[0_10px_30px_-18px_rgba(22,119,255,0.35)] backdrop-blur-xl dark:bg-[#0a1d58]/80! dark:border-white/10! dark:shadow-[0_14px_40px_-18px_rgba(0,10,50,0.9)]!' : 'bg-transparent border-b border-transparent'}`}>
+      <header className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/85 border-b border-slate-200/80 shadow-[0_10px_30px_-18px_rgba(22,119,255,0.35)] backdrop-blur-xl dark:bg-[#171c2f]/80! dark:border-white/10! dark:shadow-[0_14px_40px_-18px_rgba(0,10,50,0.9)]!' : 'bg-transparent border-b border-transparent'}`}>
         <div
           className="max-w-[1440px] mx-auto h-16 sm:h-[72px] flex items-center justify-between gap-3 px-3 sm:px-6 lg:px-10"
         >
@@ -270,7 +270,7 @@ export const Navbar = () => {
 
       {/* Panel */}
       <aside
-        className={`lg:hidden fixed top-2 right-2 bottom-2 z-[999] w-[320px] max-w-[calc(100vw-16px)] bg-white dark:bg-[#0d1c47]! border border-transparent dark:border-white/10! rounded-[1.75rem] flex flex-col overflow-hidden shadow-[0_30px_80px_-20px_rgba(9,13,22,0.5)] transition-transform duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-[110%]'}`}
+        className={`lg:hidden fixed top-2 right-2 bottom-2 z-[999] w-[320px] max-w-[calc(100vw-16px)] bg-white dark:bg-[#1a2030]! border border-transparent dark:border-white/10! rounded-[1.75rem] flex flex-col overflow-hidden shadow-[0_30px_80px_-20px_rgba(9,13,22,0.5)] transition-transform duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-[110%]'}`}
       >
 
         {/* Header */}

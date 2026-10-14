@@ -651,18 +651,18 @@
    home sections already use.
    ============================================================ */
 .home-dark {
-  background: #0a1638 !important;
+  background: #171c2f !important;
   color: #e8eaf0;
 }
 .home-dark section.bg-white,
 .home-dark section.bg-slate-50 {
-  background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(43,134,255, 0.14), transparent 70%), #0a1638;
+  background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(43,134,255, 0.14), transparent 70%), #171c2f;
 }
-.home-dark section.bg-slate-50 { background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(43,134,255, 0.1), transparent 70%), #0c1a42; }
+.home-dark section.bg-slate-50 { background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(43,134,255, 0.1), transparent 70%), #161b29; }
 
 /* surfaces */
-.home-dark .bg-white { background-color: #112552; }
-.home-dark .bg-slate-50, .home-dark .bg-slate-50\/80, .home-dark .bg-slate-50\/70 { background-color: #0d1c47; }
+.home-dark .bg-white { background-color: #1b2132; }
+.home-dark .bg-slate-50, .home-dark .bg-slate-50\/80, .home-dark .bg-slate-50\/70 { background-color: #1a2030; }
 .home-dark .bg-slate-100 { background-color: #17306a; }
 .home-dark .bg-white\/80 { background-color: rgba(255, 255, 255, 0.08); }
 .home-dark .bg-red-50, .home-dark .bg-red-50\/70, .home-dark .bg-red-50\/60, .home-dark .bg-red-100\/50 { background-color: rgba(43,134,255, 0.14); }
@@ -693,9 +693,9 @@
 .home-dark .divide-slate-100 > :not(:last-child), .home-dark .divide-slate-200 > :not(:last-child) { border-color: rgba(255, 255, 255, 0.08); }
 
 /* gradient fades that blended into the white page */
-.home-dark .from-white { --tw-gradient-from: #0a1638; }
+.home-dark .from-white { --tw-gradient-from: #171c2f; }
 .home-dark .via-white, .home-dark .via-white\/60 { --tw-gradient-via: rgba(10,22,56, 0.7); }
-.home-dark .to-white { --tw-gradient-to: #0a1638; }
+.home-dark .to-white { --tw-gradient-to: #171c2f; }
 .home-dark .from-red-50 { --tw-gradient-from: rgba(43,134,255, 0.14); }
 .home-dark .to-red-50 { --tw-gradient-to: rgba(43,134,255, 0.14); }
 
@@ -714,16 +714,16 @@
 /* sections painted with the pale page colour */
 .home-dark section.bg-\[\#F8FAFF\],
 .home-dark .bg-\[\#F8FAFF\] {
-  background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(43,134,255, 0.1), transparent 70%), #0c1a42;
+  background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(43,134,255, 0.1), transparent 70%), #161b29;
 }
 /* How It Works paints its light gradient inline */
 .home-dark section[style*="248, 250, 255"] {
-  background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(43,134,255, 0.14), transparent 70%), #0a1638 !important;
+  background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(43,134,255, 0.14), transparent 70%), #171c2f !important;
 }
 /* any other element that sets a pale inline background */
 .home-dark [style*="background: rgb(248, 250, 255)"],
 .home-dark [style*="background:#f8faff"],
-.home-dark [style*="background: #f8faff"] { background: #0c1a42 !important; }
+.home-dark [style*="background: #f8faff"] { background: #161b29 !important; }
 
 /* more tinted surfaces */
 .home-dark .bg-indigo-50 { background-color: rgba(99, 102, 241, 0.16); }
@@ -1287,7 +1287,7 @@
 .home-dark .text-gray-500, .home-dark .text-gray-400 { color: #9fb0d6; }
 .home-dark .border-gray-100, .home-dark .border-gray-200, .home-dark .border-gray-300 { border-color: rgba(255, 255, 255, 0.1); }
 .home-dark .placeholder\:text-slate-400::placeholder, .home-dark .placeholder\:text-slate-300::placeholder { color: #6e7585; }
-.home-dark .ring-white { --tw-ring-color: #112552; }
+.home-dark .ring-white { --tw-ring-color: #1b2132; }
 .home-dark .ring-slate-200, .home-dark .ring-slate-100 { --tw-ring-color: rgba(255, 255, 255, 0.12); }
 .home-dark .shadow-lg, .home-dark .shadow-xl, .home-dark .shadow-2xl { --tw-shadow-color: rgba(43,134,255, 0.18); }
 
@@ -1295,7 +1295,7 @@
 .home-dark input, .home-dark select, .home-dark textarea { color-scheme: dark; }
 .home-dark input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
 .home-dark select, .home-dark textarea { caret-color: #4da3ff; }
-.home-dark option { background: #112552; color: #ffffff; }
+.home-dark option { background: #1b2132; color: #ffffff; }
 .home-dark ::selection { background: rgba(43,134,255, 0.5); color: #fff; }
 
 /* page backdrop: fixed red glow so every page shares the same atmosphere */
@@ -1303,7 +1303,7 @@
   background:
     radial-gradient(ellipse 60% 35% at 15% 0%, rgba(43,134,255, 0.13), transparent 70%),
     radial-gradient(ellipse 50% 30% at 90% 30%, rgba(43,134,255, 0.07), transparent 70%),
-    #0a1638 !important;
+    #171c2f !important;
 }
 
 /* ---------- animations ---------- */
@@ -1355,8 +1355,8 @@
 
 /* Support chat widget uses inline styles -> colour tokens (light by default, dark inside .home-dark) */
 .home-dark {
-  --sm-bg: #0a1638;
-  --sm-surface: #112552;
+  --sm-bg: #171c2f;
+  --sm-surface: #1b2132;
   --sm-surface2: #17306a;
   --sm-border: rgba(255, 255, 255, 0.12);
   --sm-text: #ffffff;
@@ -1372,7 +1372,7 @@
 
 /* ---- dark theme: custom component classes + inline-styled cards that were still white ---- */
 .home-dark .mads-card {
-  background: #112552;
+  background: #1b2132;
   border-color: rgba(255, 255, 255, 0.1);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 18px 40px -22px rgba(0, 0, 0, 0.8);
 }
@@ -1391,24 +1391,24 @@
 /* inline `background: #fff` cards (Promo / Reseller banners, etc.) */
 .home-dark [style*="background: rgb(255, 255, 255)"],
 .home-dark [style*="background-color: rgb(255, 255, 255)"] {
-  background: #112552 !important;
+  background: #1b2132 !important;
   border-color: rgba(255, 255, 255, 0.1) !important;
   box-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.9) !important;
 }
 .home-dark [style*="background: rgb(255, 255, 255)"] [style*="background: rgb(255, 255, 255)"] {
-  background: #0d1c47 !important;
+  background: #1a2030 !important;
   border-color: rgba(43,134,255, 0.25) !important;
 }
 .home-dark [style*="color: rgb(15, 23, 42)"] { color: #ffffff !important; }
 .home-dark [style*="color: rgb(100, 116, 139)"], .home-dark [style*="color: rgb(71, 85, 105)"] { color: #9fb0d6 !important; }
 
 /* ---- dark theme: hex-coloured surfaces + native form fields ---- */
-.home-dark .bg-\[\#F8FAFC\], .home-dark .bg-\[\#F4F6FB\] { background-color: #0d1c47; }
+.home-dark .bg-\[\#F8FAFC\], .home-dark .bg-\[\#F4F6FB\] { background-color: #1a2030; }
 .home-dark .hover\:bg-\[\#F8FAFC\]:hover { background-color: #17306a; }
 .home-dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
 .home-dark textarea, .home-dark select { color: #ffffff; }
 .home-dark input::placeholder, .home-dark textarea::placeholder { color: #6e7585; opacity: 1; }
-.home-dark input:-webkit-autofill { -webkit-text-fill-color: #fff; -webkit-box-shadow: 0 0 0 1000px #112552 inset; }
+.home-dark input:-webkit-autofill { -webkit-text-fill-color: #fff; -webkit-box-shadow: 0 0 0 1000px #1b2132 inset; }
 .home-dark [style*="color: rgb(22,119,255)"] { color: #74b8ff !important; }
 
 /* Toast notifications */
@@ -1470,24 +1470,25 @@
   --midas-blue: #1677ff;
   --midas-blue-2: #2b86ff;
   --midas-sky: #8dc2ff;
-  --midas-navy: #0a1a4a;
-  --midas-ink: #06123a;
+  --midas-navy: #151a28;
+  --midas-ink: #151a2b;
   --midas-orange-1: #ffc04a;
   --midas-orange-2: #ff7a1a;
   --midas-hot-1: #ff8a3d;
   --midas-hot-2: #ff3d5a;
 }
 
-/* Page stage: bright blue light from the top-left fading into deep navy */
+/* Page stage: deep neutral navy with a faint blue glow at the top */
 .mads-stage-dark {
-  background-color: #081540 !important;
+  background-color: #151a2b !important;
   background-image:
-    radial-gradient(1100px 620px at 8% -8%, rgba(46, 126, 255, 0.55) 0%, transparent 62%),
-    radial-gradient(900px 520px at 100% 4%, rgba(28, 82, 214, 0.45) 0%, transparent 60%),
-    linear-gradient(180deg, #0f2f80 0px, #0b2265 500px, #0a1a4f 1300px, #081540 2400px) !important;
+    radial-gradient(1000px 520px at 6% -12%, rgba(38, 96, 238, 0.62) 0%, rgba(38, 96, 238, 0.18) 45%, transparent 70%),
+    radial-gradient(900px 460px at 96% -10%, rgba(52, 72, 190, 0.32) 0%, transparent 65%),
+    radial-gradient(520px 900px at -8% 55%, rgba(24, 120, 150, 0.16) 0%, transparent 70%),
+    linear-gradient(180deg, #1a2046 0px, #171c33 520px, #151a2b 1100px) !important;
   background-repeat: no-repeat !important;
 }
-html:has(.mads-stage-dark) { background-color: #081540; }
+html:has(.mads-stage-dark) { background-color: #151a2b; }
 .home-dark { background: transparent !important; color: #e9f0ff; }
 .home-dark section.bg-white,
 .home-dark section.bg-slate-50,
@@ -1496,8 +1497,8 @@ html:has(.mads-stage-dark) { background-color: #081540; }
 .home-dark section[style*="248, 250, 255"] { background: transparent !important; }
 
 /* Cards become frosted navy glass so the stage gradient shows through */
-.home-dark .bg-white { background-color: rgba(16, 40, 104, 0.62); }
-.home-dark .bg-slate-50, .home-dark .bg-slate-50\/80, .home-dark .bg-slate-50\/70 { background-color: rgba(12, 32, 88, 0.55); }
+.home-dark .bg-white { background-color: rgba(30, 36, 54, 0.62); }
+.home-dark .bg-slate-50, .home-dark .bg-slate-50\/80, .home-dark .bg-slate-50\/70 { background-color: rgba(22, 27, 41, 0.55); }
 .home-dark .bg-slate-100 { background-color: rgba(28, 58, 140, 0.55); }
 .home-dark .border-slate-200, .home-dark .border-slate-200\/90, .home-dark .border-slate-200\/80,
 .home-dark .border-slate-200\/70, .home-dark .border-slate-200\/60, .home-dark .border-slate-100,
@@ -1627,13 +1628,13 @@ html:has(.mads-stage-dark) { background-color: #081540; }
 }
 
 /* Scrollbar in the new palette */
-::-webkit-scrollbar-track { background: #0a1a4a; }
-::-webkit-scrollbar-thumb { background: #1677ff; border-color: #0a1a4a; }
+::-webkit-scrollbar-track { background: #151a28; }
+::-webkit-scrollbar-thumb { background: #1677ff; border-color: #151a28; }
 
 /* Top Spenders card on the blue stage */
 .home-dark .tsp-section {
   color: #e9f0ff;
-  background: linear-gradient(160deg, rgba(20, 52, 130, 0.75) 0%, rgba(12, 34, 92, 0.8) 100%);
+  background: linear-gradient(160deg, rgba(34, 41, 62, 0.75) 0%, rgba(12, 34, 92, 0.8) 100%);
   border-color: rgba(141, 194, 255, 0.16);
   box-shadow: 0 30px 70px -36px rgba(0, 10, 50, 0.9);
 }
@@ -1642,11 +1643,11 @@ html:has(.mads-stage-dark) { background-color: #081540; }
 .home-dark .tsp-btn { background: rgba(255, 255, 255, 0.06); color: #8dc2ff; border-color: rgba(141, 194, 255, 0.3); }
 .home-dark .tsp-btn:hover, .home-dark .tsp-btn-bottom { background: #1677ff; color: #fff; border-color: #1677ff; }
 .home-dark .tsp-podium {
-  background: linear-gradient(180deg, rgba(16, 40, 104, 0.7), rgba(10, 28, 78, 0.8));
+  background: linear-gradient(180deg, rgba(30, 36, 54, 0.7), rgba(26, 31, 47, 0.8));
   border-color: rgba(141, 194, 255, 0.14);
   box-shadow: 0 18px 40px -24px rgba(0, 10, 50, 0.8);
 }
-.home-dark .tsp-ring-inner { background: #0c225e; }
+.home-dark .tsp-ring-inner { background: #1c2233; }
 .home-dark .tsp-col:not(.tsp-rank-1) .tsp-amount { color: #ffffff !important; }
 .home-dark .tsp-orders { color: #a9bce6; background: rgba(255, 255, 255, 0.06); border-color: rgba(141, 194, 255, 0.16); }
 .home-dark .tsp-step-skeleton { border-top-color: rgba(141, 194, 255, 0.16); background: rgba(255, 255, 255, 0.04); }
@@ -1703,7 +1704,7 @@ html:has(.mads-stage-dark) { background-color: #081540; }
 .pkg-gold { color: #e08a00; }
 .pkg-price { color: #1677ff; }
 
-.home-dark .pkg-card { background: linear-gradient(180deg, #132c6e 0%, #0e2259 100%); border-color: rgba(141,194,255,0.14); box-shadow: 0 16px 34px -20px rgba(0,8,40,0.9); }
+.home-dark .pkg-card { background: linear-gradient(180deg, #202739 0%, #191f30 100%); border-color: rgba(141,194,255,0.14); box-shadow: 0 16px 34px -20px rgba(0,8,40,0.9); }
 .home-dark .pkg-card:hover { border-color: rgba(141,194,255,0.5); }
 .home-dark .pkg-card.is-selected { border-color: #4da3ff; box-shadow: 0 0 0 2px rgba(77,163,255,0.45), 0 22px 40px -20px rgba(22,119,255,0.8); }
 .home-dark .pkg-art {
@@ -1711,7 +1712,7 @@ html:has(.mads-stage-dark) { background-color: #081540; }
     radial-gradient(70% 90% at 50% 100%, rgba(77,163,255,0.35), transparent 70%),
     linear-gradient(180deg, #2a56c4 0%, #183c99 100%);
 }
-.home-dark .pkg-art::after { background: #132c6e; }
+.home-dark .pkg-art::after { background: #202739; }
 .home-dark .pkg-pct { color: #ffd27a; background: rgba(255, 170, 40, 0.16); border-color: rgba(255, 192, 74, 0.45); }
 .home-dark .pkg-gold { color: #ffc04a; }
 .home-dark .pkg-price { color: #ffc04a; }
@@ -1872,7 +1873,7 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
   width: 58px; height: 58px;
   border-radius: 14px;
   overflow: hidden;
-  background: #0b1d52;
+  background: #1c2233;
   box-shadow: 0 8px 18px -10px rgba(0, 10, 40, 0.8), inset 0 0 0 1px rgba(255,255,255,0.1);
   transition: transform 0.3s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s ease;
 }
@@ -1884,7 +1885,7 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
 @media (min-width: 640px) {
   .midas-strip-icon { width: 84px; height: 84px; border-radius: 18px; }
 }
-.home-dark .pkg-card .bg-slate-100\/80 { background-color: rgba(6, 18, 58, 0.55); border-color: rgba(141, 194, 255, 0.16); }
+.home-dark .pkg-card .bg-slate-100\/80 { background-color: rgba(10, 13, 22, 0.55); border-color: rgba(141, 194, 255, 0.16); }
 .home-dark .pkg-card .text-slate-300 { color: #4f67a3; }
 
 /* ── Navbar wallet pill (LKR + USDT) ── */
@@ -1962,7 +1963,7 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
   background:
     radial-gradient(900px 520px at 0% 0%, rgba(59, 149, 255, .55), transparent 60%),
     radial-gradient(700px 480px at 100% 100%, rgba(32, 90, 220, .5), transparent 60%),
-    linear-gradient(160deg, #0f2f80 0%, #0a1f5c 55%, #071440 100%);
+    linear-gradient(160deg, #171d2d 0%, #141a2a 55%, #151a2b 100%);
 }
 @media (min-width: 1024px) { .auth-hero { display: flex; flex-direction: column; justify-content: space-between; padding: 44px 52px; position: sticky; top: 0; height: 100vh; } }
 .auth-hero-art {
@@ -2059,7 +2060,7 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
 .auth-card > div > button[type="button"]:has(svg path[fill="#4285F4"]) { height: 50px; border-radius: 14px !important; font-size: 13.5px !important; }
 
 /* Dark mode */
-.auth-page.is-dark { background: #071440; color: #e9f0ff; }
+.auth-page.is-dark { background: #151a2b; color: #e9f0ff; }
 .auth-page.is-dark .auth-brand-sm .auth-brand-name { color: #fff; }
 .auth-page.is-dark .auth-brand-sm .auth-brand-name b { color: #5aa8ff; }
 .auth-page.is-dark .auth-close { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.14); color: rgba(255,255,255,.85); box-shadow: none; }
@@ -2077,8 +2078,8 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
 .auth-page.is-dark .auth-card .text-slate-500 { color: rgba(255,255,255,.6) !important; }
 .auth-page.is-dark .auth-card .text-slate-400 { color: rgba(255,255,255,.45) !important; }
 .auth-page.is-dark .auth-card .bg-white { background-color: transparent !important; }
-.auth-page.is-dark .auth-card span.bg-white { background-color: #071440 !important; }
-@media (min-width: 640px) { .auth-page.is-dark .auth-card span.bg-white { background-color: #0d1d52 !important; } }
+.auth-page.is-dark .auth-card span.bg-white { background-color: #151a2b !important; }
+@media (min-width: 640px) { .auth-page.is-dark .auth-card span.bg-white { background-color: #1a1f2f !important; } }
 .auth-page.is-dark .auth-card .border-slate-200 { border-color: rgba(255,255,255,.12) !important; }
 .auth-page.is-dark .auth-card > div > button[type="button"]:has(svg path[fill="#4285F4"]) { background: rgba(255,255,255,.06) !important; color: #fff !important; }
 .auth-page.is-dark .auth-card form input:not([type="checkbox"]) { background: rgba(255,255,255,.05) !important; border-color: rgba(255,255,255,.12) !important; color: #fff !important; }
@@ -2087,7 +2088,7 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
 .auth-page.is-dark .auth-card .bg-brand-50 { background: rgba(43,134,255,.15) !important; border-color: rgba(43,134,255,.3) !important; }
 @media (max-width: 639px) {
   .auth-page { background: radial-gradient(520px 300px at 50% -60px, rgba(22, 119, 255, .16), transparent 70%), #f4f7fd; }
-  .auth-page.is-dark { background: radial-gradient(520px 300px at 50% -60px, rgba(43, 134, 255, .35), transparent 70%), #071440; }
+  .auth-page.is-dark { background: radial-gradient(520px 300px at 50% -60px, rgba(43, 134, 255, .35), transparent 70%), #151a2b; }
   .auth-card span.bg-white { background-color: #f4f7fd !important; }
 }
 
@@ -2111,3 +2112,76 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
 .midas-game:focus-visible .midas-pop { transform: skewX(-7deg) translateY(-6px); }
 .midas-game:hover .midas-pop-art img { transform: scale(calc(var(--pop-scale) * 1.05)); }
 @media (min-width: 640px) { .midas-pop { --ribbon-h: 37px; } }
+
+/* ── "MADS TOPUP can offer you" section ── */
+.offer-section { padding: 56px 0 64px; }
+@media (min-width: 1024px) { .offer-section { padding: 88px 0 96px; } }
+.offer-wrap { max-width: 1240px; margin: 0 auto; padding: 0 16px; }
+@media (min-width: 640px) { .offer-wrap { padding: 0 24px; } }
+.offer-heading { font-family: var(--font-heading); font-weight: 900; font-size: 22px; letter-spacing: .01em; text-transform: uppercase; color: #0f172a; }
+@media (min-width: 640px) { .offer-heading { font-size: 28px; } }
+.offer-grid { margin-top: 28px; display: grid; gap: 28px; }
+@media (min-width: 1024px) { .offer-grid { margin-top: 48px; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 56px; align-items: center; } }
+
+.offer-list { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 20px; list-style: none; margin: 0; padding: 0; }
+@media (min-width: 1024px) { .offer-list { gap: 44px 32px; } }
+.offer-item { display: block; width: 100%; text-align: left; cursor: pointer; background: none; padding: 0; }
+.offer-num { display: flex; align-items: center; gap: 14px; font-family: var(--font-heading); font-weight: 800; font-size: 22px; color: #1677ff; line-height: 1; }
+@media (min-width: 640px) { .offer-num { font-size: 26px; } }
+.offer-line { position: relative; flex: 1; height: 2px; max-width: 160px; border-radius: 2px; overflow: hidden; }
+.offer-item.is-on .offer-line { background: rgba(22, 119, 255, .18); }
+.offer-line-fill { position: absolute; inset: 0; background: #1677ff; transform-origin: left; }
+.offer-line-fill.is-run { animation: offerFill var(--cycle) linear both; }
+@keyframes offerFill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.offer-title {
+  display: block; margin-top: 10px; font-family: var(--font-heading); font-weight: 800; font-size: 14px; line-height: 1.35;
+  text-transform: uppercase; letter-spacing: .02em; color: #94a3b8; transition: color .25s ease;
+}
+@media (min-width: 640px) { .offer-title { font-size: 17px; } }
+.offer-item:hover .offer-title { color: #475569; }
+.offer-item.is-on .offer-title { color: #0f172a; }
+
+.offer-card { border-radius: 22px; overflow: hidden; background: #fff; border: 1px solid #e3eaf6; box-shadow: 0 30px 60px -38px rgba(22, 60, 140, .45); }
+.offer-card-media { position: relative; aspect-ratio: 16 / 7; overflow: hidden; background: #0f172a; }
+@media (max-width: 639px) { .offer-card-media { aspect-ratio: 16 / 9; } }
+.offer-card-media > img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0;
+  transform: scale(1.06); transition: opacity .7s ease, transform 1.2s ease;
+}
+.offer-card-media > img.is-on { opacity: 1; transform: scale(1); }
+.offer-card-media::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(10, 14, 28, .92) 0%, rgba(10, 14, 28, .6) 45%, rgba(10, 14, 28, .15) 100%); }
+.offer-card-brand { position: absolute; z-index: 1; left: 0; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: center; padding: 0 22px; }
+@media (min-width: 640px) { .offer-card-brand { padding: 0 44px; } }
+.offer-card-kicker { font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: rgba(255, 255, 255, .7); }
+.offer-card-big {
+  margin-top: 6px; font-family: var(--font-heading); font-weight: 900; font-size: 30px; line-height: 1.05; letter-spacing: -.01em;
+  background: linear-gradient(90deg, #36c6ff 0%, #2b86ff 60%, #5a6bff 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+@media (min-width: 640px) { .offer-card-big { font-size: 46px; } }
+.offer-card-logo { margin-top: 16px; display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-heading); font-weight: 900; font-size: 15px; color: #fff; }
+.offer-card-logo img { width: 26px; height: 26px; border-radius: 999px; background: #020617; box-shadow: 0 0 0 1.5px rgba(255,255,255,.8); }
+.offer-card-logo b { color: #5aa8ff; }
+.offer-card-body { padding: 22px 22px 26px; animation: offerIn .45s ease both; }
+@media (min-width: 640px) { .offer-card-body { padding: 28px 44px 34px; } }
+@keyframes offerIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.offer-tag {
+  display: inline-block; padding: 3px 9px; border-radius: 6px; font-size: 12px; font-weight: 700; color: #fff;
+  background: linear-gradient(90deg, #22b8ff, #2b6dff); transform: skewX(-8deg);
+}
+.offer-card-title { margin-top: 14px; display: flex; align-items: baseline; gap: 12px; font-family: var(--font-heading); font-weight: 900; font-size: 18px; text-transform: uppercase; color: #0f172a; }
+.offer-card-title span { font-size: 26px; color: #1677ff; }
+@media (min-width: 640px) { .offer-card-title { font-size: 21px; } .offer-card-title span { font-size: 30px; } }
+.offer-card-text { margin-top: 10px; font-size: 14.5px; line-height: 1.7; color: #475569; max-width: 560px; }
+
+.home-dark .offer-heading { color: #fff; }
+.home-dark .offer-num { color: #5ec8ff; }
+.home-dark .offer-item.is-on .offer-line { background: rgba(94, 200, 255, .18); }
+.home-dark .offer-line-fill { background: #5ec8ff; }
+.home-dark .offer-title { color: rgba(255, 255, 255, .42); }
+.home-dark .offer-item:hover .offer-title { color: rgba(255, 255, 255, .7); }
+.home-dark .offer-item.is-on .offer-title { color: #fff; }
+.home-dark .offer-card { background: #1c2236; border-color: rgba(255, 255, 255, .06); box-shadow: 0 30px 70px -40px rgba(0, 0, 0, .9); }
+.home-dark .offer-card-title { color: #fff; }
+.home-dark .offer-card-title span { color: #5ec8ff; }
+.home-dark .offer-card-text { color: rgba(255, 255, 255, .7); }
+@media (prefers-reduced-motion: reduce) { .offer-line-fill.is-run { animation: none; transform: scaleX(1); } }

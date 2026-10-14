@@ -89,7 +89,7 @@ export const HeroSection = () => {
               >
                 {/* artwork */}
                 <img src={sl.src} alt={sl.label} className="absolute inset-y-0 left-0 w-full sm:w-[68%] h-full object-cover" loading={i === 0 ? 'eager' : 'lazy'} draggable={false} />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#06123a]/90 via-[#06123a]/20 to-transparent sm:hidden" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#151a2b]/90 via-[#151a2b]/20 to-transparent sm:hidden" />
 
                 {/* blue slanted panel */}
                 <div className="midas-banner-panel hidden sm:flex absolute inset-y-0 right-0 w-[46%] flex-col justify-center pl-[11%] pr-10 lg:pr-16">
@@ -133,14 +133,14 @@ export const HeroSection = () => {
           <button
             onClick={() => go(-1)}
             aria-label="Previous banner"
-            className="hidden sm:flex absolute left-4 top-1/2 -translate-y-1/2 z-30 w-9 h-14 rounded-lg bg-[#06123a]/70 hover:bg-[#1677ff] backdrop-blur text-white items-center justify-center border border-white/10 cursor-pointer transition-colors"
+            className="hidden sm:flex absolute left-4 top-1/2 -translate-y-1/2 z-30 w-9 h-14 rounded-lg bg-[#151a2b]/70 hover:bg-[#1677ff] backdrop-blur text-white items-center justify-center border border-white/10 cursor-pointer transition-colors"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button
             onClick={() => go(1)}
             aria-label="Next banner"
-            className="hidden sm:flex absolute right-4 top-1/2 -translate-y-1/2 z-30 w-9 h-14 rounded-lg bg-[#06123a]/70 hover:bg-[#1677ff] backdrop-blur text-white items-center justify-center border border-white/10 cursor-pointer transition-colors"
+            className="hidden sm:flex absolute right-4 top-1/2 -translate-y-1/2 z-30 w-9 h-14 rounded-lg bg-[#151a2b]/70 hover:bg-[#1677ff] backdrop-blur text-white items-center justify-center border border-white/10 cursor-pointer transition-colors"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
@@ -181,7 +181,7 @@ export const HeroSection = () => {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search games..."
-                className="w-full h-11 pl-11 pr-4 bg-white border border-slate-200 rounded-full text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-medium focus:outline-none focus:border-[#1677ff] focus:ring-4 focus:ring-[#1677ff]/10 dark:bg-[#0a1a4a]/70! dark:border-white/10! dark:text-white! dark:placeholder:text-white/45! dark:focus:border-[#2b86ff]! dark:focus:ring-[#2b86ff]/20! transition-all"
+                className="w-full h-11 pl-11 pr-4 bg-white border border-slate-200 rounded-full text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-medium focus:outline-none focus:border-[#1677ff] focus:ring-4 focus:ring-[#1677ff]/10 dark:bg-[#151a28]/70! dark:border-white/10! dark:text-white! dark:placeholder:text-white/45! dark:focus:border-[#2b86ff]! dark:focus:ring-[#2b86ff]/20! transition-all"
               />
             </div>
           </div>
