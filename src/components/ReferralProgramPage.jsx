@@ -88,136 +88,123 @@ export const ReferralProgramPage = () => {
   // ── Shared styles ──────────────────────────────────────────────────
   const card = 'bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm';
 
+  const purchasesLeft = Math.max(0, 3 - userCompletedCount);
+  const spendLeft = Math.max(0, 1000 - userTotalSpentLkr);
+
+  const criteria = [
+    {
+      key: 'orders', icon: ShoppingBag, tone: 'is-blue', label: 'At least 3 purchases',
+      value: <>{userCompletedCount}<small> / 3</small></>, percent: purchasesProgressPercent,
+      hint: purchasesLeft ? `${purchasesLeft} more order${purchasesLeft === 1 ? '' : 's'} to go` : 'Done',
+    },
+    {
+      key: 'spend', icon: Coins, tone: 'is-gold', label: 'Spend Rs. 1,000+',
+      value: <>Rs.{userTotalSpentLkr.toFixed(0)}<small> / 1,000</small></>, percent: spendProgressPercent,
+      hint: spendLeft ? `Rs.${spendLeft.toFixed(0)} more to go` : 'Done',
+    },
+  ];
+
+  const perks = [
+    { icon: Coins, tone: 'is-gold', title: '1.5% cashback', desc: 'On every friend top-up' },
+    { icon: Gift, tone: 'is-teal', title: 'Rs.100 for friends', desc: 'Off their first Rs.1,500+ order' },
+    { icon: Users, tone: 'is-blue', title: 'Unlimited friends', desc: 'No cap on what you earn' },
+  ];
+
   return (
-    <div className="min-h-screen bg-white py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto space-y-8">
+    <div className="rf-page">
+      <div className="rf-wrap">
 
         {/* ── Navigation ── */}
-        <div className="flex items-center justify-between">
-          <button
-            onClick={closeReferralPage}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 font-extrabold text-xs uppercase tracking-wider hover:bg-brand-50 hover:text-[#1677ff] hover:border-[#1677ff]/30 transition-all cursor-pointer shadow-sm"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Home</span>
+        <div className="rf-nav">
+          <button onClick={closeReferralPage} className="rf-back">
+            <ArrowLeft />
+            <span>Back to home</span>
           </button>
 
           {isLoggedIn && (
-            <button
-              onClick={() => setIsUserProfileOpen(true)}
-              className="text-xs font-extrabold text-slate-500 hover:text-[#1677ff] transition-colors uppercase tracking-wider"
-            >
-              My Profile
+            <button onClick={() => setIsUserProfileOpen(true)} className="rf-navlink">
+              My profile
             </button>
           )}
         </div>
 
         {/* ── Page Header ── */}
-        <div className="text-center space-y-2">
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-50 border border-brand-100 text-[#1677ff] text-[11px] font-black uppercase tracking-widest">
-            <Gift className="w-3.5 h-3.5" />
-            Referral Program
-          </span>
-          <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 font-heading tracking-tight">
-            Invite Friends,&nbsp;<span className="text-[#1677ff]">Earn Cash</span>
-          </h1>
-          <p className="text-slate-500 text-sm sm:text-base font-medium max-w-lg mx-auto">
-            Share your link — your friends get a bonus, you earn 1.5% cashback on every top-up they make.
+        <div className="rf-head">
+          <span className="rf-kicker"><Gift /> Referral program</span>
+          <h1 className="rf-title">Invite friends, <span>earn cash</span></h1>
+          <p className="rf-lead">
+            Share your link. Your friends get a bonus and you earn 1.5% cashback on every top-up they make.
           </p>
         </div>
 
-        {/* ══════════════════════════════════════════════════
-            NOT LOGGED IN STATE — BUG FIX: was missing
-        ══════════════════════════════════════════════════ */}
+        {!isUnlocked && (
+          <ul className="rf-perks">
+            {perks.map(({ icon: Icon, tone, title, desc }) => (
+              <li key={title} className={`rf-perk ${tone}`}>
+                <span className="rf-perk-ico"><Icon /></span>
+                <span>
+                  <strong>{title}</strong>
+                  <small>{desc}</small>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+
         {!isLoggedIn ? (
-          <div className="max-w-md mx-auto bg-white rounded-3xl p-8 sm:p-10 border border-slate-200 shadow-xl text-center space-y-6 my-4">
-            <div className="w-20 h-20 rounded-full bg-brand-50 border-4 border-brand-100 flex items-center justify-center mx-auto">
-              <LogIn className="w-9 h-9 text-[#1677ff]" />
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-2xl font-black text-slate-900 font-heading">Login Required</h2>
-              <p className="text-sm text-slate-500 font-semibold leading-relaxed max-w-xs mx-auto">
-                You need to be logged in to access the Referral Program and generate your unique link.
+          <div className="rf-gate">
+            <div className="rf-gate-main">
+              <span className="rf-gate-ico"><LogIn /></span>
+              <span className="rf-gate-tag">Members only</span>
+              <h2 className="rf-gate-title">Login required</h2>
+              <p className="rf-gate-desc">
+                Log in to open the Referral Program and get your own invite link.
               </p>
+              <div className="rf-actions">
+                <button onClick={() => openAuth('login')} className="rf-btn">
+                  <LogIn />
+                  Login to continue
+                </button>
+              </div>
             </div>
-            <button
-              onClick={() => openAuth('login')}
-              className="w-full py-3.5 px-6 rounded-2xl bg-[#1677ff] hover:bg-[#0d68e6] text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-brand-600/25 hover:scale-[1.02] transition-all flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <LogIn className="w-4 h-4" />
-              Login to Continue
-            </button>
           </div>
 
         ) : !isUnlocked ? (
-        /* ══════════════════════════════════════════════════
-            LOCKED STATE
-        ══════════════════════════════════════════════════ */
-          <div className="max-w-md mx-auto bg-white rounded-3xl p-8 sm:p-10 border border-slate-200 shadow-xl text-center space-y-6 my-4">
-            <div className="w-20 h-20 rounded-full bg-brand-50 border-4 border-brand-100 flex items-center justify-center mx-auto">
-              <Lock className="w-9 h-9 text-[#1677ff]" />
-            </div>
-
-            <div className="space-y-2">
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading">Program Locked</h2>
-              <p className="text-xs sm:text-sm text-slate-500 font-semibold leading-relaxed max-w-xs mx-auto">
-                Exclusive to active customers. Unlock by meeting <strong className="text-slate-800">ONE</strong> of the criteria below:
+          <div className="rf-gate is-locked">
+            <div className="rf-gate-main">
+              <span className="rf-gate-ico"><Lock /></span>
+              <span className="rf-gate-tag">Program locked</span>
+              <h2 className="rf-gate-title">Unlock your invite link</h2>
+              <p className="rf-gate-desc">
+                The program is for active customers. Meet <strong>one</strong> of these goals to unlock it.
               </p>
             </div>
 
-            {/* Criterion 1 */}
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2 text-left">
-              <div className="flex items-center justify-between text-xs font-extrabold text-slate-800">
-                <span className="flex items-center gap-2">
-                  <ShoppingBag className="w-4 h-4 text-[#1677ff]" />
-                  At Least 3 Purchases
-                </span>
-                <span className="font-mono text-slate-500">{userCompletedCount} / 3</span>
-              </div>
-              <div className="h-2.5 bg-slate-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-brand-500 to-[#1677ff] rounded-full transition-all duration-500"
-                  style={{ width: `${purchasesProgressPercent}%` }}
-                />
-              </div>
+            <div className="rf-criteria">
+              {criteria.map(({ key, icon: Icon, tone, label, value, percent, hint }, i) => (
+                <React.Fragment key={key}>
+                  {i > 0 && <span className="rf-or">or</span>}
+                  <div className={`rf-crit ${tone}`}>
+                    <div className="rf-crit-top">
+                      <span className="rf-crit-ico"><Icon /></span>
+                      <span className="rf-crit-label">{label}</span>
+                      <span className="rf-crit-pct">{percent}%</span>
+                    </div>
+                    <div className="rf-crit-value">{value}</div>
+                    <div className="rf-bar"><span style={{ width: `${percent}%` }} /></div>
+                    <div className="rf-crit-hint">{hint}</div>
+                  </div>
+                </React.Fragment>
+              ))}
             </div>
 
-            {/* OR */}
-            <div className="relative flex items-center justify-center">
-              <div className="border-t border-slate-200 w-full" />
-              <span className="absolute bg-white px-3 text-[10px] font-black text-slate-400 uppercase tracking-widest border border-slate-200 rounded-full py-0.5">OR</span>
-            </div>
-
-            {/* Criterion 2 */}
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2 text-left">
-              <div className="flex items-center justify-between text-xs font-extrabold text-slate-800">
-                <span className="flex items-center gap-2">
-                  <Coins className="w-4 h-4 text-[#1677ff]" />
-                  Spend Rs. 1,000+
-                </span>
-                <span className="font-mono text-slate-500">Rs.{userTotalSpentLkr.toFixed(0)} / 1,000</span>
-              </div>
-              <div className="h-2.5 bg-slate-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-brand-400 to-[#1677ff] rounded-full transition-all duration-500"
-                  style={{ width: `${spendProgressPercent}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="pt-1 space-y-3">
-              <button
-                onClick={openCatalog}
-                className="w-full py-3.5 px-6 rounded-2xl bg-[#1677ff] hover:bg-[#0d68e6] text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-brand-600/25 hover:scale-[1.02] transition-all flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Zap className="w-4 h-4" />
-                Make a Purchase to Unlock
+            <div className="rf-actions">
+              <button onClick={openCatalog} className="rf-btn">
+                <Zap />
+                Make a purchase to unlock
               </button>
-              <button
-                onClick={() => setIsUserProfileOpen(true)}
-                className="w-full text-xs font-extrabold text-slate-400 hover:text-slate-700 uppercase tracking-wider py-1 cursor-pointer transition-colors"
-              >
-                Return to Profile
+              <button onClick={() => setIsUserProfileOpen(true)} className="rf-btn-ghost">
+                Return to profile
               </button>
             </div>
           </div>

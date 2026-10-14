@@ -36,166 +36,81 @@ export const DownloadAppModal = () => {
   };
 
   const iosSteps = [
-    {
-      icon: <Share2 className="w-4 h-4 text-[#1677ff]" />,
-      text: <>Tap the <strong>Share button</strong> <Share2 className="w-3.5 h-3.5 text-[#1677ff] inline mx-0.5" /> at the bottom of the Safari browser bar.</>
-    },
-    {
-      icon: <PlusSquare className="w-4 h-4 text-[#1677ff]" />,
-      text: <>Scroll down and tap <strong>"Add to Home Screen"</strong> <PlusSquare className="w-3.5 h-3.5 text-[#1677ff] inline mx-0.5" />.</>
-    },
-    {
-      icon: <ShieldCheck className="w-4 h-4 text-[#1677ff]" />,
-      text: <>Tap <strong>"Add"</strong> in the top-right. MADS TOPUP icon appears instantly on your iPhone! 🎉</>
-    },
+    { icon: Share2, title: 'Tap Share', text: <>Tap the <strong>Share</strong> button at the bottom of the Safari bar.</> },
+    { icon: PlusSquare, title: 'Add to Home Screen', text: <>Scroll down and tap <strong>"Add to Home Screen"</strong>.</> },
+    { icon: ShieldCheck, title: 'Tap Add', text: <>Tap <strong>"Add"</strong> at the top right. The MADS TOPUP icon appears on your iPhone.</> },
   ];
 
   const androidSteps = [
-    {
-      icon: <MoreVertical className="w-4 h-4 text-[#1677ff]" />,
-      text: <>Tap the <strong>Browser Menu (⋮)</strong> — three dots in the top-right corner of Chrome.</>
-    },
-    {
-      icon: <Download className="w-4 h-4 text-[#1677ff]" />,
-      text: <>Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.</>
-    },
-    {
-      icon: <Smartphone className="w-4 h-4 text-[#1677ff]" />,
-      text: <>Confirm <strong>"Install"</strong>. MADS TOPUP appears as an app on your phone instantly! 🚀</>
-    },
+    { icon: MoreVertical, title: 'Open the menu', text: <>Tap the <strong>browser menu (⋮)</strong> at the top right of Chrome.</> },
+    { icon: Download, title: 'Install app', text: <>Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.</> },
+    { icon: Smartphone, title: 'Confirm', text: <>Tap <strong>"Install"</strong>. MADS TOPUP opens like an app from your phone.</> },
   ];
 
   const steps = activeTab === 'ios' ? iosSteps : androidSteps;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6">
-      <div
-        className="bg-white w-full max-w-md rounded-3xl shadow-2xl shadow-slate-300/60 border border-slate-200/80 overflow-hidden relative"
-        style={{ animation: 'modalPop 0.25s cubic-bezier(0.34,1.56,0.64,1) both' }}
-      >
-        <style>{`
-          @keyframes modalPop {
-            from { opacity: 0; transform: scale(0.92) translateY(10px); }
-            to   { opacity: 1; transform: scale(1)    translateY(0); }
-          }
-        `}</style>
+    <div className="dl-overlay" onClick={() => setIsDownloadAppModalOpen(false)}>
+      <div className="dl-modal" role="dialog" aria-modal="true" aria-label="Add MADS TOPUP to Home Screen" onClick={(e) => e.stopPropagation()}>
 
-        {/* ── RED HEADER BANNER ── */}
-        <div className="relative bg-gradient-to-br from-[#1677ff] via-brand-600 to-[#0a55c6] px-6 pt-8 pb-7 text-center overflow-hidden">
-          {/* Subtle pattern overlay */}
-          <div className="absolute inset-0 opacity-10"
-            style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '20px 20px' }}
-          />
-
-          {/* Close button */}
-          <button
-            onClick={() => setIsDownloadAppModalOpen(false)}
-            className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-white/20 hover:bg-white/35 text-white flex items-center justify-center transition-all cursor-pointer"
-          >
-            <X className="w-4 h-4" />
+        <div className="dl-head">
+          <span className="dl-head-grid" aria-hidden="true" />
+          <button onClick={() => setIsDownloadAppModalOpen(false)} className="dl-close" aria-label="Close">
+            <X />
           </button>
 
-          {/* App Icon */}
-          <div className="w-16 h-16 rounded-2xl bg-white shadow-xl flex items-center justify-center mx-auto mb-4 border-4 border-white/30 overflow-hidden">
-            <img src="/mads-logo.jpg" alt="MADS TOPUP" className="w-full h-full object-contain" />
+          <div className="dl-app">
+            <span className="dl-app-icon"><img src="/mads-logo.jpg" alt="MADS TOPUP" /></span>
+            <span className="dl-app-meta">
+              <span className="dl-app-tag"><Sparkles /> Web app</span>
+              <span className="dl-app-name">MADS TOPUP</span>
+              <span className="dl-app-sub">madstopup.com</span>
+            </span>
           </div>
 
-          <h2 className="text-xl sm:text-2xl font-black font-heading text-white tracking-tight flex items-center justify-center gap-2 leading-tight">
-            Add MADS TOPUP
-            <Sparkles className="w-5 h-5 text-amber-300 animate-pulse shrink-0" />
-          </h2>
-          <p className="text-white font-black text-xl tracking-tight">to Home Screen</p>
-          <p className="text-[12px] text-brand-100 font-medium mt-1.5 leading-snug">
-            Install instantly — no App Store needed, 0 MB storage
-          </p>
+          <h2 className="dl-title">Add to your <span>home screen</span></h2>
+          <p className="dl-lead">Install in seconds. No App Store, no storage used.</p>
         </div>
 
-        {/* ── MODAL BODY ── */}
-        <div className="p-5 sm:p-6 space-y-4 bg-white">
-
-          {/* 1-Tap Install CTA */}
-          <button
-            onClick={handleInstallPwa}
-            className="w-full p-4 bg-[#1677ff] hover:bg-[#0d68e6] text-white rounded-2xl font-black text-sm flex items-center justify-between transition-all shadow-lg shadow-brand-600/25 cursor-pointer group active:scale-[0.98]"
-          >
-            <div className="flex items-center gap-3 text-left">
-              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-                <Smartphone className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="font-extrabold text-sm">Add App to Home Screen</div>
-                <div className="text-[11px] text-brand-200 font-medium">1-Tap Install • Fast & Light (0 MB)</div>
-              </div>
-            </div>
-            <ArrowRight className="w-5 h-5 text-brand-200 group-hover:translate-x-1 transition-transform shrink-0" />
+        <div className="dl-body">
+          <button onClick={handleInstallPwa} className="dl-install">
+            <span className="dl-install-ico"><Download /></span>
+            <span className="dl-install-text">
+              <strong>Install app</strong>
+              <small>1-tap install · Fast and light</small>
+            </span>
+            <ArrowRight className="dl-install-arrow" />
           </button>
 
-          {/* OS Tab Selector */}
-          <div className="bg-slate-100 p-1 rounded-2xl flex gap-1 text-xs font-bold">
-            <button
-              onClick={() => setActiveTab('ios')}
-              className={`flex-1 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer font-black ${
-                activeTab === 'ios'
-                  ? 'bg-[#1677ff] text-white shadow-md shadow-brand-500/20'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <Apple className="w-4 h-4" />
-              <span>iPhone / iOS</span>
+          <div className="dl-tabs" role="tablist">
+            <button role="tab" aria-selected={activeTab === 'ios'} onClick={() => setActiveTab('ios')} className={`dl-tab${activeTab === 'ios' ? ' is-active' : ''}`}>
+              <Apple /> iPhone / iOS
             </button>
-            <button
-              onClick={() => setActiveTab('android')}
-              className={`flex-1 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer font-black ${
-                activeTab === 'android'
-                  ? 'bg-[#1677ff] text-white shadow-md shadow-brand-500/20'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <Globe className="w-4 h-4" />
-              <span>Android / Chrome</span>
+            <button role="tab" aria-selected={activeTab === 'android'} onClick={() => setActiveTab('android')} className={`dl-tab${activeTab === 'android' ? ' is-active' : ''}`}>
+              <Globe /> Android / Chrome
             </button>
           </div>
 
-          {/* Step-by-Step Instructions */}
-          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
-            {/* Heading */}
-            <div className="text-[11px] font-black text-[#1677ff] uppercase tracking-widest flex items-center gap-1.5">
-              {activeTab === 'ios'
-                ? <><Apple className="w-3.5 h-3.5" /> How to Add on iPhone / iPad (Safari)</>
-                : <><Globe className="w-3.5 h-3.5" /> How to Add on Android (Chrome / Samsung)</>
-              }
-            </div>
-
-            {/* Steps */}
-            <div className="space-y-2">
-              {steps.map((step, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-start gap-3 bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm"
-                >
-                  <div className="w-6 h-6 rounded-lg bg-brand-50 border border-brand-100 text-[#1677ff] font-black text-xs flex items-center justify-center shrink-0 mt-0.5">
-                    {idx + 1}
-                  </div>
-                  <div className="text-xs text-slate-700 font-medium leading-relaxed">
-                    {step.text}
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="dl-steps-head">
+            {activeTab === 'ios' ? 'On iPhone / iPad (Safari)' : 'On Android (Chrome / Samsung)'}
           </div>
+          <ol className="dl-steps">
+            {steps.map(({ icon: Icon, title, text }, idx) => (
+              <li key={title} className="dl-step">
+                <span className="dl-step-ico"><Icon /><em>{idx + 1}</em></span>
+                <span>
+                  <strong>{title}</strong>
+                  <small>{text}</small>
+                </span>
+              </li>
+            ))}
+          </ol>
 
-          {/* Feature Badges */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-brand-50 border border-brand-100 p-3 rounded-xl flex items-center gap-2">
-              <Zap className="w-4 h-4 text-[#1677ff] shrink-0" />
-              <span className="text-xs font-black text-slate-800">Instant Access</span>
-            </div>
-            <div className="bg-brand-50 border border-brand-100 p-3 rounded-xl flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-[#1677ff] shrink-0" />
-              <span className="text-xs font-black text-slate-800">100% Safe & Free</span>
-            </div>
-          </div>
-
+          <ul className="dl-badges">
+            <li className="is-blue"><Zap /> Instant access</li>
+            <li className="is-green"><ShieldCheck /> 100% safe</li>
+            <li className="is-gold"><Sparkles /> Free</li>
+          </ul>
         </div>
       </div>
     </div>
