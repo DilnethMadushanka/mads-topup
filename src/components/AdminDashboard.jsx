@@ -19,7 +19,7 @@ import {
    reused across every tab of the admin panel.
    ============================================================ */
 
-const fieldCls = "w-full px-4 py-2.5 rounded-xl border-2 text-xs font-bold focus:outline-none focus:border-red-500 transition-all disabled:opacity-50";
+const fieldCls = "w-full px-4 py-2.5 rounded-xl border-2 text-xs font-bold focus:outline-none focus:border-[#1677ff] transition-all disabled:opacity-50";
 const fieldStyle = { background: 'var(--adm-input-bg)', borderColor: 'var(--adm-border)', color: 'var(--adm-text)' };
 const cardStyle = { background: 'var(--adm-surface)', borderColor: 'var(--adm-border)', boxShadow: 'var(--adm-shadow)' };
 const mutedStyle = { color: 'var(--adm-text-muted)' };
@@ -71,7 +71,7 @@ const timeAgo = (iso) => {
 const SectionHeader = ({ title, subtitle, icon: Icon, actions }) => (
   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
     <div className="flex items-center gap-3 min-w-0">
-      <div className="w-1.5 self-stretch min-h-[40px] rounded-full bg-gradient-to-b from-[#ef1c25] to-[#990207] shrink-0" />
+      <div className="w-1.5 self-stretch min-h-[40px] rounded-full bg-gradient-to-b from-[#3b8cff] to-[#0b5ed7] shrink-0" />
       <div className="min-w-0">
         <h3 className="text-lg sm:text-xl font-black font-heading flex items-center gap-2" style={{ color: 'var(--adm-text)' }}>
           {Icon && <Icon className="w-5 h-5 text-red-500" />}
@@ -113,7 +113,7 @@ const ToggleSwitch = ({ checked, onChange, label, description }) => (
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className={`w-12 h-6 rounded-full transition-colors relative p-1 shrink-0 cursor-pointer ${checked ? 'bg-[#cc040a] shadow-md shadow-red-600/30' : 'bg-slate-400/40'}`}
+      className={`w-12 h-6 rounded-full transition-colors relative p-1 shrink-0 cursor-pointer ${checked ? 'bg-[#1677ff] shadow-md shadow-blue-600/30' : 'bg-slate-400/40'}`}
     >
       <div className={`w-4 h-4 rounded-full bg-white transition-transform ${checked ? 'translate-x-6' : 'translate-x-0'}`} />
     </button>
@@ -123,11 +123,11 @@ const ToggleSwitch = ({ checked, onChange, label, description }) => (
 const ModalShell = ({ onClose, title, subtitle, icon: Icon, children, maxWidth = 'max-w-lg', footer }) => (
   <div className="fixed inset-0 z-[70] bg-slate-950/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div className={`w-full ${maxWidth} rounded-t-3xl sm:rounded-3xl border-2 p-5 sm:p-6 space-y-4 relative shadow-2xl max-h-[92vh] sm:max-h-[90vh] flex flex-col overflow-hidden`} style={cardStyle}>
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#ef1c25] via-[#cc040a] to-[#990207]" />
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#3b8cff] via-[#1677ff] to-[#0b5ed7]" />
       <div className="flex items-center justify-between pb-3 border-b shrink-0" style={{ borderColor: 'var(--adm-border)' }}>
         <div className="flex items-center gap-2.5">
           {Icon && (
-            <div className="w-10 h-10 rounded-xl bg-[#cc040a] flex items-center justify-center text-white shadow-md shadow-red-600/25 shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-[#1677ff] flex items-center justify-center text-white shadow-md shadow-blue-600/25 shrink-0">
               <Icon className="w-5 h-5" />
             </div>
           )}
@@ -165,7 +165,7 @@ const compressImageToDataUrl = (file, maxSide = 900) => new Promise((resolve, re
   img.src = url;
 });
 
-const AreaChart = ({ data, color = '#cc040a', height = 88, showDots = true }) => {
+const AreaChart = ({ data, color = '#1677ff', height = 88, showDots = true }) => {
   const values = data.length ? data : [0, 0];
   const max = Math.max(...values, 1);
   const min = Math.min(...values, 0);
@@ -234,7 +234,7 @@ const DonutChart = ({ segments, size = 116, thickness = 15 }) => {
 
 const StatCard = ({ icon: Icon, label, value, valueCls = '', sub, subCls = '', tint = 'bg-red-500/15 text-red-500', action, span = '' }) => (
   <div className={`relative rounded-2xl border-2 p-5 overflow-hidden group transition-all hover:-translate-y-0.5 hover:shadow-lg ${span}`} style={cardStyle}>
-    <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-[#cc040a]/5 group-hover:bg-[#cc040a]/10 transition-colors pointer-events-none" />
+    <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-[#1677ff]/5 group-hover:bg-[#1677ff]/10 transition-colors pointer-events-none" />
     <div className="relative flex items-start justify-between gap-3">
       <div className="min-w-0">
         <span className="text-[10px] font-black uppercase tracking-wider block" style={mutedStyle}>{label}</span>
@@ -419,7 +419,14 @@ export const AdminDashboard = () => {
 
   const [adminTab, setAdminTab] = useState('overview');
   const [revenueDays, setRevenueDays] = useState(7);
-  const [theme, setTheme] = useState(() => (typeof window !== 'undefined' && localStorage.getItem('mads_admin_theme')) || 'light');
+  const [theme, setTheme] = useState(() => {
+    // Saved admin choice first; otherwise follow the device, like the storefront.
+    try {
+      const saved = localStorage.getItem('mads_admin_theme');
+      if (saved === 'light' || saved === 'dark') return saved;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    } catch { return 'light'; }
+  });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => typeof window !== 'undefined' && localStorage.getItem('mads_admin_sidebar_collapsed') === 'true');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -650,7 +657,7 @@ export const AdminDashboard = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: loginPayload
-      }).then(r => r.ok ? r.json() : r.json().then(d => Promise.reject(new Error(d?.error || `HTTP ${r.status}`))));
+      }).then(r => r.json().catch(() => ({})).then(d => (r.ok ? d : Promise.reject(new Error(d?.error || 'Server is not reachable right now. Please try again.')))));
 
       if (data?.success) {
         setIsAdminAuthenticated(true);
@@ -692,10 +699,10 @@ export const AdminDashboard = () => {
     return (
       <div className={`mads-admin ${themeClass} fixed inset-0 z-50 w-screen h-screen flex items-center justify-center`} style={{ background: 'var(--adm-bg)', color: 'var(--adm-text)' }}>
         <div className="flex flex-col items-center gap-4">
-          <div className="w-14 h-14 rounded-3xl bg-gradient-to-tr from-[#cc040a] to-[#ff2a30] flex items-center justify-center shadow-xl shadow-red-600/40">
+          <div className="w-14 h-14 rounded-3xl bg-gradient-to-tr from-[#1677ff] to-[#5aa8ff] flex items-center justify-center shadow-xl shadow-blue-600/40">
             <ShieldCheck className="w-7 h-7 text-white" />
           </div>
-          <div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-[#1677ff] border-t-transparent rounded-full animate-spin" />
           <p className="text-xs font-mono" style={{ color: 'var(--adm-text-muted)' }}>Verifying session…</p>
         </div>
       </div>
@@ -704,86 +711,85 @@ export const AdminDashboard = () => {
 
   if (!isAdminAuthenticated) {
     return (
-      <div className={`mads-admin ${themeClass} fixed inset-0 z-50 w-screen h-screen min-h-screen overflow-y-auto overflow-x-hidden flex flex-col items-center justify-center p-3 sm:p-4`} style={{ background: 'var(--adm-bg)', color: 'var(--adm-text)' }}>
-        <div className="absolute -top-32 -left-32 w-[28rem] h-[28rem] bg-red-600/15 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute -bottom-32 -right-32 w-[28rem] h-[28rem] bg-red-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
-        <div className="w-full max-w-md rounded-3xl shadow-2xl border-2 overflow-hidden relative p-5 sm:p-8 z-10" style={cardStyle}>
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#ef1c25] via-[#cc040a] to-[#990207]" />
-          <button
-            onClick={() => setIsAdminOpen(false)}
-            className="absolute top-4 right-4 p-2 rounded-xl hover:bg-[var(--adm-surface-hover)] transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-bold font-mono"
-            style={mutedStyle}
-            title="Return to Main Website"
-          >
-            <X className="w-4 h-4" />
-            <span className="hidden sm:inline">Exit</span>
-          </button>
-
-          <div className="text-center space-y-3 mb-6">
-            <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-[#cc040a] to-[#ff2a30] flex items-center justify-center text-white mx-auto shadow-xl shadow-red-600/40 border border-white/20">
-              <ShieldCheck className="w-8 h-8" />
-            </div>
-            <h2 className="text-2xl font-black font-heading tracking-tight" style={{ color: 'var(--adm-text)' }}>MADS TOPUP ADMIN</h2>
-            <p className="text-xs font-medium" style={mutedStyle}>Restricted Access &bull; Enter Super Admin & 2FA Credentials</p>
-          </div>
-
-          {adminAuthError && (
-            <div className="mb-4 p-3 rounded-xl bg-red-950/80 border border-red-800 text-red-300 text-xs font-bold flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 shrink-0 text-red-400" />
-              <span>{adminAuthError}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleAdminLoginSubmit} className="space-y-4 text-xs">
-            <div>
-              <label className="block font-extrabold mb-1.5 uppercase tracking-wider text-[10px] font-mono" style={mutedStyle}>Admin Email Address</label>
-              <input type="email" required autoComplete="off" value={adminAuthEmail} onChange={(e) => setAdminAuthEmail(e.target.value)} placeholder="Enter Admin Email" className={fieldCls} style={fieldStyle} />
-            </div>
-            <div>
-              <label className="block font-extrabold mb-1.5 uppercase tracking-wider text-[10px] font-mono" style={mutedStyle}>Admin Password</label>
-              <div className="relative">
-                <input type={showAdminAuthPassword ? 'text' : 'password'} required autoComplete="new-password" value={adminAuthPassword} onChange={(e) => setAdminAuthPassword(e.target.value)} placeholder="Enter Admin Password" className={`${fieldCls} pr-10`} style={fieldStyle} />
-                <button type="button" onClick={() => setShowAdminAuthPassword(!showAdminAuthPassword)} className="absolute right-3 top-3 cursor-pointer" style={mutedStyle}>
-                  {showAdminAuthPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="font-extrabold uppercase tracking-wider text-[10px] font-mono" style={mutedStyle}>Admin 2FA Authenticator Code (TOTP)</label>
-                <span className="text-[9px] font-mono text-amber-400">Google / MS Authenticator</span>
-              </div>
-              <input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={6}
-                required
-                autoComplete="one-time-code"
-                value={adminAuthSecurityCode}
-                onChange={(e) => setAdminAuthSecurityCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                placeholder="000 000"
-                className={fieldCls}
-                style={{
-                  ...fieldStyle,
-                  color: '#fbbf24',
-                  textAlign: 'center',
-                  letterSpacing: '0.35em',
-                  fontSize: '1.1rem',
-                  fontWeight: '700'
-                }}
-              />
-            </div>
-            <button type="submit" disabled={isLoginLoading} className="w-full py-3.5 bg-gradient-to-r from-[#cc040a] to-[#ff2a30] hover:from-[#b00308] hover:to-[#e02026] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-red-600/30 cursor-pointer mt-2 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
-              {isLoginLoading
-                ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /><span>VERIFYING…</span></>
-                : <><Lock className="w-4 h-4" /><span>AUTHENTICATE &amp; LOG IN</span></>}
+      <div className={`mads-admin adm-login ${themeClass} fixed inset-0 z-50 w-screen h-screen overflow-y-auto overflow-x-hidden`}>
+        <div className="adm-login-wrap">
+          <div className="adm-login-card">
+            <button
+              type="button"
+              onClick={() => setIsAdminOpen(false)}
+              className="adm-login-exit"
+              title="Return to Main Website"
+            >
+              <X className="w-4 h-4" />
+              <span>Exit</span>
             </button>
-          </form>
 
-          <div className="mt-6 pt-4 border-t text-center text-[10px] font-mono" style={{ borderColor: 'var(--adm-border)', ...faintStyle }}>
-            SECURE SUPER ADMIN GATEWAY &bull; MADS TOPUP ENTERPRISE
+            <div className="adm-login-head">
+              <div className="adm-login-logo"><ShieldCheck /></div>
+              <span className="adm-login-pill"><span className="adm-login-dot" />Secure admin</span>
+              <h2 className="adm-login-title">MADS <span>TOPUP</span> Admin</h2>
+              <p className="adm-login-sub">Sign in with your admin email, password and Authenticator code.</p>
+            </div>
+
+            {adminAuthError && (
+              <div className="adm-login-error" role="alert">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>{adminAuthError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleAdminLoginSubmit} className="adm-login-form">
+              <label className="adm-login-field">
+                <span className="adm-login-label">Email</span>
+                <span className="adm-login-input">
+                  <Mail />
+                  <input type="email" required autoComplete="username" value={adminAuthEmail} onChange={(e) => setAdminAuthEmail(e.target.value)} placeholder="admin@email.com" />
+                </span>
+              </label>
+
+              <label className="adm-login-field">
+                <span className="adm-login-label">Password</span>
+                <span className="adm-login-input">
+                  <Lock />
+                  <input type={showAdminAuthPassword ? 'text' : 'password'} required autoComplete="current-password" value={adminAuthPassword} onChange={(e) => setAdminAuthPassword(e.target.value)} placeholder="Enter password" />
+                  <button type="button" onClick={() => setShowAdminAuthPassword(!showAdminAuthPassword)} className="adm-login-eye" aria-label={showAdminAuthPassword ? 'Hide password' : 'Show password'}>
+                    {showAdminAuthPassword ? <EyeOff /> : <Eye />}
+                  </button>
+                </span>
+              </label>
+
+              <label className="adm-login-field">
+                <span className="adm-login-label">
+                  Authenticator code
+                  <em>Google / Microsoft Authenticator</em>
+                </span>
+                <span className="adm-login-input is-code">
+                  <Smartphone />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    required
+                    autoComplete="one-time-code"
+                    value={adminAuthSecurityCode}
+                    onChange={(e) => setAdminAuthSecurityCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="000000"
+                  />
+                </span>
+              </label>
+
+              <button type="submit" disabled={isLoginLoading} className="adm-login-btn">
+                {isLoginLoading
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /><span>Verifying…</span></>
+                  : <><span>Log in</span><ArrowRight className="w-4 h-4" /></>}
+              </button>
+            </form>
+
+            <div className="adm-login-foot">
+              <Lock className="w-3.5 h-3.5" />
+              <span>Protected by 2-step verification</span>
+            </div>
           </div>
         </div>
       </div>
@@ -1227,7 +1233,7 @@ export const AdminDashboard = () => {
 
       {/* TOP BAR */}
       <div className="px-3 sm:px-5 py-3 border-b flex items-center justify-between gap-3 shrink-0 relative" style={{ background: 'var(--adm-surface)', borderColor: 'var(--adm-border)' }}>
-        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#ef1c25] via-[#cc040a]/60 to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#3b8cff] via-[#1677ff]/60 to-transparent pointer-events-none" />
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)} className="lg:hidden p-2 rounded-xl border cursor-pointer" style={{ borderColor: 'var(--adm-border)', ...mutedStyle }} title="Toggle Menu">
             <Menu className="w-5 h-5" />
@@ -1235,13 +1241,13 @@ export const AdminDashboard = () => {
           <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)} className="hidden lg:flex p-2 rounded-xl border cursor-pointer" style={{ borderColor: 'var(--adm-border)', ...mutedStyle }} title="Toggle Sidebar">
             {sidebarCollapsed ? <PanelLeftOpen className="w-4.5 h-4.5" /> : <PanelLeftClose className="w-4.5 h-4.5" />}
           </button>
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#ef1c25] to-[#990207] flex items-center justify-center text-white shadow-lg shadow-red-600/30 shrink-0">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#3b8cff] to-[#0b5ed7] flex items-center justify-center text-white shadow-lg shadow-blue-600/30 shrink-0">
             <ShieldCheck className="w-5 h-5" />
           </div>
           <div className="min-w-0 hidden sm:block">
             <div className="flex items-center gap-1.5">
               <h2 className="text-base font-black font-heading tracking-tight truncate" style={{ color: 'var(--adm-text)' }}>MADS ADMIN</h2>
-              <span className="px-2 py-0.5 rounded-full bg-[#cc040a] text-white text-[9px] font-mono font-bold shrink-0">v4.0</span>
+              <span className="px-2 py-0.5 rounded-full bg-[#1677ff] text-white text-[9px] font-mono font-bold shrink-0">v4.0</span>
             </div>
           </div>
         </div>
@@ -1329,7 +1335,7 @@ export const AdminDashboard = () => {
         >
           {NAV_GROUPS.map(group => (
             <div key={group.label} className="mb-3">
-              {!sidebarCollapsed && <div className="px-2.5 mb-1.5 text-[10px] font-black uppercase tracking-widest font-mono flex items-center gap-2" style={faintStyle}><span className="w-3 h-0.5 rounded-full bg-[#cc040a]" />{group.label}</div>}
+              {!sidebarCollapsed && <div className="px-2.5 mb-1.5 text-[10px] font-black uppercase tracking-widest font-mono flex items-center gap-2" style={faintStyle}><span className="w-3 h-0.5 rounded-full bg-[#1677ff]" />{group.label}</div>}
               <div className="space-y-1">
                 {group.items.map(item => {
                   const Icon = item.icon;
@@ -1340,7 +1346,7 @@ export const AdminDashboard = () => {
                       key={item.id}
                       onClick={() => handleTabSelect(item.id)}
                       title={item.label}
-                      className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${active ? 'bg-gradient-to-r from-[#cc040a] to-[#ef1c25] text-white shadow-lg shadow-red-600/30' : 'hover:bg-[var(--adm-surface-hover)] hover:translate-x-0.5'}`}
+                      className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${active ? 'bg-gradient-to-r from-[#1677ff] to-[#3b8cff] text-white shadow-lg shadow-blue-600/30' : 'hover:bg-[var(--adm-surface-hover)] hover:translate-x-0.5'}`}
                       style={!active ? mutedStyle : undefined}
                     >
                       <span className="flex items-center gap-2.5 min-w-0">
@@ -1348,7 +1354,7 @@ export const AdminDashboard = () => {
                         {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
                       </span>
                       {!sidebarCollapsed && badge > 0 && (
-                        <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded-full shrink-0 ${active ? 'bg-white/25 text-white' : 'bg-[#cc040a] text-white'}`}>{badge}</span>
+                        <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded-full shrink-0 ${active ? 'bg-white/25 text-white' : 'bg-[#1677ff] text-white'}`}>{badge}</span>
                       )}
                     </button>
                   );
@@ -1374,12 +1380,12 @@ export const AdminDashboard = () => {
 
               {/* Welcome banner — summarises the live counters already computed above */}
               <div className="relative rounded-3xl border-2 p-5 sm:p-7 overflow-hidden" style={cardStyle}>
-                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#ef1c25] via-[#cc040a] to-[#990207]" />
-                <div className="absolute -top-20 -right-12 w-72 h-72 rounded-full bg-[#cc040a]/5 pointer-events-none" />
-                <div className="absolute -bottom-24 -left-10 w-64 h-64 rounded-full bg-[#cc040a]/5 pointer-events-none" />
+                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#3b8cff] via-[#1677ff] to-[#0b5ed7]" />
+                <div className="absolute -top-20 -right-12 w-72 h-72 rounded-full bg-[#1677ff]/5 pointer-events-none" />
+                <div className="absolute -bottom-24 -left-10 w-64 h-64 rounded-full bg-[#1677ff]/5 pointer-events-none" />
                 <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-5">
                   <div>
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#cc040a]/10 border border-[#cc040a]/20 text-[#cc040a] text-[10px] font-black uppercase tracking-widest font-mono mb-2.5">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1677ff]/10 border border-[#1677ff]/20 text-[#1677ff] text-[10px] font-black uppercase tracking-widest font-mono mb-2.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live
                     </div>
                     <h3 className="text-2xl sm:text-3xl font-black font-heading tracking-tight" style={{ color: 'var(--adm-text)' }}>Welcome back, Admin</h3>
@@ -1396,8 +1402,8 @@ export const AdminDashboard = () => {
                       { label: 'Tickets', count: openTicketsCount, tab: 'support' },
                       { label: 'Resellers', count: pendingResellersCount, tab: 'resellers' }
                     ].map(q => (
-                      <button key={q.tab} onClick={() => setAdminTab(q.tab)} className="text-left px-4 py-3 rounded-2xl border-2 hover:border-[#cc040a]/50 hover:-translate-y-0.5 transition-all cursor-pointer" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
-                        <div className={`text-2xl font-black font-heading leading-none ${q.count > 0 ? 'text-[#cc040a]' : ''}`} style={q.count > 0 ? undefined : { color: 'var(--adm-text)' }}>{q.count}</div>
+                      <button key={q.tab} onClick={() => setAdminTab(q.tab)} className="text-left px-4 py-3 rounded-2xl border-2 hover:border-[#1677ff]/50 hover:-translate-y-0.5 transition-all cursor-pointer" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
+                        <div className={`text-2xl font-black font-heading leading-none ${q.count > 0 ? 'text-[#1677ff]' : ''}`} style={q.count > 0 ? undefined : { color: 'var(--adm-text)' }}>{q.count}</div>
                         <div className="text-[10px] font-black uppercase tracking-wider mt-1" style={mutedStyle}>{q.label}</div>
                       </button>
                     ))}
@@ -1468,7 +1474,7 @@ export const AdminDashboard = () => {
                         <button
                           key={d}
                           onClick={() => setRevenueDays(d)}
-                          className={`px-3 py-1.5 rounded-lg text-[11px] font-black font-mono transition-all cursor-pointer border ${revenueDays === d ? 'bg-[#cc040a] border-[#cc040a] text-white shadow-md shadow-red-600/25' : 'hover:border-red-500/50'}`}
+                          className={`px-3 py-1.5 rounded-lg text-[11px] font-black font-mono transition-all cursor-pointer border ${revenueDays === d ? 'bg-[#1677ff] border-[#1677ff] text-white shadow-md shadow-blue-600/25' : 'hover:border-red-500/50'}`}
                           style={revenueDays === d ? undefined : { borderColor: 'var(--adm-border)', ...mutedStyle }}
                         >
                           {d}d
@@ -1491,7 +1497,7 @@ export const AdminDashboard = () => {
                       </label>
                     </div>
                   </div>
-                  <AreaChart data={revenueTrend.map(b => b.total)} color="#cc040a" height={130} showDots={revenueTrend.length <= 31} />
+                  <AreaChart data={revenueTrend.map(b => b.total)} color="#1677ff" height={130} showDots={revenueTrend.length <= 31} />
                   <div className="flex justify-between mt-1.5 text-[9px] font-mono" style={faintStyle}>
                     {revenueTrend.map((b, i) => (
                       (i % revenueLabelStep === 0 || i === revenueTrend.length - 1)
@@ -1801,7 +1807,7 @@ export const AdminDashboard = () => {
                     <label className="text-[10px] font-bold uppercase block mb-1" style={mutedStyle}>Max Uses</label>
                     <input type="number" value={newVoucherMaxUses} onChange={(e) => setNewVoucherMaxUses(e.target.value)} className={fieldCls} style={fieldStyle} />
                   </div>
-                  <button type="submit" className="w-full py-2.5 bg-[#cc040a] hover:bg-red-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl cursor-pointer">Create Voucher</button>
+                  <button type="submit" className="w-full py-2.5 bg-[#1677ff] hover:bg-[#0b5ed7] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl cursor-pointer">Create Voucher</button>
                 </form>
 
                 <div className="lg:col-span-2 space-y-3">
@@ -1917,7 +1923,7 @@ export const AdminDashboard = () => {
                   <label className="block font-extrabold mb-1" style={mutedStyle}>Credit Reason / Audit Note</label>
                   <input type="text" value={creditReason} onChange={(e) => setCreditReason(e.target.value)} className={fieldCls} style={fieldStyle} />
                 </div>
-                <button type="submit" className="w-full py-3 bg-[#cc040a] hover:bg-[#990207] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-red-600/30 cursor-pointer">Credit Balance to User Wallet</button>
+                <button type="submit" className="w-full py-3 bg-[#1677ff] hover:bg-[#0b5ed7] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-blue-600/30 cursor-pointer">Credit Balance to User Wallet</button>
               </form>
             </div>
           )}
@@ -1928,7 +1934,7 @@ export const AdminDashboard = () => {
                 <SearchInput value={resellerSearch} onChange={setResellerSearch} placeholder="Search by applicant, store, whatsapp or email..." />
                 <div className="flex items-center gap-2 overflow-x-auto">
                   {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map(st => (
-                    <button key={st} onClick={() => setResellerStatusFilter(st)} className={`px-3.5 py-2 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer whitespace-nowrap ${resellerStatusFilter === st ? 'bg-[#cc040a] text-white shadow-md shadow-red-600/30' : 'border'}`} style={resellerStatusFilter !== st ? { borderColor: 'var(--adm-border)', ...mutedStyle } : undefined}>{st}</button>
+                    <button key={st} onClick={() => setResellerStatusFilter(st)} className={`px-3.5 py-2 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer whitespace-nowrap ${resellerStatusFilter === st ? 'bg-[#1677ff] text-white shadow-md shadow-blue-600/30' : 'border'}`} style={resellerStatusFilter !== st ? { borderColor: 'var(--adm-border)', ...mutedStyle } : undefined}>{st}</button>
                   ))}
                 </div>
               </FilterBar>
@@ -2000,7 +2006,7 @@ export const AdminDashboard = () => {
                   ) : filteredSupportTickets.map(tck => {
                     const isSelected = activeInspectTicket?.id === tck.id;
                     return (
-                      <div key={tck.id} onClick={() => setSelectedTicketInspect(tck)} className={`p-4 rounded-2xl border transition-all cursor-pointer space-y-2.5 ${isSelected ? 'ring-1 ring-red-500/50' : ''}`} style={isSelected ? { background: 'var(--adm-surface-hover)', borderColor: '#f4370680' } : cardStyle}>
+                      <div key={tck.id} onClick={() => setSelectedTicketInspect(tck)} className={`p-4 rounded-2xl border transition-all cursor-pointer space-y-2.5 ${isSelected ? 'ring-1 ring-[#1677ff]/50' : ''}`} style={isSelected ? { background: 'var(--adm-surface-hover)', borderColor: '#f4370680' } : cardStyle}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <span className="font-mono text-xs font-bold text-red-400">{tck.id}</span>
@@ -2061,7 +2067,7 @@ export const AdminDashboard = () => {
                           return (
                             <div key={msg.id} className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}>
                               <div className="flex items-center gap-1.5 text-[10px] mb-1 font-mono" style={faintStyle}><span>{msg.senderName}</span><span>• {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>
-                              <div className={`max-w-[85%] p-3.5 rounded-2xl text-xs space-y-2 leading-relaxed ${isAdmin ? 'bg-[#cc040a] text-white rounded-tr-xs' : 'border rounded-tl-xs'}`} style={!isAdmin ? { background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)', color: 'var(--adm-text)' } : undefined}>
+                              <div className={`max-w-[85%] p-3.5 rounded-2xl text-xs space-y-2 leading-relaxed ${isAdmin ? 'bg-[#1677ff] text-white rounded-tr-xs' : 'border rounded-tl-xs'}`} style={!isAdmin ? { background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)', color: 'var(--adm-text)' } : undefined}>
                                 <p className="whitespace-pre-wrap">{msg.text}</p>
                                 {msg.attachmentUrl && (
                                   <a href={msg.attachmentUrl} target="_blank" rel="noreferrer" className="block mt-2 rounded-xl overflow-hidden border border-slate-700 hover:opacity-90 transition-opacity">
@@ -2077,7 +2083,7 @@ export const AdminDashboard = () => {
 
                       <form onSubmit={handleSendAdminReply} className="pt-3 border-t flex gap-2" style={{ borderColor: 'var(--adm-border)' }}>
                         <input type="text" placeholder="Type official support reply to customer..." value={adminReplyText} onChange={(e) => setAdminReplyText(e.target.value)} className={fieldCls} style={fieldStyle} />
-                        <button type="submit" disabled={!adminReplyText.trim()} className="px-5 py-2.5 bg-[#cc040a] hover:bg-red-700 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl cursor-pointer shrink-0">Send</button>
+                        <button type="submit" disabled={!adminReplyText.trim()} className="px-5 py-2.5 bg-[#1677ff] hover:bg-[#0b5ed7] disabled:opacity-50 text-white font-extrabold text-xs rounded-xl cursor-pointer shrink-0">Send</button>
                       </form>
                     </div>
                   ) : (
@@ -2092,7 +2098,7 @@ export const AdminDashboard = () => {
             <div className="space-y-6">
               <div className="rounded-3xl border-2 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4" style={cardStyle}>
                 <p className="text-xs" style={mutedStyle}>Edit retail prices for any package. Click Save & Publish to instantly update prices on the Website & Telegram Bot in real-time.</p>
-                <button onClick={handleSaveAllPrices} disabled={isSavingPrices} className="px-6 py-3 bg-[#cc040a] hover:bg-red-700 disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider rounded-2xl flex items-center gap-2 shadow-lg shadow-red-600/30 cursor-pointer shrink-0">
+                <button onClick={handleSaveAllPrices} disabled={isSavingPrices} className="px-6 py-3 bg-[#1677ff] hover:bg-[#0b5ed7] disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider rounded-2xl flex items-center gap-2 shadow-lg shadow-blue-600/30 cursor-pointer shrink-0">
                   <Save className={`w-4 h-4 ${isSavingPrices ? 'animate-spin' : ''}`} /><span>{isSavingPrices ? 'Saving...' : 'Save & Publish All Prices'}</span>
                 </button>
               </div>
@@ -2203,7 +2209,7 @@ export const AdminDashboard = () => {
               </div>
 
               <div className="pt-2 flex justify-end">
-                <button onClick={handleSaveAllPrices} disabled={isSavingPrices} className="px-8 py-3.5 bg-[#cc040a] hover:bg-red-700 disabled:opacity-50 text-white font-black text-sm uppercase tracking-wider rounded-2xl flex items-center gap-2 shadow-xl shadow-red-600/30 cursor-pointer">
+                <button onClick={handleSaveAllPrices} disabled={isSavingPrices} className="px-8 py-3.5 bg-[#1677ff] hover:bg-[#0b5ed7] disabled:opacity-50 text-white font-black text-sm uppercase tracking-wider rounded-2xl flex items-center gap-2 shadow-xl shadow-blue-600/30 cursor-pointer">
                   <Save className={`w-5 h-5 ${isSavingPrices ? 'animate-spin' : ''}`} /><span>{isSavingPrices ? 'Saving...' : 'Save & Publish All Prices Live'}</span>
                 </button>
               </div>
@@ -2216,7 +2222,7 @@ export const AdminDashboard = () => {
                 <div className="flex items-center gap-2">
                   <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black font-mono border ${adEnabled ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'border'}`} style={!adEnabled ? { borderColor: 'var(--adm-border)', ...mutedStyle } : undefined}>{adEnabled ? 'LIVE ON WEB' : 'DISABLED'}</span>
                 </div>
-                <button onClick={handleSavePopupAd} disabled={isSavingAd} className="px-6 py-3 bg-[#cc040a] hover:bg-red-700 disabled:opacity-60 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-red-600/30 cursor-pointer flex items-center gap-2 shrink-0">
+                <button onClick={handleSavePopupAd} disabled={isSavingAd} className="px-6 py-3 bg-[#1677ff] hover:bg-[#0b5ed7] disabled:opacity-60 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-blue-600/30 cursor-pointer flex items-center gap-2 shrink-0">
                   {isSavingAd ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}<span>Save & Publish Live</span>
                 </button>
               </div>
@@ -2230,7 +2236,7 @@ export const AdminDashboard = () => {
                   <div><label className="text-xs font-bold block mb-1" style={mutedStyle}>Description / Offer Details</label><textarea rows={3} value={adDescription} onChange={(e) => setAdDescription(e.target.value)} className={`${fieldCls} resize-none`} style={fieldStyle} /></div>
                   <div>
                     <label className="text-xs font-bold block mb-1.5" style={mutedStyle}>Banner Image <span style={faintStyle}>— a PNG with a transparent background floats on the page with no box behind it (recommended ~900×1100)</span></label>
-                    <label className="w-full border-2 border-dashed border-red-500/40 hover:border-red-500 p-3.5 rounded-2xl flex items-center justify-center gap-2.5 cursor-pointer transition-colors text-xs mb-2" style={mutedStyle}>
+                    <label className="w-full border-2 border-dashed border-[#1677ff]/40 hover:border-[#1677ff] p-3.5 rounded-2xl flex items-center justify-center gap-2.5 cursor-pointer transition-colors text-xs mb-2" style={mutedStyle}>
                       {isUploadingAdImg ? (<><Loader2 className="w-5 h-5 text-red-500 animate-spin" /><span className="font-extrabold text-red-400">Uploading...</span></>) : (<><UploadCloud className="w-5 h-5 text-red-500" /><span className="font-extrabold" style={{ color: 'var(--adm-text)' }}>Upload Image File</span></>)}
                       <input type="file" accept="image/*" disabled={isUploadingAdImg} onChange={handleAdImageFileUpload} className="hidden" />
                     </label>
@@ -2253,7 +2259,7 @@ export const AdminDashboard = () => {
                       </select>
                     </div>
                   </div>
-                  <button type="submit" disabled={isSavingAd} className="w-full py-3 bg-[#cc040a] hover:bg-red-700 text-white font-extrabold text-xs rounded-xl shadow-lg cursor-pointer flex items-center justify-center gap-2">{isSavingAd ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}<span>Save & Publish Live</span></button>
+                  <button type="submit" disabled={isSavingAd} className="w-full py-3 bg-[#1677ff] hover:bg-[#0b5ed7] text-white font-extrabold text-xs rounded-xl shadow-lg cursor-pointer flex items-center justify-center gap-2">{isSavingAd ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}<span>Save & Publish Live</span></button>
                 </form>
 
                 <div className="lg:col-span-5">
@@ -2263,7 +2269,7 @@ export const AdminDashboard = () => {
                       <div className="relative w-full rounded-2xl overflow-hidden flex flex-col items-center px-4 py-6 gap-3" style={{ background: 'repeating-conic-gradient(#1a1a22 0% 25%, #101016 0% 50%) 50% / 18px 18px' }}>
                         {adImageUrl ? (
                           <div className="relative w-full flex justify-center">
-                            {adBadge && <span className="absolute top-0 left-0 z-10 px-2.5 py-0.5 rounded-full bg-[#e11d28] text-white font-black text-[9px] uppercase">{adBadge}</span>}
+                            {adBadge && <span className="absolute top-0 left-0 z-10 px-2.5 py-0.5 rounded-full bg-[#1677ff] text-white font-black text-[9px] uppercase">{adBadge}</span>}
                             <img src={adImageUrl} alt="Preview" className="max-h-52 w-auto max-w-full object-contain" style={{ filter: 'drop-shadow(0 14px 30px rgba(225,29,40,0.45))' }} />
                           </div>
                         ) : (
@@ -2272,7 +2278,7 @@ export const AdminDashboard = () => {
                         <div className="text-center space-y-2 w-full">
                           {(adTitle || !adImageUrl) && <h5 className="text-base font-black text-white" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>{adTitle || 'Popup Title Here'}</h5>}
                           {(adDescription || !adImageUrl) && <p className="text-[11px] text-white/85 leading-relaxed" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>{adDescription || 'Your ad description will appear here...'}</p>}
-                          {(adButtonText || !adImageUrl) && <div className="pt-1 flex justify-center"><div className="px-8 py-2.5 bg-gradient-to-r from-[#ef1c25] to-[#b8060d] text-white font-black text-xs uppercase tracking-wider rounded-full shadow-lg flex items-center gap-1.5"><span>{adButtonText || 'GO'}</span><ArrowRight className="w-3.5 h-3.5" /></div></div>}
+                          {(adButtonText || !adImageUrl) && <div className="pt-1 flex justify-center"><div className="px-8 py-2.5 bg-gradient-to-r from-[#3b8cff] to-[#0b5ed7] text-white font-black text-xs uppercase tracking-wider rounded-full shadow-lg flex items-center gap-1.5"><span>{adButtonText || 'GO'}</span><ArrowRight className="w-3.5 h-3.5" /></div></div>}
                         </div>
                         <div className="w-8 h-8 rounded-full bg-white/10 border border-white/25 flex items-center justify-center text-white mt-1"><X className="w-4 h-4" /></div>
                       </div>
@@ -2290,7 +2296,7 @@ export const AdminDashboard = () => {
                   <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black font-mono border ${stripEnabled ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'border'}`} style={!stripEnabled ? { borderColor: 'var(--adm-border)', ...mutedStyle } : undefined}>{stripEnabled ? 'LIVE ON WEB' : 'HIDDEN'}</span>
                   <span className="text-xs" style={mutedStyle}>{stripItems.length ? `${stripItems.length} game${stripItems.length === 1 ? '' : 's'} in the bar` : 'No games picked — the bar shows every catalog game'}</span>
                 </div>
-                <button onClick={handleSaveGameStrip} disabled={isSavingStrip} className="px-6 py-3 bg-[#cc040a] hover:bg-red-700 disabled:opacity-60 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-red-600/30 cursor-pointer flex items-center gap-2 shrink-0">
+                <button onClick={handleSaveGameStrip} disabled={isSavingStrip} className="px-6 py-3 bg-[#1677ff] hover:bg-[#0b5ed7] disabled:opacity-60 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-blue-600/30 cursor-pointer flex items-center gap-2 shrink-0">
                   {isSavingStrip ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}<span>Save & Publish Live</span>
                 </button>
               </div>
@@ -2383,11 +2389,11 @@ export const AdminDashboard = () => {
                     </div>
                   </div>
                   <div className="pt-2 flex flex-col sm:flex-row gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={autoFulfillInput} onChange={(e) => setAutoFulfillInput(e.target.checked)} className="w-4 h-4 accent-red-600 rounded" /><span className="font-bold" style={{ color: 'var(--adm-text)' }}>Auto-fulfill top-ups on checkout</span></label>
-                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={simModeInput} onChange={(e) => setSimModeInput(e.target.checked)} className="w-4 h-4 accent-red-600 rounded" /><span className="font-bold text-amber-400">Simulation Mode (Demo without real money)</span></label>
+                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={autoFulfillInput} onChange={(e) => setAutoFulfillInput(e.target.checked)} className="w-4 h-4 accent-blue-600 rounded" /><span className="font-bold" style={{ color: 'var(--adm-text)' }}>Auto-fulfill top-ups on checkout</span></label>
+                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={simModeInput} onChange={(e) => setSimModeInput(e.target.checked)} className="w-4 h-4 accent-blue-600 rounded" /><span className="font-bold text-amber-400">Simulation Mode (Demo without real money)</span></label>
                   </div>
                 </div>
-                <button onClick={handleSaveMoongoldSettings} className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-lg shadow-red-600/30 cursor-pointer"><Save className="w-4 h-4" /><span>Save Moongold Settings</span></button>
+                <button onClick={handleSaveMoongoldSettings} className="px-6 py-2.5 bg-[#1677ff] hover:bg-[#0b5ed7] text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-lg shadow-blue-600/30 cursor-pointer"><Save className="w-4 h-4" /><span>Save Moongold Settings</span></button>
               </div>
             </div>
           )}

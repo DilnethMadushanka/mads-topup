@@ -531,44 +531,44 @@
    Only applies inside .mads-admin — does not affect storefront.
    ============================================================ */
 .mads-admin {
-  --adm-bg: #0b0b0e;
-  --adm-bg-soft: #0f0f13;
-  --adm-surface: #16161b;
-  --adm-surface-2: #101014;
-  --adm-surface-hover: #1e1e25;
+  --adm-bg: #131829;
+  --adm-bg-soft: #161b2c;
+  --adm-surface: #1b2135;
+  --adm-surface-2: #171c2f;
+  --adm-surface-hover: #222a42;
   --adm-border: rgba(255, 255, 255, 0.09);
   --adm-border-strong: rgba(255, 255, 255, 0.2);
   --adm-text: #f8fafc;
-  --adm-text-muted: #9aa0ae;
-  --adm-text-faint: #646b7a;
-  --adm-input-bg: #0c0c10;
-  --adm-accent: #ef1c25;
-  --adm-accent-soft: rgba(239, 28, 37, 0.14);
+  --adm-text-muted: rgba(255, 255, 255, 0.6);
+  --adm-text-faint: rgba(255, 255, 255, 0.38);
+  --adm-input-bg: #11162a;
+  --adm-accent: #2b86ff;
+  --adm-accent-soft: rgba(43, 134, 255, 0.16);
   --adm-shadow: 0 1px 2px rgba(0,0,0,0.4), 0 12px 32px -12px rgba(0,0,0,0.6);
-  --adm-scrollbar: #2a2a33;
+  --adm-scrollbar: #2c3550;
   color-scheme: dark;
 }
 
 .mads-admin.theme-light {
-  --adm-bg: #f1f2f6;
-  --adm-bg-soft: #f6f7fb;
+  --adm-bg: #f6f9ff;
+  --adm-bg-soft: #eef5ff;
   --adm-surface: #ffffff;
-  --adm-surface-2: #f8f9fc;
-  --adm-surface-hover: #fff4f4;
-  --adm-border: rgba(15, 23, 42, 0.09);
+  --adm-surface-2: #f8fbff;
+  --adm-surface-hover: #f1f7ff;
+  --adm-border: #e5ecf6;
   --adm-border-strong: rgba(15, 23, 42, 0.18);
   --adm-text: #0f172a;
-  --adm-text-muted: #556070;
-  --adm-text-faint: #94a1b8;
+  --adm-text-muted: #64748b;
+  --adm-text-faint: #94a3b8;
   --adm-input-bg: #ffffff;
-  --adm-accent: #cc040a;
-  --adm-accent-soft: rgba(204, 4, 10, 0.08);
+  --adm-accent: #1677ff;
+  --adm-accent-soft: rgba(22, 119, 255, 0.1);
   --adm-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 10px 26px -14px rgba(15,23,42,0.16);
   --adm-scrollbar: #d7dde8;
   color-scheme: light;
 }
 
-/* Inputs: red focus ring everywhere in the admin */
+/* Inputs: accent focus ring everywhere in the admin */
 .mads-admin input:focus,
 .mads-admin select:focus,
 .mads-admin textarea:focus {
@@ -584,7 +584,7 @@
 .mads-admin.theme-light .text-amber-500 { color: #b45309; }
 .mads-admin.theme-light .text-yellow-300, .mads-admin.theme-light .text-yellow-400 { color: #a16207; }
 .mads-admin.theme-light .text-orange-300, .mads-admin.theme-light .text-orange-400 { color: #c2410c; }
-.mads-admin.theme-light .text-red-300, .mads-admin.theme-light .text-red-400 { color: #cc040a; }
+.mads-admin.theme-light .text-red-300, .mads-admin.theme-light .text-red-400 { color: #dc2626; }
 .mads-admin.theme-light .text-rose-300, .mads-admin.theme-light .text-rose-400 { color: #be123c; }
 .mads-admin.theme-light .text-blue-300, .mads-admin.theme-light .text-blue-400 { color: #1d4ed8; }
 .mads-admin.theme-light .text-sky-300, .mads-admin.theme-light .text-sky-400 { color: #0369a1; }
@@ -3369,4 +3369,72 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
 @media (prefers-reduced-motion: reduce) {
   .blg-card, .blg-media img, .blg-go, .blg-all-ico { transition: none; }
   .blg-card:hover, .blg-card:hover .blg-media img, .blg-card:hover .blg-go { transform: none; }
+}
+
+/* ── Admin login (site theme: white / navy + blue) ── */
+.adm-login { background: radial-gradient(ellipse 70% 50% at 10% 0%, rgba(22, 119, 255, .14), transparent 70%), radial-gradient(ellipse 60% 45% at 100% 100%, rgba(14, 165, 164, .1), transparent 70%), #f6f9ff; color: #0f172a; }
+.adm-login-wrap { min-height: 100%; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+.adm-login-card { position: relative; width: 100%; max-width: 420px; padding: 32px 28px 22px; border-radius: 24px; background: #fff; border: 1px solid #e5ecf6; box-shadow: 0 30px 70px -40px rgba(22, 119, 255, .55), 0 2px 6px rgba(15, 23, 42, .04); }
+.adm-login-exit { position: absolute; top: 14px; right: 14px; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 999px; font-size: 12px; font-weight: 700; color: #64748b; background: #f1f5fb; cursor: pointer; transition: background .2s ease, color .2s ease; }
+.adm-login-exit:hover { background: #eaf3ff; color: #1677ff; }
+.adm-login-head { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; margin-bottom: 22px; }
+.adm-login-logo { width: 56px; height: 56px; border-radius: 18px; display: flex; align-items: center; justify-content: center; color: #fff; background: linear-gradient(135deg, #5aa8ff, #1677ff); box-shadow: 0 16px 30px -14px #1677ff; }
+.adm-login-logo svg { width: 28px; height: 28px; }
+.adm-login-pill { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #1677ff; background: #eaf3ff; }
+.adm-login-dot { width: 6px; height: 6px; border-radius: 999px; background: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, .22); }
+.adm-login-title { font-family: var(--font-heading); font-weight: 900; font-size: 26px; line-height: 1.05; letter-spacing: -.01em; text-transform: uppercase; color: #0f172a; }
+.adm-login-title span { color: #1677ff; }
+.adm-login-sub { max-width: 300px; font-size: 13px; font-weight: 500; line-height: 1.5; color: #64748b; }
+.adm-login-error { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 16px; padding: 10px 12px; border-radius: 14px; font-size: 12px; font-weight: 700; line-height: 1.45; color: #b91c1c; background: #fef2f2; border: 1px solid #fecaca; }
+.adm-login-form { display: flex; flex-direction: column; gap: 14px; }
+.adm-login-field { display: flex; flex-direction: column; gap: 6px; }
+.adm-login-label { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 12px; font-weight: 800; color: #0f172a; }
+.adm-login-label em { font-style: normal; font-size: 10px; font-weight: 700; color: #94a3b8; }
+.adm-login-input { position: relative; display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 14px; border-radius: 14px; background: #f8fbff; border: 1.5px solid #e5ecf6; transition: border-color .2s ease, box-shadow .2s ease, background .2s ease; }
+.adm-login-input > svg { width: 18px; height: 18px; flex-shrink: 0; color: #94a3b8; transition: color .2s ease; }
+.adm-login-input:focus-within { background: #fff; border-color: #1677ff; box-shadow: 0 0 0 4px rgba(22, 119, 255, .12); }
+.adm-login-input:focus-within > svg { color: #1677ff; }
+.mads-admin .adm-login-input input { flex: 1; min-width: 0; height: 100%; border: 0 !important; outline: none; background: transparent; box-shadow: none !important; font-size: 14px; font-weight: 600; color: #0f172a; }
+.adm-login-input input::placeholder { color: #a3b1c6; font-weight: 500; }
+.adm-login-input.is-code input { font-family: var(--font-heading); font-size: 20px; font-weight: 800; letter-spacing: .5em; text-align: center; padding-right: 28px; color: #1677ff; }
+.adm-login-input.is-code input::placeholder { color: #cbd5e1; }
+.adm-login-eye { display: flex; padding: 4px; border-radius: 8px; color: #94a3b8; cursor: pointer; }
+.adm-login-eye:hover { color: #1677ff; }
+.adm-login-eye svg { width: 18px; height: 18px; }
+.adm-login-btn { margin-top: 6px; height: 50px; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 14px; font-size: 14px; font-weight: 800; color: #fff; background: linear-gradient(135deg, #3b8cff, #1677ff); box-shadow: 0 16px 30px -16px #1677ff; cursor: pointer; transition: transform .2s ease, box-shadow .2s ease, filter .2s ease; }
+.adm-login-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 20px 36px -16px #1677ff; }
+.adm-login-btn:hover:not(:disabled) svg:last-child { transform: translateX(2px); }
+.adm-login-btn svg { transition: transform .2s ease; }
+.adm-login-btn:disabled { opacity: .65; cursor: not-allowed; }
+.adm-login-foot { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 20px; padding-top: 16px; border-top: 1px solid #eef2f8; font-size: 11px; font-weight: 600; color: #94a3b8; }
+
+.adm-login:not(.theme-light) { background: radial-gradient(ellipse 70% 50% at 10% 0%, rgba(43, 134, 255, .2), transparent 70%), radial-gradient(ellipse 60% 45% at 100% 100%, rgba(14, 165, 164, .12), transparent 70%), #151a2b; color: #fff; }
+.adm-login:not(.theme-light) .adm-login-card { background: rgba(255, 255, 255, .05); border-color: rgba(255, 255, 255, .1); box-shadow: 0 30px 80px -40px rgba(0, 0, 0, .8); backdrop-filter: blur(14px); }
+.adm-login:not(.theme-light) .adm-login-exit { color: rgba(255, 255, 255, .6); background: rgba(255, 255, 255, .06); }
+.adm-login:not(.theme-light) .adm-login-exit:hover { color: #74b8ff; background: rgba(43, 134, 255, .16); }
+.adm-login:not(.theme-light) .adm-login-logo { background: linear-gradient(135deg, #74b8ff, #2b86ff); box-shadow: 0 16px 30px -14px #2b86ff; }
+.adm-login:not(.theme-light) .adm-login-pill { color: #74b8ff; background: rgba(43, 134, 255, .16); }
+.adm-login:not(.theme-light) .adm-login-title, .adm-login:not(.theme-light) .adm-login-label { color: #fff; }
+.adm-login:not(.theme-light) .adm-login-title span { color: #5aa8ff; }
+.adm-login:not(.theme-light) .adm-login-sub { color: rgba(255, 255, 255, .55); }
+.adm-login:not(.theme-light) .adm-login-label em, .adm-login:not(.theme-light) .adm-login-foot { color: rgba(255, 255, 255, .4); }
+.adm-login:not(.theme-light) .adm-login-error { color: #fca5a5; background: rgba(239, 68, 68, .12); border-color: rgba(239, 68, 68, .3); }
+.adm-login:not(.theme-light) .adm-login-input { background: rgba(255, 255, 255, .04); border-color: rgba(255, 255, 255, .1); }
+.adm-login:not(.theme-light) .adm-login-input:focus-within { background: rgba(255, 255, 255, .06); border-color: #2b86ff; box-shadow: 0 0 0 4px rgba(43, 134, 255, .18); }
+.adm-login:not(.theme-light) .adm-login-input > svg, .adm-login:not(.theme-light) .adm-login-eye { color: rgba(255, 255, 255, .4); }
+.adm-login:not(.theme-light) .adm-login-input:focus-within > svg, .adm-login:not(.theme-light) .adm-login-eye:hover { color: #74b8ff; }
+.mads-admin.adm-login:not(.theme-light) .adm-login-input input { color: #fff; }
+.adm-login:not(.theme-light) .adm-login-input input::placeholder { color: rgba(255, 255, 255, .3); }
+.mads-admin.adm-login:not(.theme-light) .adm-login-input.is-code input { color: #74b8ff; }
+.adm-login:not(.theme-light) .adm-login-btn { background: linear-gradient(135deg, #5aa8ff, #2b86ff); box-shadow: 0 16px 30px -16px #2b86ff; }
+.adm-login:not(.theme-light) .adm-login-foot { border-top-color: rgba(255, 255, 255, .08); }
+
+@media (max-width: 420px) {
+  .adm-login-card { padding: 28px 18px 18px; border-radius: 22px; }
+  .adm-login-title { font-size: 22px; }
+  .adm-login-input.is-code input { letter-spacing: .35em; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .adm-login-btn, .adm-login-btn svg { transition: none; }
+  .adm-login-btn:hover:not(:disabled) { transform: none; }
 }
