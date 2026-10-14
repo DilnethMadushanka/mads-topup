@@ -18,7 +18,7 @@ export const GAME_SEO_PAGES = [
     title: 'Free Fire Diamonds Sri Lanka | Instant Top Up – MADS TOPUP',
     description: 'Top up Free Fire Diamonds in Sri Lanka with just your Player ID. Pay in LKR with eZ Cash, bank transfer or Binance USDT and get diamonds in seconds.',
     h1: 'Free Fire Diamonds Top Up in Sri Lanka',
-    intro: 'Buy Free Fire (SG/MY server) diamonds, Weekly and Monthly Membership and Evo Access with your Player ID. No password needed, paid in Sri Lankan Rupees and delivered automatically.',
+    intro: 'Buy Free Fire (SG/MY server) diamonds, Weekly, Weekly Lite and Monthly Membership with your Player ID. No password needed, paid in Sri Lankan Rupees and delivered automatically.',
   },
   {
     gameId: 'pubg',

@@ -88,9 +88,6 @@ export const GAMES_DATA = [
       { id: 'ff-weekly', name: 'Weekly Membership', amount: 450, bonus: 'Daily Rewards', priceLkr: 640, moongoldCost: 558, priceUsd: 1.64, moongoldProductId: '618940', image: '/product_images/prod_Weekly_1769672449_logo_2.png', isPopular: true, isSpecial: true },
       { id: 'ff-monthly', name: 'Monthly Membership', amount: 2600, bonus: 'Super Discount', priceLkr: 2920, moongoldCost: 2604, priceUsd: 7.66, moongoldProductId: '618941', image: '/product_images/prod_Monthly_Membership_1768967679_mmm_1.png', isPopular: false, isSpecial: true },
       { id: 'ff-weekly-lite', name: 'Weekly Lite', amount: 1, bonus: 'Lite Membership', priceLkr: 115, moongoldCost: 95, priceUsd: 0.28, moongoldProductId: '8814600', image: '/product_images/prod_Weekly_1769672449_logo_2.png', isPopular: false, isSpecial: true },
-      { id: 'ff-evo-3d', name: 'Evo Access (3 Days)', amount: 1, bonus: 'Evo Access 3D', priceLkr: 220, moongoldCost: 187, priceUsd: 0.55, moongoldProductId: '10031679', image: '/product_images/prod_Weekly_1769672449_logo_2.png', isPopular: false, isSpecial: true },
-      { id: 'ff-evo-7d', name: 'Evo Access (7 Days)', amount: 1, bonus: 'Evo Access 7D', priceLkr: 320, moongoldCost: 279, priceUsd: 0.82, moongoldProductId: '10031676', image: '/product_images/prod_Weekly_1769672449_logo_2.png', isPopular: false, isSpecial: true },
-      { id: 'ff-evo-30d', name: 'Evo Access (30 Days)', amount: 1, bonus: 'Evo Access 30D', priceLkr: 810, moongoldCost: 721, priceUsd: 2.12, moongoldProductId: '10031675', image: '/product_images/prod_Monthly_Membership_1768967679_mmm_1.png', isPopular: false, isSpecial: true }
     ]
   },
   {
