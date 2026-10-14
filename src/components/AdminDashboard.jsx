@@ -512,10 +512,7 @@ export const AdminDashboard = () => {
   const fetchEzcashLogs = async () => {
     try {
       setIsEzcashLogsLoading(true);
-      const sessionToken = localStorage.getItem('mads_admin_session_token') || '';
-      const res = await fetch('/api/ezcash/webhook-logs', {
-        headers: sessionToken ? { 'Authorization': `Bearer ${sessionToken}` } : {}
-      });
+      const res = await fetch('/api/ezcash/webhook-logs');
       if (res.status === 401) {
         showToast('Admin session expired — please log out and log back in to view EZ Cash logs.', 'error');
         return;
@@ -565,40 +562,21 @@ export const AdminDashboard = () => {
     }
   }, [popupAdConfig]);
 
-  // On every open: verify any stored session token against the server.
-  // This replaces the old localStorage flag check — if the server says the
-  // token is expired or invalid the admin must log in again.
+  // On every open: ask the server whether the HttpOnly admin session cookie
+  // is still valid. The page itself never sees the token.
   useEffect(() => {
     if (!isAdminOpen) return;
-    const token = localStorage.getItem('mads_admin_session_token') || '';
-    if (!token) {
-      setIsAdminAuthenticated(false);
-      setIsVerifyingSession(false);
-      return;
-    }
+    // Tokens from before the cookie login are useless now; remove them.
+    try {
+      localStorage.removeItem('mads_admin_session_token');
+      localStorage.removeItem('mads_admin_session_expires');
+    } catch (_) {}
     setIsVerifyingSession(true);
-    const tryVerify = (endpoint) =>
-      fetch(endpoint, { headers: { Authorization: `Bearer ${token}` } })
-        .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)));
-    Promise.any([
-      tryVerify('/api/admin/verify-session'),
-      tryVerify('https://madstopup.com/api/admin/verify-session')
-    ])
-      .then(data => {
-        if (data?.valid) {
-          setIsAdminAuthenticated(true);
-        } else {
-          localStorage.removeItem('mads_admin_session_token');
-          localStorage.removeItem('mads_admin_session_expires');
-          setIsAdminAuthenticated(false);
-        }
-      })
-      .catch(() => {
-        // Server unreachable — deny access; never fall back to localStorage
-        localStorage.removeItem('mads_admin_session_token');
-        localStorage.removeItem('mads_admin_session_expires');
-        setIsAdminAuthenticated(false);
-      })
+    fetch('/api/admin/verify-session')
+      .then(r => r.ok ? r.json() : { valid: false })
+      .then(data => setIsAdminAuthenticated(Boolean(data?.valid)))
+      // Server unreachable — deny access.
+      .catch(() => setIsAdminAuthenticated(false))
       .finally(() => setIsVerifyingSession(false));
   }, [isAdminOpen]);
 
@@ -647,21 +625,16 @@ export const AdminDashboard = () => {
     setAdminAuthError('');
 
     const loginPayload = JSON.stringify({ email: cleanEmail, password: cleanPass, securityCode: cleanCode });
-    const tryAdminLogin = (endpoint) => fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: loginPayload
-    }).then(r => r.ok ? r.json() : r.json().then(d => Promise.reject(new Error(d?.error || `HTTP ${r.status}`))));
-
     try {
-      const data = await Promise.any([
-        tryAdminLogin('/api/admin/login'),
-        tryAdminLogin('https://madstopup.com/api/admin/login')
-      ]);
+      // The server sets the session as an HttpOnly cookie on this site, so
+      // the login must go to this same origin.
+      const data = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: loginPayload
+      }).then(r => r.ok ? r.json() : r.json().then(d => Promise.reject(new Error(d?.error || `HTTP ${r.status}`))));
 
-      if (data?.success && data?.token) {
-        localStorage.setItem('mads_admin_session_token', data.token);
-        localStorage.setItem('mads_admin_session_expires', String(data.expiresAt || ''));
+      if (data?.success) {
         setIsAdminAuthenticated(true);
         setAdminFailedAttempts(0);
         setAdminLockoutUntil(null);
@@ -690,21 +663,11 @@ export const AdminDashboard = () => {
   };
 
   const handleAdminLogout = () => {
-    const token = localStorage.getItem('mads_admin_session_token') || '';
-    localStorage.removeItem('mads_admin_session_token');
-    localStorage.removeItem('mads_admin_session_expires');
     setIsAdminAuthenticated(false);
     setIsAdminOpen(false);
     showToast('Logged out from Admin Portal.');
-    // Fire-and-forget server-side token revocation
-    if (token) {
-      const tryLogout = (endpoint) => fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
-      }).catch(() => {});
-      tryLogout('/api/admin/logout');
-      tryLogout('https://madstopup.com/api/admin/logout');
-    }
+    // The server revokes the session and clears the cookie.
+    fetch('/api/admin/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' } }).catch(() => {});
   };
 
   if (isVerifyingSession) {

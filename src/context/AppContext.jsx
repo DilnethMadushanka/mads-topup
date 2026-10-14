@@ -5,7 +5,6 @@ import { getMoongoldConfig, saveMoongoldConfig } from '../services/moongoldApi';
 import { getR2Config, saveR2Config } from '../services/storageService';
 import { auth, onAuthStateChanged, logoutGoogle, getRedirectResult } from '../services/firebaseAuth';
 import { postServerApi, clearSessionToken, getUserAuthToken } from '../services/serverApi';
-import { getAdminToken } from '../services/adminSession';
 import { 
   syncUserProfileToFirestore, updateUserProfileInFirestore, subscribeUserProfile, 
   saveOrderToFirestore, subscribeAllUsersFromFirestore, subscribeOrdersFromFirestore, updateOrderStatusInFirestore,
@@ -1084,7 +1083,7 @@ export const AppProvider = ({ children }) => {
   // Persist a partial update for one user. Returns true only if it really saved.
   // Badge / block changes are saved by the server (admin session required).
   const saveAdminUserField = async (uid, fields) => {
-    const { ok, data } = await postServerApi('/api/admin/user-fields', { identifier: uid, fields }, getAdminToken());
+    const { ok, data } = await postServerApi('/api/admin/user-fields', { identifier: uid, fields });
     if (!ok) console.warn('saveAdminUserField failed:', data?.error);
     return ok;
   };
@@ -1451,7 +1450,8 @@ export const AppProvider = ({ children }) => {
   const sendTicketMessage = async (ticketId, text, senderRole = 'user', attachmentUrl = null) => {
     // Replies are saved by the server (browsers can only create a ticket).
     const isAdmin = senderRole === 'admin';
-    const token = isAdmin ? getAdminToken() : await getUserAuthToken(userProfile);
+    // Admin requests carry the HttpOnly admin cookie instead of a token.
+    const token = isAdmin ? null : await getUserAuthToken(userProfile);
     const { ok, data } = await postServerApi(isAdmin ? '/api/admin/tickets/message' : '/api/tickets/message', { ticketId, text, attachmentUrl }, token);
     if (!ok || !data?.ticket) {
       showToast(data?.error || 'Could not send the reply. Please try again.', 'error');
@@ -1466,7 +1466,7 @@ export const AppProvider = ({ children }) => {
     setSupportTickets(prev => prev.map(tck => {
       if (tck.id === ticketId) {
         const updated = { ...tck, status: newStatus, updatedAt: new Date().toISOString() };
-        postServerApi('/api/admin/tickets/update', { ticketId, status: newStatus }, getAdminToken());
+        postServerApi('/api/admin/tickets/update', { ticketId, status: newStatus });
         updateSupportTicketInFirestore(ticketId, { status: newStatus, updatedAt: updated.updatedAt });
         return updated;
       }
@@ -1479,7 +1479,7 @@ export const AppProvider = ({ children }) => {
     setSupportTickets(prev => prev.map(tck => {
       if (tck.id === ticketId) {
         const updated = { ...tck, priority: newPriority, updatedAt: new Date().toISOString() };
-        postServerApi('/api/admin/tickets/update', { ticketId, priority: newPriority }, getAdminToken());
+        postServerApi('/api/admin/tickets/update', { ticketId, priority: newPriority });
         updateSupportTicketInFirestore(ticketId, { priority: newPriority, updatedAt: updated.updatedAt });
         return updated;
       }
@@ -1638,13 +1638,9 @@ export const AppProvider = ({ children }) => {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 45000);
 
-            const sessionToken = localStorage.getItem('mads_admin_session_token') || '';
             const res = await fetch(endpoint, {
               method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                ...(sessionToken ? { 'Authorization': `Bearer ${sessionToken}` } : {})
-              },
+              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 email: targetEmail,
                 name: targetName,
