@@ -251,14 +251,14 @@ export const GAMES_DATA = [
     popular: false,
     moongoldCode: 'GARENA_SHELLS_MY',
     packages: [
-      { id: 'gsmy-65', name: '65 Shells', amount: 65, bonus: 'Instant PIN (MY)', priceLkr: 370, priceUsd: 1.19, moongoldProductId: '40591', image: '/gift_cards/shell.png', isPopular: false },
-      { id: 'gsmy-130', name: '130 Shells', amount: 130, bonus: 'Instant PIN (MY)', priceLkr: 740, priceUsd: 2.38, moongoldProductId: '40592', image: '/gift_cards/shell.png', isPopular: false },
-      { id: 'gsmy-260', name: '260 Shells', amount: 260, bonus: 'Instant PIN (MY)', priceLkr: 1470, priceUsd: 4.76, moongoldProductId: '40593', image: '/gift_cards/shell.png', isPopular: false },
-      { id: 'gsmy-390', name: '390 Shells', amount: 390, bonus: 'Instant PIN (MY)', priceLkr: 2200, priceUsd: 7.14, moongoldProductId: '40594', image: '/gift_cards/shell.png', isPopular: false },
-      { id: 'gsmy-650', name: '650 Shells', amount: 650, bonus: 'Instant PIN (MY)', priceLkr: 3660, priceUsd: 11.90, moongoldProductId: '40595', image: '/gift_cards/shell.png', isPopular: true },
-      { id: 'gsmy-1300', name: '1300 Shells', amount: 1300, bonus: 'Instant PIN (MY)', priceLkr: 7310, priceUsd: 23.81, moongoldProductId: '40596', image: '/gift_cards/shell.png', isPopular: false },
-      { id: 'gsmy-1300-rgg', name: '1300 Shells (RGG PIN)', amount: 1300, bonus: 'Instant PIN (MY)', priceLkr: 7310, priceUsd: 23.81, moongoldProductId: '1222078', image: '/gift_cards/shell.png', isPopular: false },
-      { id: 'gsmy-2600', name: '2600 Shells', amount: 2600, bonus: 'Instant PIN (MY)', priceLkr: 14620, priceUsd: 47.62, moongoldProductId: '40597', image: '/gift_cards/shell.png', isPopular: false }
+      { id: 'gsmy-65', name: '65 Shells', amount: 65, bonus: 'Instant PIN (MY)', priceLkr: 490, moongoldCost: 435, priceUsd: 1.28, moongoldProductId: '40591', image: '/gift_cards/shell.png', isPopular: false },
+      { id: 'gsmy-130', name: '130 Shells', amount: 130, bonus: 'Instant PIN (MY)', priceLkr: 980, moongoldCost: 867, priceUsd: 2.55, moongoldProductId: '40592', image: '/gift_cards/shell.png', isPopular: false },
+      { id: 'gsmy-260', name: '260 Shells', amount: 260, bonus: 'Instant PIN (MY)', priceLkr: 1950, moongoldCost: 1734, priceUsd: 5.10, moongoldProductId: '40593', image: '/gift_cards/shell.png', isPopular: false },
+      { id: 'gsmy-390', name: '390 Shells', amount: 390, bonus: 'Instant PIN (MY)', priceLkr: 2920, moongoldCost: 2601, priceUsd: 7.65, moongoldProductId: '40594', image: '/gift_cards/shell.png', isPopular: false },
+      { id: 'gsmy-650', name: '650 Shells', amount: 650, bonus: 'Instant PIN (MY)', priceLkr: 4860, moongoldCost: 4335, priceUsd: 12.75, moongoldProductId: '40595', image: '/gift_cards/shell.png', isPopular: true },
+      { id: 'gsmy-1300', name: '1300 Shells', amount: 1300, bonus: 'Instant PIN (MY)', priceLkr: 9720, moongoldCost: 8670, priceUsd: 25.50, moongoldProductId: '40596', image: '/gift_cards/shell.png', isPopular: false },
+      { id: 'gsmy-1300-rgg', name: '1300 Shells (RGG PIN)', amount: 1300, bonus: 'Instant PIN (MY)', priceLkr: 8870, moongoldCost: 7915, priceUsd: 23.28, moongoldProductId: '1222078', image: '/gift_cards/shell.png', isPopular: false },
+      { id: 'gsmy-2600', name: '2600 Shells', amount: 2600, bonus: 'Instant PIN (MY)', priceLkr: 19430, moongoldCost: 17340, priceUsd: 51.00, moongoldProductId: '40597', image: '/gift_cards/shell.png', isPopular: false }
     ]
   }
 ];
