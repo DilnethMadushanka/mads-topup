@@ -316,13 +316,40 @@ function verifyAdminTOTP(code) {
   return { valid: false, reason: 'MISMATCH' };
 }
 
-const adminSessions = new Map(); // token -> expiresAt (ms)
+// Admin sessions are signed tokens ("<expiresAt>.<nonce>.<hmac>") instead of
+// an in-memory list, so a pm2 restart or a crash no longer logs the admin
+// out. The signing key comes from ADMIN_SESSION_SECRET, or from the admin
+// password + 2FA secret, so changing either of those ends every session.
 const ADMIN_SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
+const revokedAdminTokens = new Map(); // token -> expiresAt, for logout
 
-function pruneExpiredAdminSessions() {
+function adminSessionKey() {
+  const explicit = String(process.env.ADMIN_SESSION_SECRET || '').trim();
+  const base = explicit || `${process.env.ADMIN_PASSWORD || ''}|${getAdminTotpSecret() || ''}`;
+  return crypto.createHash('sha256').update(`mads-admin-session|${base}`).digest();
+}
+function signAdminToken(expiresAt) {
+  const body = `${expiresAt}.${crypto.randomBytes(16).toString('hex')}`;
+  const mac = crypto.createHmac('sha256', adminSessionKey()).update(body).digest('hex');
+  return `${body}.${mac}`;
+}
+// Returns the token's expiry (ms) when it is genuine, unexpired and not
+// logged out; otherwise 0.
+function adminTokenExpiry(token) {
+  const parts = String(token || '').split('.');
+  if (parts.length !== 3 || !/^\d+$/.test(parts[0]) || !/^[0-9a-f]{64}$/.test(parts[2])) return 0;
+  if (!getAdminTotpSecret()) return 0;
+  const want = crypto.createHmac('sha256', adminSessionKey()).update(`${parts[0]}.${parts[1]}`).digest();
+  if (!crypto.timingSafeEqual(want, Buffer.from(parts[2], 'hex'))) return 0;
+  const expiresAt = Number(parts[0]);
+  if (expiresAt <= Date.now() || expiresAt > Date.now() + ADMIN_SESSION_TTL_MS + 60000) return 0;
+  if (revokedAdminTokens.has(token)) return 0;
+  return expiresAt;
+}
+function pruneRevokedAdminTokens() {
   const now = Date.now();
-  for (const [token, expiresAt] of adminSessions.entries()) {
-    if (expiresAt <= now) adminSessions.delete(token);
+  for (const [token, expiresAt] of revokedAdminTokens.entries()) {
+    if (expiresAt <= now) revokedAdminTokens.delete(token);
   }
 }
 
@@ -345,10 +372,7 @@ function setAdminCookie(req, res, token, maxAgeMs) {
 }
 
 function requireAdminSession(req, res, next) {
-  pruneExpiredAdminSessions();
-  const token = readCookie(req, ADMIN_COOKIE);
-  const expiresAt = token && adminSessions.get(token);
-  if (!expiresAt || expiresAt <= Date.now()) {
+  if (!adminTokenExpiry(readCookie(req, ADMIN_COOKIE))) {
     return res.status(401).json({ error: 'Admin session required or expired. Please log in to the Admin Dashboard again.' });
   }
   next();
@@ -374,10 +398,8 @@ app.post('/api/admin/login', rateLimiter(8, 300000), (req, res) => {
     return res.status(401).json({ error: 'Invalid 2FA Authenticator code. Check your Google Authenticator app.' });
   }
 
-  const token = crypto.randomBytes(32).toString('hex');
   const expiresAt = Date.now() + ADMIN_SESSION_TTL_MS;
-  adminSessions.set(token, expiresAt);
-  pruneExpiredAdminSessions();
+  const token = signAdminToken(expiresAt);
 
   setAdminCookie(req, res, token, ADMIN_SESSION_TTL_MS);
   res.json({ success: true, expiresAt });
@@ -386,10 +408,8 @@ app.post('/api/admin/login', rateLimiter(8, 300000), (req, res) => {
 // Verify the admin session cookie — called by the dashboard on every open so
 // a refreshed page re-confirms the session with the server.
 app.get('/api/admin/verify-session', (req, res) => {
-  pruneExpiredAdminSessions();
-  const token = readCookie(req, ADMIN_COOKIE);
-  const expiresAt = token && adminSessions.get(token);
-  if (!expiresAt || expiresAt <= Date.now()) {
+  const expiresAt = adminTokenExpiry(readCookie(req, ADMIN_COOKIE));
+  if (!expiresAt) {
     return res.status(401).json({ valid: false });
   }
   res.json({ valid: true, expiresAt });
@@ -398,9 +418,9 @@ app.get('/api/admin/verify-session', (req, res) => {
 // Revoke an admin session token immediately on logout.
 app.post('/api/admin/logout', (req, res) => {
   const token = readCookie(req, ADMIN_COOKIE);
-  if (token && adminSessions.has(token)) {
-    adminSessions.delete(token);
-  }
+  const expiresAt = adminTokenExpiry(token);
+  if (expiresAt) revokedAdminTokens.set(token, expiresAt);
+  pruneRevokedAdminTokens();
   setAdminCookie(req, res, '', 0);
   res.json({ success: true });
 });
