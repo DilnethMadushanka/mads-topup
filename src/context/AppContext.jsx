@@ -302,7 +302,7 @@ export const AppProvider = ({ children }) => {
   };
 
   // Popup Ad State & Subscription
-  const [popupAdConfig, setPopupAdConfig] = useState(DEFAULT_POPUP_AD_CONFIG);
+  const [popupAdConfig, setPopupAdConfig] = useState({ ...DEFAULT_POPUP_AD_CONFIG, enabled: false });
 
   useEffect(() => {
     const unsub = subscribePopupAdConfigFromFirestore((config) => {
@@ -315,9 +315,9 @@ export const AppProvider = ({ children }) => {
 
   const updatePopupAdConfig = async (newConfig) => {
     try {
-      setPopupAdConfig(newConfig);
-      await savePopupAdConfigToFirestore(newConfig);
-      return true;
+      const published = await savePopupAdConfigToFirestore(newConfig);
+      if (published) setPopupAdConfig(newConfig);
+      return published;
     } catch (e) {
       console.error('[AppContext] Save Popup Ad Error:', e);
       return false;

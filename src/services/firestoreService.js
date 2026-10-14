@@ -1314,11 +1314,9 @@ export const subscribePopupAdConfigFromFirestore = (callback) => {
       if (item) localSaved = JSON.parse(item);
     } catch (e) {}
   }
-  if (localSaved) {
-    callback(localSaved);
-  } else {
-    callback(DEFAULT_POPUP_AD_CONFIG);
-  }
+  // No cached copy: stay quiet until the live config arrives. Falling back to the demo
+  // default here flashed a placeholder ad that reopened as the real one once it loaded.
+  if (localSaved) callback(localSaved);
 
   let unsubDb = null;
   let unsubRtdb = null;

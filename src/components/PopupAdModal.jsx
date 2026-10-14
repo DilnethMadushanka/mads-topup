@@ -25,7 +25,8 @@ export const PopupAdModal = () => {
       setIsOpen(false);
       return undefined;
     }
-    if (dismissedSigRef.current === sig) return undefined;
+    // Once closed, stay closed for this page view, even if a newer copy of the config arrives.
+    if (dismissedSigRef.current) return undefined;
 
     if (cfg.showOncePerSession) {
       try {
