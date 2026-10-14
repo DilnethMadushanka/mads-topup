@@ -6,12 +6,28 @@ import { checkPlayerIGN, dispatchMoongoldOrder } from '../services/moongoldApi';
 import { uploadToR2Storage } from '../services/storageService';
 import confetti from 'canvas-confetti';
 import { auth } from '../services/firebaseAuth';
+import { getUserAuthToken } from '../services/serverApi';
+import { gamePathFor } from '../data/seoPages';
 import { 
   ArrowLeft, Check, ShieldCheck, Zap, AlertCircle, RefreshCw, 
   CreditCard, ChevronRight, BookmarkPlus, CheckCircle2, Copy, UploadCloud, Cloud,
   Clipboard, Plus, Minus, ChevronUp, ChevronDown, HelpCircle, Shield, Edit3, Crown,
   ArrowUpDown, ArrowUp, ArrowDown
 } from 'lucide-react';
+
+// Pay for the selected packages by card (Dialog Genie) without topping up the
+// wallet first. The server prices the order from the catalog; once Genie
+// confirms the payment the amount lands in the wallet and the order is placed
+// from it automatically (see the card-return effect below).
+const CARD_METHOD = {
+  id: 'card',
+  name: 'Card / eZ Cash',
+  subtitle: 'Visa, Mastercard or eZ Cash via Dialog Genie. No wallet top-up needed',
+  icon: '💳',
+  badge: 'PAY DIRECT',
+  accountDetails: null
+};
+const CARD_CHECKOUT_KEY = 'mads_card_checkout';
 
 export const GameTopupPage = () => {
   const { 
@@ -72,6 +88,75 @@ export const GameTopupPage = () => {
       if (selectedGame.fulfilment === 'voucher') setSelectedPayment(PAYMENT_METHODS[0]);
     }
   }, [selectedGame]);
+
+  // ── Back from the card checkout ──
+  // Verify the payment with the server (which credits the paid amount to the
+  // wallet), then restore the cart and place the order from the wallet.
+  const [cardOrderReady, setCardOrderReady] = useState(false);
+  const handleCompleteOrderRef = React.useRef(null);
+  const paidByCardRef = React.useRef(false);
+  useEffect(() => {
+    if (!selectedGame) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('genie') !== 'order') return;
+    const orderRef = params.get('orderRef') || '';
+    window.history.replaceState(window.history.state, '', window.location.pathname);
+
+    let pending = null;
+    try { pending = JSON.parse(sessionStorage.getItem(CARD_CHECKOUT_KEY) || 'null'); } catch { pending = null; }
+    try { sessionStorage.removeItem(CARD_CHECKOUT_KEY); } catch { /* storage blocked */ }
+    const matches = pending && pending.gameId === selectedGame.id && (!orderRef || pending.orderRef === orderRef);
+
+    if (matches) {
+      setCartQuantities(pending.items || {});
+      setPlayerId(pending.playerId || '');
+      setZoneId(pending.zoneId || '');
+      setIgn(pending.ign || '');
+      setIgnVerified(Boolean(pending.ign));
+      setSelectedPayment(PAYMENT_METHODS[0]);
+    }
+
+    showToast('Verifying your card payment...');
+    fetch('/api/genie/verify-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transactionId: pending?.transactionId || '', orderRef: orderRef || pending?.orderRef || '' })
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.isPaid) {
+          if (data.newBalanceLkr !== undefined) {
+            setUserProfile(prev => (prev ? {
+              ...prev,
+              walletBalance: Math.max(parseFloat(prev.walletBalance || 0), parseFloat(data.newBalanceLkr || 0))
+            } : prev));
+          }
+          if (matches) {
+            showToast(`✅ Card payment of Rs. ${Number(data.amount || 0).toLocaleString()} confirmed. Placing your order...`);
+            setCardOrderReady(true);
+          } else {
+            showToast(`✅ Card payment of Rs. ${Number(data.amount || 0).toLocaleString()} confirmed and added to your wallet. Select your package and pay with MADS Wallet.`);
+          }
+        } else {
+          showToast(`Card payment not completed (${data.state || data.error || 'pending'}). If you were charged, the amount is added to your wallet automatically.`, 'error');
+        }
+      })
+      .catch(() => {
+        showToast('Could not confirm the card payment right now. If you were charged, the amount is added to your wallet automatically.', 'error');
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedGame?.id]);
+
+  // Place the restored order once the login has loaded (the wallet dispatch
+  // needs the signed-in user).
+  useEffect(() => {
+    if (!cardOrderReady || !isLoggedIn || !userProfile?.uid) return;
+    if (!Object.keys(cartQuantities).length) return;
+    setCardOrderReady(false);
+    paidByCardRef.current = true;
+    Promise.resolve(handleCompleteOrderRef.current?.()).finally(() => { paidByCardRef.current = false; });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cardOrderReady, isLoggedIn, userProfile?.uid, cartQuantities]);
 
   if (!selectedGame) return null;
 
@@ -158,9 +243,57 @@ export const GameTopupPage = () => {
     }
   };
 
+  // Send the buyer to Dialog Genie to pay for the selected packages by card.
+  const startCardCheckout = async () => {
+    if (!isLoggedIn) { openAuth('login'); return; }
+    setIsSubmitting(true);
+    try {
+      const token = await getUserAuthToken(userProfile);
+      if (!token) { showToast('Please log in again to pay by card.', 'error'); return; }
+      const orderRef = 'ORD-CARD-' + Date.now() + '-' + Math.floor(1000 + Math.random() * 9000);
+      const returnPath = gamePathFor(selectedGame.id) || '/';
+      const response = await fetch('/api/genie/create-order-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          gameId: selectedGame.id,
+          items: selectedItems.map(item => ({ packageId: item.id, quantity: cartQuantities[item.id] || 1 })),
+          playerId: isVoucherGame ? '' : playerId.trim(),
+          zoneId: isVoucherGame ? '' : zoneId.trim(),
+          userName: userProfile?.name || auth?.currentUser?.displayName || 'Gamer',
+          redirectUrl: `${window.location.origin}${returnPath}?genie=order`,
+          orderRef
+        })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success || !data.redirectUrl) {
+        showToast(data.error || 'Could not start the card payment. Please try again or use your wallet.', 'error');
+        return;
+      }
+      try {
+        sessionStorage.setItem(CARD_CHECKOUT_KEY, JSON.stringify({
+          gameId: selectedGame.id,
+          items: cartQuantities,
+          playerId: playerId.trim(),
+          zoneId: zoneId.trim(),
+          ign,
+          orderRef,
+          transactionId: data.transactionId || '',
+          createdAt: Date.now()
+        }));
+      } catch { /* storage blocked: the paid amount still lands in the wallet */ }
+      showToast('Redirecting to secure card payment...');
+      window.location.href = data.redirectUrl;
+    } catch {
+      showToast('Network error connecting to the payment gateway!', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // Dispatch Topup Order
   const handleCompleteOrder = async () => {
-    if (isVoucherGame && selectedPayment.id !== 'wallet') {
+    if (isVoucherGame && selectedPayment.id !== 'wallet' && selectedPayment.id !== 'card') {
       showToast('Garena Shells PINs are paid from your MADS Wallet. Please select MADS Wallet.', 'error');
       return;
     }
@@ -176,6 +309,11 @@ export const GameTopupPage = () => {
     }
     if (selectedItems.length === 0) {
       showToast('Please select at least 1 package to top-up!', 'error');
+      return;
+    }
+
+    if (selectedPayment.id === 'card') {
+      await startCardCheckout();
       return;
     }
 
@@ -317,7 +455,7 @@ export const GameTopupPage = () => {
           playerId,
           zoneId,
           ign: ign || (`Player ${playerId}`),
-          paymentMethod: selectedPayment.name,
+          paymentMethod: paidByCardRef.current ? 'Card (Dialog Genie)' : selectedPayment.name,
           priceLkr: totalLkr,
           status: 'FAILED',
           moongoldRef: moongoldResult.moongoldRef || 'GATEWAY_FAILED',
@@ -359,7 +497,7 @@ export const GameTopupPage = () => {
       playerId: isVoucherGame ? 'PIN' : playerId,
       zoneId: isVoucherGame ? '' : zoneId,
       ign: isVoucherGame ? `${selectedGame.name} PIN` : (ign || (`Player ${playerId}`)),
-      paymentMethod: selectedPayment.name,
+      paymentMethod: paidByCardRef.current ? 'Card (Dialog Genie)' : selectedPayment.name,
       priceLkr: totalLkr,
       status: finalStatus,
       moongoldRef: moongoldResult.moongoldRef || (selectedPayment.id === 'wallet' ? ('MG-' + Math.floor(10000000 + Math.random() * 90000000)) : 'PENDING_ADMIN_VERIFICATION'),
@@ -388,6 +526,8 @@ export const GameTopupPage = () => {
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  handleCompleteOrderRef.current = handleCompleteOrder;
 
   return (
     <div className={`min-h-screen bg-[#F8FAFF] py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto${totalItemsCount > 0 ? ' pb-24' : ''}`}>
@@ -970,7 +1110,7 @@ export const GameTopupPage = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
-              {PAYMENT_METHODS.filter(m => (isLoggedIn || m.id !== 'wallet') && (!isVoucherGame || m.id === 'wallet')).map((method) => {
+              {[...PAYMENT_METHODS, CARD_METHOD].filter(m => (isLoggedIn || (m.id !== 'wallet' && m.id !== 'card')) && (!isVoucherGame || m.id === 'wallet' || m.id === 'card')).map((method) => {
                 const isSelected = selectedPayment.id === method.id;
                 return (
                   <div
@@ -1135,12 +1275,12 @@ export const GameTopupPage = () => {
                 {isSubmitting ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Dispatching via Moongold...</span>
+                    <span>{selectedPayment.id === 'card' ? 'Opening card payment...' : 'Dispatching via Moongold...'}</span>
                   </>
                 ) : (
                   <>
                     <Zap className="w-4 h-4 fill-white" />
-                    <span>Confirm & Top Up Now</span>
+                    <span>{selectedPayment.id === 'card' ? 'Pay by Card & Top Up' : 'Confirm & Top Up Now'}</span>
                   </>
                 )}
               </button>
