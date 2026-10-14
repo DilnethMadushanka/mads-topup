@@ -439,7 +439,7 @@ export const AdminDashboard = () => {
   const [adImageUrl, setAdImageUrl] = useState(popupAdConfig?.imageUrl || '');
   const [adButtonText, setAdButtonText] = useState(popupAdConfig?.buttonText || '');
   const [adButtonLink, setAdButtonLink] = useState(popupAdConfig?.buttonLink || '#catalog');
-  const [adBadge, setAdBadge] = useState(popupAdConfig?.badge || 'LIMITED TIME DEAL');
+  const [adBadge, setAdBadge] = useState(popupAdConfig?.badge ?? 'LIMITED TIME DEAL');
   const [adShowOncePerSession, setAdShowOncePerSession] = useState(popupAdConfig?.showOncePerSession ?? false);
   const [isSavingAd, setIsSavingAd] = useState(false);
   const [isUploadingAdImg, setIsUploadingAdImg] = useState(false);
@@ -567,7 +567,7 @@ export const AdminDashboard = () => {
       setAdImageUrl(popupAdConfig.imageUrl || '');
       setAdButtonText(popupAdConfig.buttonText || '');
       setAdButtonLink(popupAdConfig.buttonLink || '#catalog');
-      setAdBadge(popupAdConfig.badge || 'LIMITED TIME DEAL');
+      setAdBadge(popupAdConfig.badge ?? 'LIMITED TIME DEAL');
       setAdShowOncePerSession(popupAdConfig.showOncePerSession ?? false);
     }
   }, [popupAdConfig]);
@@ -2225,7 +2225,7 @@ export const AdminDashboard = () => {
                 <form onSubmit={handleSavePopupAd} className="lg:col-span-7 rounded-3xl border-2 p-6 space-y-5" style={cardStyle}>
                   <ToggleSwitch checked={adEnabled} onChange={setAdEnabled} label="Enable Popup Banner Ad" description="Show this advertisement popup when users load the web app" />
                   <ToggleSwitch checked={adShowOncePerSession} onChange={setAdShowOncePerSession} label="Show Once Per Session" description="Popup won't re-appear on refresh after being closed" />
-                  <div><label className="text-xs font-bold block mb-1" style={mutedStyle}>Badge Text</label><input type="text" placeholder="e.g. LIMITED TIME DEAL" value={adBadge} onChange={(e) => setAdBadge(e.target.value)} className={fieldCls} style={fieldStyle} /></div>
+                  <div><label className="text-xs font-bold block mb-1" style={mutedStyle}>Badge Text</label><input type="text" placeholder="e.g. LIMITED TIME DEAL (leave empty to hide)" value={adBadge} onChange={(e) => setAdBadge(e.target.value)} className={fieldCls} style={fieldStyle} /></div>
                   <div><label className="text-xs font-bold block mb-1" style={mutedStyle}>Popup Title / Headline</label><input type="text" placeholder="e.g. SPECIAL PROMO OFFER!" value={adTitle} onChange={(e) => setAdTitle(e.target.value)} className={fieldCls} style={fieldStyle} /></div>
                   <div><label className="text-xs font-bold block mb-1" style={mutedStyle}>Description / Offer Details</label><textarea rows={3} value={adDescription} onChange={(e) => setAdDescription(e.target.value)} className={`${fieldCls} resize-none`} style={fieldStyle} /></div>
                   <div>
@@ -2237,7 +2237,7 @@ export const AdminDashboard = () => {
                     <input type="text" placeholder="Or paste direct image URL (https://...)" value={adImageUrl} onChange={(e) => setAdImageUrl(e.target.value)} className={`${fieldCls} font-mono`} style={fieldStyle} />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div><label className="text-xs font-bold block mb-1" style={mutedStyle}>Button Action Text</label><input type="text" placeholder="e.g. Top Up Now" value={adButtonText} onChange={(e) => setAdButtonText(e.target.value)} className={fieldCls} style={fieldStyle} /></div>
+                    <div><label className="text-xs font-bold block mb-1" style={mutedStyle}>Button Action Text</label><input type="text" placeholder="e.g. Top Up Now (leave empty: image is the button)" value={adButtonText} onChange={(e) => setAdButtonText(e.target.value)} className={fieldCls} style={fieldStyle} /></div>
                     <div>
                       <label className="text-xs font-bold block mb-1" style={mutedStyle}>Target Action Link</label>
                       <select value={adButtonLink} onChange={(e) => setAdButtonLink(e.target.value)} className={fieldCls} style={fieldStyle}>
@@ -2270,9 +2270,9 @@ export const AdminDashboard = () => {
                           <div className="w-full rounded-2xl border border-white/20 bg-white/10 py-8 text-center text-[11px] text-white/60">No image — a glass card is shown instead</div>
                         )}
                         <div className="text-center space-y-2 w-full">
-                          <h5 className="text-base font-black text-white" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>{adTitle || 'Popup Title Here'}</h5>
-                          <p className="text-[11px] text-white/85 leading-relaxed" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>{adDescription || 'Your ad description will appear here...'}</p>
-                          <div className="pt-1 flex justify-center"><div className="px-8 py-2.5 bg-gradient-to-r from-[#ef1c25] to-[#b8060d] text-white font-black text-xs uppercase tracking-wider rounded-full shadow-lg flex items-center gap-1.5"><span>{adButtonText || 'GO'}</span><ArrowRight className="w-3.5 h-3.5" /></div></div>
+                          {(adTitle || !adImageUrl) && <h5 className="text-base font-black text-white" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>{adTitle || 'Popup Title Here'}</h5>}
+                          {(adDescription || !adImageUrl) && <p className="text-[11px] text-white/85 leading-relaxed" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>{adDescription || 'Your ad description will appear here...'}</p>}
+                          {(adButtonText || !adImageUrl) && <div className="pt-1 flex justify-center"><div className="px-8 py-2.5 bg-gradient-to-r from-[#ef1c25] to-[#b8060d] text-white font-black text-xs uppercase tracking-wider rounded-full shadow-lg flex items-center gap-1.5"><span>{adButtonText || 'GO'}</span><ArrowRight className="w-3.5 h-3.5" /></div></div>}
                         </div>
                         <div className="w-8 h-8 rounded-full bg-white/10 border border-white/25 flex items-center justify-center text-white mt-1"><X className="w-4 h-4" /></div>
                       </div>
