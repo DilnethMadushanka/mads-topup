@@ -9,26 +9,23 @@ import { useApp } from '../context/AppContext';
 export const ContactPage = () => {
   const { closeContactPage, setIsSupportOpen, showToast, openPolicyModal } = useApp();
 
-  const eyebrow = 'text-[11px] font-black text-[#1677ff] uppercase tracking-widest font-mono';
-  const channelCls = 'relative bg-white rounded-3xl p-5 sm:p-6 border-2 border-slate-200 hover:border-[#1677ff]/50 shadow-sm hover:shadow-lg hover:shadow-brand-600/10 transition-all flex items-center justify-between gap-4 group cursor-pointer overflow-hidden';
-
   // Same channels / links / copy as before — rendered through one shared card shell
   const channels = [
     {
       key: 'whatsapp', href: 'https://wa.me/94740436276', icon: MessageCircle, title: 'WhatsApp Support',
-      detail: '+94 74 043 6276', detailCls: 'text-[#1677ff]', note: 'Fastest response — tap to chat instantly', tag: 'Fastest',
+      detail: '+94 74 043 6276', note: 'Fastest response. Tap to chat instantly.', tag: 'Fastest', tone: 'is-green', time: 'Usually < 5 min',
     },
     {
       key: 'chat', onClick: () => setIsSupportOpen(true), icon: MessageSquare, title: 'Live Chat',
-      live: 'Available on this website', note: 'Click the chat bubble or create a 24/7 support ticket', tag: 'Live',
+      live: 'Available on this website', note: 'Open the chat bubble or create a 24/7 support ticket.', tag: 'Live', tone: 'is-blue', time: 'Real-time, 24/7',
     },
     {
       key: 'telegram', href: 'https://t.me/madstopup', icon: Send, title: 'Telegram Channel',
-      detail: '@madstopup', detailCls: 'text-slate-800', note: 'Join for updates, giveaways & quick support',
+      detail: '@madstopup', note: 'Join for updates, giveaways and quick support.', tone: 'is-teal', time: 'Same day',
     },
     {
       key: 'email', href: 'mailto:support@madstopup.com', icon: Mail, title: 'Email Support',
-      detail: 'support@madstopup.com', detailCls: 'text-slate-800', note: 'We typically reply within 24 hours',
+      detail: 'support@madstopup.com', note: 'We usually reply within 24 hours.', tone: 'is-gold', time: 'Within 24 hrs',
     },
   ];
 
@@ -36,294 +33,166 @@ export const ContactPage = () => {
     const Icon = c.icon;
     const inner = (
       <>
-        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#1677ff] scale-y-0 group-hover:scale-y-100 origin-center transition-transform" />
-        <div className="flex items-center gap-4 min-w-0">
-          <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-600 group-hover:bg-[#1677ff] group-hover:text-white group-hover:shadow-lg group-hover:shadow-brand-600/25 flex items-center justify-center shrink-0 transition-all">
-            <Icon className="w-7 h-7" />
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-black text-slate-900 text-base font-heading">{c.title}</h3>
-              {c.tag && (
-                <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-brand-50 text-[#1677ff] border border-brand-100">{c.tag}</span>
-              )}
-            </div>
-            {c.detail && <p className={`text-sm font-black font-mono mt-0.5 truncate ${c.detailCls}`}>{c.detail}</p>}
-            {c.live && (
-              <p className="text-xs font-bold text-emerald-600 mt-0.5 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>{c.live}</span>
-              </p>
-            )}
-            <p className="text-xs text-slate-500 font-semibold mt-1">{c.note}</p>
-          </div>
-        </div>
-        <div className="w-9 h-9 rounded-full bg-slate-100 group-hover:bg-[#1677ff] flex items-center justify-center shrink-0 transition-colors">
-          <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
-        </div>
+        <span className="cp-ch-top">
+          <span className="cp-ch-ico"><Icon /></span>
+          {c.tag && <span className="cp-ch-tag">{c.tag}</span>}
+        </span>
+        <span className="cp-ch-title">{c.title}</span>
+        {c.detail && <span className="cp-ch-detail">{c.detail}</span>}
+        {c.live && <span className="cp-ch-live"><i />{c.live}</span>}
+        <span className="cp-ch-note">{c.note}</span>
+        <span className="cp-ch-foot">
+          <span className="cp-ch-time"><Clock />{c.time}</span>
+          <span className="cp-ch-arrow"><ArrowRight /></span>
+        </span>
       </>
     );
     return c.href ? (
-      <a key={c.key} href={c.href} {...(c.href.startsWith('http') ? { target: '_blank', rel: 'noreferrer' } : {})} className={channelCls}>{inner}</a>
+      <a key={c.key} href={c.href} {...(c.href.startsWith('http') ? { target: '_blank', rel: 'noreferrer' } : {})} className={`cp-ch ${c.tone}`}>{inner}</a>
     ) : (
-      <div key={c.key} onClick={c.onClick} className={channelCls}>{inner}</div>
+      <button type="button" key={c.key} onClick={c.onClick} className={`cp-ch ${c.tone}`}>{inner}</button>
     );
   };
 
-  const responseTimes = [
-    { icon: MessageCircle, label: 'WhatsApp', value: 'Usually < 5 min', good: true },
-    { icon: MessageSquare, label: 'Live Chat', value: 'Real-time — 24/7', good: true },
-    { icon: Send, label: 'Telegram', value: 'Same day', good: false },
-    { icon: Mail, label: 'Email', value: 'Within 24 hrs', good: false },
-  ];
-
   const quickLinks = [
-    { icon: HelpCircle, label: 'FAQ — Common Questions', onClick: () => showToast('FAQ section opening...') },
+    { icon: HelpCircle, label: 'FAQ: common questions', onClick: () => showToast('FAQ section opening...') },
     { icon: CheckCircle2, label: 'Refund & Privacy Policy', onClick: () => openPolicyModal('refund') },
     { icon: FileText, label: 'Terms & Conditions', onClick: () => openPolicyModal('terms') },
     { icon: Info, label: 'About MADS TOPUP', onClick: () => showToast('About MADS TOPUP: Premier automated top-up portal in Sri Lanka.') },
   ];
 
   const beforeSteps = [
-    ['Check the FAQ first', ' — most common questions have instant answers there.'],
-    ['Note your Order ID', ' — found in your account order history or confirmation email.'],
-    ['Verify your Player ID (UID)', ' — check it in-game before reporting a delivery issue.'],
-    ['Wait 2–3 minutes', ' — automated deliveries occasionally take a moment to sync.'],
+    ['Check the FAQ first.', ' Most common questions have instant answers there.'],
+    ['Note your Order ID.', ' It is in your order history or confirmation email.'],
+    ['Verify your Player ID (UID).', ' Check it in-game before reporting a delivery issue.'],
+    ['Wait 2–3 minutes.', ' Automated deliveries sometimes take a moment to sync.'],
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="cp-page">
+      <div className="cp-wrap">
 
-        {/* Back to Home Navigation */}
-        <div className="flex items-center justify-between">
-          <button
-            onClick={closeContactPage}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 font-extrabold text-xs uppercase tracking-wider hover:text-[#1677ff] hover:border-[#1677ff]/40 transition-all cursor-pointer shadow-xs"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Home</span>
+        <div className="cp-nav">
+          <button onClick={closeContactPage} className="cp-back">
+            <ArrowLeft />
+            <span>Back to home</span>
           </button>
-          <div className="text-xs font-bold text-slate-500 flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>24/7 Automated Support Ready</span>
-          </div>
+          <span className="cp-status"><i />24/7 support ready</span>
         </div>
 
-        {/* Hero Banner */}
-        <div className="relative rounded-3xl bg-white text-slate-900 border-2 border-slate-200 shadow-sm overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#2f8bff] via-[#1677ff] to-[#0b5ed7]"></div>
-          <div className="absolute -top-28 -right-16 w-96 h-96 rounded-full bg-brand-50 pointer-events-none"></div>
-          <div className="absolute -bottom-32 -left-20 w-80 h-80 rounded-full bg-brand-50/70 pointer-events-none"></div>
-          <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #1677ff 1px, transparent 1px)', backgroundSize: '22px 22px' }}></div>
-
-          <div className="relative z-10 p-7 sm:p-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            <div className="lg:col-span-8 space-y-5 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-50 border border-brand-100 text-[#1677ff] text-xs font-black tracking-wider uppercase font-mono">
-                <Headphones className="w-3.5 h-3.5" />
-                <span>Support & Contact</span>
-              </div>
-
-              <div className="space-y-3">
-                <h1 className="text-4xl sm:text-6xl font-black tracking-tight font-heading leading-[1.05]">
-                  We're Here to <span className="text-[#1677ff]">Help You</span>
-                </h1>
-                <p className="text-slate-600 text-sm sm:text-base font-semibold leading-relaxed max-w-2xl mx-auto lg:mx-0">
-                  Get in touch with our team through any channel — we respond fast, every day. Whether it's a top-up issue, payment question, or anything else — we've got you.
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-1">
-                <button
-                  onClick={() => setIsSupportOpen(true)}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#1677ff] hover:bg-[#0d68e6] text-white font-black text-sm shadow-lg shadow-brand-600/25 hover:scale-[1.03] active:scale-[0.98] transition-all cursor-pointer"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  <span>Start Live Chat</span>
-                </button>
-                <a
-                  href="https://wa.me/94740436276" target="_blank" rel="noreferrer"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white hover:bg-brand-50 border-2 border-slate-200 hover:border-[#1677ff]/40 text-slate-800 hover:text-[#1677ff] font-black text-sm transition-colors"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  <span>WhatsApp Us</span>
-                </a>
-              </div>
-            </div>
-
-            {/* Status stack */}
-            <div className="lg:col-span-4 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-3">
-              {[
-                { icon: null, label: 'Live Chat — Always Active', dot: true },
-                { icon: Zap, label: 'Avg. Response < 5 min' },
-                { icon: Clock, label: '24 / 7 Support' },
-              ].map(({ icon: Icon, label, dot }) => (
-                <div key={label} className="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-extrabold">
-                  <span className="w-8 h-8 rounded-xl bg-brand-50 text-[#1677ff] flex items-center justify-center shrink-0">
-                    {dot ? <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> : <Icon className="w-4 h-4" />}
-                  </span>
-                  <span>{label}</span>
-                </div>
-              ))}
+        {/* Hero */}
+        <div className="cp-hero">
+          <span className="cp-hero-grid" aria-hidden="true" />
+          <Headphones className="cp-hero-mark" aria-hidden="true" />
+          <div className="cp-hero-main">
+            <span className="cp-kicker"><Headphones /> Support &amp; contact</span>
+            <h1 className="cp-title">We're here to <span>help you</span></h1>
+            <p className="cp-lead">
+              Reach our team on any channel. We reply fast, every day, whether it's a top-up issue, a payment question or anything else.
+            </p>
+            <div className="cp-hero-ctas">
+              <button onClick={() => setIsSupportOpen(true)} className="cp-btn is-white">
+                <MessageSquare />
+                Start live chat
+              </button>
+              <a href="https://wa.me/94740436276" target="_blank" rel="noreferrer" className="cp-btn is-green">
+                <MessageCircle />
+                WhatsApp us
+              </a>
             </div>
           </div>
+
+          <ul className="cp-hero-stats">
+            {[
+              { icon: null, label: 'Live chat', value: 'Always active' },
+              { icon: Zap, label: 'Avg. response', value: '< 5 min' },
+              { icon: Clock, label: 'Support', value: '24 / 7' },
+            ].map(({ icon: Icon, label, value }) => (
+              <li key={label}>
+                <span className="cp-stat-ico">{Icon ? <Icon /> : <i />}</span>
+                <span><small>{label}</small><strong>{value}</strong></span>
+              </li>
+            ))}
+          </ul>
         </div>
 
-        {/* Main Content Grid (Two Columns) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-
-          {/* LEFT COLUMN: Contact Channels & Response Times (8 Cols) */}
-          <div className="lg:col-span-8 space-y-5">
-
-            <div>
-              <span className={eyebrow}>CONTACT CHANNELS</span>
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 font-heading mt-1">
-                Choose How You Want to Reach Us
-              </h2>
-              <div className="w-12 h-1 bg-[#1677ff] rounded-full mt-2"></div>
+        <div className="cp-grid">
+          <div className="cp-main">
+            <div className="cp-sec-head">
+              <span className="cp-eyebrow">Contact channels</span>
+              <h2 className="cp-sec-title">Choose how to <span>reach us</span></h2>
             </div>
 
-            {channels.map(renderChannel)}
+            <div className="cp-channels">
+              {channels.map(renderChannel)}
+            </div>
 
-            {/* RESPONSE TIMES CARD */}
-            <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-slate-200 shadow-sm space-y-5">
-              <h3 className="font-black text-slate-900 text-base flex items-center gap-3 font-heading">
-                <span className="w-10 h-10 rounded-xl bg-[#1677ff] text-white flex items-center justify-center shadow-md shadow-brand-600/25">
-                  <Clock className="w-5 h-5" />
-                </span>
-                <span>Response Times</span>
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                {responseTimes.map(({ icon: Icon, label, value, good }) => (
-                  <div key={label} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
-                    <span className="font-black text-slate-800 flex items-center gap-2.5">
-                      <span className="w-8 h-8 rounded-lg bg-white border border-slate-200 text-[#1677ff] flex items-center justify-center"><Icon className="w-4 h-4" /></span>
-                      {label}
-                    </span>
-                    <span className={`px-3 py-1 rounded-full font-extrabold font-mono text-[11px] whitespace-nowrap ${good ? 'bg-emerald-100 text-emerald-700' : 'bg-white text-slate-600 border border-slate-200'}`}>
-                      {value}
-                    </span>
-                  </div>
-                ))}
+            <div className="cp-follow">
+              <div>
+                <h3 className="cp-card-title">Follow us</h3>
+                <p className="cp-card-desc">Promo offers, giveaways and gaming news first.</p>
               </div>
-            </div>
-
-            {/* FOLLOW US CARD */}
-            <div className="relative bg-white rounded-3xl p-6 sm:p-8 border-2 border-dashed border-slate-300 text-center space-y-4 overflow-hidden">
-              <h3 className="font-black text-slate-900 text-lg font-heading">Follow Us</h3>
-              <div className="w-10 h-1 bg-[#1677ff] rounded-full mx-auto"></div>
-              <p className="text-xs text-slate-600 font-semibold max-w-md mx-auto">
-                Stay updated with promo offers, giveaways, and gaming news.
-              </p>
-
-              <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
-                <a
-                  href="https://wa.me/94740436276" target="_blank" rel="noreferrer"
-                  className="px-5 py-2.5 bg-[#1677ff] text-white font-black text-xs rounded-xl hover:bg-[#0d68e6] transition-all shadow-lg shadow-brand-600/25 flex items-center gap-2"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  WhatsApp Channel
+              <div className="cp-follow-btns">
+                <a href="https://wa.me/94740436276" target="_blank" rel="noreferrer" className="cp-pill is-green">
+                  <MessageCircle /> WhatsApp channel
                 </a>
-                <a
-                  href="https://t.me/madstopup" target="_blank" rel="noreferrer"
-                  className="px-5 py-2.5 bg-white text-slate-800 border-2 border-slate-200 hover:border-[#1677ff] hover:text-[#1677ff] font-black text-xs rounded-xl transition-all flex items-center gap-2"
-                >
-                  <Send className="w-4 h-4" />
-                  Telegram Group
+                <a href="https://t.me/madstopup" target="_blank" rel="noreferrer" className="cp-pill is-teal">
+                  <Send /> Telegram group
                 </a>
-                <button
-                  onClick={() => showToast('Facebook page coming soon!')}
-                  className="px-5 py-2.5 bg-white text-slate-800 border-2 border-slate-200 hover:border-[#1677ff] hover:text-[#1677ff] font-black text-xs rounded-xl transition-all cursor-pointer flex items-center gap-2"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Facebook
+                <button onClick={() => showToast('Facebook page coming soon!')} className="cp-pill is-blue">
+                  <ExternalLink /> Facebook
                 </button>
               </div>
             </div>
-
           </div>
 
-          {/* RIGHT COLUMN: Sidebar (4 Cols) */}
-          <div className="lg:col-span-4 space-y-5">
-
-            {/* SUPPORT TIP BOX */}
-            <div className="relative bg-white text-slate-900 rounded-3xl p-6 border-2 border-slate-200 border-l-4 border-l-[#1677ff] shadow-sm flex items-start gap-4 overflow-hidden">
-              <div className="w-11 h-11 rounded-xl bg-brand-50 flex items-center justify-center shrink-0 relative">
-                <ShieldCheck className="w-6 h-6 text-[#1677ff]" />
-              </div>
-              <div className="space-y-1 text-xs font-semibold leading-relaxed relative">
-                <strong className="block text-sm font-black font-heading text-[#1677ff]">Support Tip</strong>
-                <p className="text-slate-600">
-                  Always have your <strong>Order ID</strong> and <strong>Player ID (UID)</strong> ready when contacting us — it helps us resolve your issue instantly.
-                </p>
+          <aside className="cp-side">
+            <div className="cp-tip">
+              <span className="cp-tip-ico"><ShieldCheck /></span>
+              <div>
+                <strong>Support tip</strong>
+                <p>Keep your <b>Order ID</b> and <b>Player ID (UID)</b> ready when you contact us. It helps us fix your issue instantly.</p>
               </div>
             </div>
 
-            {/* QUICK LINKS BOX */}
-            <div className="bg-white rounded-3xl p-5 sm:p-6 border-2 border-slate-200 shadow-sm space-y-4">
-              <span className={eyebrow + ' block'}>QUICK LINKS</span>
-
-              <div className="space-y-2 text-xs font-bold text-slate-700">
+            <div className="cp-card">
+              <span className="cp-eyebrow">Quick links</span>
+              <div className="cp-links">
                 {quickLinks.map(({ icon: Icon, label, onClick }) => (
-                  <button
-                    key={label}
-                    onClick={onClick}
-                    className="w-full p-3 rounded-2xl bg-slate-50 hover:bg-brand-50 border border-transparent hover:border-brand-100 text-left flex items-center justify-between transition-all cursor-pointer group"
-                  >
-                    <span className="flex items-center gap-3">
-                      <span className="w-8 h-8 rounded-lg bg-white border border-slate-200 group-hover:bg-[#1677ff] group-hover:border-[#1677ff] flex items-center justify-center transition-colors">
-                        <Icon className="w-4 h-4 text-[#1677ff] group-hover:text-white transition-colors" />
-                      </span>
-                      <span>{label}</span>
-                    </span>
-                    <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-[#1677ff] group-hover:translate-x-0.5 transition-all" />
+                  <button key={label} onClick={onClick} className="cp-link">
+                    <span className="cp-link-ico"><Icon /></span>
+                    <span className="cp-link-label">{label}</span>
+                    <ArrowRight className="cp-link-arrow" />
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* BEFORE YOU CONTACT US CARD */}
-            <div className="bg-white rounded-3xl p-5 sm:p-6 border-2 border-slate-200 shadow-sm space-y-4">
-              <span className={eyebrow + ' block'}>BEFORE YOU CONTACT US</span>
-
-              <div className="text-xs font-semibold text-slate-700">
-                {beforeSteps.map(([bold, rest], i, arr) => (
-                  <div key={bold} className="flex items-start gap-3">
-                    <div className="flex flex-col items-center self-stretch">
-                      <span className="w-7 h-7 rounded-full bg-[#1677ff] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-md shadow-brand-600/25">
-                        {i + 1}
-                      </span>
-                      {i < arr.length - 1 && <div className="w-0.5 flex-1 bg-brand-100 my-1"></div>}
-                    </div>
-                    <p className={`leading-relaxed pt-1 ${i < arr.length - 1 ? 'pb-4' : ''}`}>
-                      <strong className="text-slate-900">{bold}</strong>{rest}
-                    </p>
-                  </div>
+            <div className="cp-card">
+              <span className="cp-eyebrow">Before you contact us</span>
+              <ol className="cp-steps">
+                {beforeSteps.map(([bold, rest], i) => (
+                  <li key={bold}>
+                    <span className="cp-step-num">{i + 1}</span>
+                    <p><strong>{bold}</strong>{rest}</p>
+                  </li>
                 ))}
-              </div>
+              </ol>
             </div>
 
-            {/* ABOUT THIS BUSINESS CARD */}
-            <div className="bg-white rounded-3xl p-5 sm:p-6 border-2 border-slate-200 shadow-sm space-y-3">
-              <span className={eyebrow + ' block'}>ABOUT THIS BUSINESS</span>
-
-              <div className="space-y-2.5 text-xs font-extrabold text-slate-800">
+            <div className="cp-card">
+              <span className="cp-eyebrow">About this business</span>
+              <ul className="cp-about">
                 {[
-                  [MapPin, 'Sri Lanka — Serving worldwide'],
+                  [MapPin, 'Sri Lanka, serving worldwide'],
                   [Gamepad2, 'In the gaming community since 2018'],
-                  [Zap, 'Powered by automated MADS API engine'],
+                  [Zap, 'Powered by the automated MADS API engine'],
                 ].map(([Icon, text]) => (
-                  <div key={text} className="flex items-center gap-3">
-                    <span className="w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center shrink-0"><Icon className="w-4 h-4 text-[#1677ff]" /></span>
-                    <span>{text}</span>
-                  </div>
+                  <li key={text}><span><Icon /></span>{text}</li>
                 ))}
-              </div>
+              </ul>
             </div>
-
-          </div>
-
+          </aside>
         </div>
 
       </div>

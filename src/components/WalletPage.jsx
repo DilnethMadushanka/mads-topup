@@ -5,7 +5,7 @@ import { getUserAuthToken } from '../services/serverApi';
 import {
   Wallet, Copy, Check, ArrowLeft, Zap, Clock, Crown,
   Building2, Upload, ChevronRight, X, RefreshCw, AlertTriangle,
-  CreditCard, Smartphone, DollarSign, Gift, Coins, Landmark
+  CreditCard, Smartphone, DollarSign, Gift, Coins, Landmark, ShieldCheck
 } from 'lucide-react';
 
 export const WalletPage = () => {
@@ -282,25 +282,22 @@ export const WalletPage = () => {
   const QUICK_USDT = ['5', '10', '20', '50'];
 
   // ── Shared style tokens ──────────────────────────────────────
-  const inputCls = 'w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-slate-900 text-sm font-bold placeholder:text-slate-400 placeholder:font-medium focus:outline-none focus:border-[#1677ff] focus:ring-4 focus:ring-[#1677ff]/10 transition-all';
-  const labelCls = 'text-[11px] font-black text-slate-500 uppercase tracking-wider block mb-2';
-  const btnRed = 'w-full py-4 rounded-xl bg-[#1677ff] hover:bg-[#0d68e6] text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-brand-600/25 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
-  const cardCls = 'bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5';
+  const inputCls = 'wf-input';
+  const labelCls = 'wf-label';
+  const btnRed = 'wf-submit';
+  const cardCls = 'wf-step';
 
   const stepHead = (n, text) => (
-    <div className="flex items-center gap-2.5 mb-3">
-      <span className="w-6 h-6 rounded-full bg-[#1677ff] text-white text-xs font-black flex items-center justify-center shrink-0 shadow-sm shadow-brand-600/30">{n}</span>
-      <span className="text-xs font-black text-slate-800 uppercase tracking-wider">{text}</span>
+    <div className="wf-step-head">
+      <span className="wf-step-num">{n}</span>
+      <span className="wf-step-title">{text}</span>
     </div>
   );
 
   const QuickBtn = ({ amounts, current, set }) => (
-    <div className="flex flex-wrap gap-2 mt-2.5">
+    <div className="wf-chips">
       {amounts.map(a => (
-        <button key={a} type="button" onClick={() => set(a)}
-          className={`px-4 py-1.5 rounded-full text-xs font-black transition-all cursor-pointer border-2 ${current === a
-            ? 'bg-[#1677ff] border-[#1677ff] text-white shadow-sm shadow-brand-600/25'
-            : 'bg-white border-slate-200 text-slate-600 hover:border-[#1677ff]/50 hover:text-[#1677ff]'}`}>
+        <button key={a} type="button" onClick={() => set(a)} className={`wf-chip${current === a ? ' is-active' : ''}`}>
           {Number(a).toLocaleString()}
         </button>
       ))}
@@ -316,24 +313,18 @@ export const WalletPage = () => {
   );
 
   const payToCard = ({ icon, kicker, value, copyLabel }) => (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1677ff] via-[#0d68e6] to-[#083a9e] p-5 text-white shadow-lg shadow-brand-700/25">
-      <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/10 pointer-events-none" />
-      <div className="absolute -bottom-14 -left-8 w-36 h-36 rounded-full bg-black/10 pointer-events-none" />
-      <div className="relative flex items-center justify-between mb-5">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-lg">{icon}</div>
-          <span className="text-[11px] font-black uppercase tracking-widest text-brand-100">{kicker}</span>
-        </div>
-        <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2.5 py-1 rounded-full">Pay to</span>
+    <div className="wf-payto">
+      <div className="wf-payto-top">
+        <span className="wf-payto-brand"><span className="wf-payto-ico">{icon}</span>{kicker}</span>
+        <span className="wf-payto-tag">Pay to</span>
       </div>
-      <div className="relative flex items-end justify-between gap-3">
-        <div className="min-w-0">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-brand-200 mb-1">Number</div>
-          <div className="text-2xl sm:text-3xl font-black font-mono tracking-[0.12em] truncate">{value}</div>
+      <div className="wf-payto-row">
+        <div className="wf-payto-val">
+          <small>Number</small>
+          <strong>{value}</strong>
         </div>
-        <button type="button" onClick={() => handleCopy(value, copyLabel)}
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white hover:bg-brand-50 text-[#1677ff] rounded-xl text-xs font-black transition-all cursor-pointer shrink-0 shadow-md active:scale-95">
-          {isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+        <button type="button" onClick={() => handleCopy(value, copyLabel)} className="wf-copy">
+          {isCopied ? <Check /> : <Copy />}
           {isCopied ? 'Copied' : 'Copy'}
         </button>
       </div>
@@ -341,9 +332,7 @@ export const WalletPage = () => {
   );
 
   const noteBox = (children) => (
-    <div className="flex items-start gap-2.5 bg-white border border-slate-200 border-l-4 border-l-[#1677ff] rounded-xl px-3.5 py-3 mt-3 text-[11px] text-slate-600 font-medium leading-relaxed">
-      {children}
-    </div>
+    <div className="wf-note">{children}</div>
   );
 
   const methods = [
@@ -473,23 +462,28 @@ export const WalletPage = () => {
           </div>
         ) : (
           /* ── PAYMENT FORM PANEL ── */
-          <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
+          <div className={`wf-panel is-${activeMethod?.tone || 'blue'}`}>
 
-            {/* Panel header — red gradient matching other pages */}
-            <div className={`bg-gradient-to-r from-[#1677ff] to-[#0b5ed7] p-5 sm:p-6 flex items-center justify-between`}>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-xl">{activeMethod?.icon}</div>
-                <div>
-                  <div className="text-base font-black text-white font-heading">{activeMethod?.label}</div>
-                  <div className="text-xs text-white/75 font-medium">{activeMethod?.sub}</div>
+            <div className="wf-head">
+              {activeMethod?.Icon && <activeMethod.Icon className="wf-head-mark" aria-hidden="true" />}
+              <button type="button" onClick={() => setActivePanel(null)} className="wf-back">
+                <ArrowLeft />
+                <span>All methods</span>
+              </button>
+              <div className="wf-head-main">
+                <span className="wf-head-ico">{activeMethod?.Icon && <activeMethod.Icon />}</span>
+                <div className="min-w-0">
+                  <span className="wf-head-badge"><Zap />{activeMethod?.badge}</span>
+                  <div className="wf-head-title">{activeMethod?.label}</div>
+                  <div className="wf-head-sub">{activeMethod?.sub}</div>
                 </div>
               </div>
-              <button onClick={() => setActivePanel(null)} className="p-2 rounded-xl bg-white/15 hover:bg-white/30 transition-all cursor-pointer">
-                <X className="w-4 h-4 text-white" />
+              <button type="button" onClick={() => setActivePanel(null)} className="wf-close" aria-label="Close">
+                <X />
               </button>
             </div>
 
-            <div className="p-5 sm:p-6 space-y-5">
+            <div className="wf-body">
 
               {/* ── GENIE (Card / eZ Cash Instant) ── */}
               {activePanel === 'genie' && (() => {
@@ -502,32 +496,24 @@ export const WalletPage = () => {
                 return (
                 <form onSubmit={handleGenieSubmit} className="space-y-5">
                   {/* Accepted methods strip */}
-                  <div className="flex items-center justify-between gap-3 flex-wrap bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
-                    <div className="flex items-center gap-2 text-xs font-black text-emerald-700">
-                      <span className="relative flex w-2.5 h-2.5"><span className="absolute inline-flex w-full h-full rounded-full bg-emerald-400 opacity-60 animate-ping" /><span className="relative inline-flex w-2.5 h-2.5 rounded-full bg-emerald-500" /></span>
-                      Instant credit after payment
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      {['VISA', 'Mastercard', 'eZ Cash', 'Genie'].map(b => (
-                        <span key={b} className="px-2 py-1 bg-white border border-slate-200 rounded-md text-[10px] font-black text-slate-600 tracking-wide">{b}</span>
-                      ))}
-                    </div>
+                  <div className="wf-accept">
+                    <span className="wf-live"><i />Instant credit after payment</span>
+                    <span className="wf-brands">
+                      {['VISA', 'Mastercard', 'eZ Cash', 'Genie'].map(b => <span key={b}>{b}</span>)}
+                    </span>
                   </div>
 
                   {/* Amount hero */}
-                  <div className="rounded-3xl border-2 border-slate-200 bg-white p-5 sm:p-6 text-center">
-                    <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-3">Recharge Amount (LKR)</label>
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="text-2xl sm:text-3xl font-black text-slate-300 font-heading">Rs.</span>
-                      <input type="number" value={genieAmount} onChange={e => setGenieAmount(e.target.value)} placeholder="0" min="50"
-                        className="w-44 sm:w-56 bg-transparent text-4xl sm:text-5xl font-black font-heading text-slate-900 text-center placeholder:text-slate-300 focus:outline-none border-b-4 border-slate-200 focus:border-[#1677ff] transition-colors pb-1" />
+                  <div className="wf-amount">
+                    <label className="wf-label">Recharge amount (LKR)</label>
+                    <div className="wf-amount-row">
+                      <span className="wf-amount-cur">Rs.</span>
+                      {/* No type attribute: the global 16px !important input rule targets typed inputs only. */}
+                      <input inputMode="numeric" value={genieAmount} onChange={e => setGenieAmount(e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" aria-label="Recharge amount" className="wf-amount-input" />
                     </div>
-                    <div className="flex flex-wrap justify-center gap-2 mt-4">
+                    <div className="wf-chips is-center">
                       {QUICK_LKR.concat(['10000']).map(a => (
-                        <button key={a} type="button" onClick={() => setGenieAmount(a)}
-                          className={`px-4 py-1.5 rounded-full text-xs font-black transition-all cursor-pointer border-2 ${genieAmount === a
-                            ? 'bg-[#1677ff] border-[#1677ff] text-white shadow-sm shadow-brand-600/25'
-                            : 'bg-white border-slate-200 text-slate-600 hover:border-[#1677ff]/50 hover:text-[#1677ff]'}`}>
+                        <button key={a} type="button" onClick={() => setGenieAmount(a)} className={`wf-chip${genieAmount === a ? ' is-active' : ''}`}>
                           {Number(a).toLocaleString()}
                         </button>
                       ))}
@@ -535,26 +521,21 @@ export const WalletPage = () => {
                   </div>
 
                   {/* Bonus progress */}
-                  <div className="bg-brand-50/60 border border-brand-100 rounded-2xl p-4">
-                    <div className="flex items-center justify-between gap-2 mb-2.5">
-                      <div className="flex items-center gap-2">
-                        <Gift className="w-4 h-4 text-[#1677ff] shrink-0" />
-                        <span className="text-xs font-black text-[#0b5ed7] uppercase tracking-wider">Recharge Bonus</span>
-                      </div>
-                      <span className="text-[11px] font-black text-[#1677ff]">
+                  <div className="wf-bonus">
+                    <div className="wf-bonus-top">
+                      <span className="wf-bonus-title"><span><Gift /></span>Recharge bonus</span>
+                      <span className="wf-bonus-next">
                         {nextTier ? `Rs. ${(nextTier - gAmt > 0 ? nextTier - gAmt : 0).toLocaleString()} more → +Rs. ${gBonusNext}` : 'Max bonus unlocked 🎉'}
                       </span>
                     </div>
-                    <div className="h-2.5 bg-white rounded-full overflow-hidden border border-brand-100">
-                      <div className="h-full rounded-full bg-gradient-to-r from-[#1677ff] to-brand-500 transition-all duration-500" style={{ width: `${tierPct}%` }} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-2.5 mt-3">
+                    <div className="wf-bar"><span style={{ width: `${tierPct}%` }} /></div>
+                    <div className="wf-tiers">
                       {[[100, 'Rs. 5,000+', (b) => b >= 100], [200, 'Rs. 10,000+', (b) => b === 200]].map(([amt, tier, isActive]) => {
                         const on = isActive(gBonus);
                         return (
-                          <div key={amt} className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 border-2 transition-all ${on ? 'bg-[#1677ff] border-[#1677ff] shadow-md shadow-brand-600/25' : 'bg-white border-brand-100'}`}>
-                            <span className={`text-[10px] font-black uppercase tracking-wider ${on ? 'text-brand-100' : 'text-slate-500'}`}>{tier}</span>
-                            <span className={`text-base font-black font-heading ${on ? 'text-white' : 'text-[#1677ff]'}`}>+Rs. {amt}</span>
+                          <div key={amt} className={`wf-tier${on ? ' is-on' : ''}`}>
+                            <span>{tier}</span>
+                            <strong>+Rs. {amt}</strong>
                           </div>
                         );
                       })}
@@ -562,18 +543,18 @@ export const WalletPage = () => {
                   </div>
 
                   {/* Order summary */}
-                  <div className="bg-slate-50 border border-slate-200 rounded-2xl divide-y divide-slate-200 text-sm">
-                    <div className="flex items-center justify-between px-4 py-3"><span className="text-slate-500 font-semibold">Amount</span><span className="font-black text-slate-900">Rs. {gAmt.toLocaleString()}</span></div>
-                    <div className="flex items-center justify-between px-4 py-3"><span className="text-slate-500 font-semibold">Bonus</span><span className={`font-black ${gBonus > 0 ? 'text-emerald-600' : 'text-slate-400'}`}>{gBonus > 0 ? `+ Rs. ${gBonus}` : '—'}</span></div>
-                    <div className="flex items-center justify-between px-4 py-3.5 bg-white rounded-b-2xl"><span className="text-slate-900 font-black">You receive</span><span className="text-xl font-black font-heading text-[#1677ff]">Rs. {(gAmt + gBonus).toLocaleString()}</span></div>
+                  <div className="wf-summary">
+                    <div><span>Amount</span><b>Rs. {gAmt.toLocaleString()}</b></div>
+                    <div><span>Bonus</span><b className={gBonus > 0 ? 'is-plus' : 'is-none'}>{gBonus > 0 ? `+ Rs. ${gBonus}` : '—'}</b></div>
+                    <div className="is-total"><span>You receive</span><strong>Rs. {(gAmt + gBonus).toLocaleString()}</strong></div>
                   </div>
 
                   <button type="submit" disabled={isGenieLoading} className={btnRed}>
                     {isGenieLoading
-                      ? <><RefreshCw className="w-4 h-4 animate-spin" /><span>Connecting to Gateway...</span></>
-                      : <><Zap className="w-4 h-4 fill-white" /><span>Pay Now — Rs. {Number(genieAmount || 0).toLocaleString()}{gBonus > 0 ? ` + 🎁 Rs.${gBonus} Bonus` : ''}</span></>}
+                      ? <><RefreshCw className="animate-spin" /><span>Connecting to gateway...</span></>
+                      : <><Zap /><span>Pay Rs. {Number(genieAmount || 0).toLocaleString()}{gBonus > 0 ? ` + Rs.${gBonus} bonus` : ''}</span></>}
                   </button>
-                  <p className="text-center text-[11px] text-slate-400 font-medium flex items-center justify-center gap-1.5"><span>🔒</span>You will be redirected to Dialog Genie Business IPG secure checkout</p>
+                  <p className="wf-fine"><ShieldCheck />You will be redirected to the Dialog Genie Business secure checkout</p>
                 </form>
                 );
               })()}
@@ -586,16 +567,14 @@ export const WalletPage = () => {
                 return (
                 <form onSubmit={handleEzCashSubmit} className="space-y-5">
                   {/* Progress stepper */}
-                  <div className="flex items-center justify-between px-1">
+                  <div className="wf-stepper">
                     {[['Send', true], ['Amount', eAmt > 0], ['Verify', rnOk]].map(([label, done], i, arr) => (
                       <React.Fragment key={label}>
-                        <div className="flex flex-col items-center gap-1.5">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black border-2 transition-all ${done ? 'bg-[#1677ff] border-[#1677ff] text-white shadow-md shadow-brand-600/25' : 'bg-white border-slate-300 text-slate-400'}`}>
-                            {done && i > 0 ? <Check className="w-4 h-4" strokeWidth={3} /> : i + 1}
-                          </div>
-                          <span className={`text-[10px] font-black uppercase tracking-wider ${done ? 'text-[#1677ff]' : 'text-slate-400'}`}>{label}</span>
+                        <div className={`wf-stepper-item${done ? ' is-done' : ''}`}>
+                          <span>{done && i > 0 ? <Check strokeWidth={3} /> : i + 1}</span>
+                          <small>{label}</small>
                         </div>
-                        {i < arr.length - 1 && <div className={`flex-1 h-0.5 mx-2 mb-5 rounded-full transition-colors ${arr[i + 1][1] ? 'bg-[#1677ff]' : 'bg-slate-200'}`} />}
+                        {i < arr.length - 1 && <i className={`wf-stepper-line${arr[i + 1][1] ? ' is-done' : ''}`} />}
                       </React.Fragment>
                     ))}
                   </div>
@@ -603,39 +582,38 @@ export const WalletPage = () => {
                   <div className={cardCls}>
                     {stepHead(1, 'Send EZ Cash to this number')}
                     {payToCard({ icon: '📱', kicker: 'Dialog eZ Cash Merchant', value: ezCashMerchantNumber, copyLabel: 'Merchant number' })}
-                    {noteBox(<><AlertTriangle className="w-4 h-4 text-[#1677ff] shrink-0 mt-0.5" /><span>After sending, note the 14-digit <strong className="text-slate-900">RN number</strong> from your Dialog SMS or Genie App transaction history.</span></>)}
+                    {noteBox(<><AlertTriangle /><span>After sending, note the 14-digit <strong>RN number</strong> from your Dialog SMS or Genie App transaction history.</span></>)}
                   </div>
 
                   <div className={cardCls}>
                     {stepHead(2, 'Enter the amount you sent')}
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400">Rs.</span>
-                      <input type="number" value={ezCashAmount} onChange={e => setEzCashAmount(e.target.value)} placeholder="Amount sent in LKR..." className={inputCls + ' pl-12 text-base'} min="100" />
+                    <div className="wf-field">
+                      <span className="wf-prefix">Rs.</span>
+                      <input type="number" value={ezCashAmount} onChange={e => setEzCashAmount(e.target.value)} placeholder="Amount sent in LKR..." className="wf-input has-prefix" min="100" />
                     </div>
                     <QuickBtn amounts={QUICK_LKR} current={ezCashAmount} set={setEzCashAmount} />
                   </div>
 
                   <div className={cardCls}>
                     {stepHead(3, '14-Digit RN Number')}
-                    <div className="relative">
-                      <input type="text" value={ezCashRnNumber} onChange={e => setEzCashRnNumber(e.target.value)} placeholder="e.g. 20260910XXXXXXXX" className={inputCls + ' font-mono tracking-wider pr-16'} maxLength={16} />
-                      <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-black font-mono px-2 py-1 rounded-md ${rnOk ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400'}`}>{rnLen}/14</span>
+                    <div className="wf-field">
+                      <input type="text" value={ezCashRnNumber} onChange={e => setEzCashRnNumber(e.target.value)} placeholder="e.g. 20260910XXXXXXXX" className="wf-input is-mono has-suffix" maxLength={16} />
+                      <span className={`wf-suffix${rnOk ? ' is-ok' : ''}`}>{rnLen}/14</span>
                     </div>
                   </div>
 
                   <div className={cardCls}>
                     {stepHead(4, 'Mobile number you paid from')}
-                    <input type="tel" value={ezCashPayerPhone} onChange={e => setEzCashPayerPhone(e.target.value)} placeholder="e.g. 077XXXXXXX" className={inputCls + ' font-mono tracking-wider'} maxLength={15} />
-                    <p className="text-[11px] text-slate-500 font-medium mt-2">The eZ Cash number the money was sent from. We match it with the payment so nobody else can use your RN.</p>
+                    <input type="tel" value={ezCashPayerPhone} onChange={e => setEzCashPayerPhone(e.target.value)} placeholder="e.g. 077XXXXXXX" className="wf-input is-mono" maxLength={15} />
+                    <p className="wf-hint">The eZ Cash number the money was sent from. We match it with the payment so nobody else can use your RN.</p>
                   </div>
 
-                  <div className="flex items-center justify-between bg-brand-50/60 border border-brand-100 rounded-2xl px-4 py-3">
-                    <span className="text-xs font-black text-slate-600 uppercase tracking-wider">Wallet credit</span>
-                    <span className="text-lg font-black font-heading text-[#1677ff]">Rs. {eAmt.toLocaleString()}</span>
+                  <div className="wf-summary">
+                    <div className="is-total"><span>Wallet credit</span><strong>Rs. {eAmt.toLocaleString()}</strong></div>
                   </div>
 
                   <button type="submit" disabled={isEzCashVerifying} className={btnRed}>
-                    {isEzCashVerifying ? <><RefreshCw className="w-4 h-4 animate-spin" /><span>Verifying RN...</span></> : <><Zap className="w-4 h-4 fill-white" /><span>Verify & Credit Wallet</span></>}
+                    {isEzCashVerifying ? <><RefreshCw className="animate-spin" /><span>Verifying RN...</span></> : <><Zap /><span>Verify &amp; credit wallet</span></>}
                   </button>
                 </form>
                 );
@@ -647,26 +625,25 @@ export const WalletPage = () => {
                   <div className={cardCls}>
                     {stepHead(1, 'Send USDT to this Binance Pay ID')}
                     {payToCard({ icon: '🔶', kicker: 'Binance Pay ID', value: binanceMerchantId, copyLabel: 'Binance Pay ID' })}
-                    {noteBox(<><span className="shrink-0">📱</span><span>After paying: Binance App → <strong className="text-slate-900">Pay</strong> → <strong className="text-slate-900">History</strong> → copy your Order ID. Your wallet is credited instantly once we find it.</span></>)}
+                    {noteBox(<><Smartphone /><span>After paying, open Binance App → <strong>Pay</strong> → <strong>History</strong> and copy your Order ID. Your wallet is credited instantly once we find it.</span></>)}
                   </div>
 
                   <div className={cardCls}>
                     {stepHead(2, 'Amount (USDT)')}
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400">$</span>
-                      <input type="number" value={binanceAmount} onChange={e => setBinanceAmount(e.target.value)} placeholder="USDT amount..." className={inputCls + ' pl-9'} min="1" step="0.01" />
+                    <div className="wf-field">
+                      <span className="wf-prefix">$</span>
+                      <input type="number" value={binanceAmount} onChange={e => setBinanceAmount(e.target.value)} placeholder="USDT amount..." className="wf-input has-prefix" min="1" step="0.01" />
                     </div>
                     <QuickBtn amounts={QUICK_USDT} current={binanceAmount} set={setBinanceAmount} />
                   </div>
 
-                  <div className={cardCls + ' space-y-4'}>
+                  <div className={'wf-step is-stack'}>
                     {stepHead(3, 'Confirm your payment')}
                     <div>
                       <label className={labelCls}>Binance Order ID</label>
-                      <div className="relative">
-                        <input type="text" value={binanceOrderId} onChange={e => setBinanceOrderId(e.target.value)} placeholder="Paste Order ID from Binance App..." className={inputCls + ' pr-20'} />
-                        <button type="button" onClick={handlePasteBinanceOrder}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-100 hover:bg-[#1677ff] hover:text-white text-slate-700 text-[11px] font-black rounded-lg transition-all cursor-pointer">Paste</button>
+                      <div className="wf-field">
+                        <input type="text" value={binanceOrderId} onChange={e => setBinanceOrderId(e.target.value)} placeholder="Paste Order ID from Binance App..." className="wf-input has-suffix" />
+                        <button type="button" onClick={handlePasteBinanceOrder} className="wf-suffix is-btn">Paste</button>
                       </div>
                     </div>
                     <div>
@@ -676,7 +653,7 @@ export const WalletPage = () => {
                   </div>
 
                   <button type="submit" disabled={isBinanceVerifying} className={btnRed}>
-                    {isBinanceVerifying ? <><RefreshCw className="w-4 h-4 animate-spin" /><span>Submitting...</span></> : <><span>🔶</span><span>Verify &amp; Credit Wallet</span></>}
+                    {isBinanceVerifying ? <><RefreshCw className="animate-spin" /><span>Submitting...</span></> : <><Coins /><span>Verify &amp; credit wallet</span></>}
                   </button>
                 </form>
               )}
@@ -686,45 +663,39 @@ export const WalletPage = () => {
                 <form onSubmit={handleBankDepositSubmit} className="space-y-5">
                   <div className={cardCls}>
                     {stepHead(1, 'Deposit to this bank account')}
-                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1677ff] via-[#0d68e6] to-[#083a9e] p-5 text-white shadow-lg shadow-brand-700/25">
-                      <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-white/10 pointer-events-none" />
-                      <div className="absolute -bottom-16 -left-10 w-40 h-40 rounded-full bg-black/10 pointer-events-none" />
-                      <div className="relative flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0"><Building2 className="w-4.5 h-4.5 text-white" /></div>
-                          <span className="text-xs font-black uppercase tracking-wider truncate">{bankAccountDetails.bankName}</span>
-                        </div>
-                        <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2.5 py-1 rounded-full shrink-0">Deposit</span>
+                    <div className="wf-payto">
+                      <div className="wf-payto-top">
+                        <span className="wf-payto-brand"><span className="wf-payto-ico"><Building2 /></span>{bankAccountDetails.bankName}</span>
+                        <span className="wf-payto-tag">Deposit</span>
                       </div>
-                      <div className="relative flex items-end justify-between gap-3 mb-5">
-                        <div className="min-w-0">
-                          <div className="text-[10px] font-bold uppercase tracking-wider text-brand-200 mb-1">Account Number</div>
-                          <div className="text-2xl sm:text-3xl font-black font-mono tracking-[0.12em] truncate">{bankAccountDetails.accountNumber}</div>
+                      <div className="wf-payto-row">
+                        <div className="wf-payto-val">
+                          <small>Account number</small>
+                          <strong>{bankAccountDetails.accountNumber}</strong>
                         </div>
-                        <button type="button" onClick={() => handleCopy(bankAccountDetails.accountNumber, 'Account No.')}
-                          className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white hover:bg-brand-50 text-[#1677ff] rounded-xl text-xs font-black transition-all cursor-pointer shrink-0 shadow-md active:scale-95">
-                          {isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        <button type="button" onClick={() => handleCopy(bankAccountDetails.accountNumber, 'Account No.')} className="wf-copy">
+                          {isCopied ? <Check /> : <Copy />}
                           {isCopied ? 'Copied' : 'Copy'}
                         </button>
                       </div>
-                      <div className="relative grid grid-cols-2 gap-3 pt-4 border-t border-white/20">
-                        {[['Account Name', bankAccountDetails.accountName], ['Branch', bankAccountDetails.branch]].map(([label, value]) => (
-                          <button key={label} type="button" onClick={() => handleCopy(value, label)} className="text-left min-w-0 group cursor-pointer">
-                            <div className="text-[10px] font-bold uppercase tracking-wider text-brand-200 mb-0.5 flex items-center gap-1">{label}<Copy className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /></div>
-                            <div className="text-sm font-black truncate">{value}</div>
+                      <div className="wf-payto-meta">
+                        {[['Account name', bankAccountDetails.accountName], ['Branch', bankAccountDetails.branch]].map(([label, value]) => (
+                          <button key={label} type="button" onClick={() => handleCopy(value, label)}>
+                            <small>{label}<Copy /></small>
+                            <b>{value}</b>
                           </button>
                         ))}
                       </div>
                     </div>
                   </div>
 
-                  <div className={cardCls + ' space-y-4'}>
+                  <div className={'wf-step is-stack'}>
                     {stepHead(2, 'Your deposit details')}
                     <div>
                       <label className={labelCls}>Amount You Deposited (LKR)</label>
-                      <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400">Rs.</span>
-                        <input type="number" value={bankAmount} onChange={e => setBankAmount(e.target.value)} placeholder="Exact deposited amount..." className={inputCls + ' pl-12'} min="100" />
+                      <div className="wf-field">
+                        <span className="wf-prefix">Rs.</span>
+                        <input type="number" value={bankAmount} onChange={e => setBankAmount(e.target.value)} placeholder="Exact deposited amount..." className="wf-input has-prefix" min="100" />
                       </div>
                       <QuickBtn amounts={QUICK_LKR} current={bankAmount} set={setBankAmount} />
                     </div>
@@ -736,29 +707,27 @@ export const WalletPage = () => {
 
                   <div className={cardCls}>
                     {stepHead(3, 'Upload deposit receipt')}
-                    <label className="block border-2 border-dashed border-slate-300 hover:border-[#1677ff] rounded-2xl p-6 text-center cursor-pointer transition-all bg-white hover:bg-brand-50/30">
+                    <label className="wf-upload">
                       <input type="file" accept="image/*" onChange={handleBankFileChange} className="hidden" />
                       {bankSlipPreview ? (
-                        <div className="space-y-2">
-                          <img src={bankSlipPreview} alt="Receipt" className="w-full max-h-48 object-contain rounded-xl border border-slate-200" />
-                          <span className="text-xs text-slate-500 font-medium block truncate">{bankSlipFileName}</span>
-                          <span className="text-[11px] text-emerald-600 font-bold">✓ Receipt uploaded — tap to change</span>
+                        <div className="wf-upload-done">
+                          <img src={bankSlipPreview} alt="Receipt" />
+                          <span>{bankSlipFileName}</span>
+                          <em><Check /> Receipt uploaded. Tap to change.</em>
                         </div>
                       ) : (
-                        <div className="space-y-2">
-                          <div className="w-12 h-12 bg-brand-50 rounded-xl flex items-center justify-center mx-auto">
-                            <Upload className="w-6 h-6 text-[#1677ff]" />
-                          </div>
-                          <div className="text-sm font-black text-slate-700">Tap to upload deposit slip</div>
-                          <div className="text-xs text-slate-400">JPG, PNG · Max 5MB</div>
+                        <div className="wf-upload-empty">
+                          <span className="wf-upload-ico"><Upload /></span>
+                          <strong>Tap to upload deposit slip</strong>
+                          <small>JPG, PNG · Max 5MB</small>
                         </div>
                       )}
                     </label>
                   </div>
 
                   <button type="submit" disabled={isSubmittingBank} className={btnRed}>
-                    <Building2 className="w-4 h-4" />
-                    <span>{isSubmittingBank ? 'Submitting...' : 'Submit Bank Receipt'}</span>
+                    <Building2 />
+                    <span>{isSubmittingBank ? 'Submitting...' : 'Submit bank receipt'}</span>
                   </button>
                 </form>
               )}
