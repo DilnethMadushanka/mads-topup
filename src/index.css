@@ -2090,3 +2090,24 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
   .auth-page.is-dark { background: radial-gradient(520px 300px at 50% -60px, rgba(43, 134, 255, .35), transparent 70%), #071440; }
   .auth-card span.bg-white { background-color: #f4f7fd !important; }
 }
+
+/* ── Game tiles with a character that breaks out of the top ── */
+.midas-game.has-pop .midas-game-art img { filter: blur(5px) brightness(.82) saturate(1.15); transform: scale(1.06); }
+.midas-pop {
+  --ribbon-h: 27px;
+  position: absolute; top: 0; left: 0; width: 100%; aspect-ratio: 4 / 5; z-index: 2; pointer-events: none;
+  transform: skewX(-7deg);
+  clip-path: inset(-45% 0 var(--ribbon-h) 0);
+  transition: transform .45s cubic-bezier(.22, 1, .36, 1);
+}
+.midas-pop-art { position: absolute; inset: 0 -14%; transform: skewX(7deg); display: block; }
+.midas-pop-art img {
+  width: 100%; height: 100%; object-fit: cover;
+  transform-origin: 50% 100%; transform: scale(var(--pop-scale));
+  filter: drop-shadow(0 10px 16px rgba(0, 10, 50, .45));
+  transition: transform .6s cubic-bezier(.22, 1, .36, 1);
+}
+.midas-game:hover .midas-pop,
+.midas-game:focus-visible .midas-pop { transform: skewX(-7deg) translateY(-6px); }
+.midas-game:hover .midas-pop-art img { transform: scale(calc(var(--pop-scale) * 1.05)); }
+@media (min-width: 640px) { .midas-pop { --ribbon-h: 37px; } }

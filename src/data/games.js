@@ -99,6 +99,8 @@ export const GAMES_DATA = [
     currencyIcon: '🪙',
     badge: 'ACTIVE',
     banner: '/game_logos/pubg.webp',
+    // Character cut-out that breaks out of the top of the home-page tile.
+    popArt: { src: '/game_pop/pubg.webp', scale: 1.12 },
     logo: '/game_logos/pubg.webp',
     heroBanner: '/game_banners/pubg.jpg',
     gradient: 'from-amber-500 via-orange-600 to-red-600',
@@ -153,6 +155,7 @@ export const GAMES_DATA = [
     currencyIcon: '🪙',
     badge: 'ACTIVE',
     banner: '/game_logos/delta_force.jpg',
+    popArt: { src: '/game_pop/delta_force.webp', scale: 1.45 },
     logo: '/game_logos/delta_force.jpg',
     heroBanner: '/game_banners/deltaforce.jpg',
     gradient: 'from-emerald-700 to-teal-900',
