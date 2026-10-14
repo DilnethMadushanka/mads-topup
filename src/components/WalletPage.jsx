@@ -203,24 +203,31 @@ export const WalletPage = () => {
 
   const handleBinanceSubmit = async (e) => {
     e.preventDefault();
-    if (!binanceOrderId) { showToast('Please enter your Binance Order ID!', 'error'); return; }
+    const orderId = binanceOrderId.trim();
+    if (!orderId) { showToast('Please enter your Binance Order ID!', 'error'); return; }
     if (!binancePayId) { showToast('Please enter your Binance Pay ID!', 'error'); return; }
     const amt = parseFloat(binanceAmount) || 10;
+    const userEmail = userProfile?.email || auth?.currentUser?.email || '';
+    const userId = userProfile?.uid || auth?.currentUser?.uid || '';
+    const pendingRecord = () => ({ id: 'PAY-' + Math.floor(1000 + Math.random() * 9000), userId, userEmail: userEmail || 'guest@madstopup.com', userName: userProfile?.name || 'Gamer', method: 'Binance Pay', referenceNumber: `Order: ${orderId} | PayID: ${binancePayId}`, amount: amt, currency: 'USDT', slipUrl: '', status: 'PENDING', createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16) });
     setIsBinanceVerifying(true);
     try {
-      const response = await fetch('/api/binance/verify-order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId: binanceOrderId, payId: binancePayId, amount: amt }) });
-      const resData = await response.json();
+      // The server checks the Order ID against our Binance Pay history and credits the wallet itself.
+      const token = await getUserAuthToken(userProfile);
+      const response = await fetch('/api/binance/verify-order', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ orderId, payId: binancePayId, amount: amt }) });
+      const resData = await response.json().catch(() => ({}));
+      if (!response.ok) { showToast(resData.error || 'Could not submit this Binance order. Please try again.', 'error'); return; }
       if (resData.verified && resData.autoApproved) {
-        creditUserWallet(0, amt);
-        addManualPayment({ id: 'PAY-' + Math.floor(1000 + Math.random() * 9000), userEmail: userProfile?.email || 'guest@madstopup.com', userName: userProfile?.name || 'Gamer', method: 'Binance Pay (Automated)', referenceNumber: `Order: ${binanceOrderId} | PayID: ${binancePayId}`, amount: amt, currency: 'USDT', slipUrl: '', status: 'VERIFIED', createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16) });
-        showToast(`⚡ BINANCE VERIFIED! +${amt} USDT credited!`);
+        const credited = Number(resData.amountUsdt) || amt;
+        creditUserWallet(0, credited);
+        showToast(`⚡ BINANCE VERIFIED! +$${credited} USDT credited!`);
       } else {
-        addManualPayment({ id: 'PAY-' + Math.floor(1000 + Math.random() * 9000), userEmail: userProfile?.email || 'guest@madstopup.com', userName: userProfile?.name || 'Gamer', method: 'Binance Pay', referenceNumber: `Order: ${binanceOrderId} | PayID: ${binancePayId}`, amount: amt, currency: 'USDT', slipUrl: '', status: 'PENDING', createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16) });
+        addManualPayment(pendingRecord());
         showToast('Binance deposit submitted for admin verification.');
       }
       setBinanceOrderId(''); setBinancePayId('');
     } catch {
-      addManualPayment({ id: 'PAY-' + Math.floor(1000 + Math.random() * 9000), userEmail: userProfile?.email || 'guest@madstopup.com', userName: userProfile?.name || 'Gamer', method: 'Binance Pay', referenceNumber: `Order: ${binanceOrderId} | PayID: ${binancePayId}`, amount: amt, currency: 'USDT', slipUrl: '', status: 'PENDING', createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16) });
+      addManualPayment(pendingRecord());
       showToast('Deposit submitted for admin verification.'); setBinanceOrderId(''); setBinancePayId('');
     } finally { setIsBinanceVerifying(false); }
   };
@@ -642,7 +649,7 @@ export const WalletPage = () => {
                   <div className={cardCls}>
                     {stepHead(1, 'Send USDT to this Binance Pay ID')}
                     {payToCard({ icon: '🔶', kicker: 'Binance Pay ID', value: binanceMerchantId, copyLabel: 'Binance Pay ID' })}
-                    {noteBox(<><span className="shrink-0">📱</span><span>After paying: Binance App → <strong className="text-slate-900">Pay</strong> → <strong className="text-slate-900">History</strong> → copy your Order ID</span></>)}
+                    {noteBox(<><span className="shrink-0">📱</span><span>After paying: Binance App → <strong className="text-slate-900">Pay</strong> → <strong className="text-slate-900">History</strong> → copy your Order ID. Your wallet is credited instantly once we find it.</span></>)}
                   </div>
 
                   <div className={cardCls}>
@@ -671,7 +678,7 @@ export const WalletPage = () => {
                   </div>
 
                   <button type="submit" disabled={isBinanceVerifying} className={btnRed}>
-                    {isBinanceVerifying ? <><RefreshCw className="w-4 h-4 animate-spin" /><span>Submitting...</span></> : <><span>🔶</span><span>Submit Binance Deposit</span></>}
+                    {isBinanceVerifying ? <><RefreshCw className="w-4 h-4 animate-spin" /><span>Submitting...</span></> : <><span>🔶</span><span>Verify &amp; Credit Wallet</span></>}
                   </button>
                 </form>
               )}
