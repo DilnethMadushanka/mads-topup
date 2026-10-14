@@ -152,18 +152,18 @@ export const ResellerProgramPage = () => {
       <div className="bg-[#0B132B] text-white rounded-3xl p-6 sm:p-12 border border-slate-800 shadow-2xl relative overflow-hidden text-center">
         
         {/* Background Decorative Lighting */}
-        <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-red-600/15 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute -bottom-24 right-10 w-80 h-80 bg-rose-600/15 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-brand-600/15 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute -bottom-24 right-10 w-80 h-80 bg-brand-600/15 rounded-full blur-3xl pointer-events-none"></div>
 
         {/* Top Tag & Main Title */}
         <div className="relative z-10 space-y-3 max-w-3xl mx-auto mb-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-950/80 border border-red-500/30 text-red-400 text-xs font-mono font-bold tracking-widest uppercase">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-ping"></span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-950/80 border border-brand-500/30 text-brand-400 text-xs font-mono font-bold tracking-widest uppercase">
+            <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-ping"></span>
             <span>PARTNER WITH US</span>
           </div>
 
           <h1 className="text-4xl sm:text-6xl font-extrabold font-heading tracking-tight drop-shadow-md">
-            Reseller <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-rose-500 to-pink-500">Program</span>
+            Reseller <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 via-brand-500 to-pink-500">Program</span>
           </h1>
 
           <p className="text-slate-300 text-sm sm:text-base font-medium max-w-xl mx-auto">
@@ -175,9 +175,9 @@ export const ResellerProgramPage = () => {
         <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto text-left">
           
           {/* Card 1: Become a Reseller */}
-          <div className="bg-[#111A35]/90 border border-red-900/40 hover:border-red-500/60 rounded-2xl p-6 sm:p-8 flex flex-col justify-between space-y-6 transition-all duration-300 hover:shadow-xl hover:shadow-red-950/50 group">
+          <div className="bg-[#111A35]/90 border border-brand-900/40 hover:border-brand-500/60 rounded-2xl p-6 sm:p-8 flex flex-col justify-between space-y-6 transition-all duration-300 hover:shadow-xl hover:shadow-brand-950/50 group">
             <div className="space-y-4">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center text-white shadow-lg shadow-red-500/30 group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white shadow-lg shadow-brand-500/30 group-hover:scale-110 transition-transform">
                 <UserPlus className="w-7 h-7" />
               </div>
 
@@ -193,7 +193,7 @@ export const ResellerProgramPage = () => {
 
             <button
               onClick={scrollToForm}
-              className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-red-500 hover:from-red-500 hover:to-rose-500 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-red-600/30 cursor-pointer uppercase tracking-wider active:scale-[0.99]"
+              className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-brand-600 via-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-500 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-brand-600/30 cursor-pointer uppercase tracking-wider active:scale-[0.99]"
             >
               <span>REGISTER NOW</span>
               <Crown className="w-4 h-4 text-amber-300 fill-amber-300" />
@@ -201,9 +201,9 @@ export const ResellerProgramPage = () => {
           </div>
 
           {/* Card 2: Reseller Login */}
-          <div className="bg-[#111A35]/90 border border-slate-800 hover:border-red-500/40 rounded-2xl p-6 sm:p-8 flex flex-col justify-between space-y-6 transition-all duration-300 hover:shadow-xl group">
+          <div className="bg-[#111A35]/90 border border-slate-800 hover:border-brand-500/40 rounded-2xl p-6 sm:p-8 flex flex-col justify-between space-y-6 transition-all duration-300 hover:shadow-xl group">
             <div className="space-y-4">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center text-white shadow-lg shadow-red-500/30 group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white shadow-lg shadow-brand-500/30 group-hover:scale-110 transition-transform">
                 <LogIn className="w-7 h-7" />
               </div>
 
@@ -219,7 +219,7 @@ export const ResellerProgramPage = () => {
 
             <button
               onClick={() => openAuth('reseller')}
-              className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-red-600/25 cursor-pointer uppercase tracking-wider active:scale-[0.99]"
+              className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-brand-600 to-brand-600 hover:from-brand-500 hover:to-brand-500 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-brand-600/25 cursor-pointer uppercase tracking-wider active:scale-[0.99]"
             >
               <span>LOGIN</span>
               <LogIn className="w-4 h-4" />
@@ -398,7 +398,7 @@ export const ResellerProgramPage = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-red-600/30 uppercase tracking-wider active:scale-[0.99]"
+              className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-brand-600 to-brand-600 hover:from-brand-500 hover:to-brand-500 text-white font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-brand-600/30 uppercase tracking-wider active:scale-[0.99]"
             >
               <span>{isSubmitting ? 'Submitting Application...' : 'Submit Application'}</span>
               <ArrowRight className="w-5 h-5 text-white" />
@@ -482,7 +482,7 @@ export const ResellerProgramPage = () => {
 
           {/* Card 6: Priority Support & More */}
           <div className="bg-white rounded-2xl border border-slate-200/80 p-6 space-y-3 shadow-xs hover:shadow-md transition-shadow">
-            <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center">
               <Crown className="w-6 h-6" />
             </div>
             <h3 className="text-base font-black text-slate-900 font-heading">Priority Support & More</h3>

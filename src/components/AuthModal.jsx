@@ -457,7 +457,7 @@ export const AuthModal = () => {
                   value={googleWhatsAppPhone}
                   onChange={(e) => setGoogleWhatsAppPhone(e.target.value)}
                   required
-                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:ring-2 focus:ring-red-500/20 transition-all shadow-xs"
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-[#1677ff] focus:ring-2 focus:ring-brand-500/20 transition-all shadow-xs"
                 />
               </div>
               <p className="text-[11px] text-slate-400 font-semibold text-center mt-1.5">
@@ -468,7 +468,7 @@ export const AuthModal = () => {
             {/* Complete Registration Button */}
             <button
               type="submit"
-              className="w-full py-3.5 bg-[#cc040a] hover:bg-[#990207] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-red-600/30 flex items-center justify-center cursor-pointer mt-2"
+              className="w-full py-3.5 bg-[#1677ff] hover:bg-[#0b5ed7] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-brand-600/30 flex items-center justify-center cursor-pointer mt-2"
             >
               COMPLETE REGISTRATION
             </button>
@@ -501,7 +501,7 @@ export const AuthModal = () => {
                 placeholder="Enter reseller username"
                 value={resellerUsername}
                 onChange={(e) => setResellerUsername(e.target.value)}
-                className="w-full px-4 py-3 bg-white border border-slate-300 focus:border-red-600 focus:ring-2 focus:ring-red-600/20 rounded-xl text-sm font-semibold text-slate-900 outline-none transition-all shadow-xs"
+                className="w-full px-4 py-3 bg-white border border-slate-300 focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20 rounded-xl text-sm font-semibold text-slate-900 outline-none transition-all shadow-xs"
               />
             </div>
 
@@ -515,7 +515,7 @@ export const AuthModal = () => {
                   placeholder="Enter password"
                   value={resellerPassword}
                   onChange={(e) => setResellerPassword(e.target.value)}
-                  className="w-full px-4 py-3 pr-10 bg-white border border-slate-300 focus:border-red-600 focus:ring-2 focus:ring-red-600/20 rounded-xl text-sm font-semibold text-slate-900 outline-none transition-all shadow-xs"
+                  className="w-full px-4 py-3 pr-10 bg-white border border-slate-300 focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20 rounded-xl text-sm font-semibold text-slate-900 outline-none transition-all shadow-xs"
                 />
                 <button
                   type="button"
@@ -534,7 +534,7 @@ export const AuthModal = () => {
                   id="remember-me"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 text-red-600 focus:ring-red-600 cursor-pointer"
+                  className="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-600 cursor-pointer"
                 />
                 <span>Remember me</span>
               </label>
@@ -542,7 +542,7 @@ export const AuthModal = () => {
               <button
                 type="button"
                 onClick={() => setAuthMode('forgot')}
-                className="font-extrabold text-red-600 hover:underline cursor-pointer"
+                className="font-extrabold text-brand-600 hover:underline cursor-pointer"
               >
                 Forgot Password?
               </button>
@@ -550,7 +550,7 @@ export const AuthModal = () => {
 
             <button
               type="submit"
-              className="w-full py-3.5 bg-gradient-to-r from-red-600 via-rose-600 to-red-500 hover:from-red-500 hover:to-rose-500 text-white font-extrabold text-xs sm:text-sm tracking-widest uppercase rounded-xl transition-all shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 cursor-pointer mt-3 active:scale-[0.99]"
+              className="w-full py-3.5 bg-gradient-to-r from-brand-600 via-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-500 text-white font-extrabold text-xs sm:text-sm tracking-widest uppercase rounded-xl transition-all shadow-lg shadow-brand-600/30 flex items-center justify-center gap-2 cursor-pointer mt-3 active:scale-[0.99]"
             >
               <span>LOGIN</span>
             </button>
@@ -561,7 +561,7 @@ export const AuthModal = () => {
                 <button
                   type="button"
                   onClick={() => setAuthMode('login')}
-                  className="text-red-600 hover:underline font-extrabold cursor-pointer"
+                  className="text-brand-600 hover:underline font-extrabold cursor-pointer"
                 >
                   Login as a regular user
                 </button>
@@ -575,7 +575,7 @@ export const AuthModal = () => {
                     setIsAuthModalOpen(false);
                     openResellerPage();
                   }}
-                  className="text-red-600 hover:underline font-extrabold cursor-pointer"
+                  className="text-brand-600 hover:underline font-extrabold cursor-pointer"
                 >
                   Apply Here
                 </button>
@@ -595,11 +595,11 @@ export const AuthModal = () => {
         </button>
 
         {/* LEFT SECTION (Vibrant RED Branding Side) */}
-        <div className="w-full md:w-5/12 bg-gradient-to-br from-[#cc040a] via-[#dc2626] to-[#990207] p-5 sm:p-8 text-white flex flex-col items-center justify-between relative overflow-hidden text-center shrink-0">
+        <div className="w-full md:w-5/12 bg-gradient-to-br from-[#1677ff] via-[#1764f5] to-[#0b5ed7] p-5 sm:p-8 text-white flex flex-col items-center justify-between relative overflow-hidden text-center shrink-0">
           
           {/* Subtle Background Blur Shapes */}
-          <div className="absolute -top-10 -left-10 w-48 h-48 bg-red-400/20 rounded-full blur-3xl pointer-events-none"></div>
-          <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-red-300/20 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute -top-10 -left-10 w-48 h-48 bg-brand-400/20 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-brand-300/20 rounded-full blur-3xl pointer-events-none"></div>
 
           <div className="relative z-10 flex flex-col items-center my-auto">
             {/* App Logo Box */}
@@ -652,7 +652,7 @@ export const AuthModal = () => {
             /* FORGOT PASSWORD MODE FORM */
             <div className="space-y-6 my-auto">
               <div className="text-center">
-                <div className="w-12 h-12 rounded-2xl bg-red-50 text-[#cc040a] flex items-center justify-center mx-auto mb-3 border border-red-100 shadow-xs">
+                <div className="w-12 h-12 rounded-2xl bg-brand-50 text-[#1677ff] flex items-center justify-center mx-auto mb-3 border border-brand-100 shadow-xs">
                   <Lock className="w-6 h-6" />
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">
@@ -678,14 +678,14 @@ export const AuthModal = () => {
                       value={resetEmail}
                       onChange={(e) => setResetEmail(e.target.value)}
                       required
-                      className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:ring-2 focus:ring-red-500/20 transition-all shadow-inner"
+                      className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-[#1677ff] focus:ring-2 focus:ring-brand-500/20 transition-all shadow-inner"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={isSendingReset}
-                    className="w-full py-3.5 bg-[#cc040a] hover:bg-[#990207] text-white font-extrabold text-xs sm:text-sm rounded-xl transition-all shadow-md shadow-red-600/25 flex items-center justify-center gap-2 cursor-pointer mt-2 disabled:opacity-60"
+                    className="w-full py-3.5 bg-[#1677ff] hover:bg-[#0b5ed7] text-white font-extrabold text-xs sm:text-sm rounded-xl transition-all shadow-md shadow-brand-600/25 flex items-center justify-center gap-2 cursor-pointer mt-2 disabled:opacity-60"
                   >
                     {isSendingReset ? (
                       <>
@@ -723,7 +723,7 @@ export const AuthModal = () => {
                       onChange={(e) => setEnteredResetOtp(e.target.value)}
                       maxLength={6}
                       required
-                      className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-bold text-center tracking-widest text-slate-900 focus:outline-none focus:border-[#cc040a] focus:ring-2 focus:ring-red-500/20 transition-all shadow-inner"
+                      className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-bold text-center tracking-widest text-slate-900 focus:outline-none focus:border-[#1677ff] focus:ring-2 focus:ring-brand-500/20 transition-all shadow-inner"
                     />
                   </div>
 
@@ -739,7 +739,7 @@ export const AuthModal = () => {
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         required
-                        className="w-full px-4 py-3 pr-10 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:ring-2 focus:ring-red-500/20 transition-all shadow-inner"
+                        className="w-full px-4 py-3 pr-10 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-[#1677ff] focus:ring-2 focus:ring-brand-500/20 transition-all shadow-inner"
                       />
                       <button
                         type="button"
@@ -762,7 +762,7 @@ export const AuthModal = () => {
                       value={confirmNewPassword}
                       onChange={(e) => setConfirmNewPassword(e.target.value)}
                       required
-                      className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:ring-2 focus:ring-red-500/20 transition-all shadow-inner"
+                      className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-[#1677ff] focus:ring-2 focus:ring-brand-500/20 transition-all shadow-inner"
                     />
                   </div>
 
@@ -788,7 +788,7 @@ export const AuthModal = () => {
                     <button
                       type="button"
                       onClick={() => setIsResetCodeSent(false)}
-                      className="font-bold text-[#cc040a] hover:underline cursor-pointer"
+                      className="font-bold text-[#1677ff] hover:underline cursor-pointer"
                     >
                       Resend Code
                     </button>
@@ -827,7 +827,7 @@ export const AuthModal = () => {
                     placeholder="Enter your username or email"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:ring-2 focus:ring-red-500/20 transition-all shadow-inner"
+                    className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-[#1677ff] focus:ring-2 focus:ring-brand-500/20 transition-all shadow-inner"
                   />
                 </div>
 
@@ -843,7 +843,7 @@ export const AuthModal = () => {
                       placeholder="Enter your password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full px-4 py-3 pr-10 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:ring-2 focus:ring-red-500/20 transition-all shadow-inner"
+                      className="w-full px-4 py-3 pr-10 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-[#1677ff] focus:ring-2 focus:ring-brand-500/20 transition-all shadow-inner"
                     />
                     <button
                       type="button"
@@ -862,7 +862,7 @@ export const AuthModal = () => {
                       type="checkbox"
                       checked={keepLoggedIn}
                       onChange={(e) => setKeepLoggedIn(e.target.checked)}
-                      className="w-4 h-4 rounded border-slate-300 text-[#cc040a] focus:ring-[#cc040a]"
+                      className="w-4 h-4 rounded border-slate-300 text-[#1677ff] focus:ring-[#1677ff]"
                     />
                     <span>Keep me logged in</span>
                   </label>
@@ -870,7 +870,7 @@ export const AuthModal = () => {
                   <button
                     type="button"
                     onClick={() => setAuthMode('forgot')}
-                    className="font-extrabold text-[#cc040a] hover:underline cursor-pointer"
+                    className="font-extrabold text-[#1677ff] hover:underline cursor-pointer"
                   >
                     Forgot Password?
                   </button>
@@ -879,7 +879,7 @@ export const AuthModal = () => {
                 {/* Submit Login Button */}
                 <button
                   type="submit"
-                  className="w-full py-3.5 bg-[#cc040a] hover:bg-[#990207] text-white font-extrabold text-sm rounded-xl transition-all shadow-md shadow-red-600/25 flex items-center justify-center gap-2 cursor-pointer mt-2"
+                  className="w-full py-3.5 bg-[#1677ff] hover:bg-[#0b5ed7] text-white font-extrabold text-sm rounded-xl transition-all shadow-md shadow-brand-600/25 flex items-center justify-center gap-2 cursor-pointer mt-2"
                 >
                   <LogIn className="w-4 h-4" />
                   <span>Login</span>
@@ -904,7 +904,7 @@ export const AuthModal = () => {
                 className="w-full py-3 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs rounded-xl border border-slate-200 flex items-center justify-center gap-2.5 transition-colors cursor-pointer shadow-xs disabled:opacity-60"
               >
                 {isGoogleLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-[#cc040a]" />
+                  <Loader2 className="w-4 h-4 animate-spin text-[#1677ff]" />
                 ) : (
                   <svg className="w-4 h-4" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -922,7 +922,7 @@ export const AuthModal = () => {
                 <button
                   type="button"
                   onClick={() => setAuthMode('register')}
-                  className="font-extrabold text-[#cc040a] hover:underline cursor-pointer"
+                  className="font-extrabold text-[#1677ff] hover:underline cursor-pointer"
                 >
                   Register here
                 </button>
@@ -948,7 +948,7 @@ export const AuthModal = () => {
                 className="w-full py-2.5 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs rounded-xl border border-slate-200 flex items-center justify-center gap-2.5 transition-colors cursor-pointer shadow-xs disabled:opacity-60"
               >
                 {isGoogleLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-[#cc040a]" />
+                  <Loader2 className="w-4 h-4 animate-spin text-[#1677ff]" />
                 ) : (
                   <svg className="w-4 h-4" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -982,7 +982,7 @@ export const AuthModal = () => {
                     placeholder="Choose a username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-[#F8FAFC] border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:ring-2 focus:ring-red-500/20 transition-all"
+                    className="w-full px-3.5 py-2.5 bg-[#F8FAFC] border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#1677ff] focus:ring-2 focus:ring-brand-500/20 transition-all"
                   />
                 </div>
 
@@ -1008,13 +1008,13 @@ export const AuthModal = () => {
                         setEmail(e.target.value);
                         if (isEmailVerified) setIsEmailVerified(false);
                       }}
-                      className="w-full px-3.5 py-2.5 bg-[#F8FAFC] border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:ring-2 focus:ring-red-500/20 transition-all"
+                      className="w-full px-3.5 py-2.5 bg-[#F8FAFC] border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#1677ff] focus:ring-2 focus:ring-brand-500/20 transition-all"
                     />
                     <button
                       type="button"
                       onClick={handleSendCode}
                       disabled={isSendingCode || resendTimer > 0}
-                      className="bg-[#cc040a] hover:bg-[#990207] text-white font-extrabold text-xs px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-xs disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="bg-[#1677ff] hover:bg-[#0b5ed7] text-white font-extrabold text-xs px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-xs disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       {isSendingCode ? (
                         <Loader2 className="w-3 h-3 animate-spin" />
@@ -1039,7 +1039,7 @@ export const AuthModal = () => {
                   <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="flex items-center justify-between text-xs font-extrabold text-slate-700">
                       <span className="flex items-center gap-1.5 text-slate-800">
-                        <Shield className="w-3.5 h-3.5 text-red-600" />
+                        <Shield className="w-3.5 h-3.5 text-brand-600" />
                         <span>Enter 6-Digit Verification Code</span>
                       </span>
                       <span className="text-[10px] text-slate-400 font-medium">Check your inbox</span>
@@ -1056,7 +1056,7 @@ export const AuthModal = () => {
                         className={`w-full px-3.5 py-2 bg-white border rounded-xl text-xs font-mono font-bold tracking-widest text-slate-900 focus:outline-none transition-all ${
                           isEmailVerified
                             ? 'border-emerald-500 bg-emerald-50/60 text-emerald-800'
-                            : 'border-slate-300 focus:border-[#cc040a]'
+                            : 'border-slate-300 focus:border-[#1677ff]'
                         }`}
                       />
                       {!isEmailVerified && (
@@ -1077,7 +1077,7 @@ export const AuthModal = () => {
                   <label className="text-xs font-extrabold text-slate-700 block mb-1 flex items-center gap-1.5">
                     <Phone className="w-3.5 h-3.5 text-green-500" />
                     <span>WhatsApp Number</span>
-                    <span className="text-[#cc040a] font-black">*</span>
+                    <span className="text-[#1677ff] font-black">*</span>
                     <span className="ml-auto text-[9px] font-bold bg-green-50 text-green-600 border border-green-200 px-2 py-0.5 rounded-full">Required</span>
                   </label>
                   <div className="flex items-center gap-2">
@@ -1091,7 +1091,7 @@ export const AuthModal = () => {
                       onChange={(e) => setPhone(e.target.value)}
                       required
                       className={`w-full px-3.5 py-2.5 bg-[#F8FAFC] border rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 transition-all ${
-                        phone && phone.trim() ? 'border-green-400 focus:border-green-500 focus:ring-green-500/20' : 'border-slate-200 focus:border-[#cc040a] focus:ring-red-500/20'
+                        phone && phone.trim() ? 'border-green-400 focus:border-green-500 focus:ring-green-500/20' : 'border-slate-200 focus:border-[#1677ff] focus:ring-brand-500/20'
                       }`}
                     />
                   </div>
@@ -1112,7 +1112,7 @@ export const AuthModal = () => {
                       placeholder="Create a strong password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full px-3.5 py-2.5 pr-9 bg-[#F8FAFC] border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:ring-2 focus:ring-red-500/20 transition-all"
+                      className="w-full px-3.5 py-2.5 pr-9 bg-[#F8FAFC] border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#1677ff] focus:ring-2 focus:ring-brand-500/20 transition-all"
                     />
                     <button
                       type="button"
@@ -1136,7 +1136,7 @@ export const AuthModal = () => {
                       placeholder="Confirm your password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full px-3.5 py-2.5 pr-9 bg-[#F8FAFC] border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:ring-2 focus:ring-red-500/20 transition-all"
+                      className="w-full px-3.5 py-2.5 pr-9 bg-[#F8FAFC] border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#1677ff] focus:ring-2 focus:ring-brand-500/20 transition-all"
                     />
                     <button
                       type="button"
@@ -1151,7 +1151,7 @@ export const AuthModal = () => {
                 {/* Submit Create Account Button */}
                 <button
                   type="submit"
-                  className="w-full py-3 bg-[#cc040a] hover:bg-[#990207] text-white font-extrabold text-xs rounded-xl transition-all shadow-md shadow-red-600/25 flex items-center justify-center gap-2 cursor-pointer mt-2"
+                  className="w-full py-3 bg-[#1677ff] hover:bg-[#0b5ed7] text-white font-extrabold text-xs rounded-xl transition-all shadow-md shadow-brand-600/25 flex items-center justify-center gap-2 cursor-pointer mt-2"
                 >
                   <span>Create Account</span>
                   <ArrowRight className="w-4 h-4" />
@@ -1164,7 +1164,7 @@ export const AuthModal = () => {
                 <button
                   type="button"
                   onClick={() => setAuthMode('login')}
-                  className="font-extrabold text-[#cc040a] hover:underline cursor-pointer"
+                  className="font-extrabold text-[#1677ff] hover:underline cursor-pointer"
                 >
                   Sign in
                 </button>

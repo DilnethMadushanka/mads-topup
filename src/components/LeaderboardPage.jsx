@@ -89,7 +89,7 @@ function Avatar({ name = '?', src, size = 48 }) {
   const [err, setErr] = useState(false);
   const letters = (name || '?').replace(/[^a-zA-Z\s]/g, '').trim();
   const initials = (letters || name || '?').split(/\s+/).map(p => p[0]).filter(Boolean).join('').slice(0, 2).toUpperCase() || '?';
-  const palettes = [['#cc040a','#ff6b6b'],['#f97316','#fb923c'],['#7c3aed','#a78bfa'],['#059669','#34d399'],['#0284c7','#38bdf8'],['#db2777','#f472b6'],['#d97706','#fbbf24']];
+  const palettes = [['#1677ff','#6db4ff'],['#f97316','#fb923c'],['#7c3aed','#a78bfa'],['#059669','#34d399'],['#0284c7','#38bdf8'],['#db2777','#f472b6'],['#d97706','#fbbf24']];
   const [c1, c2] = palettes[(name || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0) % palettes.length];
 
   return (
@@ -103,7 +103,7 @@ function Avatar({ name = '?', src, size = 48 }) {
 }
 
 const RANK_CFG = {
-  1: { ring: 'linear-gradient(135deg,#ff4d4f,#cc040a)', accent: '#cc040a', step: 'linear-gradient(180deg,rgba(204,4,10,0.22),rgba(204,4,10,0.03))', label: 'CHAMPION' },
+  1: { ring: 'linear-gradient(135deg,#4da3ff,#1677ff)', accent: '#1677ff', step: 'linear-gradient(180deg,rgba(22,119,255,0.22),rgba(22,119,255,0.03))', label: 'CHAMPION' },
   2: { ring: 'linear-gradient(135deg,#e2e8f0,#94a3b8)', accent: '#64748b', step: 'linear-gradient(180deg,rgba(100,116,139,0.22),rgba(100,116,139,0.03))', label: 'RUNNER UP' },
   3: { ring: 'linear-gradient(135deg,#fbbf24,#b45309)', accent: '#b45309', step: 'linear-gradient(180deg,rgba(217,119,6,0.26),rgba(217,119,6,0.03))', label: '3RD PLACE' },
 };
@@ -125,7 +125,7 @@ function PodiumCard({ user, rank, isCenter }) {
 
       <p className="hof-name" title={user.name}>{user.name}</p>
       <p className="hof-label" style={{ color: cfg.accent }}>{cfg.label}</p>
-      <p className="hof-amount" style={{ color: isCenter ? '#cc040a' : '#0f172a' }}>{fmtLkr(user.totalLkr)}</p>
+      <p className="hof-amount" style={{ color: isCenter ? '#1677ff' : '#0f172a' }}>{fmtLkr(user.totalLkr)}</p>
       <span className="hof-orders">{user.orderCount} order{user.orderCount !== 1 ? 's' : ''}</span>
 
       <div className="hof-step" style={{ background: cfg.step, borderTopColor: cfg.accent }}>
@@ -257,7 +257,7 @@ export const LeaderboardPage = () => {
         {/* Footer note */}
         <div className="hof-foot">
           <div className="hof-foot-top">
-            <ShoppingBag size={14} color="#cc040a" />
+            <ShoppingBag size={14} color="#1677ff" />
             <span>Rankings update in real time</span>
           </div>
           <p>Based on total LKR spent on completed orders · {periodLabel}</p>
@@ -270,11 +270,11 @@ export const LeaderboardPage = () => {
           background: linear-gradient(170deg, #fff5f5 0%, #ffffff 42%, #fafbff 100%);
         }
         .hof-glow { position: absolute; border-radius: 50%; pointer-events: none; filter: blur(100px); }
-        .hof-glow-a { top: -160px; left: 50%; transform: translateX(-50%); width: 640px; height: 340px; background: rgba(204,4,10,0.13); }
-        .hof-glow-b { top: 520px; right: -140px; width: 360px; height: 360px; background: rgba(204,4,10,0.07); }
+        .hof-glow-a { top: -160px; left: 50%; transform: translateX(-50%); width: 640px; height: 340px; background: rgba(22,119,255,0.13); }
+        .hof-glow-b { top: 520px; right: -140px; width: 360px; height: 360px; background: rgba(22,119,255,0.07); }
         .hof-grid-bg {
           position: absolute; inset: 0; pointer-events: none; opacity: 0.05;
-          background-image: linear-gradient(#cc040a 1px, transparent 1px), linear-gradient(90deg, #cc040a 1px, transparent 1px);
+          background-image: linear-gradient(#1677ff 1px, transparent 1px), linear-gradient(90deg, #1677ff 1px, transparent 1px);
           background-size: 48px 48px;
           -webkit-mask-image: radial-gradient(ellipse at 50% 12%, #000 0%, transparent 65%);
           mask-image: radial-gradient(ellipse at 50% 12%, #000 0%, transparent 65%);
@@ -285,14 +285,14 @@ export const LeaderboardPage = () => {
           position: sticky; top: 0; z-index: 20;
           display: flex; align-items: center; gap: 12px; padding: 12px 20px;
           background: rgba(255,255,255,0.85); backdrop-filter: blur(16px) saturate(150%); -webkit-backdrop-filter: blur(16px) saturate(150%);
-          border-bottom: 1px solid rgba(204,4,10,0.10); box-shadow: 0 8px 24px -16px rgba(15,23,42,0.18);
+          border-bottom: 1px solid rgba(22,119,255,0.10); box-shadow: 0 8px 24px -16px rgba(15,23,42,0.18);
         }
         .hof-back {
           display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 16px; border-radius: 999px;
           background: #fff; border: 1.5px solid #e2e8f0; color: #334155;
           font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s;
         }
-        .hof-back:hover { background: #cc040a; border-color: #cc040a; color: #fff; }
+        .hof-back:hover { background: #1677ff; border-color: #1677ff; color: #fff; }
         .hof-nav-title { flex: 1; text-align: center; font-size: 14px; font-weight: 800; letter-spacing: 0.04em; color: #0f172a; }
 
         .hof-wrap { position: relative; z-index: 1; max-width: 760px; margin: 0 auto; padding: 0 16px; }
@@ -302,16 +302,16 @@ export const LeaderboardPage = () => {
         .hof-trophy {
           width: 68px; height: 68px; border-radius: 20px; margin: 0 auto 18px;
           display: flex; align-items: center; justify-content: center;
-          background: linear-gradient(135deg, #cc040a, #ff4d4f);
-          box-shadow: 0 14px 36px -8px rgba(204,4,10,0.7), inset 0 1px 0 rgba(255,255,255,0.25);
+          background: linear-gradient(135deg, #1677ff, #4da3ff);
+          box-shadow: 0 14px 36px -8px rgba(22,119,255,0.7), inset 0 1px 0 rgba(255,255,255,0.25);
         }
         .hof-h1 { margin: 0; font-size: 40px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; color: #0f172a; }
-        .hof-h1 span { color: #cc040a; }
+        .hof-h1 span { color: #1677ff; }
         .hof-sub { margin: 10px 0 0; font-size: 14px; font-weight: 500; color: #64748b; }
         .hof-period {
           display: inline-flex; align-items: center; gap: 6px; margin-top: 16px; padding: 6px 14px; border-radius: 99px;
-          background: rgba(204,4,10,0.07); border: 1px solid rgba(204,4,10,0.2);
-          font-size: 10px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #cc040a;
+          background: rgba(22,119,255,0.07); border: 1px solid rgba(22,119,255,0.2);
+          font-size: 10px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #1677ff;
         }
         .hof-tabs { display: inline-flex; gap: 2px; margin-top: 22px; padding: 4px; border-radius: 99px; background: #f1f5f9; border: 1px solid #e2e8f0; }
         .hof-tab {
@@ -319,13 +319,13 @@ export const LeaderboardPage = () => {
           background: transparent; color: #64748b; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.25s;
         }
         .hof-tab:hover { color: #0f172a; }
-        .hof-tab-active { background: #cc040a; color: #fff; box-shadow: 0 8px 22px -6px rgba(204,4,10,0.7); }
+        .hof-tab-active { background: #1677ff; color: #fff; box-shadow: 0 8px 22px -6px rgba(22,119,255,0.7); }
 
         /* podium */
         .hof-podium {
           position: relative; overflow: hidden; border-radius: 30px; padding: 56px 18px 0;
-          background: linear-gradient(180deg, #ffffff, #fff6f6);
-          border: 1px solid rgba(204,4,10,0.12); box-shadow: inset 0 1px 0 #fff, 0 30px 60px -34px rgba(204,4,10,0.28);
+          background: linear-gradient(180deg, #ffffff, #f3f8ff);
+          border: 1px solid rgba(22,119,255,0.12); box-shadow: inset 0 1px 0 #fff, 0 30px 60px -34px rgba(22,119,255,0.28);
         }
         .hof-cols { display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 12px; align-items: end; }
         .hof-col { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; min-width: 0; }
@@ -360,7 +360,7 @@ export const LeaderboardPage = () => {
           border: 2px dashed #cbd5e1; background: #f8fafc;
         }
         .hof-state { text-align: center; padding: 56px 0 64px; color: #94a3b8; font-size: 13px; font-weight: 600; }
-        .hof-spinner { width: 30px; height: 30px; margin: 0 auto 12px; border-radius: 50%; border: 3px solid #fee2e2; border-top-color: #cc040a; animation: hof-spin 0.8s linear infinite; }
+        .hof-spinner { width: 30px; height: 30px; margin: 0 auto 12px; border-radius: 50%; border: 3px solid #dfecff; border-top-color: #1677ff; animation: hof-spin 0.8s linear infinite; }
 
         /* contenders */
         .hof-contenders { margin-top: 40px; }
@@ -374,26 +374,26 @@ export const LeaderboardPage = () => {
           background: #fff; border: 1px solid #f1f5f9; box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 10px 24px -18px rgba(15,23,42,0.18);
           transition: transform 0.25s cubic-bezier(.22,1,.36,1), background 0.25s, border-color 0.25s;
         }
-        .hof-row:hover { transform: translateY(-2px); border-color: rgba(204,4,10,0.25); box-shadow: 0 18px 34px -18px rgba(204,4,10,0.3); }
+        .hof-row:hover { transform: translateY(-2px); border-color: rgba(22,119,255,0.25); box-shadow: 0 18px 34px -18px rgba(22,119,255,0.3); }
         .hof-row-rank {
           width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center;
           font-size: 13px; font-weight: 800; color: #94a3b8; background: #f8fafc; border: 1px solid #e2e8f0;
         }
-        .hof-row-rank-hot { color: #cc040a; background: rgba(204,4,10,0.08); border-color: rgba(204,4,10,0.22); }
+        .hof-row-rank-hot { color: #1677ff; background: rgba(22,119,255,0.08); border-color: rgba(22,119,255,0.22); }
         .hof-av-sm { --av: 42px; flex-shrink: 0; }
         .hof-av-sm > div { border: 2px solid #fff !important; box-shadow: 0 2px 8px rgba(15,23,42,0.15) !important; }
         .hof-row-main { flex: 1; min-width: 0; }
         .hof-row-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
         .hof-row-name { font-size: 14px; font-weight: 700; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .hof-row-amount { font-size: 14px; font-weight: 800; color: #cc040a; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+        .hof-row-amount { font-size: 14px; font-weight: 800; color: #1677ff; flex-shrink: 0; font-variant-numeric: tabular-nums; }
         .hof-row-bottom { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
         .hof-bar { flex: 1; height: 5px; border-radius: 99px; background: #f1f5f9; overflow: hidden; }
-        .hof-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #cc040a, #ff6b6b); }
+        .hof-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #1677ff, #6db4ff); }
         .hof-row-orders { font-size: 11px; font-weight: 600; color: #94a3b8; flex-shrink: 0; }
 
         /* footer */
         .hof-foot { margin-top: 40px; padding: 18px; text-align: center; border-radius: 18px; background: #fff; border: 1px solid #f1f5f9; box-shadow: 0 10px 24px -18px rgba(15,23,42,0.18); }
-        .hof-foot-top { display: flex; align-items: center; justify-content: center; gap: 7px; margin-bottom: 6px; font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #cc040a; }
+        .hof-foot-top { display: flex; align-items: center; justify-content: center; gap: 7px; margin-bottom: 6px; font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #1677ff; }
         .hof-foot p { margin: 0; font-size: 12px; font-weight: 500; color: #94a3b8; }
 
         @keyframes hof-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }

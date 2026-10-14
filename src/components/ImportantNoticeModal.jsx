@@ -32,7 +32,7 @@ export const ImportantNoticeModal = () => {
               <h2 className="text-xl sm:text-2xl font-black font-heading tracking-tight text-white">
                 Important Notice
               </h2>
-              <p className="text-xs text-red-100 font-medium">
+              <p className="text-xs text-brand-100 font-medium">
                 Read before proceeding
               </p>
             </div>
@@ -62,14 +62,14 @@ export const ImportantNoticeModal = () => {
           
           {/* SECTION 1: EZ Cash Payment Rules */}
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-red-600 font-black text-sm">
-              <div className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center text-red-600">
+            <div className="flex items-center gap-2 text-brand-600 font-black text-sm">
+              <div className="w-7 h-7 rounded-lg bg-brand-50 flex items-center justify-center text-brand-600">
                 <Smartphone className="w-4 h-4" />
               </div>
               <span>EZ Cash Payment Rules</span>
             </div>
 
-            <div className="pl-4 space-y-3 border-l-2 border-red-100">
+            <div className="pl-4 space-y-3 border-l-2 border-brand-100">
               <div className="flex items-start gap-2.5 text-slate-700 font-medium leading-relaxed">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                 <span>
@@ -87,7 +87,7 @@ export const ImportantNoticeModal = () => {
               <div className="flex items-start gap-2.5 text-slate-700 font-medium leading-relaxed bg-amber-50/60 p-2.5 rounded-xl border border-amber-200/70">
                 <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                 <span>
-                  If sending from a <strong className="text-slate-900 font-extrabold">Communication Center</strong>, ask them <em>before paying</em>: "Will I get a 14-digit RN number?" — If not, <strong className="text-red-600 font-extrabold">do not send</strong>. You may lose your money.
+                  If sending from a <strong className="text-slate-900 font-extrabold">Communication Center</strong>, ask them <em>before paying</em>: "Will I get a 14-digit RN number?" — If not, <strong className="text-brand-600 font-extrabold">do not send</strong>. You may lose your money.
                 </span>
               </div>
             </div>
@@ -136,7 +136,7 @@ export const ImportantNoticeModal = () => {
                 type="checkbox"
                 checked={hasAgreed}
                 onChange={(e) => setHasAgreed(e.target.checked)}
-                className="w-4 h-4 rounded border-slate-300 text-red-600 focus:ring-red-500"
+                className="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
               />
               <span>I have read and agree to these payment instructions</span>
             </label>
@@ -157,7 +157,7 @@ export const ImportantNoticeModal = () => {
             disabled={!hasAgreed}
             className={`w-full py-3.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
               hasAgreed
-                ? 'bg-[#cc040a] hover:bg-[#990207] text-white shadow-lg shadow-red-500/30'
+                ? 'bg-[#1677ff] hover:bg-[#0b5ed7] text-white shadow-lg shadow-brand-500/30'
                 : 'bg-slate-200 text-slate-400 cursor-not-allowed'
             }`}
           >

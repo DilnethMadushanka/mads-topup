@@ -36,15 +36,15 @@ export const ServicesSection = () => {
   return (
     <section id="services-section" className="relative overflow-hidden pt-14 pb-24 sm:pb-32 bg-white border-b border-slate-200/70">
       {/* soft background accents */}
-      <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[640px] h-[280px] rounded-full bg-[#cc040a]/[0.05] blur-3xl pointer-events-none"></div>
+      <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[640px] h-[280px] rounded-full bg-[#1677ff]/[0.05] blur-3xl pointer-events-none"></div>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
 
         {/* Header */}
         <div className="section-header space-y-3 text-center">
           <span className="section-badge">— WHAT WE OFFER —</span>
-          <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-900 font-heading tracking-tight leading-[1.1]">
-            Our Premium <span className="text-[#cc040a]">Services</span>
+          <h2 className="midas-heading text-3xl sm:text-5xl font-extrabold text-slate-900 font-heading tracking-tight leading-[1.1]">
+            Our Premium <span className="text-[#1677ff]">Services</span>
           </h2>
           <p className="text-slate-500 text-base font-medium max-w-md mx-auto leading-relaxed">
             Elevate your gaming experience with our top-tier digital services
@@ -60,19 +60,19 @@ export const ServicesSection = () => {
               className={`group relative flex flex-col rounded-[2rem] bg-white border border-slate-200/80 p-3 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_18px_40px_-24px_rgba(15,23,42,0.18)] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden reveal reveal-${service.id === 'topup' ? '1' : service.id === 'cards' ? '2' : '3'} ${
                 service.comingSoon
                   ? 'cursor-default'
-                  : 'cursor-pointer hover:-translate-y-2.5 hover:border-[#cc040a]/30 hover:shadow-[0_40px_70px_-28px_rgba(204,4,10,0.4)]'
+                  : 'cursor-pointer hover:-translate-y-2.5 hover:border-[#1677ff]/30 hover:shadow-[0_40px_70px_-28px_rgba(22,119,255,0.4)]'
               }`}
             >
               {/* Glossy sweep */}
               <div className="absolute top-0 -left-full w-1/2 h-full bg-gradient-to-r from-transparent via-white/60 to-transparent -skew-x-12 group-hover:left-[130%] transition-[left] duration-[1000ms] ease-out pointer-events-none z-30"></div>
 
               {/* Stage — artwork */}
-              <div className="relative rounded-[1.5rem] overflow-hidden bg-gradient-to-br from-red-50 via-white to-rose-50 aspect-[16/11] sm:aspect-[4/3] flex items-center justify-center">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_55%,rgba(204,4,10,0.16),transparent_62%)] opacity-70 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="relative rounded-[1.5rem] overflow-hidden bg-gradient-to-br from-brand-50 via-white to-brand-50 aspect-[16/11] sm:aspect-[4/3] flex items-center justify-center">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_55%,rgba(22,119,255,0.16),transparent_62%)] opacity-70 group-hover:opacity-100 transition-opacity duration-500"></div>
                 <div
                   className="absolute inset-0 opacity-[0.05]"
                   style={{
-                    backgroundImage: 'linear-gradient(#cc040a 1px, transparent 1px), linear-gradient(90deg, #cc040a 1px, transparent 1px)',
+                    backgroundImage: 'linear-gradient(#1677ff 1px, transparent 1px), linear-gradient(90deg, #1677ff 1px, transparent 1px)',
                     backgroundSize: '28px 28px',
                     maskImage: 'radial-gradient(ellipse at 50% 50%, #000 0%, transparent 70%)',
                     WebkitMaskImage: 'radial-gradient(ellipse at 50% 50%, #000 0%, transparent 70%)',
@@ -80,13 +80,13 @@ export const ServicesSection = () => {
                 ></div>
 
                 {/* number */}
-                <span className="absolute top-4 left-5 font-heading text-sm font-extrabold tracking-wider text-[#cc040a]/70">
+                <span className="absolute top-4 left-5 font-heading text-sm font-extrabold tracking-wider text-[#1677ff]/70">
                   0{idx + 1}
                 </span>
 
                 {/* Coming Soon Badge */}
                 {service.comingSoon && (
-                  <div className="absolute top-3.5 right-3.5 z-20 flex items-center gap-1.5 bg-[#cc040a] text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full shadow-md shadow-red-600/30">
+                  <div className="absolute top-3.5 right-3.5 z-20 flex items-center gap-1.5 bg-[#1677ff] text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full shadow-md shadow-brand-600/30">
                     <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse inline-block"></span>
                     Coming Soon
                   </div>
@@ -95,13 +95,13 @@ export const ServicesSection = () => {
                 <img
                   src={service.image}
                   alt={service.title}
-                  className={`relative w-[58%] sm:w-[62%] object-contain drop-shadow-[0_18px_22px_rgba(204,4,10,0.28)] transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-110 group-hover:-translate-y-2 ${service.comingSoon ? 'grayscale-[30%] opacity-90' : ''}`}
+                  className={`relative w-[58%] sm:w-[62%] object-contain drop-shadow-[0_18px_22px_rgba(22,119,255,0.28)] transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-110 group-hover:-translate-y-2 ${service.comingSoon ? 'grayscale-[30%] opacity-90' : ''}`}
                 />
               </div>
 
               {/* Content */}
               <div className="flex flex-col flex-1 px-4 pt-5 pb-3 sm:px-5">
-                <h3 className="font-heading text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-tight group-hover:text-[#cc040a] transition-colors duration-300">
+                <h3 className="font-heading text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-tight group-hover:text-[#1677ff] transition-colors duration-300">
                   {service.title}
                 </h3>
                 <p className="mt-2 text-sm leading-relaxed text-slate-500 font-medium flex-1">
@@ -118,7 +118,7 @@ export const ServicesSection = () => {
                   className={`mt-6 w-full h-12 rounded-full pl-6 pr-1.5 flex items-center justify-between text-[13px] font-bold uppercase tracking-[0.08em] transition-all duration-300 outline-none ${
                     service.comingSoon
                       ? 'bg-slate-100 text-slate-400 cursor-not-allowed pointer-events-none'
-                      : 'bg-[#cc040a] text-white shadow-[0_12px_26px_-10px_rgba(204,4,10,0.6)] group-hover:bg-[#a80308] cursor-pointer active:scale-[0.98]'
+                      : 'bg-[#1677ff] text-white shadow-[0_12px_26px_-10px_rgba(22,119,255,0.6)] group-hover:bg-[#0d5fd8] cursor-pointer active:scale-[0.98]'
                   }`}
                 >
                   <span>{service.comingSoon ? 'Coming Soon' : service.buttonText}</span>

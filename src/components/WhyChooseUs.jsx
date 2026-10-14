@@ -8,7 +8,7 @@ export const WhyChooseUs = () => {
       title: 'Instant Automated Delivery',
       description: 'Our fully automated system delivers Free Fire diamonds and Garena Shells directly to your account in under 2 seconds after payment. No waiting — just gaming.',
       icon: Zap,
-      badgeBg: 'bg-[#cc040a]'
+      badgeBg: 'bg-[#1677ff]'
     },
     {
       num: '02',
@@ -22,7 +22,7 @@ export const WhyChooseUs = () => {
       title: 'Secure & Trusted Service',
       description: 'Top up with confidence using UID only — no password required. We support multiple secure local payment options including Bank, eZ Cash, and Cards.',
       icon: ShieldCheck,
-      badgeBg: 'bg-[#990207]'
+      badgeBg: 'bg-[#0b5ed7]'
     }
   ];
 
@@ -33,8 +33,8 @@ export const WhyChooseUs = () => {
         {/* Section Header */}
         <div className="section-header space-y-3">
           <span className="section-badge">— WHY CHOOSE US —</span>
-          <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-900 font-heading tracking-tight leading-[1.1]">
-            The Best Free Fire <span className="text-[#cc040a]">Top-Up Experience in Sri Lanka</span>
+          <h2 className="midas-heading text-3xl sm:text-5xl font-extrabold text-slate-900 font-heading tracking-tight leading-[1.1]">
+            The Best Free Fire <span className="text-[#1677ff]">Top-Up Experience in Sri Lanka</span>
           </h2>
           <p className="text-slate-500 text-base font-medium max-w-2xl mx-auto leading-relaxed">
             Discover why thousands of gamers trust MADS TOPUP for instant, cheap, and secure top-ups. We are dedicated to providing the fastest service for Free Fire, Garena Shells, and PUBG.
@@ -51,16 +51,16 @@ export const WhyChooseUs = () => {
                 className="mads-card p-8 sm:p-10 flex flex-col justify-between text-left space-y-6 group"
               >
                 {/* Giant Translucent Background Number */}
-                <div className="absolute top-4 right-6 text-7xl font-extrabold text-slate-100 font-heading pointer-events-none group-hover:text-[#cc040a]/15 transition-colors duration-300 select-none">
+                <div className="absolute top-4 right-6 text-7xl font-extrabold text-slate-100 font-heading pointer-events-none group-hover:text-[#1677ff]/15 transition-colors duration-300 select-none">
                   {item.num}
                 </div>
 
                 <div className="relative z-10 space-y-5">
-                  <div className={`w-14 h-14 rounded-2xl ${item.badgeBg} text-white flex items-center justify-center shadow-lg shadow-red-500/30 transition-transform duration-300 group-hover:-translate-y-0.5`}>
+                  <div className={`w-14 h-14 rounded-2xl ${item.badgeBg} text-white flex items-center justify-center shadow-lg shadow-brand-500/30 transition-transform duration-300 group-hover:-translate-y-0.5`}>
                     <Icon className="w-7 h-7 stroke-[2.5]" />
                   </div>
 
-                  <h3 className="text-xl font-bold text-slate-900 font-heading tracking-tight group-hover:text-[#cc040a] transition-colors">
+                  <h3 className="text-xl font-bold text-slate-900 font-heading tracking-tight group-hover:text-[#1677ff] transition-colors">
                     {item.title}
                   </h3>
 

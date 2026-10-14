@@ -15,8 +15,8 @@ export const HeroSlider = () => {
       discount: '10% EXTRA BONUS DIAMONDS',
       badge: 'TOP SELLING SRI LANKA',
       game: GAMES_DATA.find(g => g.id === 'freefire_sg' || g.id === 'freefire'),
-      bgGradient: 'from-slate-900 via-red-950 to-slate-900',
-      accentColor: '#FF1A3C'
+      bgGradient: 'from-slate-900 via-brand-950 to-slate-900',
+      accentColor: '#2a85ff'
     },
     {
       id: 'pubg',
@@ -52,20 +52,20 @@ export const HeroSlider = () => {
   return (
     <div className="relative overflow-hidden bg-slate-900 text-white py-16 md:py-24 px-4">
       {/* Background Glows */}
-      <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-96 h-96 bg-red-600/20 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-rose-600/15 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-96 h-96 bg-brand-600/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-brand-600/15 rounded-full blur-3xl pointer-events-none"></div>
 
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
           {/* Left Hero Text */}
           <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 text-[11px] font-bold uppercase tracking-[0.14em]">
-              <Flame className="w-4 h-4 fill-red-400" />
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-[11px] font-bold uppercase tracking-[0.14em]">
+              <Flame className="w-4 h-4 fill-brand-400" />
               <span>{slide.badge}</span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight font-heading leading-[1.08]">
-              FASTEST <span className="text-red-500 underline decoration-red-500/40 decoration-2 underline-offset-8">GAME TOP-UP</span> IN SRI LANKA
+              FASTEST <span className="text-brand-500 underline decoration-brand-500/40 decoration-2 underline-offset-8">GAME TOP-UP</span> IN SRI LANKA
             </h1>
 
             <p className="text-slate-300 text-base sm:text-lg max-w-xl font-normal leading-relaxed">
@@ -75,13 +75,13 @@ export const HeroSlider = () => {
             {/* Slide Action Card */}
             <div className="p-4 sm:p-5 rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-md shadow-[0_20px_40px_-24px_rgba(0,0,0,0.6)] flex flex-col sm:flex-row items-center justify-between gap-4 max-w-xl">
               <div>
-                <span className="text-[11px] font-bold text-red-400 uppercase tracking-wider block">{slide.discount}</span>
+                <span className="text-[11px] font-bold text-brand-400 uppercase tracking-wider block">{slide.discount}</span>
                 <span className="text-lg font-extrabold text-white font-heading">{slide.title}</span>
               </div>
 
               <button
                 onClick={() => openTopup(slide.game)}
-                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold text-sm hover:from-red-500 hover:to-rose-500 active:scale-[0.98] transition-all shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 group"
+                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-brand-600 to-brand-600 text-white font-bold text-sm hover:from-brand-500 hover:to-brand-500 active:scale-[0.98] transition-all shadow-lg shadow-brand-600/30 flex items-center justify-center gap-2 group"
               >
                 <span>TOP UP NOW</span>
                 <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -91,7 +91,7 @@ export const HeroSlider = () => {
             {/* Feature Bullets */}
             <div className="pt-2 flex flex-wrap justify-center lg:justify-start items-center gap-x-6 gap-y-2 text-[13px] text-slate-300 font-medium">
               <div className="flex items-center gap-2">
-                <Zap className="w-4 h-4 text-red-400" />
+                <Zap className="w-4 h-4 text-brand-400" />
                 <span>Instant Auto Credit</span>
               </div>
               <div className="flex items-center gap-2">
@@ -108,7 +108,7 @@ export const HeroSlider = () => {
           {/* Right Game Visual Card */}
           <div className="lg:col-span-5 flex justify-center">
             <div className="relative w-full max-w-md bg-gradient-to-b from-slate-800 to-slate-900 p-7 rounded-[1.75rem] border border-slate-700/70 shadow-[0_30px_60px_-30px_rgba(0,0,0,0.7)] overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-red-600/30 rounded-full blur-2xl"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-brand-600/30 rounded-full blur-2xl"></div>
 
               {/* Game Badge */}
               <div className="flex justify-between items-center mb-4">
@@ -116,7 +116,7 @@ export const HeroSlider = () => {
                   <span className="text-2xl">{slide.game?.currencyIcon}</span>
                   <span className="font-extrabold text-white font-heading text-lg">{slide.game?.name}</span>
                 </div>
-                <span className="px-2.5 py-1 rounded-full bg-red-600 text-white text-[10px] font-bold uppercase tracking-wider">
+                <span className="px-2.5 py-1 rounded-full bg-brand-600 text-white text-[10px] font-bold uppercase tracking-wider">
                   Moongold API
                 </span>
               </div>
@@ -127,11 +127,11 @@ export const HeroSlider = () => {
                   <div 
                     key={pkg.id} 
                     onClick={() => openTopup(slide.game)}
-                    className="p-3.5 rounded-xl bg-white/5 border border-white/10 hover:border-red-500/50 hover:bg-white/10 transition-colors duration-200 flex items-center justify-between cursor-pointer"
+                    className="p-3.5 rounded-xl bg-white/5 border border-white/10 hover:border-brand-500/50 hover:bg-white/10 transition-colors duration-200 flex items-center justify-between cursor-pointer"
                   >
                     <div>
                       <div className="font-bold text-sm text-white">{pkg.name}</div>
-                      {pkg.bonus && <div className="text-xs text-red-400 font-semibold">{pkg.bonus}</div>}
+                      {pkg.bonus && <div className="text-xs text-brand-400 font-semibold">{pkg.bonus}</div>}
                     </div>
                     <div className="text-right">
                       <div className="font-extrabold text-sm text-white">Rs. {pkg.priceLkr}</div>
@@ -146,7 +146,7 @@ export const HeroSlider = () => {
                 className="w-full py-3 rounded-xl bg-white text-slate-900 font-extrabold text-sm hover:bg-slate-100 transition-colors flex items-center justify-center gap-2"
               >
                 <span>Select {slide.game?.name} Packages</span>
-                <ChevronRight className="w-4 h-4 text-red-600" />
+                <ChevronRight className="w-4 h-4 text-brand-600" />
               </button>
             </div>
           </div>
@@ -159,7 +159,7 @@ export const HeroSlider = () => {
               key={index}
               onClick={() => setCurrentSlide(index)}
               className={`h-2 rounded-full transition-all ${
-                currentSlide === index ? 'w-8 bg-red-600' : 'w-2 bg-slate-700 hover:bg-slate-500'
+                currentSlide === index ? 'w-8 bg-brand-600' : 'w-2 bg-slate-700 hover:bg-slate-500'
               }`}
             />
           ))}

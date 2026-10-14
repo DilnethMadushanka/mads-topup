@@ -114,7 +114,7 @@ export const PopupAdModal = () => {
         {hasImage ? (
           <div className="relative inline-block max-w-full">
             {cfg.badge && (
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#e11d28] text-white font-black text-[10px] uppercase tracking-wider shadow-lg shadow-red-900/50">
+              <span className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#2b86ff] text-white font-black text-[10px] uppercase tracking-wider shadow-lg shadow-brand-900/50">
                 <Flame className="w-3 h-3" />
                 {cfg.badge}
               </span>
@@ -125,19 +125,19 @@ export const PopupAdModal = () => {
               draggable={false}
               onError={() => setImgError(true)}
               className="w-auto max-w-full max-h-[56vh] object-contain"
-              style={{ filter: 'drop-shadow(0 24px 50px rgba(225,29,40,0.45))', animation: 'mpFloat 5s ease-in-out infinite' }}
+              style={{ filter: 'drop-shadow(0 24px 50px rgba(43,134,255,0.45))', animation: 'mpFloat 5s ease-in-out infinite' }}
             />
           </div>
         ) : (
-          <div className="relative w-full rounded-[2rem] border border-white/20 bg-white/10 backdrop-blur-xl px-6 py-10 text-center overflow-hidden shadow-2xl shadow-red-900/30">
-            <div className="absolute -top-16 -right-10 w-48 h-48 rounded-full bg-[#e11d28]/30 blur-3xl pointer-events-none" />
+          <div className="relative w-full rounded-[2rem] border border-white/20 bg-white/10 backdrop-blur-xl px-6 py-10 text-center overflow-hidden shadow-2xl shadow-brand-900/30">
+            <div className="absolute -top-16 -right-10 w-48 h-48 rounded-full bg-[#2b86ff]/30 blur-3xl pointer-events-none" />
             {cfg.badge && (
-              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#e11d28] text-white font-black text-[10px] uppercase tracking-wider shadow-lg shadow-red-900/50 mb-4">
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#2b86ff] text-white font-black text-[10px] uppercase tracking-wider shadow-lg shadow-brand-900/50 mb-4">
                 <Flame className="w-3 h-3" />
                 {cfg.badge}
               </span>
             )}
-            <div className="relative w-16 h-16 mx-auto rounded-2xl bg-[#e11d28] flex items-center justify-center shadow-lg shadow-red-900/50">
+            <div className="relative w-16 h-16 mx-auto rounded-2xl bg-[#2b86ff] flex items-center justify-center shadow-lg shadow-brand-900/50">
               <Sparkles className="w-8 h-8 text-white" />
             </div>
           </div>
@@ -159,7 +159,7 @@ export const PopupAdModal = () => {
           <div className="pt-1 flex justify-center">
             <button
               onClick={handleButtonClick}
-              className="relative overflow-hidden px-10 py-3.5 rounded-full bg-gradient-to-r from-[#ef1c25] via-[#e11d28] to-[#b8060d] hover:brightness-110 text-white font-black text-sm tracking-wider uppercase shadow-[0_14px_36px_-10px_rgba(225,29,40,0.9)] flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
+              className="relative overflow-hidden px-10 py-3.5 rounded-full bg-gradient-to-r from-[#2f8bff] via-[#2b86ff] to-[#0b5ed7] hover:brightness-110 text-white font-black text-sm tracking-wider uppercase shadow-[0_14px_36px_-10px_rgba(43,134,255,0.9)] flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
             >
               <span className="relative z-10">{cfg.buttonText || 'GO'}</span>
               <ArrowRight className="relative z-10 w-4 h-4" />
@@ -172,7 +172,7 @@ export const PopupAdModal = () => {
         <button
           onClick={handleClose}
           aria-label="Close announcement"
-          className="mt-5 w-11 h-11 rounded-full bg-white/10 hover:bg-[#e11d28] backdrop-blur-md text-white flex items-center justify-center border border-white/25 shadow-2xl transition-all hover:scale-110 active:scale-95 cursor-pointer group"
+          className="mt-5 w-11 h-11 rounded-full bg-white/10 hover:bg-[#2b86ff] backdrop-blur-md text-white flex items-center justify-center border border-white/25 shadow-2xl transition-all hover:scale-110 active:scale-95 cursor-pointer group"
         >
           <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
         </button>

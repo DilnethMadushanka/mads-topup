@@ -3,10 +3,25 @@
 /* `dark:` utilities follow the storefront theme switch (the .home-dark wrapper), not the OS setting */
 @custom-variant dark (&:where(.home-dark, .home-dark *));
 
+/* MADS brand scale — Midasbuy-style electric blue (replaces the old red brand) */
+@theme {
+  --color-brand-50: #eef5ff;
+  --color-brand-100: #dbe9ff;
+  --color-brand-200: #bcd7ff;
+  --color-brand-300: #8dbdff;
+  --color-brand-400: #569aff;
+  --color-brand-500: #2f7bff;
+  --color-brand-600: #1764f5;
+  --color-brand-700: #1250e1;
+  --color-brand-800: #1541b6;
+  --color-brand-900: #173b8f;
+  --color-brand-950: #132657;
+}
+
 @layer base {
   :root {
-    --primary-cyan: #cc040a;
-    --primary-cyan-hover: #a80308;
+    --primary-cyan: #1677ff;
+    --primary-cyan-hover: #0d5fd8;
     --brand-dark: #090D16;
     --brand-purple: #3B2896;
     --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -44,12 +59,12 @@
   }
 
   ::selection {
-    background: rgba(204, 4, 10, 0.18);
+    background: rgba(22,119,255, 0.18);
     color: inherit;
   }
 
   :focus-visible {
-    outline: 2px solid rgba(204, 4, 10, 0.55);
+    outline: 2px solid rgba(22,119,255, 0.55);
     outline-offset: 2px;
     border-radius: 6px;
   }
@@ -106,33 +121,33 @@
   background: #F1F5F9;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cc040a;
+  background: #1677ff;
   border-radius: 99px;
   border: 2px solid #F1F5F9;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #e6050c;
+  background: #1f80ff;
 }
 
 /* ═══ TOP UP NOW — Premium Red Fire Button ═══ */
 .btn-cyan-pill {
-  background: linear-gradient(135deg, #ff1a24 0%, #cc040a 45%, #8b0000 100%);
+  background: linear-gradient(135deg, #2a85ff 0%, #1677ff 45%, #0a3fae 100%);
   color: #FFFFFF;
   font-weight: 900;
   border-radius: 9999px;
-  border: 1.5px solid rgba(255, 80, 80, 0.45);
+  border: 1.5px solid rgba(80,160,255, 0.45);
   box-shadow:
-    0 0 0 0 rgba(204, 4, 10, 0.55),
-    0 8px 28px -4px rgba(204, 4, 10, 0.65),
+    0 0 0 0 rgba(22,119,255, 0.55),
+    0 8px 28px -4px rgba(22,119,255, 0.65),
     inset 0 1px 0 rgba(255,255,255,0.18);
   transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease, background 0.25s ease, border-color 0.25s ease;
   position: relative;
   overflow: hidden;
 }
 @keyframes redPulseRing {
-  0%   { box-shadow: 0 0 0 0 rgba(204,4,10,0.55), 0 8px 28px -4px rgba(204,4,10,0.65), inset 0 1px 0 rgba(255,255,255,0.18); }
-  60%  { box-shadow: 0 0 0 8px rgba(204,4,10,0.0), 0 8px 28px -4px rgba(204,4,10,0.65), inset 0 1px 0 rgba(255,255,255,0.18); }
-  100% { box-shadow: 0 0 0 0 rgba(204,4,10,0.0),  0 8px 28px -4px rgba(204,4,10,0.65), inset 0 1px 0 rgba(255,255,255,0.18); }
+  0%   { box-shadow: 0 0 0 0 rgba(22,119,255,0.55), 0 8px 28px -4px rgba(22,119,255,0.65), inset 0 1px 0 rgba(255,255,255,0.18); }
+  60%  { box-shadow: 0 0 0 8px rgba(22,119,255,0.0), 0 8px 28px -4px rgba(22,119,255,0.65), inset 0 1px 0 rgba(255,255,255,0.18); }
+  100% { box-shadow: 0 0 0 0 rgba(22,119,255,0.0),  0 8px 28px -4px rgba(22,119,255,0.65), inset 0 1px 0 rgba(255,255,255,0.18); }
 }
 /* shimmer sweep */
 .btn-cyan-pill::before {
@@ -156,19 +171,19 @@
   pointer-events: none;
 }
 .btn-cyan-pill:hover {
-  background: linear-gradient(135deg, #ff2d36 0%, #e6050c 45%, #aa0000 100%);
+  background: linear-gradient(135deg, #3990ff 0%, #1f80ff 45%, #0b4cc4 100%);
   box-shadow:
-    0 0 0 0 rgba(204,4,10,0),
-    0 18px 40px -4px rgba(204, 4, 10, 0.80),
-    0 0 30px rgba(255, 30, 30, 0.4),
+    0 0 0 0 rgba(22,119,255,0),
+    0 18px 40px -4px rgba(22,119,255, 0.80),
+    0 0 30px rgba(40,130,255, 0.4),
     inset 0 1px 0 rgba(255,255,255,0.22);
   transform: translateY(-2px);
-  border-color: rgba(255,100,100,0.6);
+  border-color: rgba(100,170,255,0.6);
   animation: none;
 }
 .btn-cyan-pill:active {
   transform: translateY(0) scale(0.98);
-  box-shadow: 0 4px 14px -2px rgba(204, 4, 10, 0.5);
+  box-shadow: 0 4px 14px -2px rgba(22,119,255, 0.5);
 }
 
 /* ═══ EXPLORE SERVICES — Premium Glass Indigo Button ═══ */
@@ -285,16 +300,16 @@
 
 /* Register Purple Pill Button */
 .btn-purple-pill {
-  background: linear-gradient(135deg, #ef1c25 0%, #c8101b 100%);
+  background: linear-gradient(135deg, #2f8bff 0%, #1a6cf0 100%);
   color: #FFFFFF;
   font-weight: 800;
   border-radius: 9999px;
-  box-shadow: 0 6px 20px rgba(225, 29, 40, 0.45);
+  box-shadow: 0 6px 20px rgba(43,134,255, 0.45);
   transition: all 0.25s ease;
 }
 .btn-purple-pill:hover {
-  background: linear-gradient(135deg, #ff3b45 0%, #e11d28 100%);
-  box-shadow: 0 8px 26px rgba(225, 29, 40, 0.65);
+  background: linear-gradient(135deg, #3d95ff 0%, #2b86ff 100%);
+  box-shadow: 0 8px 26px rgba(43,134,255, 0.65);
 }
 
 /* Floating 3D Blue Diamonds */
@@ -332,7 +347,7 @@
   border: 1px solid rgba(226, 232, 240, 0.85);
   box-shadow:
     0 1px 3px rgba(0,0,0,0.04),
-    0 6px 16px -4px rgba(204, 4, 10, 0.07),
+    0 6px 16px -4px rgba(22,119,255, 0.07),
     0 20px 40px -12px rgba(15, 23, 42, 0.08);
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, border-color 0.35s ease;
   position: relative;
@@ -353,12 +368,12 @@
 
 .mads-card:hover {
   transform: translateY(-5px);
-  border-color: rgba(204, 4, 10, 0.35);
+  border-color: rgba(22,119,255, 0.35);
   box-shadow:
     0 2px 6px rgba(0,0,0,0.04),
-    0 12px 28px -6px rgba(204, 4, 10, 0.18),
-    0 32px 60px -14px rgba(204, 4, 10, 0.22),
-    0 0 0 1px rgba(204, 4, 10, 0.08);
+    0 12px 28px -6px rgba(22,119,255, 0.18),
+    0 32px 60px -14px rgba(22,119,255, 0.22),
+    0 0 0 1px rgba(22,119,255, 0.08);
 }
 
 .mads-card-glow-bar {
@@ -367,7 +382,7 @@
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #cc040a 0%, #ff3340 40%, #e6050c 70%, #3B2896 100%);
+  background: linear-gradient(90deg, #1677ff 0%, #3d95ff 40%, #1f80ff 70%, #3B2896 100%);
   opacity: 0;
   transform: scaleX(0.5);
   transform-origin: center;
@@ -413,9 +428,9 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   font-family: var(--font-body);
-  color: #cc040a;
-  background: rgba(204, 4, 10, 0.07);
-  border: 1px solid rgba(204, 4, 10, 0.18);
+  color: #1677ff;
+  background: rgba(22,119,255, 0.07);
+  border: 1px solid rgba(22,119,255, 0.18);
   padding: 0.35rem 1rem;
   border-radius: 9999px;
   margin-bottom: 1rem;
@@ -636,21 +651,21 @@
    home sections already use.
    ============================================================ */
 .home-dark {
-  background: #0b0b10 !important;
+  background: #0a1638 !important;
   color: #e8eaf0;
 }
 .home-dark section.bg-white,
 .home-dark section.bg-slate-50 {
-  background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(225, 29, 40, 0.14), transparent 70%), #0b0b10;
+  background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(43,134,255, 0.14), transparent 70%), #0a1638;
 }
-.home-dark section.bg-slate-50 { background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(225, 29, 40, 0.1), transparent 70%), #0f0f15; }
+.home-dark section.bg-slate-50 { background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(43,134,255, 0.1), transparent 70%), #0c1a42; }
 
 /* surfaces */
-.home-dark .bg-white { background-color: #14141b; }
-.home-dark .bg-slate-50, .home-dark .bg-slate-50\/80, .home-dark .bg-slate-50\/70 { background-color: #101016; }
-.home-dark .bg-slate-100 { background-color: #1b1b24; }
+.home-dark .bg-white { background-color: #112552; }
+.home-dark .bg-slate-50, .home-dark .bg-slate-50\/80, .home-dark .bg-slate-50\/70 { background-color: #0d1c47; }
+.home-dark .bg-slate-100 { background-color: #17306a; }
 .home-dark .bg-white\/80 { background-color: rgba(255, 255, 255, 0.08); }
-.home-dark .bg-red-50, .home-dark .bg-red-50\/70, .home-dark .bg-red-50\/60, .home-dark .bg-red-100\/50 { background-color: rgba(225, 29, 40, 0.14); }
+.home-dark .bg-red-50, .home-dark .bg-red-50\/70, .home-dark .bg-red-50\/60, .home-dark .bg-red-100\/50 { background-color: rgba(43,134,255, 0.14); }
 .home-dark .bg-emerald-50, .home-dark .bg-emerald-50\/80 { background-color: rgba(16, 185, 129, 0.14); }
 .home-dark .bg-violet-50 { background-color: rgba(139, 92, 246, 0.16); }
 .home-dark .bg-amber-50 { background-color: rgba(245, 158, 11, 0.14); }
@@ -658,12 +673,12 @@
 
 /* text */
 .home-dark .text-slate-900, .home-dark .text-slate-800, .home-dark .text-\[\#0f172a\] { color: #ffffff; }
-.home-dark .text-slate-700, .home-dark .text-slate-600 { color: #d3d6df; }
-.home-dark .text-slate-500 { color: #9aa0ae; }
-.home-dark .text-slate-400 { color: #7b8190; }
-.home-dark .text-slate-300 { color: #666d7c; }
-.home-dark .text-\[\#cc040a\] { color: #ff4d57; }
-.home-dark .text-\[\#990207\] { color: #ff6b73; }
+.home-dark .text-slate-700, .home-dark .text-slate-600 { color: #d5def5; }
+.home-dark .text-slate-500 { color: #9fb0d6; }
+.home-dark .text-slate-400 { color: #7d8fba; }
+.home-dark .text-slate-300 { color: #64749e; }
+.home-dark .text-\[\#1677ff\] { color: #4da3ff; }
+.home-dark .text-\[\#0b5ed7\] { color: #74b8ff; }
 .home-dark .text-emerald-600 { color: #34d399; }
 .home-dark .text-violet-600 { color: #a78bfa; }
 .home-dark .text-amber-600 { color: #fbbf24; }
@@ -673,24 +688,24 @@
 .home-dark .border-slate-200, .home-dark .border-slate-200\/90, .home-dark .border-slate-200\/80,
 .home-dark .border-slate-200\/70, .home-dark .border-slate-200\/60, .home-dark .border-slate-100,
 .home-dark .border-slate-300 { border-color: rgba(255, 255, 255, 0.1); }
-.home-dark .border-red-100, .home-dark .border-red-200, .home-dark .border-red-300 { border-color: rgba(225, 29, 40, 0.4); }
-.home-dark .border-\[\#cc040a\] { border-color: #e11d28; }
+.home-dark .border-red-100, .home-dark .border-red-200, .home-dark .border-red-300 { border-color: rgba(43,134,255, 0.4); }
+.home-dark .border-\[\#1677ff\] { border-color: #2b86ff; }
 .home-dark .divide-slate-100 > :not(:last-child), .home-dark .divide-slate-200 > :not(:last-child) { border-color: rgba(255, 255, 255, 0.08); }
 
 /* gradient fades that blended into the white page */
-.home-dark .from-white { --tw-gradient-from: #0b0b10; }
-.home-dark .via-white, .home-dark .via-white\/60 { --tw-gradient-via: rgba(11, 11, 16, 0.7); }
-.home-dark .to-white { --tw-gradient-to: #0b0b10; }
-.home-dark .from-red-50 { --tw-gradient-from: rgba(225, 29, 40, 0.14); }
-.home-dark .to-red-50 { --tw-gradient-to: rgba(225, 29, 40, 0.14); }
+.home-dark .from-white { --tw-gradient-from: #0a1638; }
+.home-dark .via-white, .home-dark .via-white\/60 { --tw-gradient-via: rgba(10,22,56, 0.7); }
+.home-dark .to-white { --tw-gradient-to: #0a1638; }
+.home-dark .from-red-50 { --tw-gradient-from: rgba(43,134,255, 0.14); }
+.home-dark .to-red-50 { --tw-gradient-to: rgba(43,134,255, 0.14); }
 
 /* hover states */
-.home-dark .hover\:bg-white:hover, .home-dark .hover\:bg-white\/80:hover { background-color: #1b1b24; }
-.home-dark .hover\:bg-red-50:hover { background-color: rgba(225, 29, 40, 0.2); }
-.home-dark .hover\:bg-slate-50:hover, .home-dark .hover\:bg-slate-100:hover { background-color: #1b1b24; }
+.home-dark .hover\:bg-white:hover, .home-dark .hover\:bg-white\/80:hover { background-color: #17306a; }
+.home-dark .hover\:bg-red-50:hover { background-color: rgba(43,134,255, 0.2); }
+.home-dark .hover\:bg-slate-50:hover, .home-dark .hover\:bg-slate-100:hover { background-color: #17306a; }
 .home-dark .hover\:text-slate-900:hover { color: #ffffff; }
-.home-dark .hover\:border-\[\#cc040a\]\/40:hover, .home-dark .hover\:border-\[\#cc040a\]\/30:hover { border-color: rgba(225, 29, 40, 0.7); }
-.home-dark .hover\:border-red-300:hover { border-color: rgba(225, 29, 40, 0.7); }
+.home-dark .hover\:border-\[\#1677ff\]\/40:hover, .home-dark .hover\:border-\[\#1677ff\]\/30:hover { border-color: rgba(43,134,255, 0.7); }
+.home-dark .hover\:border-red-300:hover { border-color: rgba(43,134,255, 0.7); }
 
 /* shadows read better as red glow on dark */
 .home-dark .shadow-sm, .home-dark .shadow-xs { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); }
@@ -699,16 +714,16 @@
 /* sections painted with the pale page colour */
 .home-dark section.bg-\[\#F8FAFF\],
 .home-dark .bg-\[\#F8FAFF\] {
-  background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(225, 29, 40, 0.1), transparent 70%), #0f0f15;
+  background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(43,134,255, 0.1), transparent 70%), #0c1a42;
 }
 /* How It Works paints its light gradient inline */
 .home-dark section[style*="248, 250, 255"] {
-  background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(225, 29, 40, 0.14), transparent 70%), #0b0b10 !important;
+  background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(43,134,255, 0.14), transparent 70%), #0a1638 !important;
 }
 /* any other element that sets a pale inline background */
 .home-dark [style*="background: rgb(248, 250, 255)"],
 .home-dark [style*="background:#f8faff"],
-.home-dark [style*="background: #f8faff"] { background: #0f0f15 !important; }
+.home-dark [style*="background: #f8faff"] { background: #0c1a42 !important; }
 
 /* more tinted surfaces */
 .home-dark .bg-indigo-50 { background-color: rgba(99, 102, 241, 0.16); }
@@ -724,14 +739,14 @@
 .home-dark .border-amber-200, .home-dark .border-amber-300 { border-color: rgba(245, 158, 11, 0.4); }
 
 /* fades into the old pale page */
-.home-dark .to-rose-50, .home-dark .to-rose-50\/95, .home-dark .to-rose-50\/80 { --tw-gradient-to: rgba(225, 29, 40, 0.12); }
-.home-dark .via-white\/90, .home-dark .via-white\/75 { --tw-gradient-via: rgba(11, 11, 16, 0.85); }
+.home-dark .to-rose-50, .home-dark .to-rose-50\/95, .home-dark .to-rose-50\/80 { --tw-gradient-to: rgba(43,134,255, 0.12); }
+.home-dark .via-white\/90, .home-dark .via-white\/75 { --tw-gradient-via: rgba(10,22,56, 0.85); }
 
 /* more hovers */
 .home-dark .hover\:bg-emerald-50:hover { background-color: rgba(16, 185, 129, 0.2); }
 .home-dark .hover\:border-slate-300:hover { border-color: rgba(255, 255, 255, 0.25); }
 .home-dark .hover\:border-violet-300:hover, .home-dark .hover\:border-sky-300:hover,
-.home-dark .hover\:border-emerald-300:hover, .home-dark .hover\:border-amber-300:hover { border-color: rgba(225, 29, 40, 0.6); }
+.home-dark .hover\:border-emerald-300:hover, .home-dark .hover\:border-amber-300:hover { border-color: rgba(43,134,255, 0.6); }
 
 /* ============================================================
    SITE-WIDE dark + red theme (generated pastel mappings)
@@ -1266,29 +1281,29 @@
 
 /* neutrals (slate + gray) */
 .home-dark .bg-slate-300, .home-dark .bg-gray-200, .home-dark .bg-gray-300 { background-color: rgba(255, 255, 255, 0.16); }
-.home-dark .bg-gray-50, .home-dark .bg-gray-100 { background-color: #1b1b24; }
+.home-dark .bg-gray-50, .home-dark .bg-gray-100 { background-color: #17306a; }
 .home-dark .text-gray-900, .home-dark .text-gray-800 { color: #ffffff; }
-.home-dark .text-gray-700, .home-dark .text-gray-600 { color: #d3d6df; }
-.home-dark .text-gray-500, .home-dark .text-gray-400 { color: #9aa0ae; }
+.home-dark .text-gray-700, .home-dark .text-gray-600 { color: #d5def5; }
+.home-dark .text-gray-500, .home-dark .text-gray-400 { color: #9fb0d6; }
 .home-dark .border-gray-100, .home-dark .border-gray-200, .home-dark .border-gray-300 { border-color: rgba(255, 255, 255, 0.1); }
 .home-dark .placeholder\:text-slate-400::placeholder, .home-dark .placeholder\:text-slate-300::placeholder { color: #6e7585; }
-.home-dark .ring-white { --tw-ring-color: #14141b; }
+.home-dark .ring-white { --tw-ring-color: #112552; }
 .home-dark .ring-slate-200, .home-dark .ring-slate-100 { --tw-ring-color: rgba(255, 255, 255, 0.12); }
-.home-dark .shadow-lg, .home-dark .shadow-xl, .home-dark .shadow-2xl { --tw-shadow-color: rgba(225, 29, 40, 0.18); }
+.home-dark .shadow-lg, .home-dark .shadow-xl, .home-dark .shadow-2xl { --tw-shadow-color: rgba(43,134,255, 0.18); }
 
 /* form controls on a dark page */
 .home-dark input, .home-dark select, .home-dark textarea { color-scheme: dark; }
 .home-dark input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
-.home-dark select, .home-dark textarea { caret-color: #ff4d57; }
-.home-dark option { background: #14141b; color: #ffffff; }
-.home-dark ::selection { background: rgba(225, 29, 40, 0.5); color: #fff; }
+.home-dark select, .home-dark textarea { caret-color: #4da3ff; }
+.home-dark option { background: #112552; color: #ffffff; }
+.home-dark ::selection { background: rgba(43,134,255, 0.5); color: #fff; }
 
 /* page backdrop: fixed red glow so every page shares the same atmosphere */
 .home-dark {
   background:
-    radial-gradient(ellipse 60% 35% at 15% 0%, rgba(225, 29, 40, 0.13), transparent 70%),
-    radial-gradient(ellipse 50% 30% at 90% 30%, rgba(225, 29, 40, 0.07), transparent 70%),
-    #0b0b10 !important;
+    radial-gradient(ellipse 60% 35% at 15% 0%, rgba(43,134,255, 0.13), transparent 70%),
+    radial-gradient(ellipse 50% 30% at 90% 30%, rgba(43,134,255, 0.07), transparent 70%),
+    #0a1638 !important;
 }
 
 /* ---------- animations ---------- */
@@ -1307,32 +1322,32 @@
 .page-enter .grid > *:nth-child(6) { animation-delay: 0.24s; }
 
 @keyframes btnShine { 0% { transform: translateX(-120%) skewX(-18deg); } 60%, 100% { transform: translateX(260%) skewX(-18deg); } }
-@keyframes redPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(225, 29, 40, 0.45); } 50% { box-shadow: 0 0 0 10px rgba(225, 29, 40, 0); } }
+@keyframes redPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(43,134,255, 0.45); } 50% { box-shadow: 0 0 0 10px rgba(43,134,255, 0); } }
 
 /* ---------- card + button polish ---------- */
 .home-dark .rounded-3xl, .home-dark .rounded-2xl { transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s, background-color 0.3s; }
 .home-dark .rounded-3xl.border-2:hover,
 .home-dark .rounded-3xl.border:hover {
-  border-color: rgba(225, 29, 40, 0.38);
-  box-shadow: 0 22px 50px -24px rgba(225, 29, 40, 0.45);
+  border-color: rgba(43,134,255, 0.38);
+  box-shadow: 0 22px 50px -24px rgba(43,134,255, 0.45);
 }
-.home-dark .bg-\[\#cc040a\]:not(span):not(div) {
-  background-image: linear-gradient(135deg, #ef1c25, #cc040a 55%, #a80308);
+.home-dark .bg-\[\#1677ff\]:not(span):not(div) {
+  background-image: linear-gradient(135deg, #2f8bff, #1677ff 55%, #0d5fd8);
   position: relative;
   overflow: hidden;
 }
-.home-dark button.bg-\[\#cc040a\]:hover, .home-dark a.bg-\[\#cc040a\]:hover {
-  box-shadow: 0 10px 30px -8px rgba(225, 29, 40, 0.75);
+.home-dark button.bg-\[\#1677ff\]:hover, .home-dark a.bg-\[\#1677ff\]:hover {
+  box-shadow: 0 10px 30px -8px rgba(43,134,255, 0.75);
   filter: brightness(1.08);
 }
-.home-dark button.bg-\[\#cc040a\]::after, .home-dark a.bg-\[\#cc040a\]::after {
+.home-dark button.bg-\[\#1677ff\]::after, .home-dark a.bg-\[\#1677ff\]::after {
   content: '';
   position: absolute; top: 0; bottom: 0; left: 0; width: 40%;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
   transform: translateX(-120%) skewX(-18deg);
   pointer-events: none;
 }
-.home-dark button.bg-\[\#cc040a\]:hover::after, .home-dark a.bg-\[\#cc040a\]:hover::after { animation: btnShine 0.9s ease; }
+.home-dark button.bg-\[\#1677ff\]:hover::after, .home-dark a.bg-\[\#1677ff\]:hover::after { animation: btnShine 0.9s ease; }
 
 @media (prefers-reduced-motion: reduce) {
   .page-enter, .page-enter .rounded-3xl, .page-enter .rounded-2xl.shadow-sm { animation: none; }
@@ -1340,61 +1355,61 @@
 
 /* Support chat widget uses inline styles -> colour tokens (light by default, dark inside .home-dark) */
 .home-dark {
-  --sm-bg: #0b0b10;
-  --sm-surface: #14141b;
-  --sm-surface2: #1b1b24;
+  --sm-bg: #0a1638;
+  --sm-surface: #112552;
+  --sm-surface2: #17306a;
   --sm-border: rgba(255, 255, 255, 0.12);
   --sm-text: #ffffff;
   --sm-text2: #c3c7d2;
   --sm-muted: #8b91a0;
-  --sm-red-soft: rgba(225, 29, 40, 0.14);
-  --sm-red-soft2: rgba(225, 29, 40, 0.22);
-  --sm-red-border: rgba(225, 29, 40, 0.4);
+  --sm-red-soft: rgba(43,134,255, 0.14);
+  --sm-red-soft2: rgba(43,134,255, 0.22);
+  --sm-red-border: rgba(43,134,255, 0.4);
   --sm-green-soft: rgba(34, 197, 94, 0.14);
   --sm-green: #4ade80;
-  --sm-red-text: #ff6b73;
+  --sm-red-text: #74b8ff;
 }
 
 /* ---- dark theme: custom component classes + inline-styled cards that were still white ---- */
 .home-dark .mads-card {
-  background: #14141b;
+  background: #112552;
   border-color: rgba(255, 255, 255, 0.1);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 18px 40px -22px rgba(0, 0, 0, 0.8);
 }
 .home-dark .mads-card:hover {
-  border-color: rgba(225, 29, 40, 0.5);
-  box-shadow: 0 22px 54px -22px rgba(225, 29, 40, 0.5);
+  border-color: rgba(43,134,255, 0.5);
+  box-shadow: 0 22px 54px -22px rgba(43,134,255, 0.5);
 }
 .home-dark .section-badge {
-  color: #ff6b73;
-  background: rgba(225, 29, 40, 0.12);
-  border-color: rgba(225, 29, 40, 0.35);
+  color: #74b8ff;
+  background: rgba(43,134,255, 0.12);
+  border-color: rgba(43,134,255, 0.35);
 }
 .home-dark .text-slate-100 { color: rgba(255, 255, 255, 0.06); }
-.home-dark .group:hover .group-hover\:text-\[\#cc040a\]\/15 { color: rgba(225, 29, 40, 0.28); }
+.home-dark .group:hover .group-hover\:text-\[\#1677ff\]\/15 { color: rgba(43,134,255, 0.28); }
 
 /* inline `background: #fff` cards (Promo / Reseller banners, etc.) */
 .home-dark [style*="background: rgb(255, 255, 255)"],
 .home-dark [style*="background-color: rgb(255, 255, 255)"] {
-  background: #14141b !important;
+  background: #112552 !important;
   border-color: rgba(255, 255, 255, 0.1) !important;
   box-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.9) !important;
 }
 .home-dark [style*="background: rgb(255, 255, 255)"] [style*="background: rgb(255, 255, 255)"] {
-  background: #101016 !important;
-  border-color: rgba(225, 29, 40, 0.25) !important;
+  background: #0d1c47 !important;
+  border-color: rgba(43,134,255, 0.25) !important;
 }
 .home-dark [style*="color: rgb(15, 23, 42)"] { color: #ffffff !important; }
-.home-dark [style*="color: rgb(100, 116, 139)"], .home-dark [style*="color: rgb(71, 85, 105)"] { color: #9aa0ae !important; }
+.home-dark [style*="color: rgb(100, 116, 139)"], .home-dark [style*="color: rgb(71, 85, 105)"] { color: #9fb0d6 !important; }
 
 /* ---- dark theme: hex-coloured surfaces + native form fields ---- */
-.home-dark .bg-\[\#F8FAFC\], .home-dark .bg-\[\#F4F6FB\] { background-color: #101016; }
-.home-dark .hover\:bg-\[\#F8FAFC\]:hover { background-color: #1b1b24; }
+.home-dark .bg-\[\#F8FAFC\], .home-dark .bg-\[\#F4F6FB\] { background-color: #0d1c47; }
+.home-dark .hover\:bg-\[\#F8FAFC\]:hover { background-color: #17306a; }
 .home-dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
 .home-dark textarea, .home-dark select { color: #ffffff; }
 .home-dark input::placeholder, .home-dark textarea::placeholder { color: #6e7585; opacity: 1; }
-.home-dark input:-webkit-autofill { -webkit-text-fill-color: #fff; -webkit-box-shadow: 0 0 0 1000px #14141b inset; }
-.home-dark [style*="color: rgb(204, 4, 10)"] { color: #ff6b73 !important; }
+.home-dark input:-webkit-autofill { -webkit-text-fill-color: #fff; -webkit-box-shadow: 0 0 0 1000px #112552 inset; }
+.home-dark [style*="color: rgb(22,119,255)"] { color: #74b8ff !important; }
 
 /* Toast notifications */
 @keyframes toastIn { from { opacity: 0; transform: translateY(-12px) scale(.97); } to { opacity: 1; transform: none; } }
@@ -1404,3 +1419,242 @@
 .toast-out { animation: toastOut .2s ease-in forwards; }
 .toast-progress { animation-name: toastProgress; animation-timing-function: linear; animation-fill-mode: forwards; }
 @media (prefers-reduced-motion: reduce) { .toast-in, .toast-out { animation: none; } }
+
+/* brand (blue) twins of the red/rose dark-theme mappings above */
+.home-dark .bg-brand-50, .home-dark .bg-brand-50\/70, .home-dark .bg-brand-50\/60, .home-dark .bg-brand-100\/50 { background-color: rgba(43,134,255, 0.14); }
+.home-dark .border-brand-100, .home-dark .border-brand-200, .home-dark .border-brand-300 { border-color: rgba(43,134,255, 0.4); }
+.home-dark .from-brand-50 { --tw-gradient-from: rgba(43,134,255, 0.14); }
+.home-dark .to-brand-50 { --tw-gradient-to: rgba(43,134,255, 0.14); }
+.home-dark .hover\:bg-brand-50:hover { background-color: rgba(43,134,255, 0.2); }
+.home-dark .hover\:border-brand-300:hover { border-color: rgba(43,134,255, 0.7); }
+.home-dark .to-brand-50, .home-dark .to-brand-50\/95, .home-dark .to-brand-50\/80 { --tw-gradient-to: rgba(43,134,255, 0.12); }
+.home-dark .bg-brand-50 { background-color: rgba(47,139,255, 0.14); }
+.home-dark .bg-brand-50\/30 { background-color: rgba(47,139,255, 0.14); }
+.home-dark .bg-brand-50\/40 { background-color: rgba(47,139,255, 0.14); }
+.home-dark .bg-brand-50\/50 { background-color: rgba(47,139,255, 0.14); }
+.home-dark .bg-brand-50\/60 { background-color: rgba(47,139,255, 0.14); }
+.home-dark .bg-brand-50\/70 { background-color: rgba(47,139,255, 0.14); }
+.home-dark .bg-brand-50\/80 { background-color: rgba(47,139,255, 0.14); }
+.home-dark .bg-brand-50\/90 { background-color: rgba(47,139,255, 0.14); }
+.home-dark .bg-brand-50\/95 { background-color: rgba(47,139,255, 0.14); }
+.home-dark .bg-brand-100 { background-color: rgba(47,139,255, 0.2); }
+.home-dark .bg-brand-100\/30 { background-color: rgba(47,139,255, 0.2); }
+.home-dark .bg-brand-100\/40 { background-color: rgba(47,139,255, 0.2); }
+.home-dark .bg-brand-100\/50 { background-color: rgba(47,139,255, 0.2); }
+.home-dark .bg-brand-100\/60 { background-color: rgba(47,139,255, 0.2); }
+.home-dark .bg-brand-100\/70 { background-color: rgba(47,139,255, 0.2); }
+.home-dark .bg-brand-100\/80 { background-color: rgba(47,139,255, 0.2); }
+.home-dark .bg-brand-100\/90 { background-color: rgba(47,139,255, 0.2); }
+.home-dark .bg-brand-100\/95 { background-color: rgba(47,139,255, 0.2); }
+.home-dark .bg-brand-200 { background-color: rgba(47,139,255, 0.26); }
+.home-dark .bg-brand-200\/30 { background-color: rgba(47,139,255, 0.26); }
+.home-dark .bg-brand-200\/40 { background-color: rgba(47,139,255, 0.26); }
+.home-dark .bg-brand-200\/50 { background-color: rgba(47,139,255, 0.26); }
+.home-dark .bg-brand-200\/60 { background-color: rgba(47,139,255, 0.26); }
+.home-dark .bg-brand-200\/70 { background-color: rgba(47,139,255, 0.26); }
+.home-dark .bg-brand-200\/80 { background-color: rgba(47,139,255, 0.26); }
+.home-dark .bg-brand-200\/90 { background-color: rgba(47,139,255, 0.26); }
+.home-dark .bg-brand-200\/95 { background-color: rgba(47,139,255, 0.26); }
+.home-dark .text-brand-500, .home-dark .text-brand-600, .home-dark .text-brand-700, .home-dark .text-brand-800, .home-dark .text-brand-900 { color: #6aa8ff; }
+.home-dark .border-brand-100, .home-dark .border-brand-200, .home-dark .border-brand-300 { border-color: rgba(47,139,255, 0.35); }
+.home-dark .hover\:bg-brand-50:hover, .home-dark .hover\:bg-brand-100:hover { background-color: rgba(47,139,255, 0.24); }
+.home-dark .hover\:border-brand-200:hover, .home-dark .hover\:border-brand-300:hover { border-color: rgba(47,139,255, 0.6); }
+
+/* ============================================================
+   MIDAS LOOK — 2026 redesign (Midasbuy-inspired)
+   Deep-blue gradient stage, slanted game cards with a bonus ribbon,
+   a wide banner with a blue diagonal panel, bold uppercase headings.
+   Visual only: no markup a feature depends on is touched here.
+   ============================================================ */
+:root {
+  --midas-blue: #1677ff;
+  --midas-blue-2: #2b86ff;
+  --midas-sky: #8dc2ff;
+  --midas-navy: #0a1a4a;
+  --midas-ink: #06123a;
+  --midas-orange-1: #ffc04a;
+  --midas-orange-2: #ff7a1a;
+  --midas-hot-1: #ff8a3d;
+  --midas-hot-2: #ff3d5a;
+}
+
+/* Page stage: bright blue light from the top-left fading into deep navy */
+.mads-stage-dark {
+  background-color: #081540 !important;
+  background-image:
+    radial-gradient(1100px 620px at 8% -8%, rgba(46, 126, 255, 0.55) 0%, transparent 62%),
+    radial-gradient(900px 520px at 100% 4%, rgba(28, 82, 214, 0.45) 0%, transparent 60%),
+    linear-gradient(180deg, #0f2f80 0px, #0b2265 500px, #0a1a4f 1300px, #081540 2400px) !important;
+  background-repeat: no-repeat !important;
+}
+html:has(.mads-stage-dark) { background-color: #081540; }
+.home-dark { background: transparent !important; color: #e9f0ff; }
+.home-dark section.bg-white,
+.home-dark section.bg-slate-50,
+.home-dark section.bg-\[\#F8FAFF\],
+.home-dark .bg-\[\#F8FAFF\] { background: transparent !important; }
+.home-dark section[style*="248, 250, 255"] { background: transparent !important; }
+
+/* Cards become frosted navy glass so the stage gradient shows through */
+.home-dark .bg-white { background-color: rgba(16, 40, 104, 0.62); }
+.home-dark .bg-slate-50, .home-dark .bg-slate-50\/80, .home-dark .bg-slate-50\/70 { background-color: rgba(12, 32, 88, 0.55); }
+.home-dark .bg-slate-100 { background-color: rgba(28, 58, 140, 0.55); }
+.home-dark .border-slate-200, .home-dark .border-slate-200\/90, .home-dark .border-slate-200\/80,
+.home-dark .border-slate-200\/70, .home-dark .border-slate-200\/60, .home-dark .border-slate-100,
+.home-dark .border-slate-300 { border-color: rgba(141, 194, 255, 0.14); }
+.home-dark .text-slate-500 { color: #a9bce6; }
+.home-dark .text-slate-400 { color: #8299cc; }
+.home-dark .shadow-sm, .home-dark .shadow-xs { box-shadow: 0 1px 2px rgba(0, 8, 40, 0.35); }
+
+/* Bold uppercase headline, as on Midasbuy */
+.midas-heading {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+
+/* ── Wide banner with the blue diagonal panel ── */
+.midas-banner {
+  background: var(--midas-ink);
+  box-shadow: 0 30px 70px -30px rgba(0, 18, 80, 0.85), 0 0 0 1px rgba(141, 194, 255, 0.12);
+}
+.midas-banner-panel {
+  background:
+    radial-gradient(420px 260px at 100% 0%, rgba(120, 190, 255, 0.45), transparent 70%),
+    linear-gradient(120deg, #1aa0ff 0%, #1677ff 45%, #0b4fd6 100%);
+  clip-path: polygon(16% 0, 100% 0, 100% 100%, 0 100%);
+}
+.midas-banner-panel::before {
+  /* thin bright seam on the diagonal edge */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(255,255,255,0.35), transparent 30%);
+  clip-path: polygon(16% 0, 18.5% 0, 2.5% 100%, 0 100%);
+  pointer-events: none;
+}
+.midas-banner-panel::after {
+  /* orange flick in the corner */
+  content: '';
+  position: absolute;
+  top: 18px; right: 18px;
+  width: 46px; height: 46px;
+  border-top: 4px solid var(--midas-orange-2);
+  border-right: 4px solid var(--midas-orange-2);
+  border-top-right-radius: 46px;
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+/* ── Slanted game card with ribbon ── */
+.midas-game { display: block; align-self: start; position: relative; -webkit-tap-highlight-color: transparent; }
+.midas-game-frame {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 5;
+  transform: skewX(-7deg);
+  border-radius: 14px;
+  overflow: hidden;
+  background: linear-gradient(160deg, #3d8bff 0%, #1250e1 100%);
+  box-shadow: 0 18px 34px -18px rgba(0, 16, 70, 0.9), inset 0 0 0 1px rgba(255,255,255,0.12);
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.45s ease;
+}
+.midas-game-art {
+  position: absolute;
+  inset: 0 -14%;
+  transform: skewX(7deg);
+  display: block;
+}
+.midas-game-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.midas-game-frame::after {
+  /* gloss sweep */
+  content: '';
+  position: absolute;
+  top: 0; left: -80%;
+  width: 45%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+  transition: left 0.8s ease;
+  pointer-events: none;
+  z-index: 2;
+}
+.midas-game:hover .midas-game-frame,
+.midas-game:focus-visible .midas-game-frame {
+  transform: skewX(-7deg) translateY(-6px);
+  box-shadow: 0 26px 46px -18px rgba(22, 119, 255, 0.85), inset 0 0 0 2px rgba(141, 194, 255, 0.85);
+}
+.midas-game:hover .midas-game-art img { transform: scale(1.08); }
+.midas-game:hover .midas-game-frame::after { left: 130%; }
+.midas-ribbon {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 7px 6px;
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(120, 40, 0, 0.45);
+  background: linear-gradient(180deg, var(--midas-orange-1) 0%, var(--midas-orange-2) 100%);
+  box-shadow: 0 -6px 14px -6px rgba(255, 122, 26, 0.6), inset 0 1px 0 rgba(255,255,255,0.45);
+}
+.midas-ribbon > * { transform: skewX(7deg); }
+.midas-ribbon.is-hot { background: linear-gradient(180deg, var(--midas-hot-1) 0%, var(--midas-hot-2) 100%); box-shadow: 0 -6px 14px -6px rgba(255, 61, 90, 0.6), inset 0 1px 0 rgba(255,255,255,0.4); }
+@media (min-width: 640px) {
+  .midas-ribbon { font-size: 13px; padding: 10px 8px; gap: 6px; }
+  .midas-game-frame { border-radius: 18px; }
+}
+
+/* Light mode keeps the same shapes on a soft blue page */
+.mads-stage-light {
+  background:
+    radial-gradient(1000px 520px at 8% -10%, rgba(22, 119, 255, 0.16), transparent 62%),
+    linear-gradient(180deg, #eef5ff 0px, #f8faff 900px) !important;
+  background-color: #f8faff !important;
+  background-repeat: no-repeat !important;
+}
+
+/* Scrollbar in the new palette */
+::-webkit-scrollbar-track { background: #0a1a4a; }
+::-webkit-scrollbar-thumb { background: #1677ff; border-color: #0a1a4a; }
+
+/* Top Spenders card on the blue stage */
+.home-dark .tsp-section {
+  color: #e9f0ff;
+  background: linear-gradient(160deg, rgba(20, 52, 130, 0.75) 0%, rgba(12, 34, 92, 0.8) 100%);
+  border-color: rgba(141, 194, 255, 0.16);
+  box-shadow: 0 30px 70px -36px rgba(0, 10, 50, 0.9);
+}
+.home-dark .tsp-title, .home-dark .tsp-name { color: #ffffff; }
+.home-dark .tsp-subtitle { color: #a9bce6; }
+.home-dark .tsp-btn { background: rgba(255, 255, 255, 0.06); color: #8dc2ff; border-color: rgba(141, 194, 255, 0.3); }
+.home-dark .tsp-btn:hover, .home-dark .tsp-btn-bottom { background: #1677ff; color: #fff; border-color: #1677ff; }
+.home-dark .tsp-podium {
+  background: linear-gradient(180deg, rgba(16, 40, 104, 0.7), rgba(10, 28, 78, 0.8));
+  border-color: rgba(141, 194, 255, 0.14);
+  box-shadow: 0 18px 40px -24px rgba(0, 10, 50, 0.8);
+}
+.home-dark .tsp-ring-inner { background: #0c225e; }
+.home-dark .tsp-col:not(.tsp-rank-1) .tsp-amount { color: #ffffff !important; }
+.home-dark .tsp-orders { color: #a9bce6; background: rgba(255, 255, 255, 0.06); border-color: rgba(141, 194, 255, 0.16); }
+.home-dark .tsp-step-skeleton { border-top-color: rgba(141, 194, 255, 0.16); background: rgba(255, 255, 255, 0.04); }
+
+/* Section eyebrow badge in the new look */
+.home-dark .section-badge {
+  color: #cfe3ff;
+  background: rgba(22, 119, 255, 0.18);
+  border-color: rgba(141, 194, 255, 0.35);
+}
+.midas-heading { line-height: 1.05; }

@@ -169,27 +169,27 @@ Thank you for using MADS TOPUP Sri Lanka!
     }
   };
 
-  const inputCls = 'w-full pl-11 pr-4 py-3 bg-white border-2 border-slate-200 rounded-xl font-bold text-slate-900 text-sm placeholder:text-slate-400 placeholder:font-medium focus:outline-none focus:border-[#cc040a] focus:ring-4 focus:ring-[#cc040a]/10 transition-all';
+  const inputCls = 'w-full pl-11 pr-4 py-3 bg-white border-2 border-slate-200 rounded-xl font-bold text-slate-900 text-sm placeholder:text-slate-400 placeholder:font-medium focus:outline-none focus:border-[#1677ff] focus:ring-4 focus:ring-[#1677ff]/10 transition-all';
 
   // Shared accordion shell — keeps every section visually identical
   const section = ({ icon: Icon, title, count, open, toggle, children }) => (
-    <div className={`bg-white rounded-3xl border-2 shadow-sm overflow-hidden transition-colors ${open ? 'border-[#cc040a]/25' : 'border-slate-200/90'}`}>
+    <div className={`bg-white rounded-3xl border-2 shadow-sm overflow-hidden transition-colors ${open ? 'border-[#1677ff]/25' : 'border-slate-200/90'}`}>
       <div
         onClick={toggle}
-        className="p-4 sm:p-5 flex items-center justify-between cursor-pointer hover:bg-red-50/30 transition-colors"
+        className="p-4 sm:p-5 flex items-center justify-between cursor-pointer hover:bg-brand-50/30 transition-colors"
       >
         <div className="flex items-center gap-3.5">
-          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-colors ${open ? 'bg-[#cc040a] text-white shadow-md shadow-red-600/25' : 'bg-slate-100 text-slate-600'}`}>
+          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-colors ${open ? 'bg-[#1677ff] text-white shadow-md shadow-brand-600/25' : 'bg-slate-100 text-slate-600'}`}>
             <Icon className="w-5 h-5" />
           </div>
           <div className="flex items-center gap-2.5">
             <span className="text-slate-900 font-black text-base font-heading">{title}</span>
             {count !== undefined && (
-              <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-red-50 text-[#cc040a] border border-red-100">{count}</span>
+              <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-brand-50 text-[#1677ff] border border-brand-100">{count}</span>
             )}
           </div>
         </div>
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${open ? 'bg-red-50 text-[#cc040a]' : 'bg-slate-100 text-slate-500'}`}>
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${open ? 'bg-brand-50 text-[#1677ff]' : 'bg-slate-100 text-slate-500'}`}>
           {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </div>
       </div>
@@ -212,16 +212,16 @@ Thank you for using MADS TOPUP Sri Lanka!
         <div className="flex items-center justify-between">
           <button
             onClick={goHome}
-            className="inline-flex items-center gap-2 text-xs font-black text-slate-600 hover:text-[#cc040a] bg-white border border-slate-200 px-4 py-2 rounded-xl shadow-xs transition-all cursor-pointer"
+            className="inline-flex items-center gap-2 text-xs font-black text-slate-600 hover:text-[#1677ff] bg-white border border-slate-200 px-4 py-2 rounded-xl shadow-xs transition-all cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Store</span>
           </button>
 
           <div className="flex items-center gap-2 text-xs font-extrabold text-slate-400 font-mono">
-            <span onClick={goHome} className="hover:underline cursor-pointer hover:text-[#cc040a] transition-colors">Home</span>
+            <span onClick={goHome} className="hover:underline cursor-pointer hover:text-[#1677ff] transition-colors">Home</span>
             <span>/</span>
-            <span className="text-[#cc040a] font-bold">My Account</span>
+            <span className="text-[#1677ff] font-bold">My Account</span>
           </div>
         </div>
       </div>
@@ -230,16 +230,16 @@ Thank you for using MADS TOPUP Sri Lanka!
 
         {/* PROFILE HERO */}
         <div className="relative rounded-3xl bg-white text-slate-900 border-2 border-slate-200 shadow-sm overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#ef1c25] via-[#cc040a] to-[#990207]"></div>
-          <div className="absolute -top-24 -right-16 w-80 h-80 rounded-full bg-red-50 pointer-events-none"></div>
-          <div className="absolute -bottom-28 -left-16 w-72 h-72 rounded-full bg-red-50/70 pointer-events-none"></div>
-          <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #cc040a 1px, transparent 1px)', backgroundSize: '22px 22px' }}></div>
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#2f8bff] via-[#1677ff] to-[#0b5ed7]"></div>
+          <div className="absolute -top-24 -right-16 w-80 h-80 rounded-full bg-brand-50 pointer-events-none"></div>
+          <div className="absolute -bottom-28 -left-16 w-72 h-72 rounded-full bg-brand-50/70 pointer-events-none"></div>
+          <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #1677ff 1px, transparent 1px)', backgroundSize: '22px 22px' }}></div>
 
           <div className="relative z-10 p-6 sm:p-9 flex flex-col sm:flex-row sm:items-center gap-6">
             {/* Avatar */}
             <div className="relative shrink-0 self-center sm:self-auto">
-              <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full p-1.5 bg-gradient-to-br from-[#ef1c25] to-[#990207] shadow-xl shadow-red-600/20">
-                <div className="w-full h-full rounded-full bg-white border-4 border-white flex items-center justify-center font-black text-4xl text-[#cc040a] overflow-hidden">
+              <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full p-1.5 bg-gradient-to-br from-[#2f8bff] to-[#0b5ed7] shadow-xl shadow-brand-600/20">
+                <div className="w-full h-full rounded-full bg-white border-4 border-white flex items-center justify-center font-black text-4xl text-[#1677ff] overflow-hidden">
                   {userProfile.avatar ? (
                     <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
@@ -249,7 +249,7 @@ Thank you for using MADS TOPUP Sri Lanka!
               </div>
               <button
                 onClick={() => setIsEditMode(!isEditMode)}
-                className="w-9 h-9 bg-white text-[#cc040a] rounded-full flex items-center justify-center shadow-lg absolute bottom-1 right-1 border-2 border-red-100 cursor-pointer hover:scale-110 transition-transform"
+                className="w-9 h-9 bg-white text-[#1677ff] rounded-full flex items-center justify-center shadow-lg absolute bottom-1 right-1 border-2 border-brand-100 cursor-pointer hover:scale-110 transition-transform"
                 title="Edit Profile"
               >
                 <Camera className="w-4 h-4" />
@@ -258,7 +258,7 @@ Thank you for using MADS TOPUP Sri Lanka!
 
             {/* Identity */}
             <div className="flex-1 min-w-0 text-center sm:text-left">
-              <div className="inline-flex items-center gap-1.5 bg-red-50 text-[#cc040a] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-red-100 mb-2.5">
+              <div className="inline-flex items-center gap-1.5 bg-brand-50 text-[#1677ff] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-brand-100 mb-2.5">
                 <Sparkles className="w-3 h-3" />
                 <span>Verified Member</span>
               </div>
@@ -286,7 +286,7 @@ Thank you for using MADS TOPUP Sri Lanka!
             <button
               onClick={handleLogout}
               title="Logout"
-              className="self-center sm:self-start px-4 py-2.5 rounded-xl bg-white hover:bg-red-50 text-slate-700 hover:text-[#cc040a] text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer border-2 border-slate-200 hover:border-[#cc040a]/40 shrink-0"
+              className="self-center sm:self-start px-4 py-2.5 rounded-xl bg-white hover:bg-brand-50 text-slate-700 hover:text-[#1677ff] text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer border-2 border-slate-200 hover:border-[#1677ff]/40 shrink-0"
             >
               <LogOut className="w-4 h-4" />
               <span>Logout</span>
@@ -297,7 +297,7 @@ Thank you for using MADS TOPUP Sri Lanka!
         {/* STAT TILES */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 -mt-2">
           <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 flex flex-col gap-3">
-            <div className="w-10 h-10 rounded-xl bg-red-50 text-[#cc040a] flex items-center justify-center"><Award className="w-5 h-5" /></div>
+            <div className="w-10 h-10 rounded-xl bg-brand-50 text-[#1677ff] flex items-center justify-center"><Award className="w-5 h-5" /></div>
             <div>
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Lifetime Spend</span>
               <span className="text-lg font-black text-slate-900 font-heading leading-tight block">{(totalSpentLkr || 0).toFixed(2)} <span className="text-xs text-slate-400">LKR</span></span>
@@ -306,11 +306,11 @@ Thank you for using MADS TOPUP Sri Lanka!
 
           <div
             onClick={() => openWalletTab('ezcash')}
-            className="bg-white hover:border-[#cc040a]/50 rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-md p-4 flex flex-col gap-3 cursor-pointer transition-all group"
+            className="bg-white hover:border-[#1677ff]/50 rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-md p-4 flex flex-col gap-3 cursor-pointer transition-all group"
           >
             <div className="flex items-center justify-between">
-              <div className="w-10 h-10 rounded-xl bg-red-50 group-hover:bg-[#cc040a] text-[#cc040a] group-hover:text-white flex items-center justify-center transition-colors"><Wallet className="w-5 h-5" /></div>
-              <span className="text-[10px] font-black text-[#cc040a] bg-red-50 px-2 py-0.5 rounded-full">+ Recharge</span>
+              <div className="w-10 h-10 rounded-xl bg-brand-50 group-hover:bg-[#1677ff] text-[#1677ff] group-hover:text-white flex items-center justify-center transition-colors"><Wallet className="w-5 h-5" /></div>
+              <span className="text-[10px] font-black text-[#1677ff] bg-brand-50 px-2 py-0.5 rounded-full">+ Recharge</span>
             </div>
             <div>
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">EZ Wallet</span>
@@ -320,11 +320,11 @@ Thank you for using MADS TOPUP Sri Lanka!
 
           <div
             onClick={() => openWalletTab('binance')}
-            className="bg-white hover:border-[#cc040a]/50 rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-md p-4 flex flex-col gap-3 cursor-pointer transition-all group"
+            className="bg-white hover:border-[#1677ff]/50 rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-md p-4 flex flex-col gap-3 cursor-pointer transition-all group"
           >
             <div className="flex items-center justify-between">
-              <div className="w-10 h-10 rounded-xl bg-red-50 group-hover:bg-[#cc040a] text-[#cc040a] group-hover:text-white flex items-center justify-center transition-colors"><DollarSign className="w-5 h-5" /></div>
-              <span className="text-[10px] font-black text-[#cc040a] bg-red-50 px-2 py-0.5 rounded-full">+ Recharge</span>
+              <div className="w-10 h-10 rounded-xl bg-brand-50 group-hover:bg-[#1677ff] text-[#1677ff] group-hover:text-white flex items-center justify-center transition-colors"><DollarSign className="w-5 h-5" /></div>
+              <span className="text-[10px] font-black text-[#1677ff] bg-brand-50 px-2 py-0.5 rounded-full">+ Recharge</span>
             </div>
             <div>
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Binance</span>
@@ -333,7 +333,7 @@ Thank you for using MADS TOPUP Sri Lanka!
           </div>
 
           <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 flex flex-col gap-3">
-            <div className="w-10 h-10 rounded-xl bg-red-50 text-[#cc040a] flex items-center justify-center"><ShoppingBag className="w-5 h-5" /></div>
+            <div className="w-10 h-10 rounded-xl bg-brand-50 text-[#1677ff] flex items-center justify-center"><ShoppingBag className="w-5 h-5" /></div>
             <div>
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Orders</span>
               <span className="text-lg font-black text-slate-900 font-heading leading-tight block">{userOrders.length} <span className="text-xs text-slate-400">({completedOrders.length} done)</span></span>
@@ -352,11 +352,11 @@ Thank you for using MADS TOPUP Sri Lanka!
               key={key}
               onClick={onClick}
               className={`rounded-2xl p-4 border-2 cursor-pointer transition-all flex items-center gap-4 group ${
-                active ? 'bg-red-50/60 border-[#cc040a] shadow-md shadow-red-600/10' : 'bg-white border-slate-200 hover:border-[#cc040a]/40 hover:shadow-md'
+                active ? 'bg-brand-50/60 border-[#1677ff] shadow-md shadow-brand-600/10' : 'bg-white border-slate-200 hover:border-[#1677ff]/40 hover:shadow-md'
               }`}
             >
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                active ? 'bg-[#cc040a] text-white shadow-md shadow-red-600/25' : 'bg-slate-100 text-slate-600 group-hover:bg-[#cc040a] group-hover:text-white'
+                active ? 'bg-[#1677ff] text-white shadow-md shadow-brand-600/25' : 'bg-slate-100 text-slate-600 group-hover:bg-[#1677ff] group-hover:text-white'
               }`}>
                 <Icon className="w-5 h-5" />
               </div>
@@ -364,21 +364,21 @@ Thank you for using MADS TOPUP Sri Lanka!
                 <h4 className="text-sm font-black text-slate-900 font-heading">{title}</h4>
                 <p className="text-xs text-slate-500 font-medium">{sub}</p>
               </div>
-              <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-[#cc040a] group-hover:translate-x-0.5 transition-all shrink-0" />
+              <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-[#1677ff] group-hover:translate-x-0.5 transition-all shrink-0" />
             </div>
           ))}
         </div>
 
         {/* EDIT PROFILE FORM PANEL */}
         {isEditMode && (
-          <div className="bg-white rounded-3xl border-2 border-[#cc040a]/25 p-6 sm:p-8 shadow-lg shadow-red-600/5 animate-in fade-in">
+          <div className="bg-white rounded-3xl border-2 border-[#1677ff]/25 p-6 sm:p-8 shadow-lg shadow-brand-600/5 animate-in fade-in">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-11 h-11 rounded-2xl bg-[#cc040a] text-white flex items-center justify-center shadow-md shadow-red-600/25">
+              <div className="w-11 h-11 rounded-2xl bg-[#1677ff] text-white flex items-center justify-center shadow-md shadow-brand-600/25">
                 <Edit className="w-5 h-5" />
               </div>
               <div>
                 <h3 className="text-lg font-black text-slate-900 font-heading leading-none">Update Account Information</h3>
-                <div className="w-10 h-1 bg-[#cc040a] rounded-full mt-1.5"></div>
+                <div className="w-10 h-1 bg-[#1677ff] rounded-full mt-1.5"></div>
               </div>
             </div>
 
@@ -412,7 +412,7 @@ Thank you for using MADS TOPUP Sri Lanka!
               <div className="flex gap-3 pt-3">
                 <button
                   type="submit"
-                  className="px-7 py-3 bg-[#cc040a] text-white font-black text-xs rounded-xl hover:bg-[#b00308] transition-all shadow-lg shadow-red-600/25 cursor-pointer active:scale-[0.98]"
+                  className="px-7 py-3 bg-[#1677ff] text-white font-black text-xs rounded-xl hover:bg-[#0d68e6] transition-all shadow-lg shadow-brand-600/25 cursor-pointer active:scale-[0.98]"
                 >
                   Save Changes
                 </button>
@@ -430,21 +430,21 @@ Thank you for using MADS TOPUP Sri Lanka!
 
         {/* REPORTS CONTENT PANEL */}
         {activeTab === 'reports' && !isEditMode && (
-          <div className="bg-white rounded-3xl border-2 border-[#cc040a]/25 p-6 sm:p-8 shadow-lg shadow-red-600/5 space-y-5 animate-in fade-in">
+          <div className="bg-white rounded-3xl border-2 border-[#1677ff]/25 p-6 sm:p-8 shadow-lg shadow-brand-600/5 space-y-5 animate-in fade-in">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-[#cc040a] text-white flex items-center justify-center shadow-md shadow-red-600/25">
+              <div className="w-11 h-11 rounded-2xl bg-[#1677ff] text-white flex items-center justify-center shadow-md shadow-brand-600/25">
                 <FileText className="w-5 h-5" />
               </div>
               <div>
                 <h3 className="text-lg font-black text-slate-900 font-heading leading-none">Top-Up Statements & Reports</h3>
-                <div className="w-10 h-1 bg-[#cc040a] rounded-full mt-1.5"></div>
+                <div className="w-10 h-1 bg-[#1677ff] rounded-full mt-1.5"></div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col justify-between gap-5">
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-red-50 text-[#cc040a] flex items-center justify-center shrink-0"><FileText className="w-5 h-5" /></div>
+                  <div className="w-10 h-10 rounded-xl bg-brand-50 text-[#1677ff] flex items-center justify-center shrink-0"><FileText className="w-5 h-5" /></div>
                   <div>
                     <span className="font-black text-slate-900 text-sm block font-heading">Monthly Topup Statement</span>
                     <span className="text-slate-500 text-xs font-medium">Official PDF summary of all completed top-ups</span>
@@ -452,7 +452,7 @@ Thank you for using MADS TOPUP Sri Lanka!
                 </div>
                 <button
                   onClick={handleDownloadPDF}
-                  className="w-full px-5 py-3 bg-[#cc040a] hover:bg-[#b00308] text-white font-black text-xs rounded-xl shadow-lg shadow-red-600/25 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+                  className="w-full px-5 py-3 bg-[#1677ff] hover:bg-[#0d68e6] text-white font-black text-xs rounded-xl shadow-lg shadow-brand-600/25 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
                 >
                   <Download className="w-4 h-4" />
                   <span>Download PDF Statement</span>
@@ -483,7 +483,7 @@ Thank you for using MADS TOPUP Sri Lanka!
         <div className="space-y-4 pt-4">
           <div className="text-center mb-2">
             <h2 className="text-2xl font-black text-slate-900 font-heading">History & Activity</h2>
-            <div className="w-16 h-1 bg-[#cc040a] rounded-full mt-2 mx-auto"></div>
+            <div className="w-16 h-1 bg-[#1677ff] rounded-full mt-2 mx-auto"></div>
           </div>
 
           {/* Recent Purchases */}
@@ -518,7 +518,7 @@ Thank you for using MADS TOPUP Sri Lanka!
                         </div>
 
                         <div className="text-left sm:text-right border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100 shrink-0">
-                          <div className="font-black text-[#cc040a] text-lg font-heading">{formatLkr(ord.priceLkr)}</div>
+                          <div className="font-black text-[#1677ff] text-lg font-heading">{formatLkr(ord.priceLkr)}</div>
                           <div className="text-[11px] text-slate-400 font-mono">{ord.paymentMethod}</div>
                         </div>
                       </div>
@@ -588,7 +588,7 @@ Thank you for using MADS TOPUP Sri Lanka!
               <div className="p-4 sm:p-5 bg-slate-50/60">
                 <div className="p-4 bg-white rounded-2xl border border-slate-200 flex justify-between items-center text-xs gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-red-50 text-[#cc040a] flex items-center justify-center shrink-0"><Wallet className="w-5 h-5" /></div>
+                    <div className="w-10 h-10 rounded-xl bg-brand-50 text-[#1677ff] flex items-center justify-center shrink-0"><Wallet className="w-5 h-5" /></div>
                     <div>
                       <div className="font-black text-slate-900 text-sm font-heading">Wallet Account Balance</div>
                       <div className="text-slate-400 text-xs">Instant eZ Cash & Binance Reload</div>
@@ -614,7 +614,7 @@ Thank you for using MADS TOPUP Sri Lanka!
                 </div>
                 <div className="divide-y divide-slate-100 text-xs">
                   {[['Sep 11 12:50', true], ['Sep 10 14:36', false]].map(([time, latest]) => (
-                    <div key={time} className="grid grid-cols-2 px-6 py-4 items-center hover:bg-red-50/30 transition-colors">
+                    <div key={time} className="grid grid-cols-2 px-6 py-4 items-center hover:bg-brand-50/30 transition-colors">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center shrink-0"><Monitor className="w-4 h-4" /></div>
                         <div>
@@ -650,7 +650,7 @@ Thank you for using MADS TOPUP Sri Lanka!
                         className="p-4 bg-white rounded-2xl border border-slate-200 flex items-center justify-between gap-3 text-xs shadow-xs"
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-11 h-11 rounded-xl bg-red-50 flex items-center justify-center text-2xl shrink-0">{game?.currencyIcon || '🎮'}</div>
+                          <div className="w-11 h-11 rounded-xl bg-brand-50 flex items-center justify-center text-2xl shrink-0">{game?.currencyIcon || '🎮'}</div>
                           <div className="min-w-0">
                             <div className="font-black text-slate-900 text-sm font-heading truncate">{saved.nickName}</div>
                             <div className="text-xs font-mono text-slate-500 truncate">
@@ -666,14 +666,14 @@ Thank you for using MADS TOPUP Sri Lanka!
                                 setIsUserProfileOpen(false);
                                 openTopup(game);
                               }}
-                              className="px-4 py-2 rounded-xl bg-[#cc040a] text-white font-black text-xs hover:bg-[#b00308] transition-colors shadow-md shadow-red-600/20 cursor-pointer"
+                              className="px-4 py-2 rounded-xl bg-[#1677ff] text-white font-black text-xs hover:bg-[#0d68e6] transition-colors shadow-md shadow-brand-600/20 cursor-pointer"
                             >
                               Top Up
                             </button>
                           )}
                           <button
                             onClick={() => handleDeleteSavedId(saved.id)}
-                            className="p-2 text-slate-400 hover:text-red-600 rounded-xl hover:bg-red-50 transition-colors cursor-pointer"
+                            className="p-2 text-slate-400 hover:text-brand-600 rounded-xl hover:bg-brand-50 transition-colors cursor-pointer"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
