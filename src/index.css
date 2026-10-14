@@ -1480,13 +1480,26 @@
 
 /* Page stage: deep neutral navy with a faint blue glow at the top */
 .mads-stage-dark {
-  background-color: #151a2b !important;
-  background-image:
-    radial-gradient(1000px 520px at 6% -12%, rgba(38, 96, 238, 0.62) 0%, rgba(38, 96, 238, 0.18) 45%, transparent 70%),
-    radial-gradient(900px 460px at 96% -10%, rgba(52, 72, 190, 0.32) 0%, transparent 65%),
-    radial-gradient(520px 900px at -8% 55%, rgba(24, 120, 150, 0.16) 0%, transparent 70%),
-    linear-gradient(180deg, #1a2046 0px, #171c33 520px, #151a2b 1100px) !important;
-  background-repeat: no-repeat !important;
+  background-color: #131829 !important;
+  background-image: none !important;
+  position: relative;
+  isolation: isolate;
+}
+/* Midasbuy-style backdrop: blue glows that stay in view while the page scrolls */
+.mads-stage-dark::before,
+.mads-stage-light::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.mads-stage-dark::before {
+  background:
+    radial-gradient(60vw 70vh at 0% 18%, rgba(38, 110, 238, 0.42) 0%, rgba(38, 110, 238, 0.12) 45%, transparent 72%),
+    radial-gradient(55vw 60vh at 100% 0%, rgba(70, 82, 210, 0.26) 0%, transparent 70%),
+    radial-gradient(50vw 55vh at 100% 100%, rgba(24, 130, 170, 0.16) 0%, transparent 70%),
+    linear-gradient(165deg, #1b2350 0%, #161c36 40%, #121728 100%);
 }
 html:has(.mads-stage-dark) { background-color: #151a2b; }
 .home-dark { background: transparent !important; color: #e9f0ff; }
@@ -1612,6 +1625,12 @@ html:has(.mads-stage-dark) { background-color: #151a2b; }
   box-shadow: 0 -6px 14px -6px rgba(255, 122, 26, 0.6), inset 0 1px 0 rgba(255,255,255,0.45);
 }
 .midas-ribbon > * { transform: skewX(7deg); }
+/* Ribbon colours for each game's tag (games.js `tag.tone`) */
+.midas-ribbon.is-red { background: linear-gradient(180deg, #ff8a3d 0%, #ff3d5a 100%); box-shadow: 0 -6px 14px -6px rgba(255, 61, 90, .6), inset 0 1px 0 rgba(255,255,255,.4); }
+.midas-ribbon.is-gold { background: linear-gradient(180deg, #ffd25a 0%, #f59e0b 100%); text-shadow: 0 1px 2px rgba(120, 60, 0, .5); box-shadow: 0 -6px 14px -6px rgba(245, 158, 11, .6), inset 0 1px 0 rgba(255,255,255,.45); }
+.midas-ribbon.is-green { background: linear-gradient(180deg, #4ade80 0%, #10b981 100%); text-shadow: 0 1px 2px rgba(0, 80, 40, .5); box-shadow: 0 -6px 14px -6px rgba(16, 185, 129, .6), inset 0 1px 0 rgba(255,255,255,.4); }
+.midas-ribbon.is-blue { background: linear-gradient(180deg, #5aa8ff 0%, #1677ff 100%); text-shadow: 0 1px 2px rgba(0, 40, 120, .5); box-shadow: 0 -6px 14px -6px rgba(22, 119, 255, .6), inset 0 1px 0 rgba(255,255,255,.4); }
+.midas-ribbon.is-teal { background: linear-gradient(180deg, #2dd4bf 0%, #0ea5a4 100%); text-shadow: 0 1px 2px rgba(0, 70, 70, .5); box-shadow: 0 -6px 14px -6px rgba(14, 165, 164, .6), inset 0 1px 0 rgba(255,255,255,.4); }
 .midas-ribbon.is-hot { background: linear-gradient(180deg, var(--midas-hot-1) 0%, var(--midas-hot-2) 100%); box-shadow: 0 -6px 14px -6px rgba(255, 61, 90, 0.6), inset 0 1px 0 rgba(255,255,255,0.4); }
 @media (min-width: 640px) {
   .midas-ribbon { font-size: 13px; padding: 10px 8px; gap: 6px; }
@@ -1620,11 +1639,16 @@ html:has(.mads-stage-dark) { background-color: #151a2b; }
 
 /* Light mode keeps the same shapes on a soft blue page */
 .mads-stage-light {
+  background: #f8faff !important;
+  position: relative;
+  isolation: isolate;
+}
+.mads-stage-light::before {
   background:
-    radial-gradient(1000px 520px at 8% -10%, rgba(22, 119, 255, 0.16), transparent 62%),
-    linear-gradient(180deg, #eef5ff 0px, #f8faff 900px) !important;
-  background-color: #f8faff !important;
-  background-repeat: no-repeat !important;
+    radial-gradient(60vw 70vh at 0% 15%, rgba(22, 119, 255, 0.16) 0%, transparent 70%),
+    radial-gradient(55vw 60vh at 100% 0%, rgba(90, 168, 255, 0.14) 0%, transparent 70%),
+    radial-gradient(50vw 55vh at 100% 100%, rgba(14, 165, 164, 0.08) 0%, transparent 70%),
+    linear-gradient(170deg, #eaf3ff 0%, #f6f9ff 50%, #fbfcff 100%);
 }
 
 /* Scrollbar in the new palette */

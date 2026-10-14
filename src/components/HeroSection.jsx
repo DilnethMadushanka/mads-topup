@@ -4,11 +4,14 @@ import { GAMES_DATA } from '../data/games';
 import { GameStripBar } from './GameStripBar';
 import {
   Zap, ArrowRight, ChevronLeft, ChevronRight, Wallet, Gift, Headphones,
-  Search, Flame, ShieldCheck, Clock, Fingerprint, LayoutGrid
+  Search, Flame, ShieldCheck, Clock, Fingerprint, LayoutGrid, ThumbsUp, Star
 } from 'lucide-react';
 
 // Midasbuy-style landing (works in both modes: white + red, or dark stage + red):
 // wide banner + thumbnail selector, quick promos, then square game cards to top up in one tap.
+// Ribbon icons a game's `tag` can name in games.js
+const TAG_ICONS = { flame: Flame, thumb: ThumbsUp, star: Star, zap: Zap };
+
 export const HeroSection = () => {
   const { openCatalog, openTopup, openWalletModal, openReferralPage, setIsSupportOpen } = useApp();
 
@@ -210,10 +213,16 @@ export const HeroSection = () => {
                         onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/mads-logo.jpg'; }}
                       />
                     </span>
-                    <span className={`midas-ribbon ${game.popular ? 'is-hot' : ''}`}>
-                      {game.popular ? <Flame className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> : <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />}
-                      <span>{game.popular ? 'Hot deal' : 'Instant'}</span>
-                    </span>
+                    {(() => {
+                      const tag = game.tag || (game.popular ? { text: 'Hot deal', tone: 'red', icon: 'flame' } : { text: 'Instant', tone: 'orange', icon: 'zap' });
+                      const TagIcon = TAG_ICONS[tag.icon] || Zap;
+                      return (
+                        <span className={`midas-ribbon is-${tag.tone || 'orange'}`}>
+                          <TagIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                          <span>{tag.text}</span>
+                        </span>
+                      );
+                    })()}
                   </span>
                   {game.popArt && (
                     <span className="midas-pop" aria-hidden="true" style={{ '--pop-scale': game.popArt.scale || 1.12 }}>

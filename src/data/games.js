@@ -1,6 +1,7 @@
 export const GAMES_DATA = [
   {
     id: 'mobilelegends',
+    tag: { text: 'Best Seller', tone: 'red', icon: 'flame' },
     name: 'Mobile Legends: Bang Bang',
     category: 'MOBA',
     publisher: 'Moonton',
@@ -52,6 +53,7 @@ export const GAMES_DATA = [
   },
   {
     id: 'freefire_sg',
+    tag: { text: 'Hot', tone: 'gold', icon: 'thumb' },
     name: 'Free Fire (SG/MY)',
     category: 'Battle Royale',
     publisher: 'Garena',
@@ -93,6 +95,7 @@ export const GAMES_DATA = [
   },
   {
     id: 'pubg',
+    tag: { text: 'Top Pick', tone: 'gold', icon: 'thumb' },
     name: 'PUBG Mobile',
     category: 'Battle Royale',
     publisher: 'Tencent Games',
@@ -124,6 +127,7 @@ export const GAMES_DATA = [
   },
   {
     id: 'bloodstrike',
+    tag: { text: 'New', tone: 'green', icon: 'star' },
     name: 'Blood Strike',
     category: 'FPS',
     publisher: 'NetEase Games',
@@ -150,6 +154,7 @@ export const GAMES_DATA = [
   },
   {
     id: 'deltaforce',
+    tag: { text: 'Trending', tone: 'red', icon: 'flame' },
     name: 'Delta Force Mobile',
     category: 'FPS',
     publisher: 'TiMi Studio Group',
@@ -176,6 +181,7 @@ export const GAMES_DATA = [
   },
   {
     id: 'freefire_id',
+    tag: { text: 'Hot', tone: 'orange', icon: 'thumb' },
     name: 'Free Fire (Indonesia)',
     category: 'Battle Royale',
     publisher: 'Garena',
@@ -205,6 +211,7 @@ export const GAMES_DATA = [
   },
   {
     id: 'garenashells',
+    tag: { text: 'Instant PIN', tone: 'blue', icon: 'zap' },
     name: 'Garena Shells (SG)',
     category: 'Cards & Vouchers',
     publisher: 'Garena',
@@ -236,6 +243,7 @@ export const GAMES_DATA = [
   },
   {
     id: 'garenashells_my',
+    tag: { text: 'Instant PIN', tone: 'teal', icon: 'zap' },
     name: 'Garena Shells (MY)',
     category: 'Cards & Vouchers',
     publisher: 'Garena',
