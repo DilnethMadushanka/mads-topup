@@ -610,12 +610,19 @@ export const AppProvider = ({ children }) => {
     ];
   });
 
-  // Toasts / Banner
-  const [toast, setToast] = useState(null);
+  // Toasts: up to 3 on screen, newest on top. Each closes itself (the
+  // ToastNotification component runs its timer, paused while hovered).
+  const [toasts, setToasts] = useState([]);
+
+  const dismissToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
 
   const showToast = (message, type = 'success') => {
-    setToast({ message, type, id: Date.now() });
-    setTimeout(() => setToast(null), 4000);
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    setToasts(prev => {
+      // The same message twice in a row just restarts the existing toast.
+      const rest = prev.filter(t => !(t.message === message && t.type === type));
+      return [{ id, message, type }, ...rest].slice(0, 3);
+    });
   };
 
   // ── Referral URL capture (runs once on mount) ─────────────────────
@@ -1788,7 +1795,8 @@ export const AppProvider = ({ children }) => {
       updateMoongoldConfig,
       r2Config,
       updateR2Config,
-      toast,
+      toasts,
+      dismissToast,
       showToast,
       formatPrice,
       formatLkr,
