@@ -1,15 +1,18 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
-import { Play, Pause, Volume2, VolumeX, Maximize2, Gamepad2, UserCheck, Zap } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Maximize2, Gamepad2, UserCheck, Zap, ArrowRight, ShieldCheck } from "lucide-react";
+import { useApp } from "../context/AppContext";
 
 /* ─── CONFIG ──────────────────────────────────────────────────────────────
    Drop your video file into the /public folder and set the name here.
    e.g.  public/how-it-works.mp4  →  VIDEO_SRC = "/how-it-works.mp4"
    ────────────────────────────────────────────────────────────────────────── */
 const VIDEO_SRC = "/how-it-works.mp4";
+const STEP_MS = 3500;
 
 const STEPS = [
   {
     number: "01",
+    tone: "blue",
     icon: Gamepad2,
     title: "Choose Your Game",
     desc: "Pick from PUBG Mobile, Free Fire, Mobile Legends, and more premium titles.",
@@ -19,6 +22,7 @@ const STEPS = [
   },
   {
     number: "02",
+    tone: "violet",
     icon: UserCheck,
     title: "Enter Your Player ID",
     desc: "No password needed — just your UID. We locate your account instantly.",
@@ -28,6 +32,7 @@ const STEPS = [
   },
   {
     number: "03",
+    tone: "green",
     icon: Zap,
     title: "Receive in Seconds",
     desc: "Automated delivery straight to your in-game inventory. No waiting.",
@@ -117,107 +122,68 @@ export const HowItWorksSection = () => {
     return () => window.removeEventListener("keydown", onKey);
   }, [togglePlay]);
 
+  const { openCatalog } = useApp();
+  const [active, setActive] = useState(0);
+  const [auto, setAuto] = useState(true);
+
+  // Walk through the steps on a loop until the visitor picks one.
+  useEffect(() => {
+    if (!auto) return undefined;
+    try { if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined; } catch (e) { /* ignore */ }
+    const t = setInterval(() => setActive((i) => (i + 1) % STEPS.length), STEP_MS);
+    return () => clearInterval(t);
+  }, [auto]);
+
   return (
-    <section
-      id="how-it-works-section"
-      className="relative overflow-hidden border-y border-slate-200/70"
-      style={{ background: "linear-gradient(180deg, #f8faff 0%, #ffffff 55%, #f4f6ff 100%)" }}
-    >
-      {/* soft background accents */}
-      <div className="absolute -top-32 -left-24 w-[420px] h-[420px] rounded-full bg-[#1677ff]/[0.06] blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-32 -right-24 w-[460px] h-[460px] rounded-full bg-violet-500/[0.07] blur-3xl pointer-events-none" />
+    <section id="how-it-works-section" className="hw-section">
+      <div className="hw-wrap">
+        <div className="hw-head">
+          <span className="hw-kicker"><Play /> How it works</span>
+          <h2 className="hw-title">Top-up in under <span>60 seconds</span></h2>
+          <p className="hw-lead">Watch how easy it is to top-up any game on MADS TOPUP. Fully automated, no middleman.</p>
+        </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
-        <div className="grid lg:grid-cols-12 gap-14 lg:gap-12 items-center">
-
-          {/* ── LEFT: heading + steps timeline ── */}
-          <div className="lg:col-span-7">
-            <span className="section-badge">
-              <Play size={10} fill="#1677ff" />
-              HOW IT WORKS
-            </span>
-            <h2 className="midas-heading mt-2 font-heading font-extrabold text-slate-900 tracking-tight leading-[1.08] text-4xl sm:text-5xl">
-              Top-Up in Under{" "}
-              <span
-                style={{
-                  background: "linear-gradient(135deg, #1677ff 0%, #4a9cff 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                60 Seconds
-              </span>
-            </h2>
-            <p className="mt-5 max-w-lg text-base leading-relaxed text-slate-500 font-medium">
-              Watch how easy it is to top-up any game on MADS TOPUP. Fully automated, no middleman.
-            </p>
-
-            {/* Timeline */}
-            <ol className="mt-10 relative">
-              {/* connector line */}
-              <span
-                aria-hidden="true"
-                className="absolute left-[27px] top-8 bottom-8 w-px bg-gradient-to-b from-[#1677ff]/40 via-violet-500/30 to-emerald-500/40"
-              />
+        <div className="hw-grid">
+          <div className="hw-left">
+            <ol className="hw-steps">
               {STEPS.map((step, i) => {
                 const Icon = step.icon;
+                const on = i === active;
                 return (
-                  <li key={i} className="relative flex gap-5 pb-5 last:pb-0">
-                    <div
-                      className="relative z-10 w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 bg-white"
-                      style={{ border: `1px solid ${step.border}`, boxShadow: `0 8px 20px -10px ${step.color}` }}
+                  <li key={step.number}>
+                    <button
+                      type="button"
+                      className={`hw-step is-${step.tone}${on ? ' is-on' : ''}`}
+                      onClick={() => { setActive(i); setAuto(false); }}
+                      aria-current={on ? 'step' : undefined}
                     >
-                      <span className="absolute inset-0 rounded-2xl" style={{ background: step.bg }} />
-                      <Icon size={22} color={step.color} className="relative" />
-                    </div>
-
-                    <div
-                      className="group flex-1 rounded-2xl bg-white border p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-20px_rgba(15,23,42,0.25)]"
-                      style={{ borderColor: step.border }}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <div className="text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: step.color }}>
-                            Step {step.number}
-                          </div>
-                          <h3 className="mt-1 font-heading text-lg font-bold text-slate-900 tracking-tight">
-                            {step.title}
-                          </h3>
-                        </div>
-                        <span className="font-heading text-4xl font-extrabold leading-none text-slate-900/[0.06] select-none">
-                          {step.number}
-                        </span>
-                      </div>
-                      <p className="mt-2 text-sm leading-relaxed text-slate-500 font-medium">
-                        {step.desc}
-                      </p>
-                    </div>
+                      <span className="hw-step-ico"><Icon /></span>
+                      <span className="hw-step-body">
+                        <span className="hw-step-num">Step {step.number}</span>
+                        <span className="hw-step-title">{step.title}</span>
+                        <span className="hw-step-desc">{step.desc}</span>
+                      </span>
+                      <span className="hw-step-big" aria-hidden="true">{step.number}</span>
+                      {on && auto && <span className="hw-step-bar" aria-hidden="true"><i key={active} style={{ animationDuration: `${STEP_MS}ms` }} /></span>}
+                    </button>
                   </li>
                 );
               })}
             </ol>
+            <div className="hw-cta-row">
+              <button type="button" className="hw-cta" onClick={() => openCatalog && openCatalog()}>
+                Start your top-up <ArrowRight />
+              </button>
+              <span className="hw-cta-note"><ShieldCheck /> No password needed, just your player ID</span>
+            </div>
           </div>
 
-          {/* ── RIGHT: phone-framed video ── */}
-          <div className="lg:col-span-5 flex justify-center">
-            <div className="relative w-full max-w-[340px]">
-              {/* glow */}
-              <div className="absolute -inset-8 rounded-[3rem] bg-gradient-to-br from-[#1677ff]/25 via-transparent to-violet-500/25 blur-3xl pointer-events-none" />
-
-              {/* floating chips */}
-              <div className="hidden sm:flex absolute -left-10 top-16 z-20 items-center gap-2 px-3.5 py-2 rounded-full bg-white border border-slate-200 shadow-[0_12px_30px_-12px_rgba(15,23,42,0.3)] text-xs font-bold text-slate-800">
-                <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center"><Zap size={13} /></span>
-                Delivered in seconds
-              </div>
-              <div className="hidden sm:flex absolute -right-8 bottom-28 z-20 items-center gap-2 px-3.5 py-2 rounded-full bg-white border border-slate-200 shadow-[0_12px_30px_-12px_rgba(15,23,42,0.3)] text-xs font-bold text-slate-800">
-                <span className="w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center"><UserCheck size={13} /></span>
-                UID only
-              </div>
-
-              {/* phone bezel */}
-              <div className="relative rounded-[2.6rem] p-2.5 bg-slate-950 shadow-[0_40px_80px_-30px_rgba(2,6,23,0.6)] ring-1 ring-white/10">
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 w-20 h-5 rounded-full bg-black" />
-
+          <div className="hw-media">
+            <div className="hw-glow" aria-hidden="true" />
+            <span className="hw-chip is-top"><i><Zap /></i>Delivered in seconds</span>
+            <span className="hw-chip is-bottom"><i className="is-violet"><UserCheck /></i>UID only</span>
+            <div className="hw-phone">
+              <span className="hw-notch" aria-hidden="true" />
                 <div
                   data-hiw-player
                   tabIndex={0}
@@ -352,11 +318,10 @@ export const HowItWorksSection = () => {
                     </div>
                   )}
                 </div>
-              </div>
             </div>
           </div>
-
         </div>
+
       </div>
 
       <style>{`
