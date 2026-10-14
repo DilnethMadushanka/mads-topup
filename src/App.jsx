@@ -35,9 +35,11 @@ import { BlogPage } from './components/BlogPage';
 import { LeaderboardPage } from './components/LeaderboardPage';
 import { ScrollReveal } from './hooks/useScrollReveal';
 import { Flame } from 'lucide-react';
+import { GAMES_DATA } from './data/games';
+import { GAME_SEO_PAGES } from './data/seoPages';
 
 const MainContent = () => {
-  const { userProfile, setIsAdminOpen, isUserProfileOpen, isWalletModalOpen, openUserProfilePage, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, isReferralPageOpen, isResellerPageOpen, isResellerLoginPageOpen, isResellerDashboardOpen, openResellerPage, openContactPage, openPolicyModal, selectedGame, isBlogPageOpen, openBlogPage, isLeaderboardPageOpen } = useApp();
+  const { userProfile, setIsAdminOpen, isUserProfileOpen, isWalletModalOpen, openUserProfilePage, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, isReferralPageOpen, isResellerPageOpen, isResellerLoginPageOpen, isResellerDashboardOpen, openResellerPage, openContactPage, openPolicyModal, selectedGame, isBlogPageOpen, openBlogPage, isLeaderboardPageOpen, openTopup } = useApp();
 
   // Security: Prevent Right-Click Inspect Element & DevTools Keyboard Shortcuts
   React.useEffect(() => {
@@ -289,6 +291,28 @@ const MainContent = () => {
             </div>
 
           </div>
+
+          {/* ── Game links: real URLs so search engines can find every game page ── */}
+          <nav aria-label="Top up games" className="pb-8">
+            <h4 className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#1677ff]">Top Up Games</h4>
+            <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
+              {GAME_SEO_PAGES.map((page) => {
+                const game = GAMES_DATA.find((g) => g.id === page.gameId);
+                if (!game) return null;
+                return (
+                  <li key={page.slug}>
+                    <a
+                      href={`/${page.slug}/`}
+                      onClick={(e) => { e.preventDefault(); openTopup(game); }}
+                      className="text-sm font-medium text-white/55 hover:text-white transition-colors no-underline"
+                    >
+                      {page.h1}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
 
           {/* ── Legal disclaimer ── */}
           <div id="legal-disclaimer" className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-5 sm:p-6">

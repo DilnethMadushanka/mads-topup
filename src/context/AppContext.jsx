@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { GAMES_DATA } from '../data/games';
+import { HOME_SEO, SITE_URL, gamePathFor, seoPageForPath } from '../data/seoPages';
 import { getMoongoldConfig, saveMoongoldConfig } from '../services/moongoldApi';
 import { getR2Config, saveR2Config } from '../services/storageService';
 import { auth, onAuthStateChanged, logoutGoogle, getRedirectResult } from '../services/firebaseAuth';
@@ -29,6 +30,21 @@ export const AppProvider = ({ children }) => {
   const [exchangeRate] = useState(340); // 1 USD = 340 LKR
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGame, setSelectedGameRaw] = useState(() => {
+    // A game landing URL (/pubg-uc-sri-lanka/ etc.) opens that game straight away
+    try {
+      const landing = seoPageForPath(window.location.pathname);
+      const landingGame = landing && GAMES_DATA.find(g => g.id === landing.gameId);
+      if (landingGame) {
+        sessionStorage.setItem('mads_selected_game_id', landingGame.id);
+        return landingGame;
+      }
+      // Plain "/" is the home page now that an open game has its own URL (a refresh
+      // lands on the game's path), so only restore the saved game on other paths.
+      if (window.location.pathname === '/') {
+        sessionStorage.removeItem('mads_selected_game_id');
+        return null;
+      }
+    } catch {}
     try {
       const saved = sessionStorage.getItem('mads_selected_game_id');
       if (saved) {
@@ -385,6 +401,60 @@ export const AppProvider = ({ children }) => {
       return next;
     });
   };
+
+  // Keep the address bar and <head> in step with the open game, so every game has its own
+  // shareable, indexable URL (/free-fire-diamonds-sri-lanka/ …) and Back returns home.
+  // Only "/" and the game landing paths are touched; /admin, /ref/… etc. are left alone.
+  const seoUrlFirstRun = React.useRef(true);
+  useEffect(() => {
+    const firstRun = seoUrlFirstRun.current;
+    seoUrlFirstRun.current = false;
+    const path = window.location.pathname;
+    const onGamePath = Boolean(seoPageForPath(path));
+    const gamePath = selectedGame ? gamePathFor(selectedGame.id) : null;
+    const target = gamePath || '/';
+    if (path !== target && (path === '/' || onGamePath)) {
+      const url = target + window.location.search + window.location.hash;
+      if (firstRun) window.history.replaceState(window.history.state, '', url);
+      else window.history.pushState(null, '', url);
+    }
+
+    const page = gamePath ? seoPageForPath(gamePath) : null;
+    const title = page ? page.title : HOME_SEO.title;
+    const description = page ? page.description : HOME_SEO.description;
+    const canonical = SITE_URL + (gamePath || '/');
+    document.title = title;
+    const setAttr = (selector, attr, value) => {
+      const el = document.head.querySelector(selector);
+      if (el) el.setAttribute(attr, value);
+    };
+    setAttr('meta[name="description"]', 'content', description);
+    setAttr('link[rel="canonical"]', 'href', canonical);
+    setAttr('meta[property="og:url"]', 'content', canonical);
+    setAttr('meta[property="og:title"]', 'content', title);
+    setAttr('meta[property="og:description"]', 'content', description);
+    setAttr('meta[name="twitter:url"]', 'content', canonical);
+    setAttr('meta[name="twitter:title"]', 'content', title);
+    setAttr('meta[name="twitter:description"]', 'content', description);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedGame?.id]);
+
+  // Browser Back/Forward between home and game URLs
+  useEffect(() => {
+    const onPopState = () => {
+      const path = window.location.pathname;
+      const page = seoPageForPath(path);
+      if (page) {
+        const game = GAMES_DATA.find(g => g.id === page.gameId);
+        if (game) setSelectedGame(game);
+      } else if (path === '/') {
+        setSelectedGame(null);
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Listen for /admin in browser URL
   useEffect(() => {
