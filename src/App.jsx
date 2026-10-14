@@ -84,7 +84,7 @@ const MainContent = () => {
   const pageKey = [selectedGame?.id || '', isUserProfileOpen, isWalletModalOpen, isResellerDashboardOpen, isResellerLoginPageOpen, isResellerPageOpen, isReferralPageOpen, isContactPageOpen, isReviewsPageOpen, isLeaderboardPageOpen, isGameCatalogOpen, isBlogPageOpen].join('|');
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-[#0b0b10]' : 'bg-[#F8FAFF]'} flex flex-col justify-between pb-0 font-sans text-[#0f172a] overflow-x-hidden`}>
+    <div className={`min-h-screen ${isDark ? 'mads-stage-dark' : 'mads-stage-light'} flex flex-col justify-between pb-0 font-sans text-[#0f172a] overflow-x-hidden`}>
       <div className={themeCls}>
         <CookieNotice />
         <Navbar />
@@ -166,12 +166,12 @@ const MainContent = () => {
 
       {/* Footer: Only visible on the main home page, not on sub-pages */}
       {!selectedGame && !isUserProfileOpen && !isWalletModalOpen && !isResellerDashboardOpen && !isResellerLoginPageOpen && !isResellerPageOpen && !isReferralPageOpen && !isContactPageOpen && !isReviewsPageOpen && !isLeaderboardPageOpen && !isGameCatalogOpen && !isBlogPageOpen && (
-      <footer className="relative overflow-hidden text-white border-t border-[#cc040a]/25" style={{ background: 'linear-gradient(180deg,#0d0a0b 0%,#0a0608 60%,#080408 100%)' }}>
+      <footer className="relative overflow-hidden text-white border-t border-[#1677ff]/25" style={{ background: 'linear-gradient(180deg,#0b1a45 0%,#08143a 60%,#061030 100%)' }}>
 
         {/* Ambient glows + top accent line */}
-        <div className="absolute top-0 left-[12%] right-[12%] h-px bg-gradient-to-r from-transparent via-[#cc040a] to-transparent pointer-events-none" />
-        <div className="absolute -top-32 -right-24 w-[420px] h-[420px] rounded-full bg-[#cc040a]/[0.08] blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-16 w-[320px] h-[320px] rounded-full bg-[#cc040a]/[0.06] blur-3xl pointer-events-none" />
+        <div className="absolute top-0 left-[12%] right-[12%] h-px bg-gradient-to-r from-transparent via-[#1677ff] to-transparent pointer-events-none" />
+        <div className="absolute -top-32 -right-24 w-[420px] h-[420px] rounded-full bg-[#1677ff]/[0.08] blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-16 w-[320px] h-[320px] rounded-full bg-[#1677ff]/[0.06] blur-3xl pointer-events-none" />
         <div
           className="absolute inset-0 opacity-[0.035] pointer-events-none"
           style={{
@@ -190,12 +190,12 @@ const MainContent = () => {
             {/* Brand */}
             <div className="md:col-span-5 lg:col-span-5">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#cc040a] to-[#ff4444] flex items-center justify-center shadow-[0_8px_24px_-6px_rgba(204,4,10,0.6)] shrink-0">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#1677ff] to-[#4a9cff] flex items-center justify-center shadow-[0_8px_24px_-6px_rgba(22,119,255,0.6)] shrink-0">
                   <Flame size={22} color="#fff" />
                 </div>
                 <div className="leading-none">
                   <div className="font-heading font-extrabold text-xl tracking-tight">MADS TOPUP</div>
-                  <div className="mt-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#cc040a]">Enterprise · Sri Lanka</div>
+                  <div className="mt-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#1677ff]">Enterprise · Sri Lanka</div>
                 </div>
               </div>
 
@@ -204,7 +204,7 @@ const MainContent = () => {
               </p>
 
               <div className="mt-6 flex flex-wrap items-center gap-2.5">
-                <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#cc040a]/10 border border-[#cc040a]/25 text-[11px] font-bold tracking-[0.1em] text-[#ff6b6b]">
+                <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#1677ff]/10 border border-[#1677ff]/25 text-[11px] font-bold tracking-[0.1em] text-[#6db4ff]">
                   🇱🇰 SRI LANKA OFFICIAL STORE
                 </span>
                 <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-[11px] font-semibold text-white/60">
@@ -219,7 +219,7 @@ const MainContent = () => {
 
             {/* Quick links */}
             <div className="md:col-span-3 lg:col-span-3">
-              <h4 className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#cc040a]">Quick Links</h4>
+              <h4 className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#1677ff]">Quick Links</h4>
               <ul className="mt-5 flex flex-col gap-1">
                 <li>
                   <button
@@ -246,7 +246,7 @@ const MainContent = () => {
                       onClick={action}
                       className="group inline-flex items-center gap-2 py-1.5 text-sm font-medium text-white/55 hover:text-white transition-colors cursor-pointer"
                     >
-                      <span className="w-0 h-px bg-[#cc040a] group-hover:w-3 transition-all duration-200" />
+                      <span className="w-0 h-px bg-[#1677ff] group-hover:w-3 transition-all duration-200" />
                       <span>{label}</span>
                     </button>
                   </li>
@@ -256,7 +256,7 @@ const MainContent = () => {
 
             {/* Contact */}
             <div className="md:col-span-4 lg:col-span-4">
-              <h4 className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#cc040a]">Contact Us</h4>
+              <h4 className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#1677ff]">Contact Us</h4>
               <div className="mt-5 flex flex-col gap-3">
                 {[
                   { icon: '📞', label: 'WhatsApp', value: '+94 74 043 6276', href: 'https://wa.me/94740436276', highlight: true },
@@ -266,12 +266,12 @@ const MainContent = () => {
                 ].map(({ icon, label, value, href, highlight }) => {
                   const inner = (
                     <>
-                      <span className="w-10 h-10 rounded-xl bg-white/[0.05] border border-white/10 flex items-center justify-center text-base shrink-0 group-hover:bg-[#cc040a]/15 group-hover:border-[#cc040a]/30 transition-colors">
+                      <span className="w-10 h-10 rounded-xl bg-white/[0.05] border border-white/10 flex items-center justify-center text-base shrink-0 group-hover:bg-[#1677ff]/15 group-hover:border-[#1677ff]/30 transition-colors">
                         {icon}
                       </span>
                       <span className="min-w-0">
                         <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35">{label}</span>
-                        <span className={`block mt-0.5 text-sm font-semibold truncate ${highlight ? 'text-[#ff6b6b]' : 'text-white/70'}`}>{value}</span>
+                        <span className={`block mt-0.5 text-sm font-semibold truncate ${highlight ? 'text-[#6db4ff]' : 'text-white/70'}`}>{value}</span>
                       </span>
                     </>
                   );
@@ -292,7 +292,7 @@ const MainContent = () => {
 
           {/* ── Legal disclaimer ── */}
           <div id="legal-disclaimer" className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-5 sm:p-6">
-            <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#cc040a]/90">
+            <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#1677ff]/90">
               ⚠️ Third-Party Reseller Disclaimer &amp; Trademark Notice
             </p>
             <p className="mt-3 text-[11.5px] leading-[1.85] text-white/40">
@@ -300,7 +300,7 @@ const MainContent = () => {
               We do not collect any game account passwords or login credentials — only Player UIDs are required for top-up delivery. All top-ups are delivered via the official MooGold reseller API.
               All game titles, trademarks, logos, and artwork (including Free Fire®, PUBG Mobile®, Mobile Legends: Bang Bang®, Blood Strike®, Delta Force®, Garena Shells®) are registered trademarks of their respective copyright holders and are used strictly for product identification and digital top-up delivery purposes only.
               DMCA &amp; Copyright Contact:{' '}
-              <a href="mailto:info@trivextit.com" className="text-[#ff6b6b] font-bold hover:underline">info@trivextit.com</a>.
+              <a href="mailto:info@trivextit.com" className="text-[#6db4ff] font-bold hover:underline">info@trivextit.com</a>.
             </p>
           </div>
 

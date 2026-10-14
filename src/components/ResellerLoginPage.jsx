@@ -50,7 +50,7 @@ export const ResellerLoginPage = () => {
     <div className="min-h-[85vh] bg-[#F4F6FB] py-12 px-4 sm:px-6 flex flex-col justify-center items-center relative overflow-hidden font-sans">
       
       {/* Background Decorative Blur Elements */}
-      <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-red-500/5 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-brand-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
       {/* Top Navigation Bar / Back to Homepage Button */}
       <div className="w-full max-w-md mb-6 flex items-center justify-between z-10">
@@ -62,7 +62,7 @@ export const ResellerLoginPage = () => {
           <span>Back to Homepage</span>
         </button>
 
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-100 border border-red-200 text-red-700 text-xs font-extrabold">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-100 border border-brand-200 text-brand-700 text-xs font-extrabold">
           <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
           <span>RESELLER PORTAL</span>
         </div>
@@ -133,7 +133,7 @@ export const ResellerLoginPage = () => {
           {/* LOGIN Action Button (Matching Screenshot - Pill Shape / Full Width) */}
           <button
             type="submit"
-            className="w-full py-4 bg-gradient-to-r from-red-600 via-rose-600 to-red-500 hover:from-red-500 hover:to-rose-500 text-white font-extrabold text-sm sm:text-base tracking-widest uppercase rounded-2xl transition-all shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 cursor-pointer mt-3 active:scale-[0.99]"
+            className="w-full py-4 bg-gradient-to-r from-brand-600 via-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-500 text-white font-extrabold text-sm sm:text-base tracking-widest uppercase rounded-2xl transition-all shadow-lg shadow-brand-600/30 flex items-center justify-center gap-2 cursor-pointer mt-3 active:scale-[0.99]"
           >
             <span>LOGIN</span>
           </button>

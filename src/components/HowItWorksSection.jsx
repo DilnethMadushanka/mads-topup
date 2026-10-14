@@ -13,9 +13,9 @@ const STEPS = [
     icon: Gamepad2,
     title: "Choose Your Game",
     desc: "Pick from PUBG Mobile, Free Fire, Mobile Legends, and more premium titles.",
-    color: "#cc040a",
-    bg: "rgba(204,4,10,0.08)",
-    border: "rgba(204,4,10,0.18)",
+    color: "#1677ff",
+    bg: "rgba(22,119,255,0.08)",
+    border: "rgba(22,119,255,0.18)",
   },
   {
     number: "02",
@@ -124,7 +124,7 @@ export const HowItWorksSection = () => {
       style={{ background: "linear-gradient(180deg, #f8faff 0%, #ffffff 55%, #f4f6ff 100%)" }}
     >
       {/* soft background accents */}
-      <div className="absolute -top-32 -left-24 w-[420px] h-[420px] rounded-full bg-[#cc040a]/[0.06] blur-3xl pointer-events-none" />
+      <div className="absolute -top-32 -left-24 w-[420px] h-[420px] rounded-full bg-[#1677ff]/[0.06] blur-3xl pointer-events-none" />
       <div className="absolute -bottom-32 -right-24 w-[460px] h-[460px] rounded-full bg-violet-500/[0.07] blur-3xl pointer-events-none" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
@@ -133,14 +133,14 @@ export const HowItWorksSection = () => {
           {/* ── LEFT: heading + steps timeline ── */}
           <div className="lg:col-span-7">
             <span className="section-badge">
-              <Play size={10} fill="#cc040a" />
+              <Play size={10} fill="#1677ff" />
               HOW IT WORKS
             </span>
-            <h2 className="mt-2 font-heading font-extrabold text-slate-900 tracking-tight leading-[1.08] text-4xl sm:text-5xl">
+            <h2 className="midas-heading mt-2 font-heading font-extrabold text-slate-900 tracking-tight leading-[1.08] text-4xl sm:text-5xl">
               Top-Up in Under{" "}
               <span
                 style={{
-                  background: "linear-gradient(135deg, #cc040a 0%, #ff4444 100%)",
+                  background: "linear-gradient(135deg, #1677ff 0%, #4a9cff 100%)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                 }}
@@ -157,7 +157,7 @@ export const HowItWorksSection = () => {
               {/* connector line */}
               <span
                 aria-hidden="true"
-                className="absolute left-[27px] top-8 bottom-8 w-px bg-gradient-to-b from-[#cc040a]/40 via-violet-500/30 to-emerald-500/40"
+                className="absolute left-[27px] top-8 bottom-8 w-px bg-gradient-to-b from-[#1677ff]/40 via-violet-500/30 to-emerald-500/40"
               />
               {STEPS.map((step, i) => {
                 const Icon = step.icon;
@@ -202,7 +202,7 @@ export const HowItWorksSection = () => {
           <div className="lg:col-span-5 flex justify-center">
             <div className="relative w-full max-w-[340px]">
               {/* glow */}
-              <div className="absolute -inset-8 rounded-[3rem] bg-gradient-to-br from-[#cc040a]/25 via-transparent to-violet-500/25 blur-3xl pointer-events-none" />
+              <div className="absolute -inset-8 rounded-[3rem] bg-gradient-to-br from-[#1677ff]/25 via-transparent to-violet-500/25 blur-3xl pointer-events-none" />
 
               {/* floating chips */}
               <div className="hidden sm:flex absolute -left-10 top-16 z-20 items-center gap-2 px-3.5 py-2 rounded-full bg-white border border-slate-200 shadow-[0_12px_30px_-12px_rgba(15,23,42,0.3)] text-xs font-bold text-slate-800">
@@ -223,7 +223,7 @@ export const HowItWorksSection = () => {
                   tabIndex={0}
                   style={{
                     position: "relative", borderRadius: 32, overflow: "hidden",
-                    background: "#0a0a0f", outline: "none",
+                    background: "#061030", outline: "none",
                   }}
                 >
                   <video
@@ -243,17 +243,17 @@ export const HowItWorksSection = () => {
                     <div style={{
                       position: "absolute", inset: 0, display: "flex", flexDirection: "column",
                       alignItems: "center", justifyContent: "center", gap: 12,
-                      background: "linear-gradient(135deg, #0f0a0b 0%, #1a0d12 100%)",
+                      background: "linear-gradient(135deg, #0a1a4a 0%, #06123a 100%)",
                     }}>
                       <div style={{
                         width: 64, height: 64, borderRadius: "50%",
-                        background: "rgba(204,4,10,0.15)", border: "2px solid rgba(204,4,10,0.3)",
+                        background: "rgba(22,119,255,0.15)", border: "2px solid rgba(22,119,255,0.3)",
                         display: "flex", alignItems: "center", justifyContent: "center",
                       }}>
-                        <Play size={28} color="#cc040a" fill="rgba(204,4,10,0.4)" />
+                        <Play size={28} color="#1677ff" fill="rgba(22,119,255,0.4)" />
                       </div>
                       <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: 600, textAlign: "center", margin: 0, padding: "0 24px" }}>
-                        Video not found. Place your MP4 in <code style={{ color: "#ff6b6b" }}>/public/how-it-works.mp4</code>
+                        Video not found. Place your MP4 in <code style={{ color: "#6db4ff" }}>/public/how-it-works.mp4</code>
                       </p>
                     </div>
                   )}
@@ -272,20 +272,20 @@ export const HowItWorksSection = () => {
                       <div style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
                         <div style={{
                           position: "absolute", width: 100, height: 100, borderRadius: "50%",
-                          border: "2px solid rgba(204,4,10,0.4)",
+                          border: "2px solid rgba(22,119,255,0.4)",
                           animation: "hiw-pulse 2s ease-out infinite",
                         }} />
                         <div style={{
                           position: "absolute", width: 120, height: 120, borderRadius: "50%",
-                          border: "2px solid rgba(204,4,10,0.2)",
+                          border: "2px solid rgba(22,119,255,0.2)",
                           animation: "hiw-pulse 2s ease-out infinite 0.4s",
                         }} />
                         <div
                           style={{
                             width: 76, height: 76, borderRadius: "50%", cursor: "pointer",
-                            background: "linear-gradient(135deg, #cc040a 0%, #ff2a30 100%)",
+                            background: "linear-gradient(135deg, #1677ff 0%, #3591ff 100%)",
                             display: "flex", alignItems: "center", justifyContent: "center",
-                            boxShadow: "0 8px 32px rgba(204,4,10,0.55)",
+                            boxShadow: "0 8px 32px rgba(22,119,255,0.55)",
                             transition: "transform 0.2s", zIndex: 1,
                           }}
                           onMouseEnter={e => e.currentTarget.style.transform = "scale(1.08)"}
@@ -325,13 +325,13 @@ export const HowItWorksSection = () => {
                       >
                         <div style={{
                           height: "100%", borderRadius: 99, width: `${progress}%`,
-                          background: "linear-gradient(90deg, #cc040a, #ff4444)",
+                          background: "linear-gradient(90deg, #1677ff, #4a9cff)",
                           transition: "width 0.1s linear", position: "relative",
                         }}>
                           <div style={{
                             position: "absolute", right: -6, top: "50%", transform: "translateY(-50%)",
                             width: 12, height: 12, borderRadius: "50%",
-                            background: "#fff", boxShadow: "0 0 6px rgba(204,4,10,0.6)",
+                            background: "#fff", boxShadow: "0 0 6px rgba(22,119,255,0.6)",
                           }} />
                         </div>
                       </div>

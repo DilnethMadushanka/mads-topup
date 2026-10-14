@@ -37,30 +37,30 @@ export const DownloadAppModal = () => {
 
   const iosSteps = [
     {
-      icon: <Share2 className="w-4 h-4 text-[#cc040a]" />,
-      text: <>Tap the <strong>Share button</strong> <Share2 className="w-3.5 h-3.5 text-[#cc040a] inline mx-0.5" /> at the bottom of the Safari browser bar.</>
+      icon: <Share2 className="w-4 h-4 text-[#1677ff]" />,
+      text: <>Tap the <strong>Share button</strong> <Share2 className="w-3.5 h-3.5 text-[#1677ff] inline mx-0.5" /> at the bottom of the Safari browser bar.</>
     },
     {
-      icon: <PlusSquare className="w-4 h-4 text-[#cc040a]" />,
-      text: <>Scroll down and tap <strong>"Add to Home Screen"</strong> <PlusSquare className="w-3.5 h-3.5 text-[#cc040a] inline mx-0.5" />.</>
+      icon: <PlusSquare className="w-4 h-4 text-[#1677ff]" />,
+      text: <>Scroll down and tap <strong>"Add to Home Screen"</strong> <PlusSquare className="w-3.5 h-3.5 text-[#1677ff] inline mx-0.5" />.</>
     },
     {
-      icon: <ShieldCheck className="w-4 h-4 text-[#cc040a]" />,
+      icon: <ShieldCheck className="w-4 h-4 text-[#1677ff]" />,
       text: <>Tap <strong>"Add"</strong> in the top-right. MADS TOPUP icon appears instantly on your iPhone! 🎉</>
     },
   ];
 
   const androidSteps = [
     {
-      icon: <MoreVertical className="w-4 h-4 text-[#cc040a]" />,
+      icon: <MoreVertical className="w-4 h-4 text-[#1677ff]" />,
       text: <>Tap the <strong>Browser Menu (⋮)</strong> — three dots in the top-right corner of Chrome.</>
     },
     {
-      icon: <Download className="w-4 h-4 text-[#cc040a]" />,
+      icon: <Download className="w-4 h-4 text-[#1677ff]" />,
       text: <>Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.</>
     },
     {
-      icon: <Smartphone className="w-4 h-4 text-[#cc040a]" />,
+      icon: <Smartphone className="w-4 h-4 text-[#1677ff]" />,
       text: <>Confirm <strong>"Install"</strong>. MADS TOPUP appears as an app on your phone instantly! 🚀</>
     },
   ];
@@ -81,7 +81,7 @@ export const DownloadAppModal = () => {
         `}</style>
 
         {/* ── RED HEADER BANNER ── */}
-        <div className="relative bg-gradient-to-br from-[#cc040a] via-red-600 to-[#a00208] px-6 pt-8 pb-7 text-center overflow-hidden">
+        <div className="relative bg-gradient-to-br from-[#1677ff] via-brand-600 to-[#0a55c6] px-6 pt-8 pb-7 text-center overflow-hidden">
           {/* Subtle pattern overlay */}
           <div className="absolute inset-0 opacity-10"
             style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '20px 20px' }}
@@ -105,7 +105,7 @@ export const DownloadAppModal = () => {
             <Sparkles className="w-5 h-5 text-amber-300 animate-pulse shrink-0" />
           </h2>
           <p className="text-white font-black text-xl tracking-tight">to Home Screen</p>
-          <p className="text-[12px] text-red-100 font-medium mt-1.5 leading-snug">
+          <p className="text-[12px] text-brand-100 font-medium mt-1.5 leading-snug">
             Install instantly — no App Store needed, 0 MB storage
           </p>
         </div>
@@ -116,7 +116,7 @@ export const DownloadAppModal = () => {
           {/* 1-Tap Install CTA */}
           <button
             onClick={handleInstallPwa}
-            className="w-full p-4 bg-[#cc040a] hover:bg-[#b00308] text-white rounded-2xl font-black text-sm flex items-center justify-between transition-all shadow-lg shadow-red-600/25 cursor-pointer group active:scale-[0.98]"
+            className="w-full p-4 bg-[#1677ff] hover:bg-[#0d68e6] text-white rounded-2xl font-black text-sm flex items-center justify-between transition-all shadow-lg shadow-brand-600/25 cursor-pointer group active:scale-[0.98]"
           >
             <div className="flex items-center gap-3 text-left">
               <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
@@ -124,10 +124,10 @@ export const DownloadAppModal = () => {
               </div>
               <div>
                 <div className="font-extrabold text-sm">Add App to Home Screen</div>
-                <div className="text-[11px] text-red-200 font-medium">1-Tap Install • Fast & Light (0 MB)</div>
+                <div className="text-[11px] text-brand-200 font-medium">1-Tap Install • Fast & Light (0 MB)</div>
               </div>
             </div>
-            <ArrowRight className="w-5 h-5 text-red-200 group-hover:translate-x-1 transition-transform shrink-0" />
+            <ArrowRight className="w-5 h-5 text-brand-200 group-hover:translate-x-1 transition-transform shrink-0" />
           </button>
 
           {/* OS Tab Selector */}
@@ -136,7 +136,7 @@ export const DownloadAppModal = () => {
               onClick={() => setActiveTab('ios')}
               className={`flex-1 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer font-black ${
                 activeTab === 'ios'
-                  ? 'bg-[#cc040a] text-white shadow-md shadow-red-500/20'
+                  ? 'bg-[#1677ff] text-white shadow-md shadow-brand-500/20'
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
@@ -147,7 +147,7 @@ export const DownloadAppModal = () => {
               onClick={() => setActiveTab('android')}
               className={`flex-1 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer font-black ${
                 activeTab === 'android'
-                  ? 'bg-[#cc040a] text-white shadow-md shadow-red-500/20'
+                  ? 'bg-[#1677ff] text-white shadow-md shadow-brand-500/20'
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
@@ -159,7 +159,7 @@ export const DownloadAppModal = () => {
           {/* Step-by-Step Instructions */}
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
             {/* Heading */}
-            <div className="text-[11px] font-black text-[#cc040a] uppercase tracking-widest flex items-center gap-1.5">
+            <div className="text-[11px] font-black text-[#1677ff] uppercase tracking-widest flex items-center gap-1.5">
               {activeTab === 'ios'
                 ? <><Apple className="w-3.5 h-3.5" /> How to Add on iPhone / iPad (Safari)</>
                 : <><Globe className="w-3.5 h-3.5" /> How to Add on Android (Chrome / Samsung)</>
@@ -173,7 +173,7 @@ export const DownloadAppModal = () => {
                   key={idx}
                   className="flex items-start gap-3 bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm"
                 >
-                  <div className="w-6 h-6 rounded-lg bg-red-50 border border-red-100 text-[#cc040a] font-black text-xs flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="w-6 h-6 rounded-lg bg-brand-50 border border-brand-100 text-[#1677ff] font-black text-xs flex items-center justify-center shrink-0 mt-0.5">
                     {idx + 1}
                   </div>
                   <div className="text-xs text-slate-700 font-medium leading-relaxed">
@@ -186,12 +186,12 @@ export const DownloadAppModal = () => {
 
           {/* Feature Badges */}
           <div className="grid grid-cols-2 gap-2">
-            <div className="bg-red-50 border border-red-100 p-3 rounded-xl flex items-center gap-2">
-              <Zap className="w-4 h-4 text-[#cc040a] shrink-0" />
+            <div className="bg-brand-50 border border-brand-100 p-3 rounded-xl flex items-center gap-2">
+              <Zap className="w-4 h-4 text-[#1677ff] shrink-0" />
               <span className="text-xs font-black text-slate-800">Instant Access</span>
             </div>
-            <div className="bg-red-50 border border-red-100 p-3 rounded-xl flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-[#cc040a] shrink-0" />
+            <div className="bg-brand-50 border border-brand-100 p-3 rounded-xl flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-[#1677ff] shrink-0" />
               <span className="text-xs font-black text-slate-800">100% Safe & Free</span>
             </div>
           </div>

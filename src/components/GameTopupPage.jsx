@@ -382,7 +382,7 @@ export const GameTopupPage = () => {
         particleCount: 100,
         spread: 80,
         origin: { y: 0.5 },
-        colors: ['#cc040a', '#cc040a', '#10B981', '#F59E0B']
+        colors: ['#1677ff', '#1677ff', '#10B981', '#F59E0B']
       });
     } catch (e) {}
 
@@ -398,7 +398,7 @@ export const GameTopupPage = () => {
           onClick={() => setSelectedGame(null)}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-slate-800 hover:bg-slate-100 font-extrabold text-xs border border-slate-200 cursor-pointer transition-all shadow-xs"
         >
-          <ArrowLeft className="w-4 h-4 text-[#cc040a]" />
+          <ArrowLeft className="w-4 h-4 text-[#1677ff]" />
           <span>Back to All Games</span>
         </button>
 
@@ -469,7 +469,7 @@ export const GameTopupPage = () => {
             </div>
             <div className="flex justify-between border-b border-slate-200 pb-2">
               <span className="text-slate-500 font-semibold">Moongold API Ref:</span>
-              <span className="font-mono font-bold text-[#cc040a]">{completedOrder.moongoldRef}</span>
+              <span className="font-mono font-bold text-[#1677ff]">{completedOrder.moongoldRef}</span>
             </div>
             <div className="flex justify-between border-b border-slate-200 pb-2">
               <span className="text-slate-500 font-semibold">Game Title:</span>
@@ -491,7 +491,7 @@ export const GameTopupPage = () => {
             </div>
             <div className="flex justify-between pt-1 font-bold text-sm">
               <span className="text-slate-700">Total Price Paid:</span>
-              <span className="text-[#cc040a] font-black">{formatLkr(completedOrder.priceLkr)}</span>
+              <span className="text-[#1677ff] font-black">{formatLkr(completedOrder.priceLkr)}</span>
             </div>
           </div>
 
@@ -562,7 +562,7 @@ export const GameTopupPage = () => {
           {isVoucherGame ? (
           <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 sm:p-7 mb-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-full bg-[#cc040a] text-white font-extrabold flex items-center justify-center text-sm shadow-md">
+              <div className="w-8 h-8 rounded-full bg-[#1677ff] text-white font-extrabold flex items-center justify-center text-sm shadow-md">
                 1
               </div>
               <div>
@@ -582,7 +582,7 @@ export const GameTopupPage = () => {
           {/* STEP 1: Verify Your Player ID (Matching Screenshot 1) */}
           <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 sm:p-7 mb-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-full bg-[#cc040a] text-white font-extrabold flex items-center justify-center text-sm shadow-md">
+              <div className="w-8 h-8 rounded-full bg-[#1677ff] text-white font-extrabold flex items-center justify-center text-sm shadow-md">
                 1
               </div>
               <div>
@@ -598,9 +598,9 @@ export const GameTopupPage = () => {
               /* Mobile Legends: Two separate labeled boxes for User ID + Zone ID */
               <div className="flex flex-col sm:flex-row gap-3">
                 {/* User ID Box */}
-                <div className="flex-1 bg-[#F8FAFC] border-2 border-slate-200 rounded-2xl shadow-inner overflow-hidden focus-within:border-[#cc040a] transition-colors">
+                <div className="flex-1 bg-[#F8FAFC] border-2 border-slate-200 rounded-2xl shadow-inner overflow-hidden focus-within:border-[#1677ff] transition-colors">
                   <div className="px-4 pt-2.5 pb-0">
-                    <span className="text-[10px] font-extrabold text-[#cc040a] uppercase tracking-widest">User ID</span>
+                    <span className="text-[10px] font-extrabold text-[#1677ff] uppercase tracking-widest">User ID</span>
                   </div>
                   <input
                     type="text"
@@ -661,7 +661,7 @@ export const GameTopupPage = () => {
                 type="button"
                 onClick={handleVerifyIgn}
                 disabled={isVerifyingIgn}
-                className="px-6 py-3 bg-[#cc040a] hover:bg-[#b00308] text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-md w-1/2 sm:w-auto"
+                className="px-6 py-3 bg-[#1677ff] hover:bg-[#0d68e6] text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-md w-1/2 sm:w-auto"
               >
                 {isVerifyingIgn ? (
                   <RefreshCw className="w-4 h-4 animate-spin" />
@@ -733,14 +733,14 @@ export const GameTopupPage = () => {
           <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 sm:p-7 mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#cc040a] text-white font-extrabold flex items-center justify-center text-sm shadow-md">
+                <div className="w-8 h-8 rounded-full bg-[#1677ff] text-white font-extrabold flex items-center justify-center text-sm shadow-md">
                   2
                 </div>
                 <div>
                   <h2 className="text-lg font-black text-slate-900 font-heading leading-none">
                     Select {selectedGame.currencyName} Packages
                   </h2>
-                  <div className="w-12 h-1 bg-[#cc040a] rounded-full mt-1.5"></div>
+                  <div className="w-12 h-1 bg-[#1677ff] rounded-full mt-1.5"></div>
                 </div>
               </div>
 
@@ -761,7 +761,7 @@ export const GameTopupPage = () => {
                   <button
                     onClick={() => setSortOrder('lth')}
                     className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
-                      sortOrder === 'lth' ? 'bg-[#cc040a] text-white shadow-sm' : 'text-slate-400 hover:text-slate-700'
+                      sortOrder === 'lth' ? 'bg-[#1677ff] text-white shadow-sm' : 'text-slate-400 hover:text-slate-700'
                     }`}
                   >
                     <ArrowUp className="w-3 h-3" />
@@ -770,7 +770,7 @@ export const GameTopupPage = () => {
                   <button
                     onClick={() => setSortOrder('htl')}
                     className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
-                      sortOrder === 'htl' ? 'bg-[#cc040a] text-white shadow-sm' : 'text-slate-400 hover:text-slate-700'
+                      sortOrder === 'htl' ? 'bg-[#1677ff] text-white shadow-sm' : 'text-slate-400 hover:text-slate-700'
                     }`}
                   >
                     <ArrowDown className="w-3 h-3" />
@@ -806,7 +806,7 @@ export const GameTopupPage = () => {
 
             {/* Reseller Wholesale Banner if User is Approved Reseller */}
             {isApprovedReseller && (
-              <div className="mb-5 p-4 bg-gradient-to-r from-red-950/90 via-rose-950/90 to-red-950/90 border border-red-500/50 text-white rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+              <div className="mb-5 p-4 bg-gradient-to-r from-brand-950/90 via-brand-950/90 to-brand-950/90 border border-brand-500/50 text-white rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-extrabold shrink-0 shadow-inner">
                     <Crown className="w-6 h-6" />
@@ -816,7 +816,7 @@ export const GameTopupPage = () => {
                     <p className="text-[11px] sm:text-xs text-slate-300 font-medium">You are receiving exclusive reseller wholesale prices (5% discount applied across all packages)</p>
                   </div>
                 </div>
-                <span className="px-3.5 py-1.5 bg-red-600/40 border border-red-500/50 rounded-xl text-xs font-mono font-black text-amber-300 shrink-0 shadow-sm">
+                <span className="px-3.5 py-1.5 bg-brand-600/40 border border-brand-500/50 rounded-xl text-xs font-mono font-black text-amber-300 shrink-0 shadow-sm">
                   5% DISCOUNT ACTIVE
                 </span>
               </div>
@@ -842,27 +842,27 @@ export const GameTopupPage = () => {
                     }}
                     className={`group relative flex flex-col items-center text-center rounded-[1.4rem] border bg-white p-3 sm:p-4 cursor-pointer transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 ${
                       isSelected
-                        ? 'border-[#cc040a] bg-gradient-to-b from-red-50/70 to-white shadow-[0_18px_40px_-18px_rgba(204,4,10,0.45)] ring-2 ring-[#cc040a]/20'
-                        : 'border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_10px_24px_-16px_rgba(15,23,42,0.18)] hover:border-[#cc040a]/35 hover:shadow-[0_22px_44px_-20px_rgba(204,4,10,0.35)]'
+                        ? 'border-[#1677ff] bg-gradient-to-b from-brand-50/70 to-white shadow-[0_18px_40px_-18px_rgba(22,119,255,0.45)] ring-2 ring-[#1677ff]/20'
+                        : 'border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_10px_24px_-16px_rgba(15,23,42,0.18)] hover:border-[#1677ff]/35 hover:shadow-[0_22px_44px_-20px_rgba(22,119,255,0.35)]'
                     }`}
                   >
                     {/* Popular ribbon */}
                     {pkg.isPopular && (
-                      <span className="absolute top-2.5 left-2.5 z-10 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r from-[#cc040a] to-[#ff4d4f] text-white text-[9px] font-bold uppercase tracking-wider shadow-md shadow-red-600/30">
+                      <span className="absolute top-2.5 left-2.5 z-10 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r from-[#1677ff] to-[#4da3ff] text-white text-[9px] font-bold uppercase tracking-wider shadow-md shadow-brand-600/30">
                         🔥 Popular
                       </span>
                     )}
 
                     {/* Selected check */}
                     {isSelected && (
-                      <span className="absolute top-2.5 right-2.5 z-10 w-6 h-6 rounded-full bg-[#cc040a] text-white text-xs font-bold flex items-center justify-center shadow-md shadow-red-600/40">
+                      <span className="absolute top-2.5 right-2.5 z-10 w-6 h-6 rounded-full bg-[#1677ff] text-white text-xs font-bold flex items-center justify-center shadow-md shadow-brand-600/40">
                         ✓
                       </span>
                     )}
 
                     {/* Artwork */}
-                    <div className="relative w-full aspect-[5/4] rounded-2xl overflow-hidden bg-gradient-to-br from-slate-50 via-white to-red-50/60 border border-slate-100 flex items-center justify-center">
-                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_60%,rgba(204,4,10,0.10),transparent_65%)] opacity-70 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="relative w-full aspect-[5/4] rounded-2xl overflow-hidden bg-gradient-to-br from-slate-50 via-white to-brand-50/60 border border-slate-100 flex items-center justify-center">
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_60%,rgba(22,119,255,0.10),transparent_65%)] opacity-70 group-hover:opacity-100 transition-opacity duration-300"></div>
                       {pkg.image ? (
                         <img
                           src={pkg.image}
@@ -881,7 +881,7 @@ export const GameTopupPage = () => {
 
                     {/* Bonus tag — hidden for Free Fire since additional diamonds are not delivered */}
                     {pkg.bonus && selectedGame?.id !== 'freefire_sg' && (
-                      <span className="mt-1 text-[10px] font-bold text-[#cc040a] bg-red-50 border border-red-100 px-2 py-0.5 rounded-full">
+                      <span className="mt-1 text-[10px] font-bold text-[#1677ff] bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-full">
                         {pkg.bonus}
                       </span>
                     )}
@@ -899,7 +899,7 @@ export const GameTopupPage = () => {
                           </span>
                         </div>
                       ) : (
-                        <div className="font-heading font-extrabold text-lg text-[#cc040a] tracking-tight leading-none">
+                        <div className="font-heading font-extrabold text-lg text-[#1677ff] tracking-tight leading-none">
                           {formatLkr(pkg.priceLkr)}
                         </div>
                       )}
@@ -920,14 +920,14 @@ export const GameTopupPage = () => {
                         -
                       </button>
 
-                      <span className={`font-heading font-extrabold text-base tabular-nums px-1 ${qty > 0 ? 'text-[#cc040a]' : 'text-slate-400'}`}>
+                      <span className={`font-heading font-extrabold text-base tabular-nums px-1 ${qty > 0 ? 'text-[#1677ff]' : 'text-slate-400'}`}>
                         {qty}
                       </span>
 
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); updateQuantity(pkg.id, 1); }}
-                        className="w-8 h-8 rounded-full bg-[#cc040a] hover:bg-[#b00308] text-white font-bold text-base flex items-center justify-center transition-all cursor-pointer shadow-md shadow-red-600/30 active:scale-95"
+                        className="w-8 h-8 rounded-full bg-[#1677ff] hover:bg-[#0d68e6] text-white font-bold text-base flex items-center justify-center transition-all cursor-pointer shadow-md shadow-brand-600/30 active:scale-95"
                       >
                         +
                       </button>
@@ -943,14 +943,14 @@ export const GameTopupPage = () => {
           {/* STEP 3: Payment Method & Submit Order */}
           <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 sm:p-7 mb-6">
             <div className="flex items-center gap-3 mb-5">
-              <div className="w-8 h-8 rounded-full bg-[#cc040a] text-white font-extrabold flex items-center justify-center text-sm shadow-md">
+              <div className="w-8 h-8 rounded-full bg-[#1677ff] text-white font-extrabold flex items-center justify-center text-sm shadow-md">
                 3
               </div>
               <div>
                 <h2 className="text-lg font-black text-slate-900 font-heading leading-none">
                   Select Payment Method
                 </h2>
-                <div className="w-12 h-1 bg-[#cc040a] rounded-full mt-1.5"></div>
+                <div className="w-12 h-1 bg-[#1677ff] rounded-full mt-1.5"></div>
               </div>
             </div>
 
@@ -963,12 +963,12 @@ export const GameTopupPage = () => {
                     onClick={() => setSelectedPayment(method)}
                     className={`relative p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center gap-3.5 ${
                       isSelected
-                        ? 'bg-red-50/60 border-[#cc040a] shadow-md shadow-red-600/10'
-                        : 'bg-white border-slate-200 hover:border-[#cc040a]/40 hover:shadow-sm'
+                        ? 'bg-brand-50/60 border-[#1677ff] shadow-md shadow-brand-600/10'
+                        : 'bg-white border-slate-200 hover:border-[#1677ff]/40 hover:shadow-sm'
                     }`}
                   >
                     <div className={`w-12 h-12 shrink-0 rounded-xl flex items-center justify-center text-2xl transition-colors ${
-                      isSelected ? 'bg-[#cc040a] shadow-md shadow-red-600/25' : 'bg-slate-100'
+                      isSelected ? 'bg-[#1677ff] shadow-md shadow-brand-600/25' : 'bg-slate-100'
                     }`}>
                       {method.icon}
                     </div>
@@ -976,13 +976,13 @@ export const GameTopupPage = () => {
                     <div className="min-w-0 flex-1">
                       <div className="font-extrabold text-sm text-slate-900 font-heading truncate">{method.name}</div>
                       <div className="text-xs mt-0.5 text-slate-500 leading-snug">{method.subtitle}</div>
-                      <span className="inline-block mt-1.5 text-[10px] font-black px-2 py-0.5 rounded-full bg-red-50 text-[#cc040a] border border-red-100">
+                      <span className="inline-block mt-1.5 text-[10px] font-black px-2 py-0.5 rounded-full bg-brand-50 text-[#1677ff] border border-brand-100">
                         {method.badge}
                       </span>
                     </div>
 
                     <div className={`w-6 h-6 shrink-0 rounded-full flex items-center justify-center border-2 transition-all ${
-                      isSelected ? 'bg-[#cc040a] border-[#cc040a]' : 'border-slate-300 bg-white'
+                      isSelected ? 'bg-[#1677ff] border-[#1677ff]' : 'border-slate-300 bg-white'
                     }`}>
                       {isSelected && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
                     </div>
@@ -994,13 +994,13 @@ export const GameTopupPage = () => {
               {!isLoggedIn && (
                 <div
                   onClick={() => openAuth('login')}
-                  className="p-4 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 hover:border-[#cc040a]/60 hover:bg-red-50 cursor-pointer transition-all flex items-center gap-3.5"
+                  className="p-4 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 hover:border-[#1677ff]/60 hover:bg-brand-50 cursor-pointer transition-all flex items-center gap-3.5"
                 >
                   <div className="w-12 h-12 shrink-0 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-2xl">💳</div>
                   <div className="min-w-0 flex-1">
                     <div className="font-extrabold text-sm text-slate-800 font-heading">MADS Wallet</div>
                     <div className="text-xs text-slate-500 mt-0.5">Log in to pay with wallet balance</div>
-                    <span className="inline-block mt-1.5 text-[10px] bg-[#cc040a] text-white px-2.5 py-0.5 rounded-full font-bold">Login Required</span>
+                    <span className="inline-block mt-1.5 text-[10px] bg-[#1677ff] text-white px-2.5 py-0.5 rounded-full font-bold">Login Required</span>
                   </div>
                   <ChevronRight className="w-5 h-5 text-slate-400 shrink-0" />
                 </div>
@@ -1030,13 +1030,13 @@ export const GameTopupPage = () => {
 
             {/* Payment Details Instructions & R2 Upload */}
             {selectedPayment.accountDetails && (
-              <div id="receipt-upload-section" className="bg-slate-50 p-4 rounded-2xl border-2 border-[#cc040a]/20 text-xs space-y-3 mb-6 transition-all shadow-sm">
+              <div id="receipt-upload-section" className="bg-slate-50 p-4 rounded-2xl border-2 border-[#1677ff]/20 text-xs space-y-3 mb-6 transition-all shadow-sm">
                 <div className="font-extrabold text-slate-900 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <CreditCard className="w-4 h-4 text-[#cc040a]" />
+                    <CreditCard className="w-4 h-4 text-[#1677ff]" />
                     <span>Payment Instructions ({selectedPayment.name}):</span>
                   </div>
-                  <span className="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                  <span className="text-[10px] bg-brand-600 text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
                     Receipt Required
                   </span>
                 </div>
@@ -1045,14 +1045,14 @@ export const GameTopupPage = () => {
                   <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1 font-mono text-[11px] text-slate-800">
                     <div>Bank Name: <strong>{selectedPayment.accountDetails.bankName}</strong></div>
                     <div>Account Name: <strong>{selectedPayment.accountDetails.accountName}</strong></div>
-                    <div>Account Number: <strong className="text-[#cc040a]">{selectedPayment.accountDetails.accountNumber}</strong></div>
+                    <div>Account Number: <strong className="text-[#1677ff]">{selectedPayment.accountDetails.accountNumber}</strong></div>
                     <div>Branch: <strong>{selectedPayment.accountDetails.branch}</strong></div>
                   </div>
                 )}
 
                 {selectedPayment.id === 'ezcash' && (
                   <div className="bg-white p-3 rounded-xl border border-slate-200 font-mono text-[11px] text-slate-800">
-                    <div>eZ Cash / mCash Number: <strong className="text-[#cc040a] font-extrabold text-sm">{selectedPayment.accountDetails.number}</strong></div>
+                    <div>eZ Cash / mCash Number: <strong className="text-[#1677ff] font-extrabold text-sm">{selectedPayment.accountDetails.number}</strong></div>
                   </div>
                 )}
 
@@ -1065,7 +1065,7 @@ export const GameTopupPage = () => {
                   <div>
                     <span className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5">
                       <span>Upload Slip / Receipt Screenshot</span>
-                      <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-mono font-extrabold">*REQUIRED</span>
+                      <span className="text-[10px] bg-brand-100 text-brand-700 px-1.5 py-0.5 rounded font-mono font-extrabold">*REQUIRED</span>
                     </span>
                     <span className="text-[10px] text-slate-400">Directly stored to Cloudflare R2 Storage</span>
                   </div>
@@ -1079,7 +1079,7 @@ export const GameTopupPage = () => {
                       className="text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
                     />
                     {isUploadingReceipt && (
-                      <span className="text-xs text-[#cc040a] font-bold flex items-center gap-1">
+                      <span className="text-xs text-[#1677ff] font-bold flex items-center gap-1">
                         <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                         <span>Uploading...</span>
                       </span>
@@ -1103,7 +1103,7 @@ export const GameTopupPage = () => {
             <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div>
                 <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block">Total Amount</span>
-                <div className="text-2xl sm:text-3xl font-black text-[#cc040a] font-heading">
+                <div className="text-2xl sm:text-3xl font-black text-[#1677ff] font-heading">
                   {formatLkr(totalLkr)}
                 </div>
                 <span className="text-[11px] text-slate-500 font-medium">
@@ -1115,7 +1115,7 @@ export const GameTopupPage = () => {
                 type="button"
                 onClick={handleCompleteOrder}
                 disabled={isSubmitting}
-                className="w-full sm:w-auto px-10 py-4 bg-[#cc040a] hover:bg-[#b00308] text-white font-black text-sm rounded-2xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-red-600/25"
+                className="w-full sm:w-auto px-10 py-4 bg-[#1677ff] hover:bg-[#0d68e6] text-white font-black text-sm rounded-2xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-brand-600/25"
               >
                 {isSubmitting ? (
                   <>
@@ -1142,8 +1142,8 @@ export const GameTopupPage = () => {
                 right: 0,
                 zIndex: 50,
                 background: 'linear-gradient(135deg, rgba(10,10,18,0.97) 0%, rgba(20,10,15,0.98) 100%)',
-                borderTop: '1.5px solid rgba(204,4,10,0.35)',
-                boxShadow: '0 -4px 40px rgba(204,4,10,0.18), 0 -1px 0 rgba(255,255,255,0.04)',
+                borderTop: '1.5px solid rgba(22,119,255,0.35)',
+                boxShadow: '0 -4px 40px rgba(22,119,255,0.18), 0 -1px 0 rgba(255,255,255,0.04)',
                 backdropFilter: 'blur(20px)',
                 WebkitBackdropFilter: 'blur(20px)',
                 padding: '10px 16px 12px',
@@ -1153,7 +1153,7 @@ export const GameTopupPage = () => {
               {/* Animated top glow line */}
               <div style={{
                 position: 'absolute', top: 0, left: '10%', right: '10%', height: '1px',
-                background: 'linear-gradient(90deg, transparent, rgba(204,4,10,0.7), transparent)',
+                background: 'linear-gradient(90deg, transparent, rgba(22,119,255,0.7), transparent)',
                 borderRadius: '1px'
               }} />
 
@@ -1166,10 +1166,10 @@ export const GameTopupPage = () => {
                   </span>
                   <span style={{
                     fontSize: '22px', fontWeight: 900, lineHeight: 1.1, marginTop: '2px',
-                    background: 'linear-gradient(135deg, #ff4444 0%, #cc040a 60%, #ff6b35 100%)',
+                    background: 'linear-gradient(135deg, #4a9cff 0%, #1677ff 60%, #ff6b35 100%)',
                     WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
                     backgroundClip: 'text', fontFamily: 'inherit',
-                    filter: 'drop-shadow(0 0 8px rgba(204,4,10,0.5))'
+                    filter: 'drop-shadow(0 0 8px rgba(22,119,255,0.5))'
                   }}>
                     {formatLkr(totalLkr)}
                   </span>
@@ -1186,8 +1186,8 @@ export const GameTopupPage = () => {
                     border: 'none', cursor: isSubmitting ? 'not-allowed' : 'pointer',
                     background: isSubmitting
                       ? 'rgba(150,0,0,0.5)'
-                      : 'linear-gradient(135deg, #e8060c 0%, #cc040a 50%, #a00208 100%)',
-                    boxShadow: isSubmitting ? 'none' : '0 4px 20px rgba(204,4,10,0.55), inset 0 1px 0 rgba(255,255,255,0.15)',
+                      : 'linear-gradient(135deg, #2384ff 0%, #1677ff 50%, #0a55c6 100%)',
+                    boxShadow: isSubmitting ? 'none' : '0 4px 20px rgba(22,119,255,0.55), inset 0 1px 0 rgba(255,255,255,0.15)',
                     color: '#fff', fontWeight: 900, fontSize: '13px',
                     letterSpacing: '0.02em', whiteSpace: 'nowrap',
                     transition: 'all 0.2s',
@@ -1224,10 +1224,10 @@ export const GameTopupPage = () => {
           <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden mb-6">
             <div
               onClick={() => setIsHowItWorksOpen(!isHowItWorksOpen)}
-              className={`p-5 bg-white flex items-center justify-between cursor-pointer hover:bg-red-50/40 transition-colors ${isHowItWorksOpen ? 'border-b border-slate-100' : ''}`}
+              className={`p-5 bg-white flex items-center justify-between cursor-pointer hover:bg-brand-50/40 transition-colors ${isHowItWorksOpen ? 'border-b border-slate-100' : ''}`}
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#cc040a] text-white flex items-center justify-center shadow-md shadow-red-600/20">
+                <div className="w-10 h-10 rounded-xl bg-[#1677ff] text-white flex items-center justify-center shadow-md shadow-brand-600/20">
                   <HelpCircle className="w-5 h-5" />
                 </div>
                 <div>
@@ -1254,10 +1254,10 @@ export const GameTopupPage = () => {
                 ].map(([title, desc], i, arr) => (
                   <div key={title} className="flex items-start gap-4">
                     <div className="flex flex-col items-center self-stretch">
-                      <div className="w-8 h-8 rounded-full bg-[#cc040a] text-white font-extrabold flex items-center justify-center text-sm shrink-0 shadow-md shadow-red-600/20">
+                      <div className="w-8 h-8 rounded-full bg-[#1677ff] text-white font-extrabold flex items-center justify-center text-sm shrink-0 shadow-md shadow-brand-600/20">
                         {i + 1}
                       </div>
-                      {i < arr.length - 1 && <div className="w-0.5 flex-1 bg-red-100 my-1"></div>}
+                      {i < arr.length - 1 && <div className="w-0.5 flex-1 bg-brand-100 my-1"></div>}
                     </div>
                     <div className={i < arr.length - 1 ? 'pb-5' : ''}>
                       <h4 className="text-sm font-extrabold text-slate-900 font-heading leading-8">{title}</h4>
@@ -1271,8 +1271,8 @@ export const GameTopupPage = () => {
 
           {/* 100% SECURE PAYMENTS BANNER */}
           <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 sm:p-8 text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-50 text-[#cc040a] font-bold text-xs mb-3 border border-red-100">
-              <Shield className="w-4 h-4 text-[#cc040a]" />
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-50 text-[#1677ff] font-bold text-xs mb-3 border border-brand-100">
+              <Shield className="w-4 h-4 text-[#1677ff]" />
               <span>100% Secure Payments</span>
             </div>
 

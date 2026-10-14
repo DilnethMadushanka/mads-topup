@@ -275,14 +275,14 @@ export const WalletPage = () => {
   const QUICK_USDT = ['5', '10', '20', '50'];
 
   // ── Shared style tokens ──────────────────────────────────────
-  const inputCls = 'w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-slate-900 text-sm font-bold placeholder:text-slate-400 placeholder:font-medium focus:outline-none focus:border-[#cc040a] focus:ring-4 focus:ring-[#cc040a]/10 transition-all';
+  const inputCls = 'w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-slate-900 text-sm font-bold placeholder:text-slate-400 placeholder:font-medium focus:outline-none focus:border-[#1677ff] focus:ring-4 focus:ring-[#1677ff]/10 transition-all';
   const labelCls = 'text-[11px] font-black text-slate-500 uppercase tracking-wider block mb-2';
-  const btnRed = 'w-full py-4 rounded-xl bg-[#cc040a] hover:bg-[#b00308] text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-red-600/25 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
+  const btnRed = 'w-full py-4 rounded-xl bg-[#1677ff] hover:bg-[#0d68e6] text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-brand-600/25 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
   const cardCls = 'bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5';
 
   const stepHead = (n, text) => (
     <div className="flex items-center gap-2.5 mb-3">
-      <span className="w-6 h-6 rounded-full bg-[#cc040a] text-white text-xs font-black flex items-center justify-center shrink-0 shadow-sm shadow-red-600/30">{n}</span>
+      <span className="w-6 h-6 rounded-full bg-[#1677ff] text-white text-xs font-black flex items-center justify-center shrink-0 shadow-sm shadow-brand-600/30">{n}</span>
       <span className="text-xs font-black text-slate-800 uppercase tracking-wider">{text}</span>
     </div>
   );
@@ -292,8 +292,8 @@ export const WalletPage = () => {
       {amounts.map(a => (
         <button key={a} type="button" onClick={() => set(a)}
           className={`px-4 py-1.5 rounded-full text-xs font-black transition-all cursor-pointer border-2 ${current === a
-            ? 'bg-[#cc040a] border-[#cc040a] text-white shadow-sm shadow-red-600/25'
-            : 'bg-white border-slate-200 text-slate-600 hover:border-[#cc040a]/50 hover:text-[#cc040a]'}`}>
+            ? 'bg-[#1677ff] border-[#1677ff] text-white shadow-sm shadow-brand-600/25'
+            : 'bg-white border-slate-200 text-slate-600 hover:border-[#1677ff]/50 hover:text-[#1677ff]'}`}>
           {Number(a).toLocaleString()}
         </button>
       ))}
@@ -302,30 +302,30 @@ export const WalletPage = () => {
 
   const CopyBtn = ({ text, label }) => (
     <button type="button" onClick={() => handleCopy(text, label)}
-      className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#cc040a] hover:bg-[#b00308] rounded-lg text-white text-xs font-black transition-all cursor-pointer shrink-0 shadow-sm shadow-red-600/25">
+      className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#1677ff] hover:bg-[#0d68e6] rounded-lg text-white text-xs font-black transition-all cursor-pointer shrink-0 shadow-sm shadow-brand-600/25">
       {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
       {isCopied ? 'Copied' : 'Copy'}
     </button>
   );
 
   const payToCard = ({ icon, kicker, value, copyLabel }) => (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#cc040a] via-[#b00308] to-[#7a0105] p-5 text-white shadow-lg shadow-red-700/25">
+    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1677ff] via-[#0d68e6] to-[#083a9e] p-5 text-white shadow-lg shadow-brand-700/25">
       <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/10 pointer-events-none" />
       <div className="absolute -bottom-14 -left-8 w-36 h-36 rounded-full bg-black/10 pointer-events-none" />
       <div className="relative flex items-center justify-between mb-5">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-lg">{icon}</div>
-          <span className="text-[11px] font-black uppercase tracking-widest text-red-100">{kicker}</span>
+          <span className="text-[11px] font-black uppercase tracking-widest text-brand-100">{kicker}</span>
         </div>
         <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2.5 py-1 rounded-full">Pay to</span>
       </div>
       <div className="relative flex items-end justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-red-200 mb-1">Number</div>
+          <div className="text-[10px] font-bold uppercase tracking-wider text-brand-200 mb-1">Number</div>
           <div className="text-2xl sm:text-3xl font-black font-mono tracking-[0.12em] truncate">{value}</div>
         </div>
         <button type="button" onClick={() => handleCopy(value, copyLabel)}
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white hover:bg-red-50 text-[#cc040a] rounded-xl text-xs font-black transition-all cursor-pointer shrink-0 shadow-md active:scale-95">
+          className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white hover:bg-brand-50 text-[#1677ff] rounded-xl text-xs font-black transition-all cursor-pointer shrink-0 shadow-md active:scale-95">
           {isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
           {isCopied ? 'Copied' : 'Copy'}
         </button>
@@ -334,7 +334,7 @@ export const WalletPage = () => {
   );
 
   const noteBox = (children) => (
-    <div className="flex items-start gap-2.5 bg-white border border-slate-200 border-l-4 border-l-[#cc040a] rounded-xl px-3.5 py-3 mt-3 text-[11px] text-slate-600 font-medium leading-relaxed">
+    <div className="flex items-start gap-2.5 bg-white border border-slate-200 border-l-4 border-l-[#1677ff] rounded-xl px-3.5 py-3 mt-3 text-[11px] text-slate-600 font-medium leading-relaxed">
       {children}
     </div>
   );
@@ -354,14 +354,14 @@ export const WalletPage = () => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 mb-6">
         <div className="flex items-center justify-between">
           <button onClick={goHome}
-            className="inline-flex items-center gap-2 text-xs font-black text-slate-600 hover:text-[#cc040a] bg-white border border-slate-200 px-4 py-2 rounded-xl shadow-xs transition-all cursor-pointer">
+            className="inline-flex items-center gap-2 text-xs font-black text-slate-600 hover:text-[#1677ff] bg-white border border-slate-200 px-4 py-2 rounded-xl shadow-xs transition-all cursor-pointer">
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Store</span>
           </button>
           <div className="flex items-center gap-2 text-xs font-extrabold text-slate-400 font-mono">
-            <span onClick={goHome} className="hover:underline cursor-pointer hover:text-[#cc040a] transition-colors">Home</span>
+            <span onClick={goHome} className="hover:underline cursor-pointer hover:text-[#1677ff] transition-colors">Home</span>
             <span>/</span>
-            <span className="text-[#cc040a] font-bold">My Wallet</span>
+            <span className="text-[#1677ff] font-bold">My Wallet</span>
           </div>
         </div>
       </div>
@@ -396,11 +396,11 @@ export const WalletPage = () => {
             </div>
           </div>
         ) : (
-          <div className="bg-gradient-to-r from-[#cc040a] via-[#dc2626] to-[#990207] rounded-3xl p-6 sm:p-10 text-white text-center shadow-2xl relative overflow-hidden border border-red-600/30">
+          <div className="bg-gradient-to-r from-[#1677ff] via-[#1764f5] to-[#0b5ed7] rounded-3xl p-6 sm:p-10 text-white text-center shadow-2xl relative overflow-hidden border border-brand-600/30">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-red-950/40 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-brand-950/40 rounded-full blur-3xl pointer-events-none" />
             <div className="relative z-10">
-              <span className="text-xs font-black text-red-100 uppercase tracking-widest block mb-1">Account Total Balance</span>
+              <span className="text-xs font-black text-brand-100 uppercase tracking-widest block mb-1">Account Total Balance</span>
               <div className="text-4xl sm:text-6xl font-black font-heading text-white tracking-tight">LKR {(userProfile?.walletBalance || 0).toFixed(2)}</div>
               <div className="flex items-center justify-center gap-3 mt-4 flex-wrap">
                 <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-bold text-white border border-white/30">
@@ -420,7 +420,7 @@ export const WalletPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-black text-slate-900 font-heading leading-none">Recharge Wallet</h2>
-                <div className="w-12 h-1 bg-[#cc040a] rounded-full mt-1.5 mb-1.5"></div>
+                <div className="w-12 h-1 bg-[#1677ff] rounded-full mt-1.5 mb-1.5"></div>
                 <p className="text-xs text-slate-500 font-medium">Select your preferred payment method</p>
               </div>
             </div>
@@ -429,16 +429,16 @@ export const WalletPage = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {methods.map(m => (
                 <button key={m.id} onClick={() => setActivePanel(m.id)}
-                  className="group bg-white rounded-2xl p-4 text-left border-2 border-slate-200 hover:border-[#cc040a]/50 hover:shadow-md hover:shadow-red-600/5 transition-all cursor-pointer active:scale-[0.99] flex items-center gap-4">
-                  <div className="w-14 h-14 shrink-0 rounded-2xl bg-slate-100 group-hover:bg-[#cc040a] flex items-center justify-center text-2xl transition-colors">{m.icon}</div>
+                  className="group bg-white rounded-2xl p-4 text-left border-2 border-slate-200 hover:border-[#1677ff]/50 hover:shadow-md hover:shadow-brand-600/5 transition-all cursor-pointer active:scale-[0.99] flex items-center gap-4">
+                  <div className="w-14 h-14 shrink-0 rounded-2xl bg-slate-100 group-hover:bg-[#1677ff] flex items-center justify-center text-2xl transition-colors">{m.icon}</div>
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-black text-slate-900 font-heading leading-tight">{m.label}</div>
                     <div className="text-xs text-slate-500 font-medium mt-0.5 leading-snug">{m.sub}</div>
-                    <span className="inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-50 text-[#cc040a] border border-red-100">
+                    <span className="inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-brand-50 text-[#1677ff] border border-brand-100">
                       <Zap className="w-2.5 h-2.5" />{m.badge}
                     </span>
                   </div>
-                  <ChevronRight className="w-5 h-5 shrink-0 text-slate-300 group-hover:text-[#cc040a] group-hover:translate-x-0.5 transition-all" />
+                  <ChevronRight className="w-5 h-5 shrink-0 text-slate-300 group-hover:text-[#1677ff] group-hover:translate-x-0.5 transition-all" />
                 </button>
               ))}
             </div>
@@ -446,7 +446,7 @@ export const WalletPage = () => {
             {/* ── VOUCHER REDEEM ── */}
             <div className="bg-white rounded-2xl border-2 border-dashed border-slate-300 p-5">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-11 h-11 bg-[#cc040a] rounded-xl flex items-center justify-center shadow-md shadow-red-600/25">
+                <div className="w-11 h-11 bg-[#1677ff] rounded-xl flex items-center justify-center shadow-md shadow-brand-600/25">
                   <Gift className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -459,7 +459,7 @@ export const WalletPage = () => {
                   onChange={e => setVoucherCode(e.target.value.toUpperCase())}
                   className={inputCls + ' flex-1 font-mono tracking-wider'} />
                 <button type="submit" disabled={isRedeemingVoucher || !voucherCode.trim()}
-                  className="px-7 py-3 bg-[#cc040a] hover:bg-[#b00308] text-white font-black text-sm rounded-xl shrink-0 shadow-md shadow-red-600/25 transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center">
+                  className="px-7 py-3 bg-[#1677ff] hover:bg-[#0d68e6] text-white font-black text-sm rounded-xl shrink-0 shadow-md shadow-brand-600/25 transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center">
                   {isRedeemingVoucher ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Apply'}
                 </button>
               </form>
@@ -471,7 +471,7 @@ export const WalletPage = () => {
           <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
 
             {/* Panel header — red gradient matching other pages */}
-            <div className={`bg-gradient-to-r from-[#cc040a] to-[#990207] p-5 sm:p-6 flex items-center justify-between`}>
+            <div className={`bg-gradient-to-r from-[#1677ff] to-[#0b5ed7] p-5 sm:p-6 flex items-center justify-between`}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-xl">{activeMethod?.icon}</div>
                 <div>
@@ -515,14 +515,14 @@ export const WalletPage = () => {
                     <div className="flex items-center justify-center gap-2">
                       <span className="text-2xl sm:text-3xl font-black text-slate-300 font-heading">Rs.</span>
                       <input type="number" value={genieAmount} onChange={e => setGenieAmount(e.target.value)} placeholder="0" min="50"
-                        className="w-44 sm:w-56 bg-transparent text-4xl sm:text-5xl font-black font-heading text-slate-900 text-center placeholder:text-slate-300 focus:outline-none border-b-4 border-slate-200 focus:border-[#cc040a] transition-colors pb-1" />
+                        className="w-44 sm:w-56 bg-transparent text-4xl sm:text-5xl font-black font-heading text-slate-900 text-center placeholder:text-slate-300 focus:outline-none border-b-4 border-slate-200 focus:border-[#1677ff] transition-colors pb-1" />
                     </div>
                     <div className="flex flex-wrap justify-center gap-2 mt-4">
                       {QUICK_LKR.concat(['10000']).map(a => (
                         <button key={a} type="button" onClick={() => setGenieAmount(a)}
                           className={`px-4 py-1.5 rounded-full text-xs font-black transition-all cursor-pointer border-2 ${genieAmount === a
-                            ? 'bg-[#cc040a] border-[#cc040a] text-white shadow-sm shadow-red-600/25'
-                            : 'bg-white border-slate-200 text-slate-600 hover:border-[#cc040a]/50 hover:text-[#cc040a]'}`}>
+                            ? 'bg-[#1677ff] border-[#1677ff] text-white shadow-sm shadow-brand-600/25'
+                            : 'bg-white border-slate-200 text-slate-600 hover:border-[#1677ff]/50 hover:text-[#1677ff]'}`}>
                           {Number(a).toLocaleString()}
                         </button>
                       ))}
@@ -530,26 +530,26 @@ export const WalletPage = () => {
                   </div>
 
                   {/* Bonus progress */}
-                  <div className="bg-red-50/60 border border-red-100 rounded-2xl p-4">
+                  <div className="bg-brand-50/60 border border-brand-100 rounded-2xl p-4">
                     <div className="flex items-center justify-between gap-2 mb-2.5">
                       <div className="flex items-center gap-2">
-                        <Gift className="w-4 h-4 text-[#cc040a] shrink-0" />
-                        <span className="text-xs font-black text-[#990207] uppercase tracking-wider">Recharge Bonus</span>
+                        <Gift className="w-4 h-4 text-[#1677ff] shrink-0" />
+                        <span className="text-xs font-black text-[#0b5ed7] uppercase tracking-wider">Recharge Bonus</span>
                       </div>
-                      <span className="text-[11px] font-black text-[#cc040a]">
+                      <span className="text-[11px] font-black text-[#1677ff]">
                         {nextTier ? `Rs. ${(nextTier - gAmt > 0 ? nextTier - gAmt : 0).toLocaleString()} more → +Rs. ${gBonusNext}` : 'Max bonus unlocked 🎉'}
                       </span>
                     </div>
-                    <div className="h-2.5 bg-white rounded-full overflow-hidden border border-red-100">
-                      <div className="h-full rounded-full bg-gradient-to-r from-[#cc040a] to-red-500 transition-all duration-500" style={{ width: `${tierPct}%` }} />
+                    <div className="h-2.5 bg-white rounded-full overflow-hidden border border-brand-100">
+                      <div className="h-full rounded-full bg-gradient-to-r from-[#1677ff] to-brand-500 transition-all duration-500" style={{ width: `${tierPct}%` }} />
                     </div>
                     <div className="grid grid-cols-2 gap-2.5 mt-3">
                       {[[100, 'Rs. 5,000+', (b) => b >= 100], [200, 'Rs. 10,000+', (b) => b === 200]].map(([amt, tier, isActive]) => {
                         const on = isActive(gBonus);
                         return (
-                          <div key={amt} className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 border-2 transition-all ${on ? 'bg-[#cc040a] border-[#cc040a] shadow-md shadow-red-600/25' : 'bg-white border-red-100'}`}>
-                            <span className={`text-[10px] font-black uppercase tracking-wider ${on ? 'text-red-100' : 'text-slate-500'}`}>{tier}</span>
-                            <span className={`text-base font-black font-heading ${on ? 'text-white' : 'text-[#cc040a]'}`}>+Rs. {amt}</span>
+                          <div key={amt} className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 border-2 transition-all ${on ? 'bg-[#1677ff] border-[#1677ff] shadow-md shadow-brand-600/25' : 'bg-white border-brand-100'}`}>
+                            <span className={`text-[10px] font-black uppercase tracking-wider ${on ? 'text-brand-100' : 'text-slate-500'}`}>{tier}</span>
+                            <span className={`text-base font-black font-heading ${on ? 'text-white' : 'text-[#1677ff]'}`}>+Rs. {amt}</span>
                           </div>
                         );
                       })}
@@ -560,7 +560,7 @@ export const WalletPage = () => {
                   <div className="bg-slate-50 border border-slate-200 rounded-2xl divide-y divide-slate-200 text-sm">
                     <div className="flex items-center justify-between px-4 py-3"><span className="text-slate-500 font-semibold">Amount</span><span className="font-black text-slate-900">Rs. {gAmt.toLocaleString()}</span></div>
                     <div className="flex items-center justify-between px-4 py-3"><span className="text-slate-500 font-semibold">Bonus</span><span className={`font-black ${gBonus > 0 ? 'text-emerald-600' : 'text-slate-400'}`}>{gBonus > 0 ? `+ Rs. ${gBonus}` : '—'}</span></div>
-                    <div className="flex items-center justify-between px-4 py-3.5 bg-white rounded-b-2xl"><span className="text-slate-900 font-black">You receive</span><span className="text-xl font-black font-heading text-[#cc040a]">Rs. {(gAmt + gBonus).toLocaleString()}</span></div>
+                    <div className="flex items-center justify-between px-4 py-3.5 bg-white rounded-b-2xl"><span className="text-slate-900 font-black">You receive</span><span className="text-xl font-black font-heading text-[#1677ff]">Rs. {(gAmt + gBonus).toLocaleString()}</span></div>
                   </div>
 
                   <button type="submit" disabled={isGenieLoading} className={btnRed}>
@@ -585,12 +585,12 @@ export const WalletPage = () => {
                     {[['Send', true], ['Amount', eAmt > 0], ['Verify', rnOk]].map(([label, done], i, arr) => (
                       <React.Fragment key={label}>
                         <div className="flex flex-col items-center gap-1.5">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black border-2 transition-all ${done ? 'bg-[#cc040a] border-[#cc040a] text-white shadow-md shadow-red-600/25' : 'bg-white border-slate-300 text-slate-400'}`}>
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black border-2 transition-all ${done ? 'bg-[#1677ff] border-[#1677ff] text-white shadow-md shadow-brand-600/25' : 'bg-white border-slate-300 text-slate-400'}`}>
                             {done && i > 0 ? <Check className="w-4 h-4" strokeWidth={3} /> : i + 1}
                           </div>
-                          <span className={`text-[10px] font-black uppercase tracking-wider ${done ? 'text-[#cc040a]' : 'text-slate-400'}`}>{label}</span>
+                          <span className={`text-[10px] font-black uppercase tracking-wider ${done ? 'text-[#1677ff]' : 'text-slate-400'}`}>{label}</span>
                         </div>
-                        {i < arr.length - 1 && <div className={`flex-1 h-0.5 mx-2 mb-5 rounded-full transition-colors ${arr[i + 1][1] ? 'bg-[#cc040a]' : 'bg-slate-200'}`} />}
+                        {i < arr.length - 1 && <div className={`flex-1 h-0.5 mx-2 mb-5 rounded-full transition-colors ${arr[i + 1][1] ? 'bg-[#1677ff]' : 'bg-slate-200'}`} />}
                       </React.Fragment>
                     ))}
                   </div>
@@ -598,7 +598,7 @@ export const WalletPage = () => {
                   <div className={cardCls}>
                     {stepHead(1, 'Send EZ Cash to this number')}
                     {payToCard({ icon: '📱', kicker: 'Dialog eZ Cash Merchant', value: ezCashMerchantNumber, copyLabel: 'Merchant number' })}
-                    {noteBox(<><AlertTriangle className="w-4 h-4 text-[#cc040a] shrink-0 mt-0.5" /><span>After sending, note the 14-digit <strong className="text-slate-900">RN number</strong> from your Dialog SMS or Genie App transaction history.</span></>)}
+                    {noteBox(<><AlertTriangle className="w-4 h-4 text-[#1677ff] shrink-0 mt-0.5" /><span>After sending, note the 14-digit <strong className="text-slate-900">RN number</strong> from your Dialog SMS or Genie App transaction history.</span></>)}
                   </div>
 
                   <div className={cardCls}>
@@ -624,9 +624,9 @@ export const WalletPage = () => {
                     <p className="text-[11px] text-slate-500 font-medium mt-2">The eZ Cash number the money was sent from. We match it with the payment so nobody else can use your RN.</p>
                   </div>
 
-                  <div className="flex items-center justify-between bg-red-50/60 border border-red-100 rounded-2xl px-4 py-3">
+                  <div className="flex items-center justify-between bg-brand-50/60 border border-brand-100 rounded-2xl px-4 py-3">
                     <span className="text-xs font-black text-slate-600 uppercase tracking-wider">Wallet credit</span>
-                    <span className="text-lg font-black font-heading text-[#cc040a]">Rs. {eAmt.toLocaleString()}</span>
+                    <span className="text-lg font-black font-heading text-[#1677ff]">Rs. {eAmt.toLocaleString()}</span>
                   </div>
 
                   <button type="submit" disabled={isEzCashVerifying} className={btnRed}>
@@ -661,7 +661,7 @@ export const WalletPage = () => {
                       <div className="relative">
                         <input type="text" value={binanceOrderId} onChange={e => setBinanceOrderId(e.target.value)} placeholder="Paste Order ID from Binance App..." className={inputCls + ' pr-20'} />
                         <button type="button" onClick={handlePasteBinanceOrder}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-100 hover:bg-[#cc040a] hover:text-white text-slate-700 text-[11px] font-black rounded-lg transition-all cursor-pointer">Paste</button>
+                          className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-100 hover:bg-[#1677ff] hover:text-white text-slate-700 text-[11px] font-black rounded-lg transition-all cursor-pointer">Paste</button>
                       </div>
                     </div>
                     <div>
@@ -681,7 +681,7 @@ export const WalletPage = () => {
                 <form onSubmit={handleBankDepositSubmit} className="space-y-5">
                   <div className={cardCls}>
                     {stepHead(1, 'Deposit to this bank account')}
-                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#cc040a] via-[#b00308] to-[#7a0105] p-5 text-white shadow-lg shadow-red-700/25">
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1677ff] via-[#0d68e6] to-[#083a9e] p-5 text-white shadow-lg shadow-brand-700/25">
                       <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-white/10 pointer-events-none" />
                       <div className="absolute -bottom-16 -left-10 w-40 h-40 rounded-full bg-black/10 pointer-events-none" />
                       <div className="relative flex items-center justify-between mb-6">
@@ -693,11 +693,11 @@ export const WalletPage = () => {
                       </div>
                       <div className="relative flex items-end justify-between gap-3 mb-5">
                         <div className="min-w-0">
-                          <div className="text-[10px] font-bold uppercase tracking-wider text-red-200 mb-1">Account Number</div>
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-brand-200 mb-1">Account Number</div>
                           <div className="text-2xl sm:text-3xl font-black font-mono tracking-[0.12em] truncate">{bankAccountDetails.accountNumber}</div>
                         </div>
                         <button type="button" onClick={() => handleCopy(bankAccountDetails.accountNumber, 'Account No.')}
-                          className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white hover:bg-red-50 text-[#cc040a] rounded-xl text-xs font-black transition-all cursor-pointer shrink-0 shadow-md active:scale-95">
+                          className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white hover:bg-brand-50 text-[#1677ff] rounded-xl text-xs font-black transition-all cursor-pointer shrink-0 shadow-md active:scale-95">
                           {isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                           {isCopied ? 'Copied' : 'Copy'}
                         </button>
@@ -705,7 +705,7 @@ export const WalletPage = () => {
                       <div className="relative grid grid-cols-2 gap-3 pt-4 border-t border-white/20">
                         {[['Account Name', bankAccountDetails.accountName], ['Branch', bankAccountDetails.branch]].map(([label, value]) => (
                           <button key={label} type="button" onClick={() => handleCopy(value, label)} className="text-left min-w-0 group cursor-pointer">
-                            <div className="text-[10px] font-bold uppercase tracking-wider text-red-200 mb-0.5 flex items-center gap-1">{label}<Copy className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /></div>
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-brand-200 mb-0.5 flex items-center gap-1">{label}<Copy className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /></div>
                             <div className="text-sm font-black truncate">{value}</div>
                           </button>
                         ))}
@@ -731,7 +731,7 @@ export const WalletPage = () => {
 
                   <div className={cardCls}>
                     {stepHead(3, 'Upload deposit receipt')}
-                    <label className="block border-2 border-dashed border-slate-300 hover:border-[#cc040a] rounded-2xl p-6 text-center cursor-pointer transition-all bg-white hover:bg-red-50/30">
+                    <label className="block border-2 border-dashed border-slate-300 hover:border-[#1677ff] rounded-2xl p-6 text-center cursor-pointer transition-all bg-white hover:bg-brand-50/30">
                       <input type="file" accept="image/*" onChange={handleBankFileChange} className="hidden" />
                       {bankSlipPreview ? (
                         <div className="space-y-2">
@@ -741,8 +741,8 @@ export const WalletPage = () => {
                         </div>
                       ) : (
                         <div className="space-y-2">
-                          <div className="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center mx-auto">
-                            <Upload className="w-6 h-6 text-[#cc040a]" />
+                          <div className="w-12 h-12 bg-brand-50 rounded-xl flex items-center justify-center mx-auto">
+                            <Upload className="w-6 h-6 text-[#1677ff]" />
                           </div>
                           <div className="text-sm font-black text-slate-700">Tap to upload deposit slip</div>
                           <div className="text-xs text-slate-400">JPG, PNG · Max 5MB</div>
@@ -765,15 +765,15 @@ export const WalletPage = () => {
         {/* ── TRANSACTION HISTORY ── */}
         <div className="bg-white rounded-3xl border border-slate-200/80 p-5 sm:p-6 shadow-sm space-y-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#cc040a] flex items-center justify-center shadow-md shadow-red-600/25">
+            <div className="w-10 h-10 rounded-xl bg-[#1677ff] flex items-center justify-center shadow-md shadow-brand-600/25">
               <Clock className="w-5 h-5 text-white" />
             </div>
             <div>
               <h3 className="text-base font-black text-slate-900 font-heading leading-none">Recent Deposit History</h3>
-              <div className="w-10 h-1 bg-[#cc040a] rounded-full mt-1.5"></div>
+              <div className="w-10 h-1 bg-[#1677ff] rounded-full mt-1.5"></div>
             </div>
             {userPayments.length > 0 && (
-              <span className="ml-auto text-[11px] font-black text-[#cc040a] bg-red-50 border border-red-100 px-2.5 py-1 rounded-full">{userPayments.length} record{userPayments.length !== 1 ? 's' : ''}</span>
+              <span className="ml-auto text-[11px] font-black text-[#1677ff] bg-brand-50 border border-brand-100 px-2.5 py-1 rounded-full">{userPayments.length} record{userPayments.length !== 1 ? 's' : ''}</span>
             )}
           </div>
 

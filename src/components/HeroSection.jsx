@@ -58,16 +58,16 @@ export const HeroSection = () => {
   ];
 
   return (
-    <section className="relative overflow-hidden bg-white text-slate-900 dark:text-white! border-b border-slate-200 dark:border-white/5! rounded-b-[2rem] sm:rounded-b-[3rem]">
+    <section className="relative overflow-hidden bg-white dark:bg-transparent! text-slate-900 dark:text-white!">
       {/* Atmosphere */}
-      <div className="absolute -top-32 -right-24 w-[420px] h-[420px] rounded-full bg-red-50 dark:bg-[#e11d28]/15! dark:blur-[130px] pointer-events-none" />
-      <div className="absolute top-1/3 -left-32 w-[320px] h-[320px] rounded-full bg-red-50/60 dark:bg-[#e11d28]/10! dark:blur-[120px] pointer-events-none" />
+      <div className="absolute -top-32 -right-24 w-[420px] h-[420px] rounded-full bg-brand-50 dark:bg-[#2b86ff]/15! dark:blur-[130px] pointer-events-none" />
+      <div className="absolute top-1/3 -left-32 w-[320px] h-[320px] rounded-full bg-brand-50/60 dark:bg-[#2b86ff]/10! dark:blur-[120px] pointer-events-none" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 sm:pt-5 pb-10 sm:pb-14 space-y-4 sm:space-y-5">
 
-        {/* ── BANNER — centred slide with neighbours peeking at the sides ── */}
+        {/* ── BANNER — Midasbuy-style wide banner: artwork left, blue panel right ── */}
         <div
-          className="relative h-[175px] sm:h-[235px] lg:h-[275px] group select-none"
+          className="midas-banner relative h-[190px] sm:h-[280px] lg:h-[330px] rounded-[1.25rem] sm:rounded-[1.75rem] overflow-hidden select-none group"
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
           onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; setPaused(true); }}
@@ -79,43 +79,52 @@ export const HeroSection = () => {
           }}
         >
           {slides.map((sl, i) => {
-            const offset = (i - current + slides.length) % slides.length; // 0 centre, 1 right, last = left
-            const isCenter = offset === 0;
-            const isRight = offset === 1;
-            const pos = isCenter
-              ? 'translate-x-0 scale-100 opacity-100 z-20'
-              : isRight
-                ? 'translate-x-[88%] sm:translate-x-[92%] scale-[0.88] opacity-45 z-10'
-                : '-translate-x-[88%] sm:-translate-x-[92%] scale-[0.88] opacity-45 z-10';
+            const isCenter = i === current;
             return (
               <div
                 key={sl.src}
-                onClick={() => { if (!isCenter) setCurrent(i); }}
-                className={`absolute top-0 h-full left-[6%] w-[88%] sm:left-[8%] sm:w-[84%] rounded-[1.25rem] sm:rounded-[1.75rem] overflow-hidden bg-black ring-1 ring-slate-200 dark:ring-white/10! transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${pos} ${isCenter ? 'shadow-[0_25px_60px_-25px_rgba(225,29,40,0.55)]' : 'cursor-pointer'}`}
+                aria-hidden={!isCenter}
+                className={`absolute inset-0 transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${isCenter ? 'opacity-100 scale-100 z-10' : 'opacity-0 scale-[1.04] z-0 pointer-events-none'}`}
               >
-                <img src={sl.src} alt={sl.label} className="w-full h-full object-cover" loading={i === 0 ? 'eager' : 'lazy'} draggable={false} />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+                {/* artwork */}
+                <img src={sl.src} alt={sl.label} className="absolute inset-y-0 left-0 w-full sm:w-[68%] h-full object-cover" loading={i === 0 ? 'eager' : 'lazy'} draggable={false} />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#06123a]/90 via-[#06123a]/20 to-transparent sm:hidden" />
 
-                {isCenter && (
-                  <div className="absolute left-3 right-3 bottom-3 sm:left-6 sm:right-6 sm:bottom-6 flex items-end justify-between gap-3">
-                    <div className="min-w-0 rounded-2xl bg-black/40 backdrop-blur-md border border-white/15 px-4 py-3 sm:px-5 sm:py-3.5">
-                      <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-[#ff5a63]">
-                        <Flame className="w-3 h-3" /> Now featuring
-                      </span>
-                      <h1 className="text-white font-heading font-black tracking-tight text-lg sm:text-3xl leading-tight truncate">{sl.label}</h1>
-                      <p className="text-[11px] sm:text-sm text-white/75 font-semibold truncate">{sl.sub}</p>
-                    </div>
-                    <button
-                      onClick={() => openGameById(sl.gameId)}
-                      className="shrink-0 h-10 sm:h-12 px-4 sm:px-7 rounded-full bg-[#e11d28] hover:bg-[#c8101b] text-white font-black text-[11px] sm:text-sm uppercase tracking-wider flex items-center gap-1.5 sm:gap-2 shadow-xl shadow-red-900/50 cursor-pointer transition-all hover:-translate-y-0.5 active:scale-[0.98]"
-                    >
-                      <Zap className="w-3.5 h-3.5 fill-white" />
-                      <span className="hidden min-[400px]:inline">Top Up Now</span>
-                      <span className="min-[400px]:hidden">Top Up</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
+                {/* blue slanted panel */}
+                <div className="midas-banner-panel hidden sm:flex absolute inset-y-0 right-0 w-[46%] flex-col justify-center pl-[11%] pr-10 lg:pr-16">
+                  <span className="inline-flex w-fit items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/15 border border-white/25 text-[10px] lg:text-[11px] font-black uppercase tracking-[0.18em] text-white">
+                    <Flame className="w-3 h-3" /> Now featuring
+                  </span>
+                  <h1 className="mt-3 text-white font-heading font-black tracking-tight text-3xl lg:text-[2.6rem] leading-[1.05]">{sl.label}</h1>
+                  <p className="mt-2 text-sm lg:text-lg text-white/85 font-semibold">{sl.sub}</p>
+                  <button
+                    onClick={() => openGameById(sl.gameId)}
+                    tabIndex={isCenter ? 0 : -1}
+                    className="mt-5 lg:mt-7 w-fit h-11 lg:h-12 px-7 lg:px-9 rounded-full bg-[#ffffff] text-[#1264e6] hover:bg-[#eaf3ff] font-black text-sm lg:text-base uppercase tracking-wider flex items-center gap-2 shadow-[0_12px_30px_-10px_rgba(0,20,80,0.7)] cursor-pointer transition-all hover:-translate-y-0.5 active:scale-[0.98]"
+                  >
+                    <Zap className="w-4 h-4 fill-[#1264e6]" />
+                    Top Up Now
+                  </button>
+                </div>
+
+                {/* mobile caption */}
+                <div className="sm:hidden absolute left-3 right-3 bottom-3 flex items-end justify-between gap-3">
+                  <div className="min-w-0">
+                    <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-[#8dc2ff]">
+                      <Flame className="w-3 h-3" /> Now featuring
+                    </span>
+                    <h1 className="text-white font-heading font-black tracking-tight text-xl leading-tight truncate">{sl.label}</h1>
+                    <p className="text-[11px] text-white/80 font-semibold truncate">{sl.sub}</p>
                   </div>
-                )}
+                  <button
+                    onClick={() => openGameById(sl.gameId)}
+                    tabIndex={isCenter ? 0 : -1}
+                    className="shrink-0 h-9 px-4 rounded-full bg-[#ffffff] text-[#1264e6] font-black text-[11px] uppercase tracking-wider flex items-center gap-1 shadow-lg cursor-pointer active:scale-[0.98]"
+                  >
+                    <Zap className="w-3.5 h-3.5 fill-[#1264e6]" />
+                    Top Up
+                  </button>
+                </div>
               </div>
             );
           })}
@@ -123,52 +132,55 @@ export const HeroSection = () => {
           <button
             onClick={() => go(-1)}
             aria-label="Previous banner"
-            className="hidden sm:flex absolute left-1 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/60 hover:bg-[#e11d28] backdrop-blur text-white items-center justify-center border border-white/15 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+            className="hidden sm:flex absolute left-4 top-1/2 -translate-y-1/2 z-30 w-9 h-14 rounded-lg bg-[#06123a]/70 hover:bg-[#1677ff] backdrop-blur text-white items-center justify-center border border-white/10 cursor-pointer transition-colors"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button
             onClick={() => go(1)}
             aria-label="Next banner"
-            className="hidden sm:flex absolute right-1 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/60 hover:bg-[#e11d28] backdrop-blur text-white items-center justify-center border border-white/15 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+            className="hidden sm:flex absolute right-4 top-1/2 -translate-y-1/2 z-30 w-9 h-14 rounded-lg bg-[#06123a]/70 hover:bg-[#1677ff] backdrop-blur text-white items-center justify-center border border-white/10 cursor-pointer transition-colors"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
-        </div>
 
-        {/* Indicators */}
-        <div className="flex items-center justify-center gap-2 -mt-1">
-          {slides.map((sl, i) => (
-            <button
-              key={sl.src}
-              onClick={() => setCurrent(i)}
-              aria-label={`Show ${sl.label}`}
-              className="relative h-1.5 rounded-full overflow-hidden bg-slate-300 dark:bg-white/20! cursor-pointer transition-all duration-500"
-              style={{ width: i === current ? 40 : 10 }}
-            >
-              {i === current && (
-                <span className="absolute inset-0 bg-[#e11d28] origin-left" style={{ animation: paused ? 'none' : `heroProgress ${SLIDE_MS}ms linear` }} />
-              )}
-            </button>
-          ))}
+          {/* Indicators — inside the banner, like a media player */}
+          <div className="absolute z-30 top-2.5 right-2.5 sm:top-auto sm:right-auto sm:bottom-4 sm:left-[34%] sm:-translate-x-1/2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-black/45 backdrop-blur">
+            {slides.map((sl, i) => (
+              <button
+                key={sl.src}
+                onClick={() => setCurrent(i)}
+                aria-label={`Show ${sl.label}`}
+                className="relative h-1.5 rounded-full overflow-hidden bg-white/35 cursor-pointer transition-all duration-500"
+                style={{ width: i === current ? 28 : 6 }}
+              >
+                {i === current && (
+                  <span className="absolute inset-0 bg-white origin-left" style={{ animation: paused ? 'none' : `heroProgress ${SLIDE_MS}ms linear` }} />
+                )}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* ── GAMES — right under the banner, all visible without scrolling ── */}
-        <div id="home-games">
-          <div className="flex items-center justify-between gap-3 mb-3 sm:mb-4">
-            <h2 className="inline-flex items-center gap-2 text-sm sm:text-lg font-black font-heading tracking-tight shrink-0 text-slate-900 dark:text-white!">
-              <span className="w-1.5 h-5 rounded-full bg-[#e11d28]" />
-              Select a Game
-            </h2>
+        <div id="home-games" className="pt-4 sm:pt-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 sm:mb-8">
+            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+              <h2 className="midas-heading text-2xl sm:text-[2rem] text-slate-900 dark:text-white!">All Games</h2>
+              <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-slate-500 dark:text-white/70!">
+                <ShieldCheck className="w-4 h-4 text-[#1677ff] dark:text-[#8dc2ff]!" />
+                Sri Lanka's trusted instant top-up store
+              </span>
+            </div>
 
-            <div className="relative w-full max-w-[15rem] sm:max-w-xs">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/40!" />
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/50!" />
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search games..."
-                className="w-full pl-10 pr-4 py-2 bg-white border-2 border-slate-200 rounded-full text-xs font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-medium focus:outline-none focus:border-[#cc040a] focus:ring-4 focus:ring-[#cc040a]/10 dark:bg-white/[0.06]! dark:border-white/10! dark:text-white! dark:placeholder:text-white/35! dark:focus:border-[#e11d28]! dark:focus:ring-[#e11d28]/20! transition-all"
+                className="w-full h-11 pl-11 pr-4 bg-white border border-slate-200 rounded-full text-sm font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-medium focus:outline-none focus:border-[#1677ff] focus:ring-4 focus:ring-[#1677ff]/10 dark:bg-[#0a1a4a]/70! dark:border-white/10! dark:text-white! dark:placeholder:text-white/45! dark:focus:border-[#2b86ff]! dark:focus:ring-[#2b86ff]/20! transition-all"
               />
             </div>
           </div>
@@ -179,40 +191,29 @@ export const HeroSection = () => {
               <div className="text-sm font-black text-slate-500 dark:text-white/60!">No games match your search</div>
             </div>
           ) : (
-            <div className="grid grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-x-3 gap-y-5 sm:gap-x-6 sm:gap-y-8 px-1 sm:px-2">
               {games.map((game) => (
                 <button
                   key={game.id}
                   onClick={() => openTopup(game)}
                   title={game.name}
-                  className="group relative text-left rounded-xl sm:rounded-2xl bg-white border-2 border-slate-200 hover:border-[#cc040a]/50 shadow-sm hover:shadow-xl hover:shadow-red-600/15 dark:bg-[#14141b]! dark:border-white/10! dark:hover:border-[#e11d28]! dark:shadow-none! dark:hover:shadow-[0_18px_40px_-15px_rgba(225,29,40,0.6)]! overflow-hidden hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+                  className="midas-game group text-left cursor-pointer"
                 >
-                  <div className="relative aspect-square overflow-hidden bg-slate-100 dark:bg-[#1b1b24]!">
-                    <img
-                      src={game.banner || game.logo}
-                      alt={game.name}
-                      loading="lazy"
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                      onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/mads-logo.jpg'; }}
-                    />
-                    {game.popular && (
-                      <span className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 inline-flex items-center gap-0.5 px-1.5 sm:px-2 py-0.5 rounded-full bg-[#e11d28] text-white text-[8px] sm:text-[10px] font-black uppercase tracking-wide shadow-lg shadow-red-900/40">
-                        <Flame className="w-2.5 h-2.5" /> Hot
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="px-1.5 sm:px-3 py-2 sm:py-3 text-center sm:text-left">
-                    <h3 className="font-heading font-black text-[10px] sm:text-sm leading-tight line-clamp-2 sm:truncate min-h-[24px] sm:min-h-0 text-slate-900 dark:text-white!">{game.name}</h3>
-                    <div className="hidden sm:flex mt-2 items-center justify-between gap-1">
-                      <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400! flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Instant
-                      </span>
-                      <span className="inline-flex items-center gap-0.5 text-[11px] font-black px-2 py-1 rounded-full bg-red-50 text-[#cc040a] group-hover:bg-[#cc040a] group-hover:text-white dark:bg-[#e11d28]/15! dark:text-[#ff5a63]! dark:group-hover:bg-[#e11d28]! dark:group-hover:text-white! transition-colors">
-                        Top Up <ArrowRight className="w-3 h-3" />
-                      </span>
-                    </div>
-                  </div>
+                  <span className="midas-game-frame">
+                    <span className="midas-game-art">
+                      <img
+                        src={game.banner || game.logo}
+                        alt={game.name}
+                        loading="lazy"
+                        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/mads-logo.jpg'; }}
+                      />
+                    </span>
+                    <span className={`midas-ribbon ${game.popular ? 'is-hot' : ''}`}>
+                      {game.popular ? <Flame className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" /> : <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />}
+                      <span>{game.popular ? 'Hot deal' : 'Instant'}</span>
+                    </span>
+                  </span>
+                  <span className="mt-2 sm:mt-3 block text-center font-heading font-extrabold text-[11px] sm:text-[15px] leading-tight line-clamp-2 text-slate-800 dark:text-white! group-hover:text-[#1677ff] dark:group-hover:text-[#8dc2ff]! transition-colors">{game.name}</span>
                 </button>
               ))}
             </div>
@@ -225,16 +226,16 @@ export const HeroSection = () => {
             <button
               key={title}
               onClick={onClick}
-              className="group relative text-left rounded-2xl bg-white border-2 border-slate-200 hover:border-[#cc040a]/50 shadow-sm hover:shadow-lg hover:shadow-red-600/10 dark:bg-white/[0.04]! dark:border-white/10! dark:hover:border-[#e11d28]/70! dark:shadow-none! p-4 flex items-center gap-4 transition-all cursor-pointer overflow-hidden"
+              className="group relative text-left rounded-2xl bg-white border-2 border-slate-200 hover:border-[#1677ff]/50 shadow-sm hover:shadow-lg hover:shadow-brand-600/10 dark:bg-white/[0.04]! dark:border-white/10! dark:hover:border-[#2b86ff]/70! dark:shadow-none! p-4 flex items-center gap-4 transition-all cursor-pointer overflow-hidden"
             >
-              <div className="w-12 h-12 rounded-xl bg-red-50 text-[#cc040a] group-hover:bg-[#cc040a] group-hover:text-white dark:bg-[#e11d28]/15! dark:text-[#ff5a63]! dark:group-hover:bg-[#e11d28]! dark:group-hover:text-white! group-hover:shadow-lg group-hover:shadow-red-600/25 flex items-center justify-center shrink-0 transition-all">
+              <div className="w-12 h-12 rounded-xl bg-brand-50 text-[#1677ff] group-hover:bg-[#1677ff] group-hover:text-white dark:bg-[#2b86ff]/15! dark:text-[#5aa8ff]! dark:group-hover:bg-[#2b86ff]! dark:group-hover:text-white! group-hover:shadow-lg group-hover:shadow-brand-600/25 flex items-center justify-center shrink-0 transition-all">
                 <Icon className="w-6 h-6" />
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="text-sm sm:text-base font-black font-heading leading-tight text-slate-900 dark:text-white!">{title}</h3>
                 <p className="text-xs text-slate-500 dark:text-white/55! font-medium mt-0.5">{text}</p>
               </div>
-              <ArrowRight className="w-5 h-5 text-slate-300 dark:text-white/30! group-hover:text-[#cc040a] group-hover:translate-x-1 transition-all shrink-0" />
+              <ArrowRight className="w-5 h-5 text-slate-300 dark:text-white/30! group-hover:text-[#1677ff] group-hover:translate-x-1 transition-all shrink-0" />
             </button>
           ))}
         </div>
@@ -242,7 +243,7 @@ export const HeroSection = () => {
         <div className="text-center">
           <button
             onClick={openCatalog}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white border-2 border-slate-200 text-slate-700 hover:border-[#cc040a] hover:text-[#cc040a] dark:bg-white/[0.06]! dark:border-white/15! dark:text-white! dark:hover:bg-[#e11d28]! dark:hover:border-[#e11d28]! dark:hover:text-white! font-black text-sm transition-all cursor-pointer"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white border-2 border-slate-200 text-slate-700 hover:border-[#1677ff] hover:text-[#1677ff] dark:bg-white/[0.06]! dark:border-white/15! dark:text-white! dark:hover:bg-[#2b86ff]! dark:hover:border-[#2b86ff]! dark:hover:text-white! font-black text-sm transition-all cursor-pointer"
           >
             <LayoutGrid className="w-4 h-4" />
             View Full Game Catalog
@@ -252,7 +253,7 @@ export const HeroSection = () => {
         <dl className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           {trust.map(({ icon: Icon, value, label }) => (
             <div key={label} className="flex items-center gap-4 bg-slate-50 border border-slate-200 dark:bg-white/[0.04]! dark:border-white/10! rounded-2xl px-5 py-4">
-              <div className="w-11 h-11 rounded-xl bg-white border border-slate-200 text-[#cc040a] dark:bg-[#e11d28]/15! dark:border-transparent! dark:text-[#ff5a63]! flex items-center justify-center shrink-0">
+              <div className="w-11 h-11 rounded-xl bg-white border border-slate-200 text-[#1677ff] dark:bg-[#2b86ff]/15! dark:border-transparent! dark:text-[#5aa8ff]! flex items-center justify-center shrink-0">
                 <Icon className="w-5 h-5" />
               </div>
               <div>

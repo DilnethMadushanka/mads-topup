@@ -281,13 +281,13 @@ export const WalletModal = () => {
         <div className="overflow-y-auto flex-1 p-4 sm:p-6 space-y-6">
 
           {/* RICH RED THEME TOTAL BALANCE CARD (Matching Web Red Theme) */}
-          <div className="bg-gradient-to-r from-[#cc040a] via-[#dc2626] to-[#990207] rounded-3xl p-6 sm:p-8 text-white text-center shadow-2xl relative overflow-hidden border border-red-600/30">
+          <div className="bg-gradient-to-r from-[#1677ff] via-[#1764f5] to-[#0b5ed7] rounded-3xl p-6 sm:p-8 text-white text-center shadow-2xl relative overflow-hidden border border-brand-600/30">
             {/* Background Glow Shapes */}
             <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-red-950/40 rounded-full blur-2xl pointer-events-none"></div>
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-brand-950/40 rounded-full blur-2xl pointer-events-none"></div>
 
             <div className="relative z-10">
-              <span className="text-[10px] font-black text-red-100 uppercase tracking-widest font-mono block">
+              <span className="text-[10px] font-black text-brand-100 uppercase tracking-widest font-mono block">
                 TOTAL BALANCE
               </span>
               <h2 className="text-4xl sm:text-5xl font-black font-heading mt-1 text-white tracking-tight">
@@ -319,7 +319,7 @@ export const WalletModal = () => {
               onClick={() => setWalletActiveTab('bank')}
               className={`py-2 px-3 sm:px-4 rounded-full transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                 walletActiveTab === 'bank'
-                  ? 'bg-slate-100 text-red-600 border border-slate-200/80 shadow-xs font-black'
+                  ? 'bg-slate-100 text-brand-600 border border-slate-200/80 shadow-xs font-black'
                   : 'text-slate-500 hover:text-slate-900'
               }`}
             >
@@ -382,7 +382,7 @@ export const WalletModal = () => {
                     placeholder="e.g. 2500"
                     value={bankAmount}
                     onChange={(e) => setBankAmount(e.target.value)}
-                    className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-red-500 shadow-xs"
+                    className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-brand-500 shadow-xs"
                   />
                 </div>
 
@@ -396,7 +396,7 @@ export const WalletModal = () => {
                     placeholder="e.g. Ref No: 981240 / Kasun Perera"
                     value={bankRef}
                     onChange={(e) => setBankRef(e.target.value)}
-                    className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-red-500 shadow-xs"
+                    className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-brand-500 shadow-xs"
                   />
                 </div>
 
@@ -406,7 +406,7 @@ export const WalletModal = () => {
                     Upload Payment Receipt Slip (Respit)
                   </label>
                   
-                  <label className="border-2 border-dashed border-slate-300 hover:border-red-500 bg-[#F8FAFC] hover:bg-red-50/30 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer transition-all">
+                  <label className="border-2 border-dashed border-slate-300 hover:border-brand-500 bg-[#F8FAFC] hover:bg-brand-50/30 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer transition-all">
                     <input
                       type="file"
                       accept="image/*"
@@ -435,7 +435,7 @@ export const WalletModal = () => {
                           setBankSlipPreview('');
                           setBankSlipFileName('');
                         }}
-                        className="p-1 text-slate-400 hover:text-red-600 rounded-lg"
+                        className="p-1 text-slate-400 hover:text-brand-600 rounded-lg"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -445,7 +445,7 @@ export const WalletModal = () => {
 
                 <button
                   type="submit"
-                  className="w-full py-3.5 bg-[#cc040a] hover:bg-[#990207] text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-colors cursor-pointer shadow-lg shadow-red-500/20 flex items-center justify-center gap-2 mt-2"
+                  className="w-full py-3.5 bg-[#1677ff] hover:bg-[#0b5ed7] text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-colors cursor-pointer shadow-lg shadow-brand-500/20 flex items-center justify-center gap-2 mt-2"
                 >
                   <span>SUBMIT BANK RECEIPT FOR ADMIN APPROVAL</span>
                 </button>
@@ -561,21 +561,21 @@ export const WalletModal = () => {
             <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-md space-y-5 animate-in fade-in">
               
               {/* Red Dashed Merchant Box */}
-              <div className="border-2 border-dashed border-red-300 bg-red-50/50 rounded-2xl p-5 text-center relative">
-                <span className="text-[11px] font-bold text-red-800 block uppercase tracking-wider">
+              <div className="border-2 border-dashed border-brand-300 bg-brand-50/50 rounded-2xl p-5 text-center relative">
+                <span className="text-[11px] font-bold text-brand-800 block uppercase tracking-wider">
                   EZ Cash Merchant Number
                 </span>
-                <div className="text-2xl sm:text-3xl font-black text-red-700 font-mono tracking-wider my-1">
+                <div className="text-2xl sm:text-3xl font-black text-brand-700 font-mono tracking-wider my-1">
                   {ezCashMerchantNumber}
                 </div>
-                <span className="text-xs font-bold text-red-700 block mb-3">
+                <span className="text-xs font-bold text-brand-700 block mb-3">
                   Dialog EZ Cash / Genie
                 </span>
 
                 <button
                   type="button"
                   onClick={() => handleCopy(ezCashMerchantNumber)}
-                  className="px-4 py-1.5 bg-white text-red-700 font-extrabold text-xs rounded-xl border border-red-200 hover:bg-red-100 transition-colors shadow-xs cursor-pointer inline-flex items-center gap-1.5"
+                  className="px-4 py-1.5 bg-white text-brand-700 font-extrabold text-xs rounded-xl border border-brand-200 hover:bg-brand-100 transition-colors shadow-xs cursor-pointer inline-flex items-center gap-1.5"
                 >
                   {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>{isCopied ? 'COPIED' : 'COPY NUMBER'}</span>
@@ -583,26 +583,26 @@ export const WalletModal = () => {
               </div>
 
               {/* WARNING BOX 1: DO NOT SEND EZ CASH USING (Matching Screenshot 100%) */}
-              <div className="bg-red-50/90 border border-red-200/90 rounded-2xl p-4 space-y-2.5">
-                <div className="flex items-center gap-2 text-xs font-black text-red-700 font-heading">
+              <div className="bg-brand-50/90 border border-brand-200/90 rounded-2xl p-4 space-y-2.5">
+                <div className="flex items-center gap-2 text-xs font-black text-brand-700 font-heading">
                   <XCircle className="w-4.5 h-4.5 text-red-600 fill-red-100 shrink-0" />
                   <span>DO NOT send EZ Cash using:</span>
                 </div>
 
-                <div className="flex flex-wrap gap-2 text-[11px] font-extrabold text-red-700">
-                  <span className="px-3 py-1 bg-white border border-red-200 rounded-full flex items-center gap-1.5 shadow-2xs">
+                <div className="flex flex-wrap gap-2 text-[11px] font-extrabold text-brand-700">
+                  <span className="px-3 py-1 bg-white border border-brand-200 rounded-full flex items-center gap-1.5 shadow-2xs">
                     <Ban className="w-3.5 h-3.5 text-red-500" />
                     <span>Bank Apps</span>
                   </span>
-                  <span className="px-3 py-1 bg-white border border-red-200 rounded-full flex items-center gap-1.5 shadow-2xs">
+                  <span className="px-3 py-1 bg-white border border-brand-200 rounded-full flex items-center gap-1.5 shadow-2xs">
                     <Ban className="w-3.5 h-3.5 text-red-500" />
                     <span>Cargills / Food City</span>
                   </span>
-                  <span className="px-3 py-1 bg-white border border-red-200 rounded-full flex items-center gap-1.5 shadow-2xs">
+                  <span className="px-3 py-1 bg-white border border-brand-200 rounded-full flex items-center gap-1.5 shadow-2xs">
                     <Ban className="w-3.5 h-3.5 text-red-500" />
                     <span>Keells</span>
                   </span>
-                  <span className="px-3 py-1 bg-white border border-red-200 rounded-full flex items-center gap-1.5 shadow-2xs">
+                  <span className="px-3 py-1 bg-white border border-brand-200 rounded-full flex items-center gap-1.5 shadow-2xs">
                     <Ban className="w-3.5 h-3.5 text-red-500" />
                     <span>Pay & Go Machines</span>
                   </span>
@@ -628,7 +628,7 @@ export const WalletModal = () => {
                     placeholder="e.g. 1000"
                     value={ezCashAmount}
                     onChange={(e) => setEzCashAmount(e.target.value)}
-                    className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-red-500 shadow-xs mb-3"
+                    className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:border-brand-500 shadow-xs mb-3"
                   />
                 </div>
 
@@ -642,7 +642,7 @@ export const WalletModal = () => {
                     value={ezCashRnNumber}
                     onChange={(e) => setEzCashRnNumber(e.target.value)}
                     maxLength={14}
-                    className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-mono font-semibold text-slate-900 focus:outline-none focus:border-red-500 shadow-xs"
+                    className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-mono font-semibold text-slate-900 focus:outline-none focus:border-brand-500 shadow-xs"
                   />
                   <p className="text-[10px] text-slate-400 font-medium mt-1">
                     Find your 14-digit RN number in the confirmation SMS or Genie App history.
@@ -659,7 +659,7 @@ export const WalletModal = () => {
                     value={ezCashPayerPhone}
                     onChange={(e) => setEzCashPayerPhone(e.target.value)}
                     maxLength={15}
-                    className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-mono font-semibold text-slate-900 focus:outline-none focus:border-red-500 shadow-xs"
+                    className="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm font-mono font-semibold text-slate-900 focus:outline-none focus:border-brand-500 shadow-xs"
                   />
                   <p className="text-[10px] text-slate-400 font-medium mt-1">
                     The eZ Cash number the money was sent from, so nobody else can use your RN.
@@ -668,7 +668,7 @@ export const WalletModal = () => {
 
                 <button
                   type="submit"
-                  className="w-full py-3.5 bg-[#cc040a] hover:bg-[#990207] text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-colors cursor-pointer shadow-lg shadow-red-500/20 flex items-center justify-center gap-2"
+                  className="w-full py-3.5 bg-[#1677ff] hover:bg-[#0b5ed7] text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-colors cursor-pointer shadow-lg shadow-brand-500/20 flex items-center justify-center gap-2"
                 >
                   <span>SUBMIT DEPOSIT FOR ADMIN APPROVAL</span>
                 </button>

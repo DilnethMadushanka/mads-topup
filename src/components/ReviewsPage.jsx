@@ -87,7 +87,7 @@ export const ReviewsPage = () => {
         <div className="flex items-center justify-between">
           <button
             onClick={closeReviewsPage}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 font-extrabold text-xs uppercase tracking-wider hover:bg-slate-100 hover:text-[#cc040a] transition-all cursor-pointer shadow-xs"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 font-extrabold text-xs uppercase tracking-wider hover:bg-slate-100 hover:text-[#1677ff] transition-all cursor-pointer shadow-xs"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Home</span>
@@ -100,13 +100,13 @@ export const ReviewsPage = () => {
 
         {/* Hero Header in Signature MADS TOPUP Red theme */}
         <div className="text-center space-y-4 max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#cc040a]/10 border border-[#cc040a]/20 text-[#cc040a] text-xs font-black tracking-wider uppercase font-mono">
-            <Star className="w-3.5 h-3.5 fill-[#cc040a]" />
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#1677ff]/10 border border-[#1677ff]/20 text-[#1677ff] text-xs font-black tracking-wider uppercase font-mono">
+            <Star className="w-3.5 h-3.5 fill-[#1677ff]" />
             <span>VERIFIED REVIEWS</span>
           </div>
           
           <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight font-heading">
-            What Our <span className="text-[#cc040a]">Customers Say</span>
+            What Our <span className="text-[#1677ff]">Customers Say</span>
           </h1>
           
           <p className="text-slate-600 text-sm sm:text-base font-semibold">
@@ -147,7 +147,7 @@ export const ReviewsPage = () => {
                 </span>
                 <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
                   <div 
-                    className="h-full bg-[#cc040a] rounded-full transition-all duration-500" 
+                    className="h-full bg-[#1677ff] rounded-full transition-all duration-500" 
                     style={{ width: `${row.percent}%` }}
                   ></div>
                 </div>
@@ -171,7 +171,7 @@ export const ReviewsPage = () => {
                 }
                 setIsWriteModalOpen(true);
               }}
-              className="w-full py-3 px-6 rounded-xl bg-[#cc040a] hover:bg-[#b00308] text-white font-extrabold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer shadow-red-500/20"
+              className="w-full py-3 px-6 rounded-xl bg-[#1677ff] hover:bg-[#0d68e6] text-white font-extrabold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer shadow-brand-500/20"
             >
               <PenSquare className="w-4 h-4" />
               <span>{isLoggedIn ? 'Write a Review' : 'Login to Review'}</span>
@@ -189,7 +189,7 @@ export const ReviewsPage = () => {
                 onClick={() => setSelectedFilter(ratingVal)}
                 className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all whitespace-nowrap cursor-pointer ${
                   selectedFilter === ratingVal
-                    ? 'bg-[#cc040a] text-white shadow-md'
+                    ? 'bg-[#1677ff] text-white shadow-md'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
@@ -207,7 +207,7 @@ export const ReviewsPage = () => {
               placeholder="Search by gamer or city..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:bg-white"
+              className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#1677ff] focus:bg-white"
             />
           </div>
         </div>
@@ -218,7 +218,7 @@ export const ReviewsPage = () => {
             filteredReviews.map((rev) => (
               <div
                 key={rev.id}
-                className="bg-white rounded-3xl p-7 border border-slate-200/90 shadow-xs hover:shadow-md hover:border-[#cc040a]/40 transition-all flex flex-col justify-between space-y-4 group relative overflow-hidden"
+                className="bg-white rounded-3xl p-7 border border-slate-200/90 shadow-xs hover:shadow-md hover:border-[#1677ff]/40 transition-all flex flex-col justify-between space-y-4 group relative overflow-hidden"
               >
                 {/* Top User Header */}
                 <div className="flex items-center justify-between">
@@ -227,15 +227,15 @@ export const ReviewsPage = () => {
                       <img
                         src={rev.avatar}
                         alt={rev.name}
-                        className="w-12 h-12 rounded-full object-cover border-2 border-[#cc040a]/40 shadow-xs group-hover:scale-105 transition-transform"
+                        className="w-12 h-12 rounded-full object-cover border-2 border-[#1677ff]/40 shadow-xs group-hover:scale-105 transition-transform"
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-[#cc040a] text-white font-black text-sm flex items-center justify-center shadow-xs">
+                      <div className="w-12 h-12 rounded-full bg-[#1677ff] text-white font-black text-sm flex items-center justify-center shadow-xs">
                         {rev.initials}
                       </div>
                     )}
                     <div>
-                      <h4 className="font-extrabold text-slate-900 text-sm group-hover:text-[#cc040a] transition-colors">
+                      <h4 className="font-extrabold text-slate-900 text-sm group-hover:text-[#1677ff] transition-colors">
                         {rev.name}
                       </h4>
                       <p className="text-[11px] text-slate-500 font-bold flex items-center gap-1.5 mt-0.5">
@@ -244,7 +244,7 @@ export const ReviewsPage = () => {
                       </p>
                     </div>
                   </div>
-                  <Quote className="w-6 h-6 text-slate-200 group-hover:text-[#cc040a]/40 transition-colors" />
+                  <Quote className="w-6 h-6 text-slate-200 group-hover:text-[#1677ff]/40 transition-colors" />
                 </div>
 
                 {/* Star Rating */}
@@ -343,7 +343,7 @@ export const ReviewsPage = () => {
                   placeholder="e.g. SL_Slayer_99"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:bg-white"
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#1677ff] focus:bg-white"
                 />
               </div>
 
@@ -356,7 +356,7 @@ export const ReviewsPage = () => {
                   placeholder="e.g. Colombo, Sri Lanka"
                   value={formLocation}
                   onChange={(e) => setFormLocation(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:bg-white"
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#1677ff] focus:bg-white"
                 />
               </div>
 
@@ -369,7 +369,7 @@ export const ReviewsPage = () => {
                   placeholder="Write details about your top-up experience, delivery speed, and customer service..."
                   value={formText}
                   onChange={(e) => setFormText(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#cc040a] focus:bg-white leading-relaxed resize-none"
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#1677ff] focus:bg-white leading-relaxed resize-none"
                 ></textarea>
               </div>
 
@@ -384,7 +384,7 @@ export const ReviewsPage = () => {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-3 rounded-xl bg-[#cc040a] hover:bg-[#b00308] text-white font-extrabold text-xs uppercase tracking-wider transition-opacity shadow-md cursor-pointer"
+                  className="flex-1 py-3 rounded-xl bg-[#1677ff] hover:bg-[#0d68e6] text-white font-extrabold text-xs uppercase tracking-wider transition-opacity shadow-md cursor-pointer"
                 >
                   Submit Review
                 </button>

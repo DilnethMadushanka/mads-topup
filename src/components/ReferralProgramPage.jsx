@@ -96,7 +96,7 @@ export const ReferralProgramPage = () => {
         <div className="flex items-center justify-between">
           <button
             onClick={closeReferralPage}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 font-extrabold text-xs uppercase tracking-wider hover:bg-red-50 hover:text-[#cc040a] hover:border-[#cc040a]/30 transition-all cursor-pointer shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 font-extrabold text-xs uppercase tracking-wider hover:bg-brand-50 hover:text-[#1677ff] hover:border-[#1677ff]/30 transition-all cursor-pointer shadow-sm"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Home</span>
@@ -105,7 +105,7 @@ export const ReferralProgramPage = () => {
           {isLoggedIn && (
             <button
               onClick={() => setIsUserProfileOpen(true)}
-              className="text-xs font-extrabold text-slate-500 hover:text-[#cc040a] transition-colors uppercase tracking-wider"
+              className="text-xs font-extrabold text-slate-500 hover:text-[#1677ff] transition-colors uppercase tracking-wider"
             >
               My Profile
             </button>
@@ -114,12 +114,12 @@ export const ReferralProgramPage = () => {
 
         {/* ── Page Header ── */}
         <div className="text-center space-y-2">
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-50 border border-red-100 text-[#cc040a] text-[11px] font-black uppercase tracking-widest">
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-50 border border-brand-100 text-[#1677ff] text-[11px] font-black uppercase tracking-widest">
             <Gift className="w-3.5 h-3.5" />
             Referral Program
           </span>
           <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 font-heading tracking-tight">
-            Invite Friends,&nbsp;<span className="text-[#cc040a]">Earn Cash</span>
+            Invite Friends,&nbsp;<span className="text-[#1677ff]">Earn Cash</span>
           </h1>
           <p className="text-slate-500 text-sm sm:text-base font-medium max-w-lg mx-auto">
             Share your link — your friends get a bonus, you earn 1.5% cashback on every top-up they make.
@@ -131,8 +131,8 @@ export const ReferralProgramPage = () => {
         ══════════════════════════════════════════════════ */}
         {!isLoggedIn ? (
           <div className="max-w-md mx-auto bg-white rounded-3xl p-8 sm:p-10 border border-slate-200 shadow-xl text-center space-y-6 my-4">
-            <div className="w-20 h-20 rounded-full bg-red-50 border-4 border-red-100 flex items-center justify-center mx-auto">
-              <LogIn className="w-9 h-9 text-[#cc040a]" />
+            <div className="w-20 h-20 rounded-full bg-brand-50 border-4 border-brand-100 flex items-center justify-center mx-auto">
+              <LogIn className="w-9 h-9 text-[#1677ff]" />
             </div>
             <div className="space-y-2">
               <h2 className="text-2xl font-black text-slate-900 font-heading">Login Required</h2>
@@ -142,7 +142,7 @@ export const ReferralProgramPage = () => {
             </div>
             <button
               onClick={() => openAuth('login')}
-              className="w-full py-3.5 px-6 rounded-2xl bg-[#cc040a] hover:bg-[#b00308] text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-red-600/25 hover:scale-[1.02] transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-3.5 px-6 rounded-2xl bg-[#1677ff] hover:bg-[#0d68e6] text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-brand-600/25 hover:scale-[1.02] transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <LogIn className="w-4 h-4" />
               Login to Continue
@@ -154,8 +154,8 @@ export const ReferralProgramPage = () => {
             LOCKED STATE
         ══════════════════════════════════════════════════ */
           <div className="max-w-md mx-auto bg-white rounded-3xl p-8 sm:p-10 border border-slate-200 shadow-xl text-center space-y-6 my-4">
-            <div className="w-20 h-20 rounded-full bg-red-50 border-4 border-red-100 flex items-center justify-center mx-auto">
-              <Lock className="w-9 h-9 text-[#cc040a]" />
+            <div className="w-20 h-20 rounded-full bg-brand-50 border-4 border-brand-100 flex items-center justify-center mx-auto">
+              <Lock className="w-9 h-9 text-[#1677ff]" />
             </div>
 
             <div className="space-y-2">
@@ -169,14 +169,14 @@ export const ReferralProgramPage = () => {
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2 text-left">
               <div className="flex items-center justify-between text-xs font-extrabold text-slate-800">
                 <span className="flex items-center gap-2">
-                  <ShoppingBag className="w-4 h-4 text-[#cc040a]" />
+                  <ShoppingBag className="w-4 h-4 text-[#1677ff]" />
                   At Least 3 Purchases
                 </span>
                 <span className="font-mono text-slate-500">{userCompletedCount} / 3</span>
               </div>
               <div className="h-2.5 bg-slate-200 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-red-500 to-[#cc040a] rounded-full transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-brand-500 to-[#1677ff] rounded-full transition-all duration-500"
                   style={{ width: `${purchasesProgressPercent}%` }}
                 />
               </div>
@@ -192,14 +192,14 @@ export const ReferralProgramPage = () => {
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2 text-left">
               <div className="flex items-center justify-between text-xs font-extrabold text-slate-800">
                 <span className="flex items-center gap-2">
-                  <Coins className="w-4 h-4 text-[#cc040a]" />
+                  <Coins className="w-4 h-4 text-[#1677ff]" />
                   Spend Rs. 1,000+
                 </span>
                 <span className="font-mono text-slate-500">Rs.{userTotalSpentLkr.toFixed(0)} / 1,000</span>
               </div>
               <div className="h-2.5 bg-slate-200 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-red-400 to-[#cc040a] rounded-full transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-brand-400 to-[#1677ff] rounded-full transition-all duration-500"
                   style={{ width: `${spendProgressPercent}%` }}
                 />
               </div>
@@ -208,7 +208,7 @@ export const ReferralProgramPage = () => {
             <div className="pt-1 space-y-3">
               <button
                 onClick={openCatalog}
-                className="w-full py-3.5 px-6 rounded-2xl bg-[#cc040a] hover:bg-[#b00308] text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-red-600/25 hover:scale-[1.02] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3.5 px-6 rounded-2xl bg-[#1677ff] hover:bg-[#0d68e6] text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-brand-600/25 hover:scale-[1.02] transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Zap className="w-4 h-4" />
                 Make a Purchase to Unlock
@@ -229,7 +229,7 @@ export const ReferralProgramPage = () => {
           <div className="space-y-6 animate-in fade-in duration-300">
 
             {/* Hero Banner */}
-            <div className="bg-gradient-to-br from-[#cc040a] via-red-600 to-[#990207] rounded-3xl p-8 sm:p-10 text-white relative overflow-hidden shadow-2xl">
+            <div className="bg-gradient-to-br from-[#1677ff] via-brand-600 to-[#0b5ed7] rounded-3xl p-8 sm:p-10 text-white relative overflow-hidden shadow-2xl">
               <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
               <div className="relative z-10 space-y-4">
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-sm text-white text-[11px] font-black tracking-widest uppercase">
@@ -240,7 +240,7 @@ export const ReferralProgramPage = () => {
                   Earn <span className="text-amber-300">1.5% Cashback</span><br className="hidden sm:block" />
                   On Every Friend's Top-Up!
                 </h2>
-                <p className="text-red-100 text-sm sm:text-base font-semibold max-w-xl leading-relaxed">
+                <p className="text-brand-100 text-sm sm:text-base font-semibold max-w-xl leading-relaxed">
                   Share your referral link. Friends get <strong className="text-white">Rs.100 OFF</strong> on orders Rs.1,500+, and you earn instant wallet cash on every top-up they make.
                 </p>
 
@@ -248,15 +248,15 @@ export const ReferralProgramPage = () => {
                 <div className="flex flex-wrap gap-4 pt-2">
                   <div className="bg-white/10 rounded-2xl px-4 py-2 text-center backdrop-blur-sm">
                     <div className="text-xl font-black text-amber-300">{userCompletedCount}</div>
-                    <div className="text-[10px] font-bold text-red-200 uppercase tracking-wide">Your Orders</div>
+                    <div className="text-[10px] font-bold text-brand-200 uppercase tracking-wide">Your Orders</div>
                   </div>
                   <div className="bg-white/10 rounded-2xl px-4 py-2 text-center backdrop-blur-sm">
                     <div className="text-xl font-black text-amber-300">1.5%</div>
-                    <div className="text-[10px] font-bold text-red-200 uppercase tracking-wide">Cashback Rate</div>
+                    <div className="text-[10px] font-bold text-brand-200 uppercase tracking-wide">Cashback Rate</div>
                   </div>
                   <div className="bg-white/10 rounded-2xl px-4 py-2 text-center backdrop-blur-sm">
                     <div className="text-xl font-black text-amber-300">Rs.100</div>
-                    <div className="text-[10px] font-bold text-red-200 uppercase tracking-wide">Friend's Bonus</div>
+                    <div className="text-[10px] font-bold text-brand-200 uppercase tracking-wide">Friend's Bonus</div>
                   </div>
                 </div>
               </div>
@@ -266,10 +266,10 @@ export const ReferralProgramPage = () => {
             <div className={`${card} space-y-5`}>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <span className="text-[11px] font-black text-[#cc040a] uppercase tracking-widest font-mono">Your Referral Link</span>
+                  <span className="text-[11px] font-black text-[#1677ff] uppercase tracking-widest font-mono">Your Referral Link</span>
                   <h3 className="text-xl font-extrabold text-slate-900 font-heading">Share & Earn Together</h3>
                 </div>
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-red-50 text-[#cc040a] font-mono font-bold text-xs rounded-full border border-red-100 shrink-0">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-brand-50 text-[#1677ff] font-mono font-bold text-xs rounded-full border border-brand-100 shrink-0">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>Code: {referralCode}</span>
                 </div>
@@ -281,11 +281,11 @@ export const ReferralProgramPage = () => {
                   type="text"
                   readOnly
                   value={referralLink}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl font-mono text-xs font-bold text-slate-700 focus:outline-none focus:border-[#cc040a]/40 focus:ring-2 focus:ring-red-100 transition-all"
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl font-mono text-xs font-bold text-slate-700 focus:outline-none focus:border-[#1677ff]/40 focus:ring-2 focus:ring-brand-100 transition-all"
                 />
                 <button
                   onClick={handleCopyLink}
-                  className="sm:w-auto px-6 py-3 bg-[#cc040a] hover:bg-[#b00308] text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-md shadow-red-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 active:scale-95"
+                  className="sm:w-auto px-6 py-3 bg-[#1677ff] hover:bg-[#0d68e6] text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-md shadow-brand-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 active:scale-95"
                 >
                   <Copy className="w-4 h-4" />
                   Copy Link
@@ -322,7 +322,7 @@ export const ReferralProgramPage = () => {
             {/* Earnings Calculator */}
             <div className={`${card} space-y-5`}>
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-red-50 border border-red-100 text-[#cc040a] flex items-center justify-center">
+                <div className="w-11 h-11 rounded-2xl bg-brand-50 border border-brand-100 text-[#1677ff] flex items-center justify-center">
                   <Calculator className="w-5 h-5" />
                 </div>
                 <div>
@@ -336,12 +336,12 @@ export const ReferralProgramPage = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between text-xs font-extrabold text-slate-700">
                       <span>Friends who top up:</span>
-                      <span className="text-[#cc040a]">{friendsCount} gamers</span>
+                      <span className="text-[#1677ff]">{friendsCount} gamers</span>
                     </div>
                     <input
                       type="range" min="1" max="50" value={friendsCount}
                       onChange={(e) => setFriendsCount(parseInt(e.target.value))}
-                      className="w-full accent-[#cc040a] cursor-pointer h-1.5"
+                      className="w-full accent-[#1677ff] cursor-pointer h-1.5"
                     />
                     <div className="flex justify-between text-[10px] text-slate-400 font-mono">
                       <span>1</span><span>50</span>
@@ -351,12 +351,12 @@ export const ReferralProgramPage = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between text-xs font-extrabold text-slate-700">
                       <span>Avg order value:</span>
-                      <span className="text-[#cc040a]">Rs.{avgTopupLkr.toLocaleString()}</span>
+                      <span className="text-[#1677ff]">Rs.{avgTopupLkr.toLocaleString()}</span>
                     </div>
                     <input
                       type="range" min="500" max="10000" step="500" value={avgTopupLkr}
                       onChange={(e) => setAvgTopupLkr(parseInt(e.target.value))}
-                      className="w-full accent-[#cc040a] cursor-pointer h-1.5"
+                      className="w-full accent-[#1677ff] cursor-pointer h-1.5"
                     />
                     <div className="flex justify-between text-[10px] text-slate-400 font-mono">
                       <span>Rs.500</span><span>Rs.10,000</span>
@@ -365,13 +365,13 @@ export const ReferralProgramPage = () => {
                 </div>
 
                 {/* Result — BUG FIX: removed "LKR" after "Rs." */}
-                <div className="bg-gradient-to-br from-red-50 to-rose-50 border border-red-100 rounded-2xl flex flex-col items-center justify-center text-center p-6 space-y-1">
+                <div className="bg-gradient-to-br from-brand-50 to-brand-50 border border-brand-100 rounded-2xl flex flex-col items-center justify-center text-center p-6 space-y-1">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Monthly Cashback</span>
-                  <span className="text-4xl sm:text-5xl font-black text-[#cc040a] font-heading leading-none">
+                  <span className="text-4xl sm:text-5xl font-black text-[#1677ff] font-heading leading-none">
                     Rs.{estimatedMonthlyCashback.toLocaleString()}
                   </span>
                   <span className="text-[11px] font-bold text-slate-500">Auto-credited to your MADS Wallet</span>
-                  <div className="pt-2 flex items-center gap-1 text-[11px] font-black text-[#cc040a]">
+                  <div className="pt-2 flex items-center gap-1 text-[11px] font-black text-[#1677ff]">
                     <TrendingUp className="w-3.5 h-3.5" />
                     <span>{friendsCount} × Rs.{avgTopupLkr.toLocaleString()} × 1.5%</span>
                   </div>
@@ -384,9 +384,9 @@ export const ReferralProgramPage = () => {
               <h3 className="text-xl font-black text-slate-900 font-heading mb-4 text-center">How It Works</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[
-                  { step: '01', icon: Share2, color: 'bg-red-50 text-[#cc040a] border-red-100', title: 'Share Your Link', desc: 'Copy your referral link and share it with gaming friends on WhatsApp, Telegram, or Discord.' },
-                  { step: '02', icon: Gift, color: 'bg-red-50 text-[#cc040a] border-red-100', title: 'Friend Gets Rs.100', desc: 'Your referred friend gets Rs.100 OFF on their first order of Rs.1,500 or more.' },
-                  { step: '03', icon: Coins, color: 'bg-red-50 text-[#cc040a] border-red-100', title: 'You Earn 1.5% Cash', desc: 'Every time your friend tops up, 1.5% is instantly credited to your MADS Wallet.' },
+                  { step: '01', icon: Share2, color: 'bg-brand-50 text-[#1677ff] border-brand-100', title: 'Share Your Link', desc: 'Copy your referral link and share it with gaming friends on WhatsApp, Telegram, or Discord.' },
+                  { step: '02', icon: Gift, color: 'bg-brand-50 text-[#1677ff] border-brand-100', title: 'Friend Gets Rs.100', desc: 'Your referred friend gets Rs.100 OFF on their first order of Rs.1,500 or more.' },
+                  { step: '03', icon: Coins, color: 'bg-brand-50 text-[#1677ff] border-brand-100', title: 'You Earn 1.5% Cash', desc: 'Every time your friend tops up, 1.5% is instantly credited to your MADS Wallet.' },
                 ].map(({ step, icon: Icon, color, title, desc }) => (
                   <div key={step} className={`${card} space-y-3 relative overflow-hidden`}>
                     <div className="absolute top-4 right-5 text-6xl font-black text-slate-100 font-heading leading-none select-none">{step}</div>
@@ -408,8 +408,8 @@ export const ReferralProgramPage = () => {
                 { icon: TrendingUp,  label: 'No Cap on Earnings' },
                 { icon: Zap,         label: 'Auto Wallet Credit' },
               ].map(({ icon: Icon, label }) => (
-                <div key={label} className="bg-red-50 border border-red-100 rounded-2xl p-3 flex items-center gap-2">
-                  <Icon className="w-4 h-4 text-[#cc040a] shrink-0" />
+                <div key={label} className="bg-brand-50 border border-brand-100 rounded-2xl p-3 flex items-center gap-2">
+                  <Icon className="w-4 h-4 text-[#1677ff] shrink-0" />
                   <span className="text-xs font-black text-slate-800">{label}</span>
                 </div>
               ))}

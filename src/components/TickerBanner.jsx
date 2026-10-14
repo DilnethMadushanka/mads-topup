@@ -16,8 +16,8 @@ export const TickerBanner = () => {
       <div className="animate-marquee whitespace-nowrap text-xs font-black tracking-widest uppercase flex items-center gap-8 font-mono">
         {[...items, ...items, ...items, ...items].map((text, index) => (
           <span key={index} className="flex items-center gap-8">
-            <span className="text-[#cc040a] animate-pulse">•</span>
-            <span className="hover:text-[#cc040a] transition-colors">{text}</span>
+            <span className="text-[#1677ff] animate-pulse">•</span>
+            <span className="hover:text-[#1677ff] transition-colors">{text}</span>
           </span>
         ))}
       </div>

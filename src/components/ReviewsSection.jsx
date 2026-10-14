@@ -29,8 +29,8 @@ export const ReviewsSection = () => {
       <div className="w-full bg-slate-50/80 border-b border-slate-200/60 py-2.5 overflow-hidden mb-12">
         <div className="animate-infinite-ticker flex items-center gap-8 whitespace-nowrap text-[11px] font-black text-slate-500 uppercase tracking-widest font-mono">
           {tickerLoop.map((item, idx) => (
-            <span key={idx} className="flex items-center gap-2 hover:text-[#cc040a] transition-colors">
-              <span className="text-[#cc040a]">●</span>
+            <span key={idx} className="flex items-center gap-2 hover:text-[#1677ff] transition-colors">
+              <span className="text-[#1677ff]">●</span>
               <span>{item.replace('• ', '')}</span>
             </span>
           ))}
@@ -41,11 +41,11 @@ export const ReviewsSection = () => {
         
         {/* Header */}
         <div className="space-y-3">
-          <span className="text-xs font-black text-[#cc040a] tracking-widest uppercase font-mono bg-[#cc040a]/10 px-4 py-1.5 rounded-full border border-[#cc040a]/20">
+          <span className="text-xs font-black text-[#1677ff] tracking-widest uppercase font-mono bg-[#1677ff]/10 px-4 py-1.5 rounded-full border border-[#1677ff]/20">
             — COMMUNITY —
           </span>
-          <h2 className="text-4xl sm:text-5xl font-extrabold text-slate-900 font-heading tracking-tight">
-            What Our <span className="text-[#cc040a]">Customers Say</span>
+          <h2 className="midas-heading text-4xl sm:text-5xl font-extrabold text-slate-900 font-heading tracking-tight">
+            What Our <span className="text-[#1677ff]">Customers Say</span>
           </h2>
           <p className="text-slate-600 text-sm sm:text-base font-semibold max-w-lg mx-auto">
             Real reviews from our gaming community worldwide
@@ -66,10 +66,10 @@ export const ReviewsSection = () => {
                 <div 
                   key={`${review.id}-${index}`}
                   onClick={openReviewsPage}
-                  className="w-[300px] sm:w-[360px] bg-white rounded-3xl p-7 border border-slate-200/90 shadow-sm hover:shadow-2xl hover:border-[#cc040a]/40 hover:-translate-y-2 transition-all duration-300 flex flex-col justify-between text-left space-y-4 shrink-0 cursor-pointer relative overflow-hidden group/card"
+                  className="w-[300px] sm:w-[360px] bg-white rounded-3xl p-7 border border-slate-200/90 shadow-sm hover:shadow-2xl hover:border-[#1677ff]/40 hover:-translate-y-2 transition-all duration-300 flex flex-col justify-between text-left space-y-4 shrink-0 cursor-pointer relative overflow-hidden group/card"
                 >
                   {/* Top Accent Line on Hover */}
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-[#cc040a] rounded-t-3xl opacity-0 group-hover/card:opacity-100 transition-opacity duration-300"></div>
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-[#1677ff] rounded-t-3xl opacity-0 group-hover/card:opacity-100 transition-opacity duration-300"></div>
 
                   {/* User Header */}
                   <div className="flex items-center justify-between relative z-10">
@@ -78,15 +78,15 @@ export const ReviewsSection = () => {
                         <img 
                           src={review.avatar} 
                           alt={review.name} 
-                          className="w-11 h-11 rounded-full object-cover border-2 border-[#cc040a]/40 shadow-xs group-hover/card:scale-105 transition-transform"
+                          className="w-11 h-11 rounded-full object-cover border-2 border-[#1677ff]/40 shadow-xs group-hover/card:scale-105 transition-transform"
                         />
                       ) : (
-                        <div className="w-11 h-11 rounded-full bg-[#cc040a] text-white font-black text-xs flex items-center justify-center shadow-xs">
+                        <div className="w-11 h-11 rounded-full bg-[#1677ff] text-white font-black text-xs flex items-center justify-center shadow-xs">
                           {review.initials || 'G'}
                         </div>
                       )}
                       <div>
-                        <h4 className="font-extrabold text-slate-900 text-sm group-hover/card:text-[#cc040a] transition-colors">
+                        <h4 className="font-extrabold text-slate-900 text-sm group-hover/card:text-[#1677ff] transition-colors">
                           {review.name}
                         </h4>
                         <p className="text-[11px] text-slate-500 font-bold flex items-center gap-1 mt-0.5">
@@ -95,7 +95,7 @@ export const ReviewsSection = () => {
                         </p>
                       </div>
                     </div>
-                    <Quote className="w-6 h-6 text-slate-200 group-hover/card:text-[#cc040a]/40 transition-colors" />
+                    <Quote className="w-6 h-6 text-slate-200 group-hover/card:text-[#1677ff]/40 transition-colors" />
                   </div>
 
                   {/* Stars */}
@@ -112,7 +112,7 @@ export const ReviewsSection = () => {
 
                   {/* Bottom Glow Accent */}
                   <div className="pt-2 flex items-center justify-between text-[10px] text-slate-400 font-mono font-bold">
-                    <span className="text-[#cc040a]">✔ VERIFIED BUYER</span>
+                    <span className="text-[#1677ff]">✔ VERIFIED BUYER</span>
                     <span>MADS TOPUP</span>
                   </div>
                 </div>
@@ -122,7 +122,7 @@ export const ReviewsSection = () => {
           </div>
         ) : (
           <div className="max-w-md mx-auto py-12 px-6 bg-slate-50 rounded-3xl border border-slate-200/80 text-center space-y-4 shadow-sm">
-            <div className="w-14 h-14 rounded-full bg-[#cc040a]/10 text-[#cc040a] flex items-center justify-center mx-auto text-xl font-black">
+            <div className="w-14 h-14 rounded-full bg-[#1677ff]/10 text-[#1677ff] flex items-center justify-center mx-auto text-xl font-black">
               ⭐
             </div>
             <div>
@@ -138,7 +138,7 @@ export const ReviewsSection = () => {
         <div className="pt-2">
           <button
             onClick={openReviewsPage}
-            className="px-8 py-3.5 rounded-full border-2 border-[#cc040a] text-[#cc040a] hover:bg-[#cc040a] hover:text-white font-extrabold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 mx-auto cursor-pointer shadow-lg shadow-red-500/10 hover:scale-105"
+            className="px-8 py-3.5 rounded-full border-2 border-[#1677ff] text-[#1677ff] hover:bg-[#1677ff] hover:text-white font-extrabold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 mx-auto cursor-pointer shadow-lg shadow-brand-500/10 hover:scale-105"
           >
             <span>VIEW ALL REVIEWS</span>
             <ArrowRight className="w-4 h-4" />

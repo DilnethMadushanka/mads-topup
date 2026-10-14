@@ -7,19 +7,19 @@ import {
   ShieldCheck, ChevronLeft, RefreshCw, Image, Headset, ChevronRight, Minus, ZoomIn, Check
 } from 'lucide-react';
 
-const RED = '#cc040a';
+const RED = '#1677ff';
 
-// White & Red clean theme tokens
+// White & Blue clean theme tokens
 const NEON = {
-  cyan: '#e02020',
-  violet: '#c0392b',
+  cyan: '#1677ff',
+  violet: '#0b5ed7',
   green: '#27ae60',
   bg: '#ffffff',
   bgDeep: '#f5f5f5',
   surface: '#f9f9f9',
   surface2: '#f0f0f0',
-  border: 'rgba(224,32,32,0.2)',
-  borderViolet: 'rgba(192,57,43,0.25)',
+  border: 'rgba(22,119,255,0.2)',
+  borderViolet: 'rgba(11,94,215,0.25)',
   textDim: '#888888',
 };
 
@@ -155,7 +155,7 @@ export const SupportModal = () => {
   const getStatusBadge = (status) => {
     const map = {
       OPEN:        { color: '#b45309', bg: '#fef3c7', border: '#fcd34d' },
-      IN_PROGRESS: { color: '#cc040a', bg: '#fee2e2', border: 'var(--sm-red-border,#fca5a5)' },
+      IN_PROGRESS: { color: '#1677ff', bg: '#dfecff', border: 'var(--sm-red-border,#a7c9ff)' },
       RESOLVED:    { color: 'var(--sm-green,#15803d)', bg: '#dcfce7', border: '#86efac' },
       CLOSED:      { color: 'var(--sm-text2,#475569)', bg: '#f1f5f9', border: '#cbd5e1' },
     };
@@ -188,15 +188,15 @@ export const SupportModal = () => {
   };
 
   const inputFocusHandlers = {
-    onFocus: e => { e.target.style.borderColor = RED; e.target.style.boxShadow = '0 0 0 4px rgba(204,4,10,0.12)'; },
+    onFocus: e => { e.target.style.borderColor = RED; e.target.style.boxShadow = '0 0 0 4px rgba(22,119,255,0.12)'; },
     onBlur: e => { e.target.style.borderColor = 'var(--sm-border,#e2e8f0)'; e.target.style.boxShadow = 'none'; }
   };
 
   // ── Shared style tokens ──
   const labelStyle = { display: 'block', fontSize: 10.5, fontWeight: 900, color: 'var(--sm-muted,#64748b)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em' };
   const fieldStyle = { width: '100%', background: 'var(--sm-surface,#ffffff)', border: '2px solid var(--sm-border,#e2e8f0)', borderRadius: 14, padding: '11px 14px', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', outline: 'none', color: 'var(--sm-text,#0f172a)', boxSizing: 'border-box', transition: 'box-shadow 0.15s, border-color 0.15s' };
-  const redBtn = { background: RED, border: 'none', color: '#ffffff', fontWeight: 900, cursor: 'pointer', boxShadow: '0 6px 18px rgba(204,4,10,0.3)', transition: 'transform 0.15s, background 0.15s' };
-  const chipStyle = { fontSize: 10.5, fontWeight: 800, color: RED, background: 'var(--sm-surface,#ffffff)', border: '1.5px solid var(--sm-red-border,#fecaca)', borderRadius: 99, padding: '6px 12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, transition: 'all 0.15s' };
+  const redBtn = { background: RED, border: 'none', color: '#ffffff', fontWeight: 900, cursor: 'pointer', boxShadow: '0 6px 18px rgba(22,119,255,0.3)', transition: 'transform 0.15s, background 0.15s' };
+  const chipStyle = { fontSize: 10.5, fontWeight: 800, color: RED, background: 'var(--sm-surface,#ffffff)', border: '1.5px solid var(--sm-red-border,#c4dcff)', borderRadius: 99, padding: '6px 12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, transition: 'all 0.15s' };
 
   const headerSubtitle = view === 'list' ? 'My Tickets' : view === 'create' ? 'New Inquiry' : `Ticket ${currentTicket?.id || ''}`;
 
@@ -209,9 +209,9 @@ export const SupportModal = () => {
           aria-label="Open 24/7 Live Customer Support"
           title="24/7 Live Customer Support"
           className="sm-fab"
-          style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 40, height: 58, minWidth: 58, borderRadius: 99, background: 'linear-gradient(135deg,#ef1c25,#cc040a)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, padding: '0 18px', border: '2px solid rgba(255,255,255,0.35)', cursor: 'pointer', boxShadow: '0 8px 28px rgba(204,4,10,0.45)', transition: 'transform 0.2s, box-shadow 0.2s' }}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.04)'; e.currentTarget.style.boxShadow = '0 12px 34px rgba(204,4,10,0.55)'; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(204,4,10,0.45)'; }}
+          style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 40, height: 58, minWidth: 58, borderRadius: 99, background: 'linear-gradient(135deg,#2f8bff,#1677ff)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, padding: '0 18px', border: '2px solid rgba(255,255,255,0.35)', cursor: 'pointer', boxShadow: '0 8px 28px rgba(22,119,255,0.45)', transition: 'transform 0.2s, box-shadow 0.2s' }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.04)'; e.currentTarget.style.boxShadow = '0 12px 34px rgba(22,119,255,0.55)'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(22,119,255,0.45)'; }}
         >
           <Headset style={{ width: 24, height: 24 }} />
           <span className="sm-fab-label" style={{ fontSize: 13, fontWeight: 900, letterSpacing: '0.02em' }}>Support</span>
@@ -230,14 +230,14 @@ export const SupportModal = () => {
             width: '100%', maxWidth: 440, height: '92vh', borderRadius: 28,
             display: 'flex', flexDirection: 'column', overflow: 'hidden', animation: 'smSlide 0.28s cubic-bezier(0.16,1,0.3,1)',
             background: 'var(--sm-bg,#f8fafc)',
-            border: '1px solid rgba(204,4,10,0.2)',
-            boxShadow: '0 30px 90px rgba(15,23,42,0.35), 0 4px 24px rgba(204,4,10,0.15)'
+            border: '1px solid rgba(22,119,255,0.2)',
+            boxShadow: '0 30px 90px rgba(15,23,42,0.35), 0 4px 24px rgba(22,119,255,0.15)'
           }}>
 
             {/* Header — bright red hero */}
             <div style={{ position: 'relative', flexShrink: 0, padding: '18px 18px 20px', background: 'var(--sm-surface,#ffffff)', color: 'var(--sm-text,#0f172a)', overflow: 'hidden', borderBottom: '1px solid var(--sm-border,#e2e8f0)' }}>
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: 'linear-gradient(90deg,#ef1c25,#cc040a,#990207)' }} />
-              <div style={{ position: 'absolute', top: -60, right: -40, width: 180, height: 180, borderRadius: '50%', background: 'var(--sm-red-soft,#fff1f2)', pointerEvents: 'none' }} />
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: 'linear-gradient(90deg,#2f8bff,#1677ff,#0b5ed7)' }} />
+              <div style={{ position: 'absolute', top: -60, right: -40, width: 180, height: 180, borderRadius: '50%', background: 'var(--sm-red-soft,#eef5ff)', pointerEvents: 'none' }} />
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', gap: 8 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 11, minWidth: 0 }}>
                   {view !== 'list' && (
@@ -246,7 +246,7 @@ export const SupportModal = () => {
                     </button>
                   )}
                   <div style={{ position: 'relative', flexShrink: 0 }}>
-                    <div style={{ width: 44, height: 44, borderRadius: 15, background: '#cc040a', boxShadow: '0 6px 16px rgba(204,4,10,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 15, background: '#1677ff', boxShadow: '0 6px 16px rgba(22,119,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <Headset style={{ width: 21, height: 21, color: '#ffffff' }} />
                     </div>
                     <span style={{ position: 'absolute', bottom: -2, right: -2, width: 13, height: 13, borderRadius: '50%', background: '#22c55e', border: '2.5px solid #ffffff' }} />
@@ -266,7 +266,7 @@ export const SupportModal = () => {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                   {view === 'list' && (
-                    <button onClick={() => setView('create')} style={{ background: RED, border: 'none', borderRadius: 11, padding: '8px 13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, fontWeight: 900, color: '#ffffff', boxShadow: '0 4px 14px rgba(204,4,10,0.3)' }}>
+                    <button onClick={() => setView('create')} style={{ background: RED, border: 'none', borderRadius: 11, padding: '8px 13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, fontWeight: 900, color: '#ffffff', boxShadow: '0 4px 14px rgba(22,119,255,0.3)' }}>
                       <Plus style={{ width: 14, height: 14 }} /> New
                     </button>
                   )}
@@ -287,17 +287,17 @@ export const SupportModal = () => {
               {view === 'list' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {!isLoggedIn && (
-                    <div style={{ background: 'var(--sm-red-soft,#fff1f2)', border: '1.5px solid var(--sm-red-border,#fecaca)', borderRadius: 16, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                    <div style={{ background: 'var(--sm-red-soft,#eef5ff)', border: '1.5px solid var(--sm-red-border,#c4dcff)', borderRadius: 16, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <AlertCircle style={{ width: 16, height: 16, color: RED, flexShrink: 0 }} />
-                        <span style={{ fontSize: 11.5, color: 'var(--sm-red-text,#b91c1c)', fontWeight: 700 }}>Log in to save &amp; sync your tickets!</span>
+                        <span style={{ fontSize: 11.5, color: 'var(--sm-red-text,#1250e1)', fontWeight: 700 }}>Log in to save &amp; sync your tickets!</span>
                       </div>
                       <button onClick={() => openAuth('login')} style={{ ...redBtn, borderRadius: 10, padding: '6px 14px', fontSize: 10.5, flexShrink: 0 }}>Log In</button>
                     </div>
                   )}
                   {userTickets.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '36px 16px 24px' }}>
-                      <div style={{ width: 84, height: 84, borderRadius: 28, background: 'linear-gradient(135deg,#fee2e2,#fff1f2)', border: '2px solid var(--sm-red-border,#fecaca)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px', boxShadow: '0 8px 24px rgba(204,4,10,0.12)' }}>
+                      <div style={{ width: 84, height: 84, borderRadius: 28, background: 'linear-gradient(135deg,#dfecff,#eef5ff)', border: '2px solid var(--sm-red-border,#c4dcff)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px', boxShadow: '0 8px 24px rgba(22,119,255,0.12)' }}>
                         <MessageSquare style={{ width: 34, height: 34, color: RED }} />
                       </div>
                       <h4 style={{ margin: '0 0 8px', fontWeight: 900, fontSize: 17, color: 'var(--sm-text,#0f172a)' }}>No Support Tickets Yet</h4>
@@ -326,7 +326,7 @@ export const SupportModal = () => {
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
                               <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--sm-muted,#94a3b8)', fontFamily: 'monospace' }}>{tck.id}</span>
-                              <span style={{ fontSize: 9.5, background: 'var(--sm-red-soft,#fff1f2)', color: RED, border: '1px solid var(--sm-red-border,#fecaca)', padding: '2px 9px', borderRadius: 99, fontWeight: 800, whiteSpace: 'nowrap' }}>{tck.category}</span>
+                              <span style={{ fontSize: 9.5, background: 'var(--sm-red-soft,#eef5ff)', color: RED, border: '1px solid var(--sm-red-border,#c4dcff)', padding: '2px 9px', borderRadius: 99, fontWeight: 800, whiteSpace: 'nowrap' }}>{tck.category}</span>
                             </div>
                             {getStatusBadge(tck.status)}
                           </div>
@@ -363,7 +363,7 @@ export const SupportModal = () => {
                         const on = category === opt.val;
                         return (
                           <button key={opt.val} type="button" onClick={() => setCategory(opt.val)}
-                            style={{ position: 'relative', border: `2px solid ${on ? RED : 'var(--sm-border,#e2e8f0)'}`, background: on ? 'var(--sm-red-soft,#fff1f2)' : 'var(--sm-surface,#ffffff)', borderRadius: 16, padding: '13px 8px', cursor: 'pointer', textAlign: 'center', fontSize: 11.5, fontWeight: 800, color: on ? RED : 'var(--sm-text2,#475569)', transition: 'all 0.15s', boxShadow: on ? '0 6px 16px rgba(204,4,10,0.14)' : 'none' }}>
+                            style={{ position: 'relative', border: `2px solid ${on ? RED : 'var(--sm-border,#e2e8f0)'}`, background: on ? 'var(--sm-red-soft,#eef5ff)' : 'var(--sm-surface,#ffffff)', borderRadius: 16, padding: '13px 8px', cursor: 'pointer', textAlign: 'center', fontSize: 11.5, fontWeight: 800, color: on ? RED : 'var(--sm-text2,#475569)', transition: 'all 0.15s', boxShadow: on ? '0 6px 16px rgba(22,119,255,0.14)' : 'none' }}>
                             {on && <span style={{ position: 'absolute', top: 7, right: 7, width: 16, height: 16, borderRadius: '50%', background: RED, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Check style={{ width: 10, height: 10, color: '#fff' }} strokeWidth={3.5} /></span>}
                             <div style={{ fontSize: 22, marginBottom: 5 }}>{opt.icon}</div>
                             {opt.label}
@@ -396,9 +396,9 @@ export const SupportModal = () => {
                     </div>
                     <textarea rows={4} placeholder="Describe your issue in detail..." value={initialMessage} onChange={e => setInitialMessage(e.target.value)} required style={{ ...fieldStyle, resize: 'vertical', lineHeight: 1.6 }} {...inputFocusHandlers} />
                   </div>
-                  <div style={{ background: 'var(--sm-surface,#ffffff)', border: '2px dashed var(--sm-red-border,#fca5a5)', borderRadius: 18, padding: '14px 16px' }}>
+                  <div style={{ background: 'var(--sm-surface,#ffffff)', border: '2px dashed var(--sm-red-border,#a7c9ff)', borderRadius: 18, padding: '14px 16px' }}>
                     <label style={{ fontSize: 12, fontWeight: 800, color: 'var(--sm-text2,#334155)', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                      <span style={{ width: 28, height: 28, borderRadius: 9, background: 'var(--sm-red-soft2,#fee2e2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Image style={{ width: 14, height: 14, color: RED }} /></span>
+                      <span style={{ width: 28, height: 28, borderRadius: 9, background: 'var(--sm-red-soft2,#dfecff)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Image style={{ width: 14, height: 14, color: RED }} /></span>
                       Attach Screenshot <span style={{ color: 'var(--sm-muted,#94a3b8)', fontWeight: 600 }}>(Optional)</span>
                     </label>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -407,7 +407,7 @@ export const SupportModal = () => {
                     </div>
                     {attachmentUrl && (
                       <div style={{ marginTop: 12 }}>
-                        <div className="sm-thumb" onClick={() => setLightboxUrl(attachmentUrl)} style={{ position: 'relative', width: 84, height: 84, borderRadius: 14, overflow: 'hidden', cursor: 'zoom-in', border: '2px solid var(--sm-red-border,#fecaca)' }}>
+                        <div className="sm-thumb" onClick={() => setLightboxUrl(attachmentUrl)} style={{ position: 'relative', width: 84, height: 84, borderRadius: 14, overflow: 'hidden', cursor: 'zoom-in', border: '2px solid var(--sm-red-border,#c4dcff)' }}>
                           <img src={attachmentUrl} alt="Attachment preview" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                           <div className="sm-thumb-overlay" style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.15s' }}>
                             <ZoomIn style={{ width: 18, height: 18, color: '#fff' }} />
@@ -418,7 +418,7 @@ export const SupportModal = () => {
                   </div>
                   <button type="submit"
                     style={{ ...redBtn, borderRadius: 16, padding: 15, fontSize: 13.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.background = '#b00308'; }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.background = '#0d68e6'; }}
                     onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.background = RED; }}
                   >
                     <Send style={{ width: 16, height: 16 }} /> Submit Support Ticket
@@ -447,7 +447,7 @@ export const SupportModal = () => {
                         <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isAdmin ? 'flex-start' : 'flex-end' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                             {isAdmin && (
-                              <div style={{ width: 22, height: 22, borderRadius: '50%', background: RED, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(204,4,10,0.35)' }}>
+                              <div style={{ width: 22, height: 22, borderRadius: '50%', background: RED, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(22,119,255,0.35)' }}>
                                 <Headset style={{ width: 11, height: 11, color: '#ffffff' }} />
                               </div>
                             )}
@@ -458,10 +458,10 @@ export const SupportModal = () => {
                             maxWidth: '85%', padding: '11px 15px',
                             borderRadius: isAdmin ? '5px 18px 18px 18px' : '18px 5px 18px 18px',
                             fontSize: 12.5, fontWeight: 500, lineHeight: 1.6,
-                            background: isAdmin ? 'var(--sm-surface,#ffffff)' : 'linear-gradient(135deg,#ef1c25,#cc040a)',
+                            background: isAdmin ? 'var(--sm-surface,#ffffff)' : 'linear-gradient(135deg,#2f8bff,#1677ff)',
                             color: isAdmin ? 'var(--sm-text,#0f172a)' : '#ffffff',
                             border: isAdmin ? '1.5px solid var(--sm-border,#e2e8f0)' : 'none',
-                            boxShadow: isAdmin ? '0 2px 8px rgba(15,23,42,0.05)' : '0 6px 18px rgba(204,4,10,0.28)'
+                            boxShadow: isAdmin ? '0 2px 8px rgba(15,23,42,0.05)' : '0 6px 18px rgba(22,119,255,0.28)'
                           }}>
                             <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{msg.text}</p>
                             {msg.attachmentUrl && (
@@ -494,14 +494,14 @@ export const SupportModal = () => {
                       </div>
                     )}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--sm-surface,#ffffff)', border: '2px solid var(--sm-border,#e2e8f0)', borderRadius: 18, padding: 5 }}>
-                      <label style={{ width: 40, height: 40, borderRadius: 13, flexShrink: 0, background: 'var(--sm-surface2,#f1f5f9)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--sm-muted,#64748b)', transition: 'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.color = RED; }} onMouseLeave={e => { e.currentTarget.style.background = 'var(--sm-surface2,#f1f5f9)'; e.currentTarget.style.color = 'var(--sm-muted,#64748b)'; }}>
+                      <label style={{ width: 40, height: 40, borderRadius: 13, flexShrink: 0, background: 'var(--sm-surface2,#f1f5f9)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--sm-muted,#64748b)', transition: 'all 0.15s' }} onMouseEnter={e => { e.currentTarget.style.background = '#dfecff'; e.currentTarget.style.color = RED; }} onMouseLeave={e => { e.currentTarget.style.background = 'var(--sm-surface2,#f1f5f9)'; e.currentTarget.style.color = 'var(--sm-muted,#64748b)'; }}>
                         <Paperclip style={{ width: 17, height: 17 }} />
                         <input type="file" accept="image/*" onChange={handleFileUpload} style={{ display: 'none' }} />
                       </label>
                       <input type="text" placeholder={isUploading ? 'Uploading screenshot...' : 'Type your message...'} value={replyText} onChange={e => setReplyText(e.target.value)}
                         style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', padding: '10px 4px', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', outline: 'none', color: 'var(--sm-text,#0f172a)' }} />
                       <button type="submit" disabled={!replyText.trim() && !attachmentUrl}
-                        style={{ width: 40, height: 40, borderRadius: 13, flexShrink: 0, background: (!replyText.trim() && !attachmentUrl) ? 'var(--sm-border,#e2e8f0)' : RED, border: 'none', color: (!replyText.trim() && !attachmentUrl) ? 'var(--sm-muted,#94a3b8)' : '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: (!replyText.trim() && !attachmentUrl) ? 'not-allowed' : 'pointer', boxShadow: (!replyText.trim() && !attachmentUrl) ? 'none' : '0 4px 14px rgba(204,4,10,0.4)', transition: 'transform 0.12s, box-shadow 0.12s' }}
+                        style={{ width: 40, height: 40, borderRadius: 13, flexShrink: 0, background: (!replyText.trim() && !attachmentUrl) ? 'var(--sm-border,#e2e8f0)' : RED, border: 'none', color: (!replyText.trim() && !attachmentUrl) ? 'var(--sm-muted,#94a3b8)' : '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: (!replyText.trim() && !attachmentUrl) ? 'not-allowed' : 'pointer', boxShadow: (!replyText.trim() && !attachmentUrl) ? 'none' : '0 4px 14px rgba(22,119,255,0.4)', transition: 'transform 0.12s, box-shadow 0.12s' }}
                         onMouseEnter={e => { if (!e.currentTarget.disabled) { e.currentTarget.style.transform = 'scale(1.06)'; } }}
                         onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}>
                         <Send style={{ width: 16, height: 16 }} />
@@ -514,7 +514,7 @@ export const SupportModal = () => {
               {/* CHAT VIEW FALLBACK (If ticket not found) */}
               {view === 'chat' && !currentTicket && (
                 <div style={{ textAlign: 'center', padding: '48px 16px' }}>
-                  <div style={{ width: 70, height: 70, borderRadius: 22, background: 'var(--sm-red-soft,#fff1f2)', border: '2px solid var(--sm-red-border,#fecaca)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                  <div style={{ width: 70, height: 70, borderRadius: 22, background: 'var(--sm-red-soft,#eef5ff)', border: '2px solid var(--sm-red-border,#c4dcff)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
                     <AlertCircle style={{ width: 28, height: 28, color: RED }} />
                   </div>
                   <h4 style={{ margin: '0 0 8px', fontWeight: 900, fontSize: 16, color: 'var(--sm-text,#0f172a)' }}>Ticket Not Found</h4>
@@ -553,11 +553,11 @@ export const SupportModal = () => {
         @keyframes smPing { 75%,100% { transform:scale(2.1); opacity:0; } }
         @keyframes smSpin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
         @keyframes smPulse { 0%,100% { opacity:1; } 50% { opacity:0.45; } }
-        .sm-card:hover { border-color: rgba(204,4,10,0.4) !important; box-shadow: 0 8px 22px rgba(204,4,10,0.12) !important; transform: translateY(-1px); }
+        .sm-card:hover { border-color: rgba(22,119,255,0.4) !important; box-shadow: 0 8px 22px rgba(22,119,255,0.12) !important; transform: translateY(-1px); }
         .sm-thumb:hover .sm-thumb-overlay { opacity: 1 !important; }
         .sm-scroll::-webkit-scrollbar { width: 6px; }
         .sm-scroll::-webkit-scrollbar-track { background: transparent; }
-        .sm-scroll::-webkit-scrollbar-thumb { background: rgba(204,4,10,0.25); border-radius: 99px; }
+        .sm-scroll::-webkit-scrollbar-thumb { background: rgba(22,119,255,0.25); border-radius: 99px; }
         .sm-chip-row::-webkit-scrollbar { height: 0; }
         @media (max-width: 640px) {
           .sm-overlay { padding: 0 !important; align-items: stretch !important; }

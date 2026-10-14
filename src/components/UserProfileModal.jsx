@@ -176,7 +176,7 @@ Thank you for using MADS TOPUP Sri Lanka!
           <button
             onClick={handleLogout}
             title="Logout"
-            className="px-3 py-1.5 rounded-full bg-red-600/85 hover:bg-red-600 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer backdrop-blur-md shadow-md"
+            className="px-3 py-1.5 rounded-full bg-brand-600/85 hover:bg-brand-600 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer backdrop-blur-md shadow-md"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span>Logout</span>
@@ -193,10 +193,10 @@ Thank you for using MADS TOPUP Sri Lanka!
         <div className="overflow-y-auto flex-1 p-4 sm:p-6 space-y-6">
 
           {/* RICH RED THEME HEADER BANNER (Matching Web Theme) */}
-          <div className="bg-gradient-to-r from-[#cc040a] via-[#dc2626] to-[#990207] rounded-3xl p-6 sm:p-8 text-white relative text-center shadow-2xl overflow-hidden border border-red-600/30">
+          <div className="bg-gradient-to-r from-[#1677ff] via-[#1764f5] to-[#0b5ed7] rounded-3xl p-6 sm:p-8 text-white relative text-center shadow-2xl overflow-hidden border border-brand-600/30">
             {/* Background Glow Shapes */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-red-950/40 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-brand-950/40 rounded-full blur-3xl pointer-events-none"></div>
 
             {/* Avatar Circle */}
             <div className="relative z-10">
@@ -206,7 +206,7 @@ Thank you for using MADS TOPUP Sri Lanka!
                 {/* Camera Edit Overlay */}
                 <button 
                   onClick={() => setIsEditMode(!isEditMode)}
-                  className="w-7 h-7 bg-white text-[#cc040a] rounded-full flex items-center justify-center shadow-md absolute bottom-0 right-0 border border-red-100 cursor-pointer hover:scale-110 transition-transform"
+                  className="w-7 h-7 bg-white text-[#1677ff] rounded-full flex items-center justify-center shadow-md absolute bottom-0 right-0 border border-brand-100 cursor-pointer hover:scale-110 transition-transform"
                 >
                   <Camera className="w-3.5 h-3.5" />
                 </button>
@@ -216,7 +216,7 @@ Thank you for using MADS TOPUP Sri Lanka!
               <h2 className="text-2xl sm:text-3xl font-black font-heading mt-3 text-white tracking-tight">
                 {userProfile.name}
               </h2>
-              <p className="text-xs text-red-100 font-medium mt-0.5">
+              <p className="text-xs text-brand-100 font-medium mt-0.5">
                 {userProfile.email}
               </p>
 
@@ -238,7 +238,7 @@ Thank you for using MADS TOPUP Sri Lanka!
                   <Award className="w-5 h-5" />
                 </div>
                 <div className="text-left">
-                  <span className="text-[9px] font-black text-red-100 uppercase tracking-wider block">LIFETIME SPEND</span>
+                  <span className="text-[9px] font-black text-brand-100 uppercase tracking-wider block">LIFETIME SPEND</span>
                   <span className="text-base font-black text-white font-heading">{(totalSpentLkr || 0).toFixed(2)} LKR</span>
                 </div>
               </div>
@@ -260,7 +260,7 @@ Thank you for using MADS TOPUP Sri Lanka!
                   <Wallet className="w-5 h-5" />
                 </div>
                 <div className="text-left">
-                  <span className="text-[9px] font-black text-red-100 uppercase tracking-wider block">EZ WALLET</span>
+                  <span className="text-[9px] font-black text-brand-100 uppercase tracking-wider block">EZ WALLET</span>
                   <span className="text-base font-black text-white font-heading">{(userProfile?.walletBalance || 0).toFixed(2)} LKR</span>
                 </div>
               </div>
@@ -282,7 +282,7 @@ Thank you for using MADS TOPUP Sri Lanka!
                   <DollarSign className="w-5 h-5" />
                 </div>
                 <div className="text-left">
-                  <span className="text-[9px] font-black text-red-100 uppercase tracking-wider block">BINANCE</span>
+                  <span className="text-[9px] font-black text-brand-100 uppercase tracking-wider block">BINANCE</span>
                   <span className="text-base font-black text-white font-heading">{(userProfile?.walletUsdt || 0).toFixed(2)} USDT</span>
                 </div>
               </div>
@@ -430,7 +430,7 @@ Thank you for using MADS TOPUP Sri Lanka!
           {activeTab === 'reports' && !isEditMode && (
             <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4 animate-in fade-in">
               <h3 className="text-base font-black text-slate-900 font-heading flex items-center gap-2">
-                <FileText className="w-5 h-5 text-[#cc040a]" />
+                <FileText className="w-5 h-5 text-[#1677ff]" />
                 <span>Top-Up Statements & Account Reports</span>
               </h3>
 
@@ -442,7 +442,7 @@ Thank you for using MADS TOPUP Sri Lanka!
                   </div>
                   <button 
                     onClick={handleDownloadPDF}
-                    className="px-4 py-2.5 bg-[#cc040a] hover:bg-[#b00308] text-white font-extrabold text-xs rounded-xl shadow-xs hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer border-0 outline-none focus:outline-none focus:ring-0 active:scale-95 shrink-0"
+                    className="px-4 py-2.5 bg-[#1677ff] hover:bg-[#0d68e6] text-white font-extrabold text-xs rounded-xl shadow-xs hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer border-0 outline-none focus:outline-none focus:ring-0 active:scale-95 shrink-0"
                   >
                     <Download className="w-4 h-4" />
                     <span>Download PDF</span>
@@ -472,7 +472,7 @@ Thank you for using MADS TOPUP Sri Lanka!
               <h3 className="text-xl font-black text-slate-900 font-heading">
                 History & Activity
               </h3>
-              <div className="w-12 h-1 bg-[#cc040a] rounded-full mt-1.5 mx-auto"></div>
+              <div className="w-12 h-1 bg-[#1677ff] rounded-full mt-1.5 mx-auto"></div>
             </div>
 
             {/* ACCORDION 1: Recent Purchases */}
@@ -522,7 +522,7 @@ Thank you for using MADS TOPUP Sri Lanka!
                         </div>
 
                         <div className="text-right sm:text-right border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
-                          <div className="font-black text-[#cc040a] text-base font-heading">{formatLkr(ord.priceLkr)}</div>
+                          <div className="font-black text-[#1677ff] text-base font-heading">{formatLkr(ord.priceLkr)}</div>
                           <div className="text-[10px] text-slate-400 font-mono">{ord.paymentMethod}</div>
                         </div>
                       </div>
@@ -713,14 +713,14 @@ Thank you for using MADS TOPUP Sri Lanka!
                                   setIsUserProfileOpen(false);
                                   openTopup(game);
                                 }}
-                                className="px-3 py-1 rounded-lg bg-[#cc040a] text-white font-bold text-[11px] hover:bg-[#990207] transition-colors"
+                                className="px-3 py-1 rounded-lg bg-[#1677ff] text-white font-bold text-[11px] hover:bg-[#0b5ed7] transition-colors"
                               >
                                 Top Up
                               </button>
                             )}
                             <button
                               onClick={() => handleDeleteSavedId(saved.id)}
-                              className="p-1 text-slate-400 hover:text-red-600 rounded"
+                              className="p-1 text-slate-400 hover:text-brand-600 rounded"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>

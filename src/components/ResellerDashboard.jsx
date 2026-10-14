@@ -300,14 +300,14 @@ export const ResellerDashboard = () => {
   };
 
   // ── Shared style tokens ──
-  const inputCls = 'w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-medium focus:outline-none focus:border-[#cc040a] focus:ring-4 focus:ring-[#cc040a]/10 transition-all';
+  const inputCls = 'w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-medium focus:outline-none focus:border-[#1677ff] focus:ring-4 focus:ring-[#1677ff]/10 transition-all';
   const labelCls = 'block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-2';
-  const btnRed = 'bg-[#cc040a] hover:bg-[#b00308] text-white font-black rounded-xl transition-all shadow-lg shadow-red-600/25 cursor-pointer active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed';
+  const btnRed = 'bg-[#1677ff] hover:bg-[#0d68e6] text-white font-black rounded-xl transition-all shadow-lg shadow-brand-600/25 cursor-pointer active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed';
   const panelCls = 'bg-white rounded-3xl p-5 sm:p-8 border-2 border-slate-200 shadow-sm space-y-6 animate-in fade-in';
 
   const stepHead = (n, text) => (
     <div className="flex items-center gap-2.5 mb-3">
-      <span className="w-6 h-6 rounded-full bg-[#cc040a] text-white text-xs font-black flex items-center justify-center shrink-0 shadow-sm shadow-red-600/30">{n}</span>
+      <span className="w-6 h-6 rounded-full bg-[#1677ff] text-white text-xs font-black flex items-center justify-center shrink-0 shadow-sm shadow-brand-600/30">{n}</span>
       <span className="text-xs font-black text-slate-800 uppercase tracking-wider">{text}</span>
     </div>
   );
@@ -317,7 +317,7 @@ export const ResellerDashboard = () => {
     return (
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-100">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-11 h-11 rounded-xl bg-[#cc040a] text-white flex items-center justify-center shadow-md shadow-red-600/25 shrink-0">
+          <div className="w-11 h-11 rounded-xl bg-[#1677ff] text-white flex items-center justify-center shadow-md shadow-brand-600/25 shrink-0">
             <Icon className="w-5 h-5" />
           </div>
           <div className="min-w-0">
@@ -333,7 +333,7 @@ export const ResellerDashboard = () => {
   const kpis = [
     { icon: Wallet, label: 'Available Reseller Balance', value: `LKR ${(userProfile?.walletBalance || 0).toLocaleString()}`, sub: `${(userProfile?.walletUsdt || 0).toFixed(2)} USDT Available`, valueCls: 'text-emerald-600' },
     { icon: ShoppingBag, label: 'Orders Fulfilled', value: `${completedResellerOrders.length} Orders`, sub: 'Automated Instant Delivery', valueCls: 'text-slate-900' },
-    { icon: TrendingUp, label: 'Wholesale Sales Turnover', value: `LKR ${totalWholesaleTurnover.toLocaleString()}`, sub: 'Customer Top-Up Sales Volume', valueCls: 'text-[#cc040a]' },
+    { icon: TrendingUp, label: 'Wholesale Sales Turnover', value: `LKR ${totalWholesaleTurnover.toLocaleString()}`, sub: 'Customer Top-Up Sales Volume', valueCls: 'text-[#1677ff]' },
     { icon: Award, label: 'Total Wholesale Savings', value: `LKR ${totalWholesaleSavings.toLocaleString()}`, sub: 'Saved via 5% Reseller Margin', valueCls: 'text-violet-600' },
   ];
 
@@ -346,20 +346,20 @@ export const ResellerDashboard = () => {
           <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={closeResellerDashboard}
-              className="px-4 py-2 bg-white hover:text-[#cc040a] hover:border-[#cc040a]/40 border border-slate-200 text-slate-600 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer shadow-xs shrink-0"
+              className="px-4 py-2 bg-white hover:text-[#1677ff] hover:border-[#1677ff]/40 border border-slate-200 text-slate-600 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer shadow-xs shrink-0"
             >
               <ArrowLeft className="w-4 h-4" />
               <span className="hidden sm:inline">Back to Store</span>
             </button>
 
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#ef1c25] to-[#990207] flex items-center justify-center shadow-lg shadow-red-600/30 shrink-0">
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#2f8bff] to-[#0b5ed7] flex items-center justify-center shadow-lg shadow-brand-600/30 shrink-0">
                 <Crown className="w-5 h-5 fill-amber-300 text-amber-300" />
               </div>
               <div className="min-w-0">
                 <h1 className="text-lg sm:text-xl font-black font-heading tracking-tight text-slate-900 flex items-center gap-2 flex-wrap">
                   <span className="truncate">{storeName}</span>
-                  <span className="px-2 py-0.5 rounded-full bg-[#cc040a] text-white text-[10px] font-mono font-bold uppercase">
+                  <span className="px-2 py-0.5 rounded-full bg-[#1677ff] text-white text-[10px] font-mono font-bold uppercase">
                     PARTNER
                   </span>
                 </h1>
@@ -382,14 +382,14 @@ export const ResellerDashboard = () => {
 
         {/* HERO RESELLER STORE BANNER */}
         <div className="relative rounded-3xl bg-white text-slate-900 border-2 border-slate-200 shadow-sm overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#ef1c25] via-[#cc040a] to-[#990207]"></div>
-          <div className="absolute -top-24 -right-16 w-96 h-96 rounded-full bg-red-50 pointer-events-none"></div>
-          <div className="absolute -bottom-28 -left-16 w-80 h-80 rounded-full bg-red-50/70 pointer-events-none"></div>
-          <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #cc040a 1px, transparent 1px)', backgroundSize: '22px 22px' }}></div>
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#2f8bff] via-[#1677ff] to-[#0b5ed7]"></div>
+          <div className="absolute -top-24 -right-16 w-96 h-96 rounded-full bg-brand-50 pointer-events-none"></div>
+          <div className="absolute -bottom-28 -left-16 w-80 h-80 rounded-full bg-brand-50/70 pointer-events-none"></div>
+          <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #1677ff 1px, transparent 1px)', backgroundSize: '22px 22px' }}></div>
 
           <div className="relative z-10 p-6 sm:p-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
             <div className="space-y-4 lg:max-w-xl">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-50 border border-red-100 text-[#cc040a] text-xs font-mono font-black uppercase tracking-widest">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-50 border border-brand-100 text-[#1677ff] text-xs font-mono font-black uppercase tracking-widest">
                 <Crown className="w-4 h-4 text-amber-500 fill-amber-400" />
                 <span>Verified Reseller Partner Tier</span>
               </div>
@@ -415,10 +415,10 @@ export const ResellerDashboard = () => {
                   Your Unique Reseller Code
                 </span>
                 <div className="flex items-center justify-between gap-2 bg-white px-3.5 py-2.5 rounded-xl border-2 border-slate-200">
-                  <span className="font-mono text-sm font-black text-[#cc040a] tracking-wider truncate">{resellerWalletId}</span>
+                  <span className="font-mono text-sm font-black text-[#1677ff] tracking-wider truncate">{resellerWalletId}</span>
                   <button
                     onClick={handleCopyResellerId}
-                    className="p-1.5 rounded-lg bg-[#cc040a] hover:bg-[#b00308] text-white transition-colors cursor-pointer shrink-0"
+                    className="p-1.5 rounded-lg bg-[#1677ff] hover:bg-[#0d68e6] text-white transition-colors cursor-pointer shrink-0"
                     title="Copy Reseller Code"
                   >
                     {isCopiedId ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -448,15 +448,15 @@ export const ResellerDashboard = () => {
         {/* 4 KPI METRIC STAT CARDS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {kpis.map(({ icon: Icon, label, value, sub, valueCls }) => (
-            <div key={label} className="relative bg-white p-5 rounded-2xl border-2 border-slate-200 shadow-sm overflow-hidden hover:-translate-y-0.5 hover:shadow-lg hover:border-[#cc040a]/30 transition-all">
-              <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-[#cc040a]/5 pointer-events-none" />
+            <div key={label} className="relative bg-white p-5 rounded-2xl border-2 border-slate-200 shadow-sm overflow-hidden hover:-translate-y-0.5 hover:shadow-lg hover:border-[#1677ff]/30 transition-all">
+              <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-[#1677ff]/5 pointer-events-none" />
               <div className="relative flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block font-mono">{label}</span>
                   <h3 className={`text-2xl font-black font-heading mt-1.5 truncate ${valueCls}`}>{value}</h3>
                   <span className="text-[11px] text-slate-500 font-medium block mt-1">{sub}</span>
                 </div>
-                <div className="w-11 h-11 rounded-xl bg-red-50 text-[#cc040a] flex items-center justify-center shrink-0">
+                <div className="w-11 h-11 rounded-xl bg-brand-50 text-[#1677ff] flex items-center justify-center shrink-0">
                   <Icon className="w-5 h-5" />
                 </div>
               </div>
@@ -481,14 +481,14 @@ export const ResellerDashboard = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`px-4 py-3 rounded-xl flex items-center gap-2 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                   isActive
-                    ? 'bg-[#cc040a] text-white shadow-lg shadow-red-600/25 font-black'
-                    : 'text-slate-500 hover:text-[#cc040a] hover:bg-red-50 font-bold'
+                    ? 'bg-[#1677ff] text-white shadow-lg shadow-brand-600/25 font-black'
+                    : 'text-slate-500 hover:text-[#1677ff] hover:bg-brand-50 font-bold'
                 }`}
               >
                 <Icon className="w-4 h-4" />
                 <span>{tab.label}</span>
                 {tab.count !== undefined && (
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${isActive ? 'bg-white/25 text-white' : 'bg-red-50 text-[#cc040a]'}`}>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${isActive ? 'bg-white/25 text-white' : 'bg-brand-50 text-[#1677ff]'}`}>
                     {tab.count}
                   </span>
                 )}
@@ -524,8 +524,8 @@ export const ResellerDashboard = () => {
                         }}
                         className={`relative p-3.5 rounded-2xl border-2 flex items-center gap-3 transition-all cursor-pointer text-left ${
                           on
-                            ? 'border-[#cc040a] bg-red-50/60 shadow-md shadow-red-600/10'
-                            : 'border-slate-200 bg-white hover:border-[#cc040a]/40'
+                            ? 'border-[#1677ff] bg-brand-50/60 shadow-md shadow-brand-600/10'
+                            : 'border-slate-200 bg-white hover:border-[#1677ff]/40'
                         }`}
                       >
                         <div className="w-11 h-11 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center">
@@ -548,7 +548,7 @@ export const ResellerDashboard = () => {
                           <span className="text-[10px] text-slate-500 font-medium block truncate">{game.currencyName}</span>
                         </div>
                         {on && (
-                          <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#cc040a] flex items-center justify-center">
+                          <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#1677ff] flex items-center justify-center">
                             <Check className="w-3 h-3 text-white" strokeWidth={3} />
                           </span>
                         )}
@@ -616,12 +616,12 @@ export const ResellerDashboard = () => {
                         onClick={() => setSelectedPackageId(pkg.id)}
                         className={`relative p-4 rounded-2xl border-2 text-center transition-all cursor-pointer flex flex-col justify-between ${
                           isSelected
-                            ? 'border-[#cc040a] bg-red-50/60 shadow-md shadow-red-600/10'
-                            : 'border-slate-200 bg-white hover:border-[#cc040a]/40'
+                            ? 'border-[#1677ff] bg-brand-50/60 shadow-md shadow-brand-600/10'
+                            : 'border-slate-200 bg-white hover:border-[#1677ff]/40'
                         }`}
                       >
                         {isSelected && (
-                          <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#cc040a] flex items-center justify-center">
+                          <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#1677ff] flex items-center justify-center">
                             <Check className="w-3 h-3 text-white" strokeWidth={3} />
                           </span>
                         )}
@@ -631,7 +631,7 @@ export const ResellerDashboard = () => {
                         </div>
 
                         <div className="mt-3 pt-2.5 border-t border-slate-100">
-                          <span className="text-sm font-black text-[#cc040a] font-heading block">
+                          <span className="text-sm font-black text-[#1677ff] font-heading block">
                             Rs. {wholesalePrice.toLocaleString()}
                           </span>
                           <span className="text-[10px] text-slate-400 line-through block font-mono">
@@ -649,7 +649,7 @@ export const ResellerDashboard = () => {
                 <div>
                   <span className="text-[10px] text-slate-400 font-mono font-black uppercase tracking-wider block">Charged to Reseller Wallet</span>
                   <div className="flex items-center flex-wrap gap-3 mt-1">
-                    <h3 className="text-2xl sm:text-3xl font-black text-[#cc040a] font-heading">
+                    <h3 className="text-2xl sm:text-3xl font-black text-[#1677ff] font-heading">
                       Rs. {currentWholesalePrice.toLocaleString()} LKR
                     </h3>
                     <span className="text-xs text-emerald-700 font-mono font-black bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg">
@@ -700,7 +700,7 @@ export const ResellerDashboard = () => {
                 <select
                   value={orderChannelFilter}
                   onChange={(e) => setOrderChannelFilter(e.target.value)}
-                  className="px-3.5 py-2.5 bg-white border-2 border-slate-200 focus:border-[#cc040a] focus:outline-none rounded-xl text-slate-900 text-xs font-bold cursor-pointer"
+                  className="px-3.5 py-2.5 bg-white border-2 border-slate-200 focus:border-[#1677ff] focus:outline-none rounded-xl text-slate-900 text-xs font-bold cursor-pointer"
                 >
                   <option value="ALL">All Channels</option>
                   <option value="TELEGRAM">🤖 Telegram Bot Orders</option>
@@ -714,7 +714,7 @@ export const ResellerDashboard = () => {
                     placeholder="Search order ID or Player UID..."
                     value={orderSearch}
                     onChange={(e) => setOrderSearch(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-slate-900 text-xs font-bold placeholder:font-medium focus:outline-none focus:border-[#cc040a]"
+                    className="w-full pl-9 pr-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-slate-900 text-xs font-bold placeholder:font-medium focus:outline-none focus:border-[#1677ff]"
                   />
                 </div>
               </div>
@@ -768,10 +768,10 @@ export const ResellerDashboard = () => {
                   const done = ord.status === 'COMPLETED';
 
                   return (
-                    <div key={ord.id} className={`bg-white p-4 rounded-2xl border-2 border-slate-200 border-l-4 ${done ? 'border-l-emerald-500' : 'border-l-amber-400'} flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs hover:shadow-md hover:border-[#cc040a]/30 transition-all`}>
+                    <div key={ord.id} className={`bg-white p-4 rounded-2xl border-2 border-slate-200 border-l-4 ${done ? 'border-l-emerald-500' : 'border-l-amber-400'} flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs hover:shadow-md hover:border-[#1677ff]/30 transition-all`}>
                       <div className="flex items-center gap-3 min-w-0">
                         <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-extrabold shrink-0 ${
-                          isTelegramOrder ? 'bg-sky-50 text-sky-600' : 'bg-red-50 text-[#cc040a]'
+                          isTelegramOrder ? 'bg-sky-50 text-sky-600' : 'bg-brand-50 text-[#1677ff]'
                         }`}>
                           {isTelegramOrder ? <Send className="w-5 h-5" /> : <Zap className="w-5 h-5" />}
                         </div>
@@ -785,7 +785,7 @@ export const ResellerDashboard = () => {
                                 <span>🤖 Telegram Bot</span>
                               </span>
                             ) : (
-                              <span className="px-2 py-0.5 rounded-md bg-red-50 text-[#cc040a] border border-red-100 text-[9px] font-black font-mono inline-flex items-center gap-1">
+                              <span className="px-2 py-0.5 rounded-md bg-brand-50 text-[#1677ff] border border-brand-100 text-[9px] font-black font-mono inline-flex items-center gap-1">
                                 <Globe className="w-2.5 h-2.5" />
                                 <span>🌐 Web Dispatch</span>
                               </span>
@@ -799,7 +799,7 @@ export const ResellerDashboard = () => {
 
                       <div className="flex items-center justify-between sm:justify-end gap-5 border-t sm:border-t-0 border-slate-100 pt-3 sm:pt-0">
                         <div className="text-left sm:text-right">
-                          <span className="font-black text-[#cc040a] text-base font-heading block">Rs. {(ord.priceLkr || 0).toLocaleString()}</span>
+                          <span className="font-black text-[#1677ff] text-base font-heading block">Rs. {(ord.priceLkr || 0).toLocaleString()}</span>
                           <span className="text-[10px] text-slate-400 font-mono">{new Date(ord.createdAt).toLocaleString()}</span>
                         </div>
 
@@ -841,14 +841,14 @@ export const ResellerDashboard = () => {
                       const profitMargin = pkg.priceLkr - wholesalePrice;
 
                       return (
-                        <div key={pkg.id} className="bg-white p-3.5 rounded-xl border border-slate-200 hover:border-[#cc040a]/40 transition-colors flex items-center justify-between gap-3">
+                        <div key={pkg.id} className="bg-white p-3.5 rounded-xl border border-slate-200 hover:border-[#1677ff]/40 transition-colors flex items-center justify-between gap-3">
                           <div className="min-w-0">
                             <h5 className="font-black text-slate-900">{pkg.name}</h5>
                             <span className="text-[10px] text-slate-400 font-medium">Retail: Rs. {pkg.priceLkr.toLocaleString()}</span>
                           </div>
 
                           <div className="text-right shrink-0">
-                            <span className="font-black text-[#cc040a] block font-heading">Rs. {wholesalePrice.toLocaleString()}</span>
+                            <span className="font-black text-[#1677ff] block font-heading">Rs. {wholesalePrice.toLocaleString()}</span>
                             <span className="text-[10px] text-emerald-600 font-mono font-black block">Profit: +Rs. {profitMargin.toLocaleString()}</span>
                           </div>
                         </div>
@@ -881,7 +881,7 @@ export const ResellerDashboard = () => {
                 {stepHead(1, 'Link Reseller Security Key to Telegram')}
                 <p className="text-xs text-slate-600 font-medium">Copy your unique auth command below and send it to the Telegram Bot to link your wallet:</p>
 
-                <div className="bg-white p-4 rounded-xl font-mono text-[#cc040a] font-black text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-2 border-slate-200">
+                <div className="bg-white p-4 rounded-xl font-mono text-[#1677ff] font-black text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-2 border-slate-200">
                   <span className="break-all">/auth {resellerSecurityKey}</span>
                   <button
                     onClick={handleCopySecurityKey}
@@ -896,7 +896,7 @@ export const ResellerDashboard = () => {
                   <span className="break-all">Alternative Code: /link {resellerWalletId}</span>
                   <button
                     onClick={handleCopyResellerId}
-                    className="px-3 py-1.5 bg-slate-100 hover:bg-[#cc040a] hover:text-white text-slate-700 text-[11px] font-sans font-black rounded-lg cursor-pointer transition-colors shrink-0"
+                    className="px-3 py-1.5 bg-slate-100 hover:bg-[#1677ff] hover:text-white text-slate-700 text-[11px] font-sans font-black rounded-lg cursor-pointer transition-colors shrink-0"
                   >
                     Copy Code
                   </button>
@@ -909,9 +909,9 @@ export const ResellerDashboard = () => {
 
                 <div className="space-y-2 text-xs font-mono">
                   {[
-                    ['/topup ml 84218845 2168 86', 'Mobile Legends (86 Diamonds)', 'text-[#cc040a]'],
-                    ['/topup ff 248901234 100', 'Free Fire (100 Diamonds)', 'text-[#cc040a]'],
-                    ['/topup pubg 512345678 60', 'PUBG Mobile (60 UC)', 'text-[#cc040a]'],
+                    ['/topup ml 84218845 2168 86', 'Mobile Legends (86 Diamonds)', 'text-[#1677ff]'],
+                    ['/topup ff 248901234 100', 'Free Fire (100 Diamonds)', 'text-[#1677ff]'],
+                    ['/topup pubg 512345678 60', 'PUBG Mobile (60 UC)', 'text-[#1677ff]'],
                     ['/ml 84218845 2168', 'Check Real MLBB IGN Only', 'text-sky-600'],
                   ].map(([cmd, desc, cls]) => (
                     <div key={cmd} className="bg-white p-3 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3">

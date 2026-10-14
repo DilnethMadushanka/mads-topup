@@ -25,7 +25,7 @@ export const CookieNotice = () => {
       </p>
       <button
         onClick={accept}
-        className="mt-3 w-full py-2.5 bg-[#cc040a] hover:bg-[#b00308] text-white font-extrabold rounded-xl cursor-pointer"
+        className="mt-3 w-full py-2.5 bg-[#1677ff] hover:bg-[#0d68e6] text-white font-extrabold rounded-xl cursor-pointer"
       >
         OK, got it
       </button>

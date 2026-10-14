@@ -114,7 +114,7 @@ function Avatar({ name, src, size = 64, ringColor = '#fff' }) {
   // Only use alphabetic chars for initials
   const letters = (name || '?').replace(/[^a-zA-Z\s]/g, '').trim();
   const initials = (letters || name || '?').split(/\s+/).map(p => p[0]).filter(Boolean).join('').slice(0, 2).toUpperCase() || '?';
-  const palettes = ['#cc040a,#ff6b6b', '#f97316,#fb923c', '#7c3aed,#a78bfa', '#059669,#34d399', '#0284c7,#38bdf8', '#db2777,#f472b6', '#d97706,#fbbf24'].map(s => s.split(','));
+  const palettes = ['#1677ff,#6db4ff', '#f97316,#fb923c', '#7c3aed,#a78bfa', '#059669,#34d399', '#0284c7,#38bdf8', '#db2777,#f472b6', '#d97706,#fbbf24'].map(s => s.split(','));
   const [c1, c2] = palettes[(name || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0) % palettes.length];
 
   return (
@@ -135,7 +135,7 @@ function PodiumCard({ user, rank, visible }) {
   const countVal = useCountUp(user.totalLkr, 1400, visible);
 
   const cfgMap = {
-    1: { ring: 'linear-gradient(135deg,#ff4d4f,#cc040a)', accent: '#cc040a', step: 'linear-gradient(180deg,rgba(204,4,10,0.22),rgba(204,4,10,0.03))', label: 'TOP SPENDER' },
+    1: { ring: 'linear-gradient(135deg,#4da3ff,#1677ff)', accent: '#1677ff', step: 'linear-gradient(180deg,rgba(22,119,255,0.22),rgba(22,119,255,0.03))', label: 'TOP SPENDER' },
     2: { ring: 'linear-gradient(135deg,#e2e8f0,#94a3b8)', accent: '#64748b', step: 'linear-gradient(180deg,rgba(100,116,139,0.22),rgba(100,116,139,0.03))', label: '2ND PLACE' },
     3: { ring: 'linear-gradient(135deg,#fbbf24,#b45309)', accent: '#b45309', step: 'linear-gradient(180deg,rgba(217,119,6,0.26),rgba(217,119,6,0.03))', label: '3RD PLACE' },
   };
@@ -166,7 +166,7 @@ function PodiumCard({ user, rank, visible }) {
       <p className="tsp-name" title={user.name}>{user.name}</p>
       <p className="tsp-label" style={{ color: cfg.accent }}>{cfg.label}</p>
 
-      <p className="tsp-amount" style={{ color: isFirst ? '#cc040a' : '#0f172a' }}>{fmtLkr(countVal)}</p>
+      <p className="tsp-amount" style={{ color: isFirst ? '#1677ff' : '#0f172a' }}>{fmtLkr(countVal)}</p>
       <span className="tsp-orders">{user.orderCount} top-up{user.orderCount !== 1 ? 's' : ''}</span>
 
       {/* Podium step */}
@@ -246,7 +246,7 @@ export const TopSpendersSection = () => {
             <div>
               <div className="tsp-title-row">
                 <h2 className="tsp-title">Top Spenders</h2>
-                <Sparkles size={15} color="#cc040a" />
+                <Sparkles size={15} color="#1677ff" />
               </div>
               <p className="tsp-subtitle">Most valued customers this month</p>
             </div>
@@ -301,16 +301,16 @@ export const TopSpendersSection = () => {
           padding: 56px 24px 52px;
           border-radius: 32px;
           color: #0f172a;
-          background: linear-gradient(160deg, #ffffff 0%, #ffffff 55%, #fff6f6 100%);
-          border: 1px solid rgba(204,4,10,0.10);
-          box-shadow: 0 30px 70px -36px rgba(204,4,10,0.28), 0 2px 6px rgba(15,23,42,0.04);
+          background: linear-gradient(160deg, #ffffff 0%, #ffffff 55%, #f3f8ff 100%);
+          border: 1px solid rgba(22,119,255,0.10);
+          box-shadow: 0 30px 70px -36px rgba(22,119,255,0.28), 0 2px 6px rgba(15,23,42,0.04);
         }
         .tsp-glow { position: absolute; border-radius: 50%; pointer-events: none; filter: blur(90px); }
-        .tsp-glow-a { top: -140px; left: 50%; transform: translateX(-50%); width: 520px; height: 300px; background: rgba(204,4,10,0.07); }
-        .tsp-glow-b { bottom: -120px; right: -80px; width: 320px; height: 320px; background: rgba(204,4,10,0.07); }
+        .tsp-glow-a { top: -140px; left: 50%; transform: translateX(-50%); width: 520px; height: 300px; background: rgba(22,119,255,0.07); }
+        .tsp-glow-b { bottom: -120px; right: -80px; width: 320px; height: 320px; background: rgba(22,119,255,0.07); }
         .tsp-grid-bg {
           position: absolute; inset: 0; pointer-events: none; opacity: 0.05;
-          background-image: linear-gradient(#cc040a 1px, transparent 1px), linear-gradient(90deg, #cc040a 1px, transparent 1px);
+          background-image: linear-gradient(#1677ff 1px, transparent 1px), linear-gradient(90deg, #1677ff 1px, transparent 1px);
           background-size: 44px 44px;
           -webkit-mask-image: radial-gradient(ellipse at 50% 20%, #000 0%, transparent 70%);
           mask-image: radial-gradient(ellipse at 50% 20%, #000 0%, transparent 70%);
@@ -324,8 +324,8 @@ export const TopSpendersSection = () => {
         .tsp-trophy-box {
           width: 52px; height: 52px; border-radius: 16px; flex-shrink: 0;
           display: flex; align-items: center; justify-content: center;
-          background: linear-gradient(135deg, #cc040a 0%, #ff4d4f 100%);
-          box-shadow: 0 10px 28px -6px rgba(204,4,10,0.65), inset 0 1px 0 rgba(255,255,255,0.25);
+          background: linear-gradient(135deg, #1677ff 0%, #4da3ff 100%);
+          box-shadow: 0 10px 28px -6px rgba(22,119,255,0.65), inset 0 1px 0 rgba(255,255,255,0.25);
         }
         .tsp-title-row { display: flex; align-items: center; gap: 8px; }
         .tsp-title { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: #0f172a; line-height: 1.1; }
@@ -333,24 +333,24 @@ export const TopSpendersSection = () => {
         .tsp-month-badge {
           display: inline-flex; align-items: center; gap: 6px;
           padding: 6px 12px; border-radius: 99px;
-          background: rgba(204,4,10,0.07); border: 1px solid rgba(204,4,10,0.2);
-          font-size: 10px; font-weight: 800; color: #cc040a; letter-spacing: 0.14em;
+          background: rgba(22,119,255,0.07); border: 1px solid rgba(22,119,255,0.2);
+          font-size: 10px; font-weight: 800; color: #1677ff; letter-spacing: 0.14em;
         }
 
         /* buttons */
         .tsp-btn {
           display: inline-flex; align-items: center; gap: 8px;
           height: 44px; padding: 0 22px; border-radius: 999px;
-          background: #ffffff; color: #cc040a;
-          border: 1.5px solid rgba(204,4,10,0.25);
+          background: #ffffff; color: #1677ff;
+          border: 1.5px solid rgba(22,119,255,0.25);
           font-family: inherit; font-size: 12.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
           cursor: pointer; white-space: nowrap;
           transition: transform 0.25s cubic-bezier(.22,1,.36,1), background 0.25s, border-color 0.25s, box-shadow 0.25s;
         }
-        .tsp-btn:hover { background: #cc040a; color: #fff; border-color: #cc040a; transform: translateY(-2px); box-shadow: 0 12px 30px -8px rgba(204,4,10,0.6); }
+        .tsp-btn:hover { background: #1677ff; color: #fff; border-color: #1677ff; transform: translateY(-2px); box-shadow: 0 12px 30px -8px rgba(22,119,255,0.6); }
         .tsp-btn:active { transform: translateY(0) scale(0.98); }
-        .tsp-btn-bottom { height: 50px; padding: 0 30px; font-size: 13px; background: #cc040a; color: #fff; border-color: #cc040a; box-shadow: 0 14px 30px -10px rgba(204,4,10,0.6); }
-        .tsp-btn-bottom:hover { background: #a80308; border-color: #a80308; }
+        .tsp-btn-bottom { height: 50px; padding: 0 30px; font-size: 13px; background: #1677ff; color: #fff; border-color: #1677ff; box-shadow: 0 14px 30px -10px rgba(22,119,255,0.6); }
+        .tsp-btn-bottom:hover { background: #0d5fd8; border-color: #0d5fd8; }
         .tsp-btn-dot { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: tsp-pulse 1.8s ease-in-out infinite; }
         .tsp-btn-bottom:hover .tsp-btn-dot { background: #fff; }
         .tsp-btn-chevron { display: flex; transition: transform 0.2s; }
@@ -359,9 +359,9 @@ export const TopSpendersSection = () => {
         /* podium */
         .tsp-podium {
           border-radius: 28px; padding: 44px 18px 0;
-          background: linear-gradient(180deg, #ffffff, #fff6f6);
-          border: 1px solid rgba(204,4,10,0.12);
-          box-shadow: 0 18px 40px -24px rgba(204,4,10,0.25), inset 0 1px 0 #fff;
+          background: linear-gradient(180deg, #ffffff, #f3f8ff);
+          border: 1px solid rgba(22,119,255,0.12);
+          box-shadow: 0 18px 40px -24px rgba(22,119,255,0.25), inset 0 1px 0 #fff;
           overflow: hidden; position: relative;
         }
         .tsp-cols { display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 12px; align-items: end; }
@@ -412,7 +412,7 @@ export const TopSpendersSection = () => {
         @keyframes tsp-shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
         @keyframes tsp-rise { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes tsp-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
-        @keyframes tsp-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(204,4,10,0.5); } 50% { box-shadow: 0 0 0 6px rgba(204,4,10,0); } }
+        @keyframes tsp-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(22,119,255,0.5); } 50% { box-shadow: 0 0 0 6px rgba(22,119,255,0); } }
 
         /* tablet / phone */
         @media (max-width: 640px) {

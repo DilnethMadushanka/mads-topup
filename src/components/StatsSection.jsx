@@ -61,14 +61,14 @@ const CountUpNumber = ({ target, suffix = '', formatComma = false, duration = 18
 };
 
 const PALETTE = {
-  red:     { hex: '#ff3b45', track: 'rgba(225,29,40,0.2)', bar: 'bg-[#cc040a]',  tile: 'bg-red-50 text-[#cc040a]',       tileHover: 'group-hover:bg-[#cc040a] group-hover:shadow-red-600/30',   label: 'text-[#cc040a]',  card: 'hover:border-red-300 hover:shadow-red-600/15',     blob: 'bg-red-50',     idx: 'group-hover:text-[#cc040a]' },
+  red:     { hex: '#3d95ff', track: 'rgba(43,134,255,0.2)', bar: 'bg-[#1677ff]',  tile: 'bg-brand-50 text-[#1677ff]',       tileHover: 'group-hover:bg-[#1677ff] group-hover:shadow-brand-600/30',   label: 'text-[#1677ff]',  card: 'hover:border-brand-300 hover:shadow-brand-600/15',     blob: 'bg-brand-50',     idx: 'group-hover:text-[#1677ff]' },
   emerald: { hex: '#34d399', track: 'rgba(16,185,129,0.2)', bar: 'bg-emerald-500', tile: 'bg-emerald-50 text-emerald-600', tileHover: 'group-hover:bg-emerald-600 group-hover:shadow-emerald-600/30', label: 'text-emerald-600', card: 'hover:border-emerald-300 hover:shadow-emerald-600/15', blob: 'bg-emerald-50', idx: 'group-hover:text-emerald-600' },
   violet:  { hex: '#7c3aed', track: 'rgba(139,92,246,0.22)', bar: 'bg-violet-500',  tile: 'bg-violet-50 text-violet-600',   tileHover: 'group-hover:bg-violet-600 group-hover:shadow-violet-600/30',  label: 'text-violet-600',  card: 'hover:border-violet-300 hover:shadow-violet-600/15',  blob: 'bg-violet-50',  idx: 'group-hover:text-violet-600' },
   amber:   { hex: '#d97706', track: 'rgba(245,158,11,0.2)', bar: 'bg-amber-500',   tile: 'bg-amber-50 text-amber-600',     tileHover: 'group-hover:bg-amber-500 group-hover:shadow-amber-500/30',   label: 'text-amber-600',   card: 'hover:border-amber-300 hover:shadow-amber-500/15',    blob: 'bg-amber-50',   idx: 'group-hover:text-amber-600' },
   sky:     { hex: '#0284c7', track: 'rgba(14,165,233,0.2)', bar: 'bg-sky-500',     tile: 'bg-sky-50 text-sky-600',         tileHover: 'group-hover:bg-sky-600 group-hover:shadow-sky-600/30',       label: 'text-sky-600',     card: 'hover:border-sky-300 hover:shadow-sky-600/15',        blob: 'bg-sky-50',     idx: 'group-hover:text-sky-600' },
 };
 
-const ProgressRing = ({ percent = 99, size = 64, color = '#cc040a', track = '#fee2e2' }) => {
+const ProgressRing = ({ percent = 99, size = 64, color = '#1677ff', track = '#dfecff' }) => {
   const [on, setOn] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
@@ -117,7 +117,7 @@ export const StatsSection = () => {
       desc: 'Gamers who topped up with us',
       color: 'red',
       icon: Smile,
-      iconBg: 'bg-[#cc040a]/15 text-[#cc040a]'
+      iconBg: 'bg-[#1677ff]/15 text-[#1677ff]'
     },
     {
       target: 99,
@@ -148,7 +148,7 @@ export const StatsSection = () => {
       desc: 'Average time to your account',
       color: 'amber',
       icon: Clock,
-      iconBg: 'bg-[#cc040a]/15 text-[#cc040a]'
+      iconBg: 'bg-[#1677ff]/15 text-[#1677ff]'
     }
   ];
 
@@ -161,23 +161,23 @@ export const StatsSection = () => {
 
   return (
     <section className="relative py-16 sm:py-20 overflow-hidden bg-white border-y border-slate-200/80">
-      <div className="absolute -top-24 -right-20 w-80 h-80 rounded-full bg-red-50 pointer-events-none dark:hidden"></div>
+      <div className="absolute -top-24 -right-20 w-80 h-80 rounded-full bg-brand-50 pointer-events-none dark:hidden"></div>
       <div className="absolute top-1/3 -left-28 w-72 h-72 rounded-full bg-violet-50 pointer-events-none dark:hidden"></div>
       <div className="absolute -bottom-28 right-1/4 w-80 h-80 rounded-full bg-emerald-50/80 pointer-events-none dark:hidden"></div>
       <div className="absolute -bottom-20 -left-10 w-56 h-56 rounded-full bg-amber-50 pointer-events-none dark:hidden"></div>
-      <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #cc040a 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
+      <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #1677ff 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-10">
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-50 border border-red-100 text-[#cc040a] text-[11px] font-black uppercase tracking-widest font-mono">
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-50 border border-brand-100 text-[#1677ff] text-[11px] font-black uppercase tracking-widest font-mono">
             <TrendingUp className="w-3.5 h-3.5" />
             By The Numbers
           </span>
-          <h2 className="text-3xl sm:text-4xl font-black text-slate-900 font-heading tracking-tight mt-4">
-            Numbers That <span className="text-[#cc040a]">Speak</span>
+          <h2 className="midas-heading text-3xl sm:text-4xl font-black text-slate-900 font-heading tracking-tight mt-4">
+            Numbers That <span className="text-[#1677ff]">Speak</span>
           </h2>
           <div className="flex items-center justify-center gap-1 mt-3">
-            <span className="w-8 h-1 rounded-full bg-[#cc040a]"></span>
+            <span className="w-8 h-1 rounded-full bg-[#1677ff]"></span>
             <span className="w-4 h-1 rounded-full bg-violet-500"></span>
             <span className="w-4 h-1 rounded-full bg-emerald-500"></span>
             <span className="w-4 h-1 rounded-full bg-amber-500"></span>
