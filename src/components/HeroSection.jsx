@@ -198,7 +198,7 @@ export const HeroSection = () => {
                   key={game.id}
                   onClick={() => openTopup(game)}
                   title={game.name}
-                  className="midas-game group text-left cursor-pointer"
+                  className={`midas-game group text-left cursor-pointer ${game.popArt ? 'has-pop' : ''}`}
                 >
                   <span className="midas-game-frame">
                     <span className="midas-game-art">
@@ -214,6 +214,11 @@ export const HeroSection = () => {
                       <span>{game.popular ? 'Hot deal' : 'Instant'}</span>
                     </span>
                   </span>
+                  {game.popArt && (
+                    <span className="midas-pop" aria-hidden="true" style={{ '--pop-scale': game.popArt.scale || 1.12 }}>
+                      <span className="midas-pop-art"><img src={game.popArt.src} alt="" loading="lazy" /></span>
+                    </span>
+                  )}
                   <span className="mt-2 sm:mt-3 block text-center font-heading font-extrabold text-[11px] sm:text-[15px] leading-tight line-clamp-2 text-slate-800 dark:text-white! group-hover:text-[#1677ff] dark:group-hover:text-[#8dc2ff]! transition-colors">{game.name}</span>
                 </button>
               ))}
