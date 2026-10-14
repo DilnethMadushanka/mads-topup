@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import crypto from 'crypto';
+import { seoPrerenderPlugin } from './seoPrerender.js';
 
 function moogoldApiPlugin() {
   return {
@@ -87,7 +88,8 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    moogoldApiPlugin()
+    moogoldApiPlugin(),
+    seoPrerenderPlugin()
   ],
   server: {
     port: 5173,

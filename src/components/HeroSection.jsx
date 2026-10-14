@@ -96,7 +96,7 @@ export const HeroSection = () => {
                   <span className="inline-flex w-fit items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/15 border border-white/25 text-[10px] lg:text-[11px] font-black uppercase tracking-[0.18em] text-white">
                     <Flame className="w-3 h-3" /> Now featuring
                   </span>
-                  <h1 className="mt-3 text-white font-heading font-black tracking-tight text-3xl lg:text-[2.6rem] leading-[1.05]">{sl.label}</h1>
+                  <h2 className="mt-3 text-white font-heading font-black tracking-tight text-3xl lg:text-[2.6rem] leading-[1.05]">{sl.label}</h2>
                   <p className="mt-2 text-sm lg:text-lg text-white/85 font-semibold">{sl.sub}</p>
                   <button
                     onClick={() => openGameById(sl.gameId)}
@@ -114,7 +114,7 @@ export const HeroSection = () => {
                     <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-[#8dc2ff]">
                       <Flame className="w-3 h-3" /> Now featuring
                     </span>
-                    <h1 className="text-white font-heading font-black tracking-tight text-xl leading-tight truncate">{sl.label}</h1>
+                    <h2 className="text-white font-heading font-black tracking-tight text-xl leading-tight truncate">{sl.label}</h2>
                     <p className="text-[11px] text-white/80 font-semibold truncate">{sl.sub}</p>
                   </div>
                   <button
@@ -167,7 +167,7 @@ export const HeroSection = () => {
         <div id="home-games" className="pt-4 sm:pt-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 sm:mb-8">
             <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-              <h2 className="midas-heading text-2xl sm:text-[2rem] text-slate-900 dark:text-white!">All Games</h2>
+              <h1 className="midas-heading text-2xl sm:text-[2rem] text-slate-900 dark:text-white!">All Games<span className="sr-only"> – Free Fire Diamonds, PUBG UC &amp; Mobile Legends Top Up in Sri Lanka</span></h1>
               <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-slate-500 dark:text-white/70!">
                 <ShieldCheck className="w-4 h-4 text-[#1677ff] dark:text-[#8dc2ff]!" />
                 Sri Lanka's trusted instant top-up store
