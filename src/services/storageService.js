@@ -3,7 +3,7 @@
 // Bucket Name: mads-topup
 
 const DEFAULT_R2_BUCKET_URL = import.meta.env.VITE_R2_BUCKET_URL || 'https://bfda3f43ac31b00be80bcb82772eb8fa.r2.cloudflarestorage.com/mads-topup';
-const DEFAULT_ACCESS_KEY_ID = '380f431fa8c9fb98e1f3a5da3be0bd70';
+const DEFAULT_ACCESS_KEY_ID = import.meta.env.VITE_R2_ACCESS_KEY_ID || '';
 const DEFAULT_SECRET_ACCESS_KEY = '••••••••••••';
 
 export const getR2Config = () => {
