@@ -217,6 +217,8 @@ export function forceTelegramBotRefresh() {
 function findGameInCatalog(gameArg) {
   if (!gameArg) return GAMES_DATA[0];
   const g = String(gameArg).toLowerCase().replace(/[^a-z0-9]/g, '');
+  // Checked first: 'garenashellsmy' would otherwise match the SG entry below.
+  if (g.includes('gsmy') || (g.includes('shell') && g.includes('my'))) return GAMES_DATA.find(g => g.id === 'garenashells_my');
 
   for (const game of GAMES_DATA) {
     const gId = game.id.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -615,7 +617,7 @@ Support for ALL games on website: Mobile Legends, Free Fire, PUBG Mobile, Blood 
             replyText += `   • Topup Code: ${pkg.amount || pkg.id}\n\n`;
           });
 
-          const gAlias = matchedGame.id === 'mobilelegends' ? 'ml' : matchedGame.id === 'freefire_sg' ? 'ff' : matchedGame.id === 'garenashells' ? 'gs' : matchedGame.id;
+          const gAlias = matchedGame.id === 'mobilelegends' ? 'ml' : matchedGame.id === 'freefire_sg' ? 'ff' : matchedGame.id === 'garenashells' ? 'gs' : matchedGame.id === 'garenashells_my' ? 'gsmy' : matchedGame.id;
           replyText += isVoucherGame(matchedGame)
             ? `⚡ How to Order:\n• /topup ${gAlias} <code_or_amount> (you get the PIN in this chat)`
             : `⚡ How to Order:\n• /topup ${gAlias} <player_id> ${matchedGame.requiresServer ? '<zone_id> ' : ''}<code_or_amount>`;

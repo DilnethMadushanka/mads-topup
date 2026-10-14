@@ -196,7 +196,7 @@ export const GAMES_DATA = [
   },
   {
     id: 'garenashells',
-    name: 'Garena Shells',
+    name: 'Garena Shells (SG)',
     category: 'Cards & Vouchers',
     publisher: 'Garena',
     currencyName: 'Shells',
@@ -215,12 +215,50 @@ export const GAMES_DATA = [
     idLabel: 'Garena Shells PIN',
     idPlaceholder: '',
     idGuideHint: '💡 You get a Garena Shells (SG) PIN code. Redeem it at shop.garena.sg',
+    redeemRegion: 'SG',
+    redeemSite: 'shop.garena.sg',
     popular: true,
     moongoldCode: 'GARENA_SHELLS',
     packages: [
       { id: 'gs-320', name: '320 Shells', amount: 320, bonus: 'Instant PIN (SG)', priceLkr: 2750, priceUsd: 8.95, moongoldProductId: '122274', image: '/gift_cards/shell.png', isPopular: false },
       { id: 'gs-960', name: '960 Shells', amount: 960, bonus: 'Instant PIN (SG)', priceLkr: 8250, priceUsd: 26.85, moongoldProductId: '122276', image: '/gift_cards/shell.png', isPopular: true },
       { id: 'gs-1600', name: '1600 Shells', amount: 1600, bonus: 'Instant PIN (SG)', priceLkr: 13750, priceUsd: 44.75, moongoldProductId: '122277', image: '/gift_cards/shell.png', isPopular: false }
+    ]
+  },
+  {
+    id: 'garenashells_my',
+    name: 'Garena Shells (MY)',
+    category: 'Cards & Vouchers',
+    publisher: 'Garena',
+    currencyName: 'Shells',
+    currencyIcon: '🐚',
+    badge: 'ACTIVE',
+    banner: '/game_logos/garena_shells_my.jpg',
+    logo: '/game_logos/garena_shells_my.jpg',
+    heroBanner: '/game_banners/freefire.jpg',
+    gradient: 'from-red-600 to-rose-800',
+    requiresServer: false,
+    // Malaysia eVoucher (MooGold category 2): the buyer gets a PIN code to
+    // redeem on Garena Malaysia, so no account ID is asked for.
+    fulfilment: 'voucher',
+    moongoldCategory: 2,
+    requiresPlayerId: false,
+    idLabel: 'Garena Shells PIN',
+    idPlaceholder: '',
+    idGuideHint: '💡 You get a Garena Shells (MY) PIN code. Redeem it at shop.garena.my',
+    redeemRegion: 'MY',
+    redeemSite: 'shop.garena.my',
+    popular: false,
+    moongoldCode: 'GARENA_SHELLS_MY',
+    packages: [
+      { id: 'gsmy-65', name: '65 Shells', amount: 65, bonus: 'Instant PIN (MY)', priceLkr: 370, priceUsd: 1.19, moongoldProductId: '40591', image: '/gift_cards/shell.png', isPopular: false },
+      { id: 'gsmy-130', name: '130 Shells', amount: 130, bonus: 'Instant PIN (MY)', priceLkr: 740, priceUsd: 2.38, moongoldProductId: '40592', image: '/gift_cards/shell.png', isPopular: false },
+      { id: 'gsmy-260', name: '260 Shells', amount: 260, bonus: 'Instant PIN (MY)', priceLkr: 1470, priceUsd: 4.76, moongoldProductId: '40593', image: '/gift_cards/shell.png', isPopular: false },
+      { id: 'gsmy-390', name: '390 Shells', amount: 390, bonus: 'Instant PIN (MY)', priceLkr: 2200, priceUsd: 7.14, moongoldProductId: '40594', image: '/gift_cards/shell.png', isPopular: false },
+      { id: 'gsmy-650', name: '650 Shells', amount: 650, bonus: 'Instant PIN (MY)', priceLkr: 3660, priceUsd: 11.90, moongoldProductId: '40595', image: '/gift_cards/shell.png', isPopular: true },
+      { id: 'gsmy-1300', name: '1300 Shells', amount: 1300, bonus: 'Instant PIN (MY)', priceLkr: 7310, priceUsd: 23.81, moongoldProductId: '40596', image: '/gift_cards/shell.png', isPopular: false },
+      { id: 'gsmy-1300-rgg', name: '1300 Shells (RGG PIN)', amount: 1300, bonus: 'Instant PIN (MY)', priceLkr: 7310, priceUsd: 23.81, moongoldProductId: '1222078', image: '/gift_cards/shell.png', isPopular: false },
+      { id: 'gsmy-2600', name: '2600 Shells', amount: 2600, bonus: 'Instant PIN (MY)', priceLkr: 14620, priceUsd: 47.62, moongoldProductId: '40597', image: '/gift_cards/shell.png', isPopular: false }
     ]
   }
 ];
