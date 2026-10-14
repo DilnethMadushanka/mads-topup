@@ -1395,3 +1395,12 @@
 .home-dark input::placeholder, .home-dark textarea::placeholder { color: #6e7585; opacity: 1; }
 .home-dark input:-webkit-autofill { -webkit-text-fill-color: #fff; -webkit-box-shadow: 0 0 0 1000px #14141b inset; }
 .home-dark [style*="color: rgb(204, 4, 10)"] { color: #ff6b73 !important; }
+
+/* Toast notifications */
+@keyframes toastIn { from { opacity: 0; transform: translateY(-12px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes toastOut { to { opacity: 0; transform: translateY(-8px) scale(.97); } }
+@keyframes toastProgress { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.toast-in { animation: toastIn .28s cubic-bezier(.21,1.02,.73,1) both; }
+.toast-out { animation: toastOut .2s ease-in forwards; }
+.toast-progress { animation-name: toastProgress; animation-timing-function: linear; animation-fill-mode: forwards; }
+@media (prefers-reduced-motion: reduce) { .toast-in, .toast-out { animation: none; } }
