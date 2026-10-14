@@ -1,34 +1,55 @@
 import React, { useState } from 'react';
+import { Cookie, ShieldCheck, X } from 'lucide-react';
+import { useApp } from '../context/AppContext';
 
 const CONSENT_KEY = 'mads_cookie_consent';
 
-// One-time notice about what the site stores in the browser. The site has no
-// tracking or advertising cookies, only what login and settings need.
+// Reads the visitor's saved choice: 'all', 'essential', or null when they
+// have not chosen yet. Older saves (a date string) count as 'all'.
+export const getCookieConsent = () => {
+  try {
+    const raw = localStorage.getItem(CONSENT_KEY);
+    if (!raw) return null;
+    return raw === 'essential' ? 'essential' : 'all';
+  } catch (_) { return null; }
+};
+
+// One-time cookie banner. The site only stores what login, the cart and
+// settings need; "Essential only" is recorded so optional cookies added later
+// (for example analytics) can respect it.
 export const CookieNotice = () => {
-  const [visible, setVisible] = useState(() => {
-    try { return !localStorage.getItem(CONSENT_KEY); } catch (_) { return false; }
-  });
+  const { openPolicyModal } = useApp();
+  const [visible, setVisible] = useState(() => getCookieConsent() === null);
 
   if (!visible) return null;
 
-  const accept = () => {
-    try { localStorage.setItem(CONSENT_KEY, new Date().toISOString()); } catch (_) {}
+  const choose = (value) => {
+    try { localStorage.setItem(CONSENT_KEY, value); } catch (_) {}
     setVisible(false);
   };
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 sm:max-w-sm z-[10000] bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 text-xs text-slate-700 animate-in fade-in">
-      <div className="font-black text-sm text-slate-900 mb-1">🍪 Cookies & storage</div>
-      <p className="leading-relaxed">
-        We use cookies and your browser's storage to keep you logged in, remember your settings and keep your account secure.
-        We don't use advertising or tracking cookies.
-      </p>
-      <button
-        onClick={accept}
-        className="mt-3 w-full py-2.5 bg-[#1677ff] hover:bg-[#0d68e6] text-white font-extrabold rounded-xl cursor-pointer"
-      >
-        OK, got it
-      </button>
+    <div className="ck-wrap" role="dialog" aria-live="polite" aria-label="Cookie preferences">
+      <div className="ck-card">
+        <button type="button" className="ck-close" onClick={() => choose('essential')} aria-label="Close, essential cookies only">
+          <X />
+        </button>
+        <div className="ck-top">
+          <span className="ck-ico"><Cookie /></span>
+          <div>
+            <div className="ck-title">We use cookies</div>
+            <span className="ck-pill"><ShieldCheck /> No ads or tracking</span>
+          </div>
+        </div>
+        <p className="ck-text">
+          Cookies keep you logged in, remember your settings and protect your account.{' '}
+          <button type="button" className="ck-link" onClick={() => openPolicyModal?.('privacy')}>Privacy Policy</button>
+        </p>
+        <div className="ck-actions">
+          <button type="button" className="ck-btn is-ghost" onClick={() => choose('essential')}>Essential only</button>
+          <button type="button" className="ck-btn is-primary" onClick={() => choose('all')}>Accept all</button>
+        </div>
+      </div>
     </div>
   );
 };
