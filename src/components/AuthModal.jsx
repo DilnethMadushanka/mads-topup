@@ -199,7 +199,7 @@ export const AuthModal = () => {
       return;
     }
 
-    const verifyRes = await verifyUserLoginAsync(username, password);
+    const verifyRes = await verifyUserLoginAsync(username, password, keepLoggedIn);
     if (!verifyRes.success) {
       showToast(verifyRes.message || 'Incorrect password! Please enter your updated password.', 'error');
       return;
@@ -229,7 +229,7 @@ export const AuthModal = () => {
 
     const cleanInput = resellerUsername.trim();
 
-    const verifyRes = await verifyUserLoginAsync(cleanInput, resellerPassword);
+    const verifyRes = await verifyUserLoginAsync(cleanInput, resellerPassword, rememberMe);
     if (!verifyRes.success) {
       showToast(verifyRes.message || 'Incorrect password! Please enter your updated reseller password.', 'error');
       return;

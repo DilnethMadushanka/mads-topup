@@ -9,7 +9,7 @@ export const ResellerLoginPage = () => {
   const [username, setUsername] = useState('S');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,7 +24,7 @@ export const ResellerLoginPage = () => {
 
     const cleanInput = username.trim();
 
-    const verifyRes = await verifyUserLoginAsync(cleanInput, password);
+    const verifyRes = await verifyUserLoginAsync(cleanInput, password, rememberMe);
     if (!verifyRes.success) {
       showToast(verifyRes.message || 'Incorrect password! Please enter your updated password.', 'error');
       return;

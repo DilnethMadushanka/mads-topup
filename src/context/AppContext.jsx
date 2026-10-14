@@ -4,7 +4,7 @@ import { GAMES_DATA } from '../data/games';
 import { getMoongoldConfig, saveMoongoldConfig } from '../services/moongoldApi';
 import { getR2Config, saveR2Config } from '../services/storageService';
 import { auth, onAuthStateChanged, logoutGoogle, getRedirectResult } from '../services/firebaseAuth';
-import { postServerApi, clearSessionToken, getUserAuthToken } from '../services/serverApi';
+import { postServerApi, clearSessionToken, getUserAuthToken, endExpiredSessionOnlyLogin } from '../services/serverApi';
 import { 
   syncUserProfileToFirestore, updateUserProfileInFirestore, subscribeUserProfile, 
   saveOrderToFirestore, subscribeAllUsersFromFirestore, subscribeOrdersFromFirestore, updateOrderStatusInFirestore,
@@ -315,6 +315,7 @@ export const AppProvider = ({ children }) => {
   const [r2Config, setR2ConfigState] = useState(getR2Config());
 
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    endExpiredSessionOnlyLogin();
     const saved = localStorage.getItem('mads_user_profile');
     if (saved) {
       try {
