@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { useSiteTheme } from '../hooks/useSiteTheme';
 import { loginWithGoogle } from '../services/firebaseAuth';
 import { syncUserProfileToFirestore, updateUserProfileInFirestore, getResellerProfileByKeyAsync, verifyUserLoginAsync, requestPasswordResetCode, confirmPasswordReset } from '../services/firestoreService';
 import { X, Eye, EyeOff, Shield, Zap, Clock, User, Mail, Phone, Lock, Check, Send, LogIn, ArrowRight, Loader2 } from 'lucide-react';
 
+// Game art for the brand side of the full-page login / register screen.
+const AUTH_ART = ['/game_logos/free_fire.webp', '/game_logos/pubg.webp', '/game_logos/mobile_legends.jpg', '/game_logos/delta_force.jpg', '/game_logos/blood_strike.webp', '/game_logos/farlight84.jpg'];
+
 export const AuthModal = () => {
   const { isAuthModalOpen, setIsAuthModalOpen, authMode, setAuthMode, showToast, setUserProfile, setIsLoggedIn, openResellerPage } = useApp();
 
+  const { isDark } = useSiteTheme();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -414,7 +419,12 @@ export const AuthModal = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200" onClick={pendingGoogleUser ? (e) => e.stopPropagation() : undefined}>
+    <div
+      className={pendingGoogleUser || authMode === 'reseller'
+        ? 'fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200'
+        : `auth-page ${isDark ? 'is-dark' : ''}`}
+      onClick={pendingGoogleUser ? (e) => e.stopPropagation() : undefined}
+    >
       {pendingGoogleUser ? (
         /* COMPLETE GOOGLE ACCOUNT SETUP CARD */
         <div className="w-full max-w-md bg-white text-slate-900 rounded-3xl p-8 shadow-2xl border border-slate-200/90 text-center relative animate-in zoom-in-95 duration-200 my-auto">
@@ -584,70 +594,54 @@ export const AuthModal = () => {
           </form>
         </div>
       ) : (
-        <div className="bg-white text-slate-900 w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row relative border border-slate-100 max-h-[92vh]">
-        
-        {/* Close Button */}
-        <button
-          onClick={() => setIsAuthModalOpen(false)}
-          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 flex items-center justify-center transition-colors cursor-pointer"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        {/* LEFT SECTION (Vibrant RED Branding Side) */}
-        <div className="w-full md:w-5/12 bg-gradient-to-br from-[#1677ff] via-[#1764f5] to-[#0b5ed7] p-5 sm:p-8 text-white flex flex-col items-center justify-between relative overflow-hidden text-center shrink-0">
-          
-          {/* Subtle Background Blur Shapes */}
-          <div className="absolute -top-10 -left-10 w-48 h-48 bg-brand-400/20 rounded-full blur-3xl pointer-events-none"></div>
-          <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-brand-300/20 rounded-full blur-3xl pointer-events-none"></div>
-
-          <div className="relative z-10 flex flex-col items-center my-auto">
-            {/* App Logo Box */}
-            <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl bg-slate-950 shadow-xl flex items-center justify-center p-2 mb-3 sm:mb-6 border border-white/20 overflow-hidden">
-              <img src="/mads-logo.jpg" alt="MADS TOPUP Logo" className="w-full h-full object-contain rounded-xl" />
+        <div className="auth-page-grid">
+        {/* Brand side (wide screens) */}
+        <aside className="auth-hero" aria-hidden="true">
+          <div className="auth-hero-art">
+            {AUTH_ART.map((src, i) => (
+              <span key={src + i} className="auth-hero-tile" style={{ '--i': i }}>
+                <img src={src} alt="" loading="lazy" />
+              </span>
+            ))}
+          </div>
+          <div className="auth-hero-inner">
+            <div className="auth-brand">
+              <span className="auth-brand-logo"><img src="/mads-logo.jpg" alt="" /></span>
+              <span className="auth-brand-name">MADS <b>TOPUP</b></span>
             </div>
-
-            <p className="text-xs sm:text-sm font-semibold text-white/95 leading-relaxed max-w-xs mb-3 sm:mb-8">
-              Join thousands of users enjoying fast & secure top-ups
-            </p>
-
-            {/* Feature List Box */}
-            <div className="hidden md:block w-full bg-white/10 backdrop-blur-md rounded-2xl border border-white/15 p-4 space-y-3.5 text-left shadow-inner">
-              <div className="flex items-center gap-3 text-xs font-extrabold text-white">
-                <div className="w-7 h-7 rounded-xl bg-white/15 flex items-center justify-center text-white shrink-0">
-                  <Zap className="w-4 h-4 fill-white" />
-                </div>
-                <span>Instant Transactions</span>
-              </div>
-
-              <div className="w-full h-px bg-white/10"></div>
-
-              <div className="flex items-center gap-3 text-xs font-extrabold text-white">
-                <div className="w-7 h-7 rounded-xl bg-white/15 flex items-center justify-center text-white shrink-0">
-                  <Shield className="w-4 h-4" />
-                </div>
-                <span>Secure & Protected</span>
-              </div>
-
-              <div className="w-full h-px bg-white/10"></div>
-
-              <div className="flex items-center gap-3 text-xs font-extrabold text-white">
-                <div className="w-7 h-7 rounded-xl bg-white/15 flex items-center justify-center text-white shrink-0">
-                  <Clock className="w-4 h-4" />
-                </div>
-                <span>24/7 Support</span>
-              </div>
+            <h2 className="auth-hero-title">Top up your favourite games in seconds.</h2>
+            <p className="auth-hero-text">Free Fire, PUBG Mobile, Mobile Legends and more, delivered instantly with secure payments.</p>
+            <div className="auth-hero-feats">
+              <span><Zap className="w-4 h-4" />Instant delivery</span>
+              <span><Shield className="w-4 h-4" />Secure payments</span>
+              <span><Clock className="w-4 h-4" />24/7 support</span>
             </div>
           </div>
+          <div className="auth-hero-foot">© {new Date().getFullYear()} MADS TOPUP</div>
+        </aside>
 
-          <div className="relative z-10 text-[10px] text-white/80 font-semibold mt-4">
-            © 2026 MADS TOPUP • MADS ENGINE
+        {/* Form side */}
+        <main className="auth-main">
+          <div className="auth-topbar">
+            <span className="auth-brand auth-brand-sm">
+              <span className="auth-brand-logo"><img src="/mads-logo.jpg" alt="MADS TOPUP" /></span>
+              <span className="auth-brand-name">MADS <b>TOPUP</b></span>
+            </span>
+            <button type="button" onClick={() => setIsAuthModalOpen(false)} className="auth-close" aria-label="Back to store">
+              <X className="w-4 h-4" />
+              <span>Back to store</span>
+            </button>
           </div>
-        </div>
 
-        {/* RIGHT SECTION (Form Side) */}
-        <div className="w-full md:w-7/12 bg-white p-6 sm:p-10 flex flex-col justify-between overflow-y-auto">
-          
+        <div className="auth-card">
+          {authMode !== 'forgot' && (
+            <div className="auth-tabs" role="tablist">
+              <span className={`auth-tabs-thumb ${authMode === 'register' ? 'is-right' : ''}`} />
+              <button type="button" role="tab" aria-selected={authMode === 'login'} className={authMode === 'login' ? 'is-on' : ''} onClick={() => setAuthMode('login')}>Login</button>
+              <button type="button" role="tab" aria-selected={authMode === 'register'} className={authMode === 'register' ? 'is-on' : ''} onClick={() => setAuthMode('register')}>Register</button>
+            </div>
+          )}
+
           {authMode === 'forgot' ? (
             /* FORGOT PASSWORD MODE FORM */
             <div className="space-y-6 my-auto">
@@ -1173,6 +1167,7 @@ export const AuthModal = () => {
           )}
 
         </div>
+        </main>
       </div>
       )}
     </div>
