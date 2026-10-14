@@ -2770,6 +2770,31 @@ app.get('/sitemap.xml', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'sitemap.xml'));
 });
 
+// Firebase Auth helper proxy. With VITE_FIREBASE_AUTH_DOMAIN set to this site's own domain, Google
+// sign-in loads /__/auth/* from here instead of *.firebaseapp.com, so browsers that partition
+// third-party storage (Safari, Chrome, in-app browsers) keep the redirect state and don't fail
+// with "missing initial state".
+const FIREBASE_AUTH_HOST = process.env.FIREBASE_AUTH_PROXY_HOST || 'mads-topup-76445.firebaseapp.com';
+app.use('/__', async (req, res, next) => {
+  if (!req.path.startsWith('/auth/') && !req.path.startsWith('/firebase/')) return next();
+  try {
+    const upstream = await fetch(`https://${FIREBASE_AUTH_HOST}/__${req.url}`, {
+      method: req.method === 'HEAD' ? 'HEAD' : 'GET',
+      headers: { 'user-agent': req.get('user-agent') || '', 'accept': req.get('accept') || '*/*', 'accept-language': req.get('accept-language') || '' },
+      redirect: 'manual',
+    });
+    res.status(upstream.status);
+    for (const h of ['content-type', 'cache-control', 'location', 'etag', 'last-modified']) {
+      const v = upstream.headers.get(h);
+      if (v) res.setHeader(h, v);
+    }
+    res.send(Buffer.from(await upstream.arrayBuffer()));
+  } catch (err) {
+    console.warn('[Firebase auth proxy]:', err.message);
+    res.status(502).send('Auth helper unavailable');
+  }
+});
+
 app.get('/robots.txt', (req, res) => {
   res.header('Content-Type', 'text/plain');
   res.sendFile(path.join(__dirname, 'dist', 'robots.txt'));

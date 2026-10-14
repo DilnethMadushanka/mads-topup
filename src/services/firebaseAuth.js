@@ -77,9 +77,14 @@ export const loginWithGoogle = async () => {
         throw new Error('Domain (madstopup.com) is not authorized in Firebase Console! Please add madstopup.com under Firebase -> Auth -> Settings -> Authorized Domains.');
       }
 
-      if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
+      // Closing the Google window is a cancel, not a reason to redirect.
+      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+        throw new Error('Google sign-in was cancelled.');
+      }
+
+      if (error.code === 'auth/popup-blocked' || error.code === 'auth/operation-not-supported-in-environment') {
         try {
-          console.log('Popup blocked or closed, falling back to signInWithRedirect...');
+          console.log('Popup not available, falling back to signInWithRedirect...');
           await signInWithRedirect(auth, googleProvider);
           return { success: false, redirecting: true };
         } catch (redirectErr) {
