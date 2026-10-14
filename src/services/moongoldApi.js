@@ -347,13 +347,18 @@ export const dispatchMoongoldOrder = async (orderData) => {
   //
   // MooGold's official OpenAPI spec (api-doc.yaml) documents category,
   // product-id, and quantity as `type: integer`, not quoted strings.
+  // eVoucher products (Garena Shells) are category 2 and take no player
+  // fields: MooGold returns a PIN code instead.
+  const isVoucher = orderData.game?.fulfilment === 'voucher';
   const dataPayload = {
-    category: 1,
+    category: isVoucher ? 2 : 1,
     'product-id': parseInt(productId, 10),
     quantity: parseInt(orderData.quantity || 1, 10)
   };
 
-  if (gameId.includes('pubg') || idLabel.includes('character')) {
+  if (isVoucher) {
+    // nothing to add
+  } else if (gameId.includes('pubg') || idLabel.includes('character')) {
     dataPayload['Character ID'] = orderData.playerId || '';
   } else if (gameId.includes('freefire')) {
     // MooGold Free Fire (SG/MY) requires 'Player ID', not 'User ID' —
@@ -422,6 +427,7 @@ export const dispatchMoongoldOrder = async (orderData) => {
           message: data.message || 'Order created successfully!',
           newBalanceLkr: data.newBalanceLkr,
           newBalanceUsdt: data.newBalanceUsdt,
+          voucherCodes: Array.isArray(data.voucherCodes) ? data.voucherCodes : null,
           data
         };
       } else {
@@ -456,5 +462,23 @@ export const dispatchMoongoldOrder = async (orderData) => {
       status: 'FAILED',
       message: 'Network or connection error. Please try again.'
     };
+  }
+};
+
+// The logged-in user's eVoucher PIN codes (Garena Shells etc.), newest first.
+export const fetchMyVouchers = async () => {
+  try {
+    let idToken = null;
+    if (auth && auth.currentUser) {
+      try { idToken = await auth.currentUser.getIdToken(); } catch (_) {}
+    }
+    if (!idToken) idToken = getSessionToken();
+    if (!idToken) return { success: false, vouchers: [] };
+    const res = await fetch('/api/my-vouchers', { headers: { 'Authorization': `Bearer ${idToken}` } });
+    if (res.status === 401) notifySessionExpired();
+    const data = await res.json().catch(() => ({}));
+    return { success: res.ok, vouchers: Array.isArray(data.vouchers) ? data.vouchers : [] };
+  } catch (e) {
+    return { success: false, vouchers: [] };
   }
 };

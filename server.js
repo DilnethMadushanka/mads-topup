@@ -13,6 +13,7 @@ import { GAMES_DATA } from './src/data/games.js';
 import { isSessionToken, verifySession, signSession } from './lib/session.js';
 import { verifyPasswordLogin, setPasswordForEmail, publicProfile } from './lib/userAuth.js';
 import { rtdbUrl, rtdbGet, rtdbPut, rtdbPatch, rtdbTransaction, findUserKey, adjustWallet, spendWallet, isUserBlocked } from './lib/rtdbAdmin.js';
+import { fetchVoucherCodes, saveUserVoucher, listUserVouchers, findCatalogPackage, isVoucherGame, redactVoucherCodes } from './lib/moogoldVoucher.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1555,6 +1556,8 @@ async function saveMoogoldOrderRecord(partnerOrderId, record) {
   }
 }
 
+const MOOGOLD_PROXY_PATHS = new Set(['order/create_order', 'product/validate', 'user/check_id', 'user/balance']);
+
 app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
   // Every order gets an id, so a request that leaves it out (a script calling
   // this endpoint directly) still gets a server record and an admin entry.
@@ -1565,6 +1568,13 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
 
     if (!apiPath || !bodyObj) {
       return res.status(400).json({ error: 'Missing path or bodyObj', received: req.body });
+    }
+
+    // Only the MooGold calls the site itself makes. Anything else (notably
+    // order/order_detail) would let any logged-in user read other people's
+    // orders, including voucher PIN codes.
+    if (!MOOGOLD_PROXY_PATHS.has(apiPath)) {
+      return res.status(400).json({ error: 'Unsupported request.' });
     }
 
     // MooGold credentials come only from the server's .env. Check before any
@@ -1594,6 +1604,7 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
     const numPriceLkr = parseFloat(priceLkr || req.body.priceLkr || bodyObj?.priceLkr || 0);
 
     let deductResult = null;
+    let orderCatalog = { game: null, pkg: null };
     if (isOrderCreation) {
       if (numPriceLkr <= 0) {
         return res.status(400).json({ error: 'Invalid order price specified.' });
@@ -1612,6 +1623,14 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
       const unitCatalogPriceLkr = await getCatalogPriceLkr(requestedProductId);
       if (unitCatalogPriceLkr === null) {
         return res.status(400).json({ error: 'Unrecognized product. Order rejected.' });
+      }
+      // The MooGold category comes from the catalog, not the browser. An
+      // eVoucher (e.g. Garena Shells) is category 2 and takes no player fields.
+      orderCatalog = findCatalogPackage(GAMES_DATA, requestedProductId);
+      if (isVoucherGame(orderCatalog.game)) {
+        bodyObj.data = { category: 2, 'product-id': bodyObj.data['product-id'], quantity: bodyObj.data.quantity };
+      } else {
+        bodyObj.data = { ...bodyObj.data, category: 1 };
       }
       // The cart sends one request per package with its quantity (e.g. 2x
       // Weekly Pass = one order of quantity 2), and priceLkr is the total for
@@ -1720,14 +1739,14 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
     });
 
     const text = await apiRes.text();
-    console.log(`[MooGold Proxy Response] HTTP ${apiRes.status} | ${logTag}`);
-    console.log(`[MooGold Proxy Response Body]:`, text);
-    console.log(`========================================\n`);
-
     let jsonResult = null;
     try {
       jsonResult = JSON.parse(text);
     } catch (e) {}
+
+    console.log(`[MooGold Proxy Response] HTTP ${apiRes.status} | ${logTag}`);
+    console.log(`[MooGold Proxy Response Body]:`, jsonResult ? JSON.stringify(redactVoucherCodes(jsonResult)) : text);
+    console.log(`========================================\n`);
 
     const isSuccess = apiRes.ok && jsonResult && (jsonResult.status === 'processing' || jsonResult.status === 'true' || jsonResult.status === true || jsonResult.status === 1 || jsonResult.order_id);
 
@@ -1758,11 +1777,31 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
         .catch(e => console.warn('[Referral Cashback Error]:', e.message));
     }
 
+    // eVoucher orders: fetch the PIN codes and keep them only in the buyer's
+    // private voucher list. They go back to the buyer in this response but
+    // never into the public order records.
+    let voucherCodes = null;
+    if (isOrderCreation && isSuccess && isVoucherGame(orderCatalog.game)) {
+      const moogoldOrderId = jsonResult?.order_id ? String(jsonResult.order_id) : '';
+      const fetched = await fetchVoucherCodes(moogoldOrderId);
+      voucherCodes = fetched.codes;
+      await saveUserVoucher(authenticatedUser.uid, partnerOrderId, {
+        gameId: orderCatalog.game.id,
+        gameName: orderCatalog.game.name,
+        packageName: `${orderCatalog.pkg.name}${Number(bodyObj?.data?.quantity) > 1 ? ` x${bodyObj.data.quantity}` : ''}`,
+        moogoldOrderId,
+        moogoldStatus: fetched.status || '',
+        codes: voucherCodes,
+        priceLkr: numPriceLkr,
+        createdAt: new Date().toISOString()
+      });
+    }
+
     res.status(apiRes.status);
     if (jsonResult) {
       if (isOrderCreation && deductResult?.success) {
         const responseBody = {
-          ...jsonResult,
+          ...redactVoucherCodes(jsonResult),
           newBalanceLkr: deductResult.newBalanceLkr,
           newBalanceUsdt: deductResult.newBalanceUsdt
         };
@@ -1775,7 +1814,7 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
             createdAt: new Date().toISOString()
           });
         }
-        return res.json(responseBody);
+        return res.json(voucherCodes ? { ...responseBody, isVoucher: true, voucherCodes } : responseBody);
       }
       return res.json(jsonResult);
     } else {
@@ -1816,6 +1855,22 @@ app.get('/api/public-stats', rateLimiter(60, 60000), async (req, res) => {
   } catch (e) {
     if (publicStatsCache.data) return res.json(publicStatsCache.data);
     res.status(500).json({ error: 'Stats unavailable' });
+  }
+});
+
+// The logged-in user's eVoucher PIN codes (e.g. Garena Shells). Kept out of
+// the public order list, so this is the only place they can be read back.
+app.get('/api/my-vouchers', rateLimiter(30, 60000), async (req, res) => {
+  try {
+    const authenticatedUser = await verifyFirebaseIdToken(req.headers.authorization || '');
+    if (!authenticatedUser) return res.status(401).json({ error: 'Please log in.' });
+    if (await rejectIfBlocked(authenticatedUser, res)) return;
+    const vouchers = await listUserVouchers(authenticatedUser.uid);
+    res.set('Cache-Control', 'no-store');
+    res.json({ success: true, vouchers });
+  } catch (e) {
+    console.error(`[API Error] ${req.path}:`, e.message);
+    res.status(500).json({ error: SERVER_ERROR });
   }
 });
 

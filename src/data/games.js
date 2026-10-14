@@ -207,15 +207,20 @@ export const GAMES_DATA = [
     heroBanner: '/game_banners/freefire.jpg',
     gradient: 'from-purple-600 to-indigo-700',
     requiresServer: false,
-    idLabel: 'Garena Account ID / Mobile',
-    idPlaceholder: 'Garena Account / Mobile No',
-    idGuideHint: '💡 Garena Account / Mobile Phone ID for Shells Topup',
+    // eVoucher product (MooGold category 2): the buyer gets a PIN code to
+    // redeem on Garena, so no account ID is asked for.
+    fulfilment: 'voucher',
+    moongoldCategory: 2,
+    requiresPlayerId: false,
+    idLabel: 'Garena Shells PIN',
+    idPlaceholder: '',
+    idGuideHint: '💡 You get a Garena Shells (SG) PIN code. Redeem it at shop.garena.sg',
     popular: true,
     moongoldCode: 'GARENA_SHELLS',
-    resellerDisabled: true, // moongoldProductId not configured — reseller dispatch blocked until IDs are added
     packages: [
-      { id: 'gs-33', name: '33 Shells', amount: 33, bonus: 'Instant PIN', priceLkr: 290, moongoldCost: 245, priceUsd: 0.95, image: '/gift_cards/shell.png', isPopular: false },
-      { id: 'gs-100', name: '100 Shells', amount: 100, bonus: 'Instant PIN', priceLkr: 860, moongoldCost: 740, priceUsd: 2.80, image: '/gift_cards/shell.png', isPopular: true }
+      { id: 'gs-320', name: '320 Shells', amount: 320, bonus: 'Instant PIN (SG)', priceLkr: 2750, priceUsd: 8.95, moongoldProductId: '122274', image: '/gift_cards/shell.png', isPopular: false },
+      { id: 'gs-960', name: '960 Shells', amount: 960, bonus: 'Instant PIN (SG)', priceLkr: 8250, priceUsd: 26.85, moongoldProductId: '122276', image: '/gift_cards/shell.png', isPopular: true },
+      { id: 'gs-1600', name: '1600 Shells', amount: 1600, bonus: 'Instant PIN (SG)', priceLkr: 13750, priceUsd: 44.75, moongoldProductId: '122277', image: '/gift_cards/shell.png', isPopular: false }
     ]
   }
 ];

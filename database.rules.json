@@ -110,6 +110,10 @@
       ".read": false,
       ".write": false
     },
+    "userVouchers": {
+      ".read": false,
+      ".write": false
+    },
     "userSecrets": {
       ".read": false,
       ".write": false
