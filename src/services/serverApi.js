@@ -30,17 +30,44 @@ export const postServerApi = async (path, body, token) => {
 // Signed session from /api/auth/login, for username/password and reseller
 // logins (Google logins use their Firebase ID token instead).
 const SESSION_KEY = 'mads_session_token';
+// Set when the user logged in with "Remember me" off: the token then lives in
+// sessionStorage and the login ends when the browser is closed.
+const SESSION_ONLY_FLAG = 'mads_session_only';
 
-export const setSessionToken = (token) => {
-  try { if (token) localStorage.setItem(SESSION_KEY, token); } catch (_) {}
+export const setSessionToken = (token, remember = true) => {
+  if (!token) return;
+  try {
+    if (remember) {
+      localStorage.setItem(SESSION_KEY, token);
+      localStorage.removeItem(SESSION_ONLY_FLAG);
+      sessionStorage.removeItem(SESSION_KEY);
+    } else {
+      sessionStorage.setItem(SESSION_KEY, token);
+      localStorage.setItem(SESSION_ONLY_FLAG, '1');
+      localStorage.removeItem(SESSION_KEY);
+    }
+  } catch (_) {}
 };
 
 export const getSessionToken = () => {
-  try { return localStorage.getItem(SESSION_KEY) || null; } catch (_) { return null; }
+  try { return sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY) || null; } catch (_) { return null; }
 };
 
 export const clearSessionToken = () => {
   try { localStorage.removeItem(SESSION_KEY); } catch (_) {}
+  try { sessionStorage.removeItem(SESSION_KEY); } catch (_) {}
+  try { localStorage.removeItem(SESSION_ONLY_FLAG); } catch (_) {}
+};
+
+// A "Remember me"-off login whose browser has since been closed: the
+// sessionStorage token is gone, so the saved profile is logged out too.
+export const endExpiredSessionOnlyLogin = () => {
+  try {
+    if (localStorage.getItem(SESSION_ONLY_FLAG) && !sessionStorage.getItem(SESSION_KEY)) {
+      localStorage.removeItem(SESSION_ONLY_FLAG);
+      localStorage.removeItem('mads_user_profile');
+    }
+  } catch (_) {}
 };
 
 // Asks AppContext to log the user out and ask them to log in again (their

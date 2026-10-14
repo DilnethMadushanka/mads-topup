@@ -607,11 +607,11 @@ export const isAccountBlockedAsync = async (uid, email) => {
 // Username/password and reseller login. The server checks the password and
 // returns a signed session token (stored for later top-ups). The browser no
 // longer compares passwords against the public users list itself.
-export const verifyUserLoginAsync = async (identifier, passwordInput) => {
+export const verifyUserLoginAsync = async (identifier, passwordInput, remember = true) => {
   if (!identifier || !passwordInput) return { success: false, message: 'Please enter username and password!' };
   const { ok, data } = await postServerApi('/api/auth/login', { identifier: String(identifier).trim(), password: String(passwordInput) });
   if (ok && data?.success && data.token) {
-    setSessionToken(data.token);
+    setSessionToken(data.token, remember);
     return { success: true, user: data.user };
   }
   return {

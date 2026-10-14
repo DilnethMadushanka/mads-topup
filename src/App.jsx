@@ -1,4 +1,5 @@
 import React from 'react';
+import { CookieNotice } from './components/CookieNotice';
 import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
@@ -85,6 +86,7 @@ const MainContent = () => {
   return (
     <div className={`min-h-screen ${isDark ? 'bg-[#0b0b10]' : 'bg-[#F8FAFF]'} flex flex-col justify-between pb-0 font-sans text-[#0f172a] overflow-x-hidden`}>
       <div className={themeCls}>
+        <CookieNotice />
         <Navbar />
         <div key={pageKey} className="page-enter">
         {selectedGame ? (
