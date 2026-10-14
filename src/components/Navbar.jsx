@@ -269,152 +269,99 @@ export const Navbar = () => {
       />
 
       {/* Panel */}
-      <aside
-        className={`lg:hidden fixed top-2 right-2 bottom-2 z-[999] w-[320px] max-w-[calc(100vw-16px)] bg-white dark:bg-[#1a2030]! border border-transparent dark:border-white/10! rounded-[1.75rem] flex flex-col overflow-hidden shadow-[0_30px_80px_-20px_rgba(9,13,22,0.5)] transition-transform duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-[110%]'}`}
-      >
-
+      <aside className={`msb lg:hidden ${isMobileMenuOpen ? 'is-open' : ''}`} aria-hidden={!isMobileMenuOpen}>
         {/* Header */}
-        <div className="relative shrink-0 px-5 pt-5 pb-5 bg-gradient-to-br from-[#2b86ff] via-[#1a6cf0] to-[#083a9e] text-white overflow-hidden">
-          <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/10 blur-2xl pointer-events-none" />
-          <div className="absolute inset-0 opacity-[0.06] pointer-events-none"
-            style={{ backgroundImage: 'repeating-linear-gradient(45deg, #fff 0px, #fff 1px, transparent 1px, transparent 9px)' }} />
-
-          <div className="relative flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20 ring-2 ring-white/30">
-                <img src="/mads-logo.jpg" alt="MADS TOPUP" className="w-full h-full object-contain" />
-              </div>
-              <div className="leading-none">
-                <div className="font-heading font-extrabold text-[17px] tracking-tight">MADS<span className="text-white/80">TOPUP</span></div>
-                <div className="mt-1 text-[9px] font-bold uppercase tracking-[0.2em] font-mono text-brand-200">EVERYGAME · LK</div>
-              </div>
+        <div className="msb-head">
+          <div className="msb-top">
+            <div className="msb-brand">
+              <span className="msb-brand-logo"><img src="/mads-logo.jpg" alt="MADS TOPUP" /></span>
+              <span className="msb-brand-name">MADS <b>TOPUP</b></span>
             </div>
-            <button onClick={() => setIsMobileMenuOpen(false)} aria-label="Close Menu"
-              className="w-9 h-9 flex items-center justify-center rounded-full bg-white/15 hover:bg-white/25 text-white transition-colors cursor-pointer">
-              <X className="w-4 h-4" />
+            <button onClick={() => setIsMobileMenuOpen(false)} aria-label="Close Menu" className="msb-close">
+              <X className="w-[18px] h-[18px]" />
             </button>
           </div>
 
-          <div className="relative mt-5">
-            {isUserLoggedIn ? (
-              <button onClick={() => { openUserProfilePage(); setIsMobileMenuOpen(false); }}
-                className="w-full flex items-center gap-3 bg-white/15 hover:bg-white/25 border border-white/20 rounded-2xl p-2.5 pr-3 transition-colors cursor-pointer group">
-                <div className="relative shrink-0">
-                  <div className="w-11 h-11 rounded-full overflow-hidden ring-2 ring-white/40">
-                    {userProfile.avatar
-                      ? <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
-                      : <div className="w-full h-full bg-white flex items-center justify-center font-bold text-[#1677ff] text-sm">{getInitials(userProfile.name, userProfile.email)}</div>}
-                  </div>
-                  <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#1677ff]" />
-                </div>
-                <div className="flex-1 text-left min-w-0">
-                  <div className="font-bold text-[15px] truncate">{getCleanName(userProfile.name, userProfile.email)}</div>
-                  <div className="text-brand-100/90 text-xs truncate">{userProfile.email || 'MADS Gamer'}</div>
-                </div>
-                <div className="shrink-0 flex items-center gap-1.5">
-                  {isReseller
-                    ? <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400 text-amber-950 uppercase">Partner</span>
-                    : <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/25 uppercase">Gamer</span>}
-                  <ChevronRight className="w-4 h-4 text-white/70 group-hover:translate-x-0.5 transition-transform" />
-                </div>
+          {isUserLoggedIn ? (
+            <button onClick={() => { openUserProfilePage(); setIsMobileMenuOpen(false); }} className="msb-user">
+              <span className="msb-avatar">
+                {userProfile.avatar
+                  ? <img src={userProfile.avatar} alt="Profile" />
+                  : <span>{getInitials(userProfile.name, userProfile.email)}</span>}
+                <i />
+              </span>
+              <span className="msb-user-txt">
+                <span className="msb-user-name">{getCleanName(userProfile.name, userProfile.email)}</span>
+                <span className="msb-user-mail">{userProfile.email || 'MADS Gamer'}</span>
+                <span className={`msb-role ${isReseller ? 'is-partner' : ''}`}>
+                  {isReseller ? <Crown className="w-3 h-3" /> : <Star className="w-3 h-3" />}
+                  {isReseller ? 'Partner' : 'Gamer'}
+                </span>
+              </span>
+              <ChevronRight className="w-4 h-4 msb-user-go" />
+            </button>
+          ) : (
+            <div className="msb-auth">
+              <button onClick={() => { openAuth('login'); setIsMobileMenuOpen(false); }} className="msb-auth-btn">
+                <LogIn className="w-4 h-4" /><span>Login</span>
               </button>
-            ) : (
-              <div className="flex gap-2">
-                <button onClick={() => { openAuth('login'); setIsMobileMenuOpen(false); }}
-                  className="flex-1 h-11 bg-white/15 hover:bg-white/25 border border-white/30 text-white font-bold text-[13px] rounded-full flex items-center justify-center gap-2 transition-colors cursor-pointer">
-                  <LogIn className="w-4 h-4" /><span>Login</span>
-                </button>
-                <button onClick={() => { openAuth('register'); setIsMobileMenuOpen(false); }}
-                  className="flex-1 h-11 bg-white text-[#1677ff] font-bold text-[13px] rounded-full flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-md">
-                  <UserPlus className="w-4 h-4" /><span>Join now</span>
-                </button>
-              </div>
-            )}
-          </div>
+              <button onClick={() => { openAuth('register'); setIsMobileMenuOpen(false); }} className="msb-auth-btn is-primary">
+                <UserPlus className="w-4 h-4" /><span>Join now</span>
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Wallet cards */}
-        {isUserLoggedIn && (
-          <div className="grid grid-cols-2 gap-2.5 px-4 pt-4 shrink-0">
-            <button onClick={() => handleWalletClick('ezcash')}
-              className="text-left rounded-2xl border border-brand-100 bg-brand-50/70 hover:bg-brand-50 dark:border-[#2b86ff]/30! dark:bg-[#2b86ff]/10! dark:hover:bg-[#2b86ff]/20! p-3 transition-colors cursor-pointer active:scale-[0.98]">
-              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#1677ff] dark:text-[#74b8ff]!">
-                <Wallet className="w-3 h-3" /> LKR
-              </span>
-              <span className="block mt-1.5 text-lg font-extrabold font-heading text-slate-900 dark:text-white! tabular-nums">{(userProfile.walletBalance || 0).toFixed(2)}</span>
-            </button>
-            <button onClick={() => handleWalletClick('binance')}
-              className="text-left rounded-2xl border border-emerald-100 bg-emerald-50/70 hover:bg-emerald-50 dark:border-emerald-400/30! dark:bg-emerald-500/10! dark:hover:bg-emerald-500/20! p-3 transition-colors cursor-pointer active:scale-[0.98]">
-              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400!">
-                <span className="w-3 h-3 rounded-full bg-emerald-600 text-white text-[7px] font-extrabold italic flex items-center justify-center">B</span> USDT
-              </span>
-              <span className="block mt-1.5 text-lg font-extrabold font-heading text-slate-900 dark:text-white! tabular-nums">{(userProfile.walletUsdt || 0).toFixed(2)}</span>
-            </button>
-          </div>
-        )}
+        <div className="msb-scroll">
+          {/* Wallet */}
+          {isUserLoggedIn && (
+            <div className="msb-wallet">
+              <div className="msb-wallet-row">
+                <button onClick={() => handleWalletClick('ezcash')} className="msb-bal">
+                  <span className="msb-bal-ico is-lkr"><Wallet className="w-4 h-4" /></span>
+                  <span className="msb-bal-txt">
+                    <span className="msb-bal-label">LKR wallet</span>
+                    <span className="msb-bal-amt"><small>Rs</small>{fmtLkr(userProfile.walletBalance, true)}</span>
+                  </span>
+                </button>
+                <button onClick={() => handleWalletClick('binance')} className="msb-bal">
+                  <span className="msb-bal-ico is-usdt">₮</span>
+                  <span className="msb-bal-txt">
+                    <span className="msb-bal-label">USDT wallet</span>
+                    <span className="msb-bal-amt"><small>$</small>{fmtUsdt(userProfile.walletUsdt)}</span>
+                  </span>
+                </button>
+              </div>
+              <button onClick={() => handleWalletClick('ezcash')} className="msb-topup">
+                <Plus className="w-4 h-4" /> Top up wallet
+              </button>
+            </div>
+          )}
 
-        {/* Nav items */}
-        {isUserLoggedIn ? (
-          <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-            <div className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-white/40!">Menu</div>
-
+          {/* Nav items */}
+          <nav className="msb-nav">
+            <div className="msb-label">Menu</div>
             {navItems.map((item, i) => (
-              <button key={i} onClick={item.action}
-                className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-2xl text-left transition-colors duration-150 cursor-pointer group relative ${
-                  item.active ? 'bg-brand-50 dark:bg-[#2b86ff]/15!' : 'hover:bg-slate-50 dark:hover:bg-white/5!'
-                }`}>
-                {item.active && <span className="absolute left-0 top-3 bottom-3 w-1 rounded-r-full bg-[#1677ff]" />}
-
-                <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                  item.active ? 'bg-[#1677ff] shadow-md shadow-brand-600/25' : `${item.bg} `
-                }`}>
-                  <item.icon className={`w-[18px] h-[18px] ${item.active ? 'text-white' : item.color}`} />
-                </span>
-
-                <span className={`flex-1 text-[15px] font-semibold ${item.active ? 'text-[#1677ff] dark:text-[#74b8ff]!' : 'text-slate-700 group-hover:text-slate-950 dark:text-white/75! dark:group-hover:text-white!'}`}>
-                  {item.label}
-                </span>
-
-                {item.badge && (
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${
-                    item.badge === 'PARTNER' ? 'bg-amber-100 text-amber-700 dark:bg-amber-400/20! dark:text-amber-300!' : 'bg-brand-100 text-[#1677ff] dark:bg-[#2b86ff]/20! dark:text-[#74b8ff]!'
-                  }`}>
-                    {item.badge}
-                  </span>
-                )}
-
-                {item.count > 0 && (
-                  <span className="bg-[#1677ff] text-white text-[11px] font-bold px-2 h-5 rounded-full min-w-[20px] flex items-center justify-center shrink-0">
-                    {item.count}
-                  </span>
-                )}
-
-                <ChevronRight className={`w-4 h-4 shrink-0 transition-transform group-hover:translate-x-0.5 ${item.active ? 'text-[#1677ff] dark:text-[#74b8ff]!' : 'text-slate-300 dark:text-white/25!'}`} />
+              <button key={item.label} onClick={item.action} style={{ '--d': `${60 + i * 35}ms` }}
+                className={`msb-item ${item.active ? 'is-active' : ''}`}>
+                <span className="msb-item-ico"><item.icon className="w-[18px] h-[18px]" /></span>
+                <span className="msb-item-label">{item.label}</span>
+                {item.badge && <span className={`msb-badge ${item.badge === 'PARTNER' ? 'is-gold' : ''}`}>{item.badge}</span>}
+                {item.count > 0 && <span className="msb-count">{item.count}</span>}
+                <ChevronRight className="w-4 h-4 msb-item-go" />
               </button>
             ))}
-
-            <div className="mx-2 my-2 h-px bg-slate-100 dark:bg-white/10!" />
-            <button
-              onClick={() => { handleLogout && handleLogout(); setIsMobileMenuOpen(false); }}
-              className="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-2xl text-left transition-colors duration-150 cursor-pointer group hover:bg-brand-50 dark:hover:bg-[#2b86ff]/15!"
-            >
-              <span className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-brand-50 dark:bg-[#2b86ff]/15! group-hover:bg-[#1677ff] dark:group-hover:bg-[#2b86ff]! transition-colors">
-                <LogOut className="w-[18px] h-[18px] text-[#1677ff] group-hover:text-white transition-colors" />
-              </span>
-              <span className="flex-1 text-[15px] font-semibold text-[#1677ff] dark:text-[#74b8ff]!">Logout</span>
-            </button>
           </nav>
-        ) : (
-          <div className="flex-1" />
-        )}
+        </div>
 
         {/* Footer */}
-        <div className="shrink-0 px-5 py-3.5 flex items-center justify-between border-t border-slate-100 bg-slate-50/70 dark:border-white/10! dark:bg-white/[0.03]!">
-          <span className="text-[11px] font-mono text-slate-400 dark:text-white/40! font-medium">MADS TOPUP &copy; {new Date().getFullYear()}</span>
-          <span className="flex items-center gap-1.5 text-[11px] font-mono font-medium text-emerald-600 dark:text-emerald-400!">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            ONLINE
-          </span>
+        <div className="msb-foot">
+          {isUserLoggedIn ? (
+            <button onClick={() => { handleLogout && handleLogout(); setIsMobileMenuOpen(false); }} className="msb-logout">
+              <LogOut className="w-4 h-4" /> Logout
+            </button>
+          ) : <span className="msb-copy">MADS TOPUP &copy; {new Date().getFullYear()}</span>}
+          <span className="msb-online"><i />Online</span>
         </div>
       </aside>
     </>
