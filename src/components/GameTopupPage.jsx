@@ -358,7 +358,7 @@ export const GameTopupPage = () => {
       amount: selectedItems.reduce((s, i) => s + (i.amount * cartQuantities[i.id]), 0),
       playerId: isVoucherGame ? 'PIN' : playerId,
       zoneId: isVoucherGame ? '' : zoneId,
-      ign: isVoucherGame ? 'Garena Shells PIN' : (ign || (`Player ${playerId}`)),
+      ign: isVoucherGame ? `${selectedGame.name} PIN` : (ign || (`Player ${playerId}`)),
       paymentMethod: selectedPayment.name,
       priceLkr: totalLkr,
       status: finalStatus,
@@ -453,7 +453,7 @@ export const GameTopupPage = () => {
                       </button>
                     </div>
                   ))}
-                  <p className="text-emerald-800 font-medium">Redeem it at shop.garena.sg (Garena Shells SG). You can see this PIN again in My Profile → My Codes.</p>
+                  <p className="text-emerald-800 font-medium">Redeem it at {selectedGame.redeemSite || 'shop.garena.sg'} ({selectedGame.name}). You can see this PIN again in My Profile → My Codes.</p>
                 </>
               ) : (
                 <p className="text-emerald-800 font-medium">Your PIN is being prepared by the supplier. It will appear in My Profile → My Codes in a few minutes.</p>
@@ -574,7 +574,7 @@ export const GameTopupPage = () => {
             </div>
             <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-950 text-xs font-bold flex items-start gap-2.5">
               <HelpCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <span className="leading-snug">No Player ID needed. After payment you get a Garena Shells (SG) PIN code instantly. Redeem it at shop.garena.sg. Paid from your MADS Wallet.</span>
+              <span className="leading-snug">No Player ID needed. After payment you get a {selectedGame.name} PIN code instantly. Redeem it at {selectedGame.redeemSite || 'shop.garena.sg'}. Paid from your MADS Wallet.</span>
             </div>
           </div>
           ) : (
