@@ -47,10 +47,11 @@ export const HeroSection = () => {
   });
 
   const promos = [
-    { icon: Wallet, title: 'Recharge Wallet', text: 'EZ Cash, Binance or Bank', onClick: () => openWalletModal('ezcash') },
-    { icon: Gift, title: 'Refer & Earn', text: '1.5% cashback rewards', onClick: openReferralPage },
-    { icon: Headphones, title: '24/7 Support', text: 'Live chat & tickets', onClick: () => setIsSupportOpen(true) },
+    { icon: Wallet, title: 'Recharge Wallet', text: 'EZ Cash, Binance or Bank', tag: 'Instant credit', tone: 'blue', onClick: () => openWalletModal('ezcash') },
+    { icon: Gift, title: 'Refer & Earn', text: '1.5% cashback rewards', tag: 'Earn 1.5%', tone: 'gold', onClick: openReferralPage },
+    { icon: Headphones, title: '24/7 Support', text: 'Live chat & tickets', tag: 'Online now', tone: 'teal', live: true, onClick: () => setIsSupportOpen(true) },
   ];
+  const catalogGames = GAMES_DATA.filter((g) => g && g.logo && g.packages && g.packages.length);
 
   const trust = [
     { icon: Clock, value: '< 2s', label: 'Instant delivery' },
@@ -231,46 +232,43 @@ export const HeroSection = () => {
           <GameStripBar />
         </div>
 
-        {/* ── Below the first screen: promos, catalog link, trust ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pt-4 sm:pt-6">
-          {promos.map(({ icon: Icon, title, text, onClick }) => (
-            <button
-              key={title}
-              onClick={onClick}
-              className="group relative text-left rounded-2xl bg-white border-2 border-slate-200 hover:border-[#1677ff]/50 shadow-sm hover:shadow-lg hover:shadow-brand-600/10 dark:bg-white/[0.04]! dark:border-white/10! dark:hover:border-[#2b86ff]/70! dark:shadow-none! p-4 flex items-center gap-4 transition-all cursor-pointer overflow-hidden"
-            >
-              <div className="w-12 h-12 rounded-xl bg-brand-50 text-[#1677ff] group-hover:bg-[#1677ff] group-hover:text-white dark:bg-[#2b86ff]/15! dark:text-[#5aa8ff]! dark:group-hover:bg-[#2b86ff]! dark:group-hover:text-white! group-hover:shadow-lg group-hover:shadow-brand-600/25 flex items-center justify-center shrink-0 transition-all">
-                <Icon className="w-6 h-6" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="text-sm sm:text-base font-black font-heading leading-tight text-slate-900 dark:text-white!">{title}</h3>
-                <p className="text-xs text-slate-500 dark:text-white/55! font-medium mt-0.5">{text}</p>
-              </div>
-              <ArrowRight className="w-5 h-5 text-slate-300 dark:text-white/30! group-hover:text-[#1677ff] group-hover:translate-x-1 transition-all shrink-0" />
+        {/* ── Below the first screen: quick actions, catalog link, trust ── */}
+        <div className="qa-grid">
+          {promos.map(({ icon: Icon, title, text, tag, tone, live, onClick }) => (
+            <button key={title} onClick={onClick} className={`qa-card is-${tone}`}>
+              <Icon className="qa-watermark" aria-hidden="true" />
+              <span className="qa-top">
+                <span className="qa-ico"><Icon /></span>
+                <span className="qa-tag">{live && <i className="qa-live" />}{tag}</span>
+              </span>
+              <span className="qa-title">{title}</span>
+              <span className="qa-text">{text}</span>
+              <span className="qa-go" aria-hidden="true"><ArrowRight /></span>
             </button>
           ))}
         </div>
 
-        <div className="text-center">
-          <button
-            onClick={openCatalog}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white border-2 border-slate-200 text-slate-700 hover:border-[#1677ff] hover:text-[#1677ff] dark:bg-white/[0.06]! dark:border-white/15! dark:text-white! dark:hover:bg-[#2b86ff]! dark:hover:border-[#2b86ff]! dark:hover:text-white! font-black text-sm transition-all cursor-pointer"
-          >
-            <LayoutGrid className="w-4 h-4" />
-            View Full Game Catalog
+        <div className="qa-catalog-row">
+          <button onClick={openCatalog} className="qa-catalog">
+            <span className="qa-stack" aria-hidden="true">
+              {catalogGames.slice(0, 4).map((g) => <img key={g.id} src={g.logo} alt="" loading="lazy" />)}
+            </span>
+            <span className="qa-catalog-label">
+              <span>View Full Game Catalog</span>
+              {catalogGames.length > 0 && <small>{catalogGames.length} games, instant top up</small>}
+            </span>
+            <span className="qa-catalog-go" aria-hidden="true"><LayoutGrid /></span>
           </button>
         </div>
 
-        <dl className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <dl className="qa-trust">
           {trust.map(({ icon: Icon, value, label }) => (
-            <div key={label} className="flex items-center gap-4 bg-slate-50 border border-slate-200 dark:bg-white/[0.04]! dark:border-white/10! rounded-2xl px-5 py-4">
-              <div className="w-11 h-11 rounded-xl bg-white border border-slate-200 text-[#1677ff] dark:bg-[#2b86ff]/15! dark:border-transparent! dark:text-[#5aa8ff]! flex items-center justify-center shrink-0">
-                <Icon className="w-5 h-5" />
-              </div>
-              <div>
-                <dt className="font-heading text-xl font-black tracking-tight leading-none text-slate-900 dark:text-white!">{value}</dt>
-                <dd className="mt-1 text-xs text-slate-500 dark:text-white/50! font-semibold">{label}</dd>
-              </div>
+            <div key={label} className="qa-trust-item">
+              <span className="qa-trust-ico"><Icon /></span>
+              <span>
+                <dt className="qa-trust-value">{value}</dt>
+                <dd className="qa-trust-label">{label}</dd>
+              </span>
             </div>
           ))}
         </dl>
