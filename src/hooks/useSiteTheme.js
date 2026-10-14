@@ -1,34 +1,33 @@
 import { useSyncExternalStore } from 'react';
 
-// Storefront colour mode (dark / light). Tiny external store so the navbar switch
-// and App.jsx stay in sync without touching AppContext. Persisted in localStorage.
-// Light is the default; only visitors who switched to dark keep dark.
-const KEY = 'mads_site_theme';
-const listeners = new Set();
+// Storefront colour mode (dark / light), taken from the visitor's device setting
+// (prefers-color-scheme) and updated live when the device switches. A ?theme=light|dark
+// URL parameter still forces one mode, which is handy for previews.
+const QUERY = '(prefers-color-scheme: dark)';
+
+const media = () => {
+  try { return window.matchMedia(QUERY); } catch { return null; }
+};
 
 const read = () => {
   try {
-    const fromUrl = new URLSearchParams(window.location.search).get('theme'); // ?theme=light|dark
+    const fromUrl = new URLSearchParams(window.location.search).get('theme');
     if (fromUrl === 'light' || fromUrl === 'dark') return fromUrl;
-    return localStorage.getItem(KEY) === 'dark' ? 'dark' : 'light';
-  } catch { return 'light'; }
-};
-let current = read();
-
-export const setSiteTheme = (theme) => {
-  current = theme === 'dark' ? 'dark' : 'light';
-  try { localStorage.setItem(KEY, current); } catch { /* storage may be blocked */ }
-  listeners.forEach((l) => l());
+  } catch { /* ignore */ }
+  return media()?.matches ? 'dark' : 'light';
 };
 
-const subscribe = (l) => { listeners.add(l); return () => listeners.delete(l); };
+// The old manual switch saved a choice here; drop it so the device setting decides.
+try { localStorage.removeItem('mads_site_theme'); } catch { /* storage may be blocked */ }
+
+const subscribe = (l) => {
+  const mq = media();
+  if (!mq) return () => {};
+  mq.addEventListener('change', l);
+  return () => mq.removeEventListener('change', l);
+};
 
 export const useSiteTheme = () => {
-  const theme = useSyncExternalStore(subscribe, () => current, () => 'light');
-  return {
-    theme,
-    isDark: theme === 'dark',
-    setTheme: setSiteTheme,
-    toggleTheme: () => setSiteTheme(current === 'dark' ? 'light' : 'dark'),
-  };
+  const theme = useSyncExternalStore(subscribe, read, () => 'light');
+  return { theme, isDark: theme === 'dark' };
 };

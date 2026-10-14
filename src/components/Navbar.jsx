@@ -1,14 +1,12 @@
-import { useSiteTheme } from '../hooks/useSiteTheme';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { filterUserOrders } from '../utils/ownership';
 import {
   Gamepad2, Gift, BookOpen, Download, User, Wallet, ChevronDown,
   Headset, Menu, X, LogIn, UserPlus, Home, ShoppingBag, Smartphone,
-  Crown, ChevronRight, ArrowRight, Star, Zap, LogOut, Sun, Moon } from 'lucide-react';
+  Crown, ChevronRight, ArrowRight, Star, Zap, LogOut } from 'lucide-react';
 
 export const Navbar = () => {
-  const { isDark, toggleTheme } = useSiteTheme();
   const {
     setIsUserProfileOpen,
     openUserProfilePage,
@@ -117,40 +115,6 @@ export const Navbar = () => {
     { label: 'Download App', icon: Download, action: () => setIsDownloadAppModalOpen(true) },
   ];
 
-  const themeSwitch = (
-    <button
-      type="button"
-      onClick={toggleTheme}
-      role="switch"
-      aria-checked={isDark}
-      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-      title={isDark ? 'Light mode' : 'Dark mode'}
-      className="relative shrink-0 w-[62px] h-9 rounded-full border border-slate-200 bg-slate-100 dark:border-white/15! dark:bg-white/10! cursor-pointer transition-colors overflow-hidden"
-    >
-      <Sun className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-amber-500" />
-      <Moon className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-white/60!" />
-      <span
-        className={`absolute top-1 left-1 w-7 h-7 rounded-full flex items-center justify-center shadow-md transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-          isDark ? 'translate-x-[26px] bg-[#2b86ff] text-white' : 'translate-x-0 bg-white text-amber-500'
-        }`}
-      >
-        {isDark ? <Moon className="w-3.5 h-3.5" /> : <Sun className="w-3.5 h-3.5" />}
-      </span>
-    </button>
-  );
-
-  const themeSwitchCompact = (
-    <button
-      type="button"
-      onClick={toggleTheme}
-      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-      title={isDark ? 'Light mode' : 'Dark mode'}
-      className="w-10 h-10 shrink-0 rounded-full border border-slate-200 bg-white text-amber-500 dark:border-white/15! dark:bg-white/10! dark:text-white! flex items-center justify-center cursor-pointer transition-all active:scale-90"
-    >
-      {isDark ? <Moon className="w-[18px] h-[18px]" /> : <Sun className="w-[18px] h-[18px]" />}
-    </button>
-  );
-
   const linkCls = (active) =>
     `relative flex items-center gap-2 h-10 px-3 text-[15px] font-semibold whitespace-nowrap cursor-pointer transition-colors duration-200 after:absolute after:left-3 after:right-3 after:-bottom-1 after:h-[3px] after:rounded-full after:bg-[#1677ff] dark:after:bg-[#8dc2ff]! after:transition-transform after:duration-300 after:origin-center ${
       active
@@ -212,7 +176,6 @@ export const Navbar = () => {
 
           {/* ── DESKTOP RIGHT ── */}
           <div className="hidden lg:flex items-center gap-2 shrink-0">
-            {themeSwitch}
             {isUserLoggedIn ? (
               <>
                 {/* Wallets — one segmented control */}
@@ -269,7 +232,6 @@ export const Navbar = () => {
 
           {/* ── MOBILE RIGHT ── */}
           <div className="lg:hidden flex items-center gap-1.5">
-            {themeSwitchCompact}
             {isUserLoggedIn && (
               <div className="flex items-center h-10 rounded-full border border-slate-200 bg-white overflow-hidden shadow-sm dark:border-white/10! dark:bg-white/[0.05]! dark:shadow-none!">
                 <button onClick={() => handleWalletClick('ezcash')}

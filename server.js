@@ -1932,29 +1932,128 @@ app.get('/api/ip', requireAdminSession, async (req, res) => {
   }
 });
 
-// Automated Binance Pay Deposit Verification Endpoint (Admin Approval Mode)
-app.post('/api/binance/verify-order', async (req, res) => {
+// Automated Binance Pay deposits. Customers send USDT to our personal Binance
+// Pay ID and give us the Order ID from their Binance Pay history. The server
+// looks that Order ID up in OUR account's Pay history (Binance API, read-only
+// key in BINANCE_API_KEY / BINANCE_API_SECRET) and credits the amount Binance
+// shows, never the amount typed in the browser. Each Order ID is credited once
+// (usedPaymentRefs). Anything not found yet goes to the admin queue as before.
+const BINANCE_API_BASE = 'https://api.binance.com';
+const BINANCE_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000;
+const binanceCreditLocks = new Set();
+
+async function fetchBinancePayHistory() {
+  const apiKey = (process.env.BINANCE_API_KEY || '').trim();
+  const secret = (process.env.BINANCE_API_SECRET || '').trim();
+  if (!apiKey || !secret) return { configured: false, rows: [] };
+  const query = new URLSearchParams({
+    startTime: String(Date.now() - BINANCE_MAX_AGE_MS),
+    limit: '100',
+    recvWindow: '10000',
+    timestamp: String(Date.now()),
+  }).toString();
+  const signature = crypto.createHmac('sha256', secret).update(query).digest('hex');
+  const res = await fetch(`${BINANCE_API_BASE}/sapi/v1/pay/transactions?${query}&signature=${signature}`, {
+    headers: { 'X-MBX-APIKEY': apiKey },
+    signal: AbortSignal.timeout(10000),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || (body.code && body.code !== '000000')) {
+    throw new Error(`Binance Pay history ${res.status}: ${body.msg || body.message || body.code || 'unknown error'}`);
+  }
+  return { configured: true, rows: Array.isArray(body.data) ? body.data : [] };
+}
+
+const cleanBinanceOrderId = (v) => String(v || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 64);
+
+app.post('/api/binance/verify-order', rateLimiter(15, 60000), async (req, res) => {
+  let lockId = null;
   try {
-    const { orderId, payId, amount } = req.body || {};
-    if (!orderId || !payId) {
-      return res.status(400).json({ error: 'Missing Order ID or Pay ID' });
+    const authUser = await verifyFirebaseIdToken(req.headers.authorization || '');
+    if (!authUser) return res.status(401).json({ verified: false, error: 'Please log in again to submit a deposit.' });
+    if (await rejectIfBlocked(authUser, res)) return;
+
+    const orderId = cleanBinanceOrderId(req.body?.orderId);
+    const payerPayId = String(req.body?.payId || '').trim().slice(0, 64);
+    if (orderId.length < 8) return res.status(400).json({ verified: false, error: 'Please enter the Order ID from your Binance Pay history.' });
+
+    const refKey = paymentRefKey('Binance Pay', orderId);
+    const usedBy = await findCreditedPaymentRef(refKey, null);
+    if (usedBy) {
+      console.warn(`[Binance Order Reused] ${orderId} already credited on ${usedBy}; tried by ${authUser.uid}`);
+      return res.status(409).json({ verified: false, error: 'This Binance Order ID has already been used.' });
     }
 
-    console.log(`[Binance Deposit Submitted for Admin Approval] Order: ${orderId}, PayID: ${payId}, Amount: ${amount} USDT`);
+    let history;
+    try {
+      history = await fetchBinancePayHistory();
+    } catch (e) {
+      console.error('[Binance Pay History Error]:', e.message);
+      history = { configured: true, rows: [], failed: true };
+    }
+    const tx = history.rows.find((r) => cleanBinanceOrderId(r.transactionId) === orderId || cleanBinanceOrderId(r.orderId) === orderId);
+    const amountUsdt = tx ? Math.round(parseFloat(tx.amount) * 100) / 100 : 0;
+    const txTime = tx ? Number(tx.transactionTime) || 0 : 0;
+    const usable = tx && String(tx.currency || '').toUpperCase() === 'USDT' && amountUsdt > 0 &&
+      (!txTime || Date.now() - txTime <= BINANCE_MAX_AGE_MS);
 
-    // Route directly to Admin Queue for Manual Admin Approval
+    if (!usable) {
+      if (tx) console.warn(`[Binance Order Not Usable] ${orderId}: ${tx.amount} ${tx.currency} at ${txTime}`);
+      return res.json({
+        verified: false,
+        autoApproved: false,
+        status: 'PENDING_ADMIN_VERIFICATION',
+        found: !!tx,
+        message: 'Binance Pay deposit submitted! Pending Admin Verification.',
+      });
+    }
+
+    const payId = `PAY-BN-${orderId}`.slice(0, 80);
+    if (binanceCreditLocks.has(payId)) return res.status(409).json({ verified: false, error: 'This Binance Order ID is already being processed.' });
+    binanceCreditLocks.add(payId);
+    lockId = payId;
+    const claim = await claimPaymentRef(refKey, payId);
+    if (!claim.ok) return res.status(409).json({ verified: false, error: 'This Binance Order ID has already been used.' });
+
+    let credit;
+    try {
+      const walletKey = await resolveUserWalletKey(authUser.uid, authUser.email);
+      if (!walletKey) throw new Error('User wallet not found');
+      credit = { ...(await adjustWallet(walletKey, 0, amountUsdt)), rtdbKey: walletKey };
+    } catch (e) {
+      console.error('[Binance Credit Error]:', e.message);
+      await releasePaymentRef(refKey, payId).catch(() => {});
+      return res.status(500).json({ verified: false, error: 'Wallet credit failed. Please try again.' });
+    }
+
+    const payer = tx.payerInfo || {};
+    const now = new Date().toISOString();
+    await rtdbPut(`manual_payments/${payId}`, {
+      id: payId, userId: authUser.uid, userEmail: authUser.email || authUser.displayEmail || '',
+      userName: String(authUser.email || authUser.displayEmail || 'Gamer').split('@')[0],
+      method: 'Binance Pay (Automated)', referenceNumber: `Order: ${orderId} | PayID: ${payerPayId}`,
+      binancePayer: { name: payer.name || '', binanceId: payer.binanceId || '', accountId: payer.accountId || '' },
+      amount: amountUsdt, currency: 'USDT', slipUrl: '', status: 'VERIFIED',
+      credited: true, creditedAt: now, creditedTo: credit.rtdbKey, creditedLkr: 0, creditedUsdt: amountUsdt,
+      createdAt: now.replace('T', ' ').substring(0, 16),
+    }).catch((e) => console.error('[Binance] Could not save deposit record:', e.message));
+    console.log(`[Binance Auto Credit] ${orderId} → ${authUser.uid} +$${amountUsdt} USDT`);
+
     return res.json({
-      verified: false,
-      autoApproved: false,
-      status: 'PENDING_ADMIN_VERIFICATION',
-      amountUsdt: amount,
+      verified: true,
+      autoApproved: true,
+      status: 'VERIFIED',
+      amountUsdt,
       orderId,
-      payId,
-      message: 'Binance Pay deposit submitted! Pending 1-click Admin Verification.'
+      newBalanceLkr: credit.newBalanceLkr,
+      newBalanceUsdt: credit.newBalanceUsdt,
+      message: `Binance Pay order ${orderId} verified.`,
     });
   } catch (err) {
     console.error('[Binance Verify Error]:', err);
-    res.status(500).json({ error: SERVER_ERROR });
+    res.status(500).json({ error: 'Could not check this Binance order. Please try again.' });
+  } finally {
+    if (lockId) binanceCreditLocks.delete(lockId);
   }
 });
 
@@ -1985,7 +2084,9 @@ function paymentRefKey(method, ref) {
     return rn.length >= 10 ? `ezcash_${rn.slice(0, 20)}` : null;
   }
   if (m.includes('binance')) {
-    const clean = String(ref || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    // "Order: <id> | PayID: <id>" — only the Binance order id identifies the payment.
+    const order = String(ref || '').match(/order[:\s]*([a-z0-9]+)/i);
+    const clean = String(order ? order[1] : ref || '').toLowerCase().replace(/[^a-z0-9]/g, '');
     return clean.length >= 8 ? `binance_${clean.slice(0, 120)}` : null;
   }
   return null;

@@ -139,7 +139,7 @@
       @media (prefers-reduced-motion:reduce){#boot-loader *{animation:none!important}}
     </style>
     <noscript><style>#boot-loader{display:none}</style></noscript>
-    <script>try{if(localStorage.getItem('mads_site_theme')==='dark')document.documentElement.classList.add('boot-dark')}catch(e){}</script>
+    <script>try{var t=new URLSearchParams(location.search).get('theme');if(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('boot-dark')}catch(e){}</script>
     <div id="boot-loader" role="status" aria-label="Loading MADS TOPUP">
       <div class="bl-ring"><img class="bl-logo" src="/mads-logo.jpg" alt="" width="86" height="86" /></div>
       <div class="bl-name">MADS <span>TOPUP</span></div>
