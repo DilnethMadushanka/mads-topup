@@ -194,38 +194,39 @@ app.post('/api/upload-file', rateLimiter(20, 60000), express.json({ limit: '8mb'
 });
 
 // ─────────────────────────────────────────────────────────────────────────
-// Real server-side Admin session authentication.
-//
-// The Admin Dashboard's existing login form (AdminDashboard.jsx) only ever
-// checked credentials client-side against hash constants embedded in the
-// shipped JS bundle — those constants are plainly readable by anyone via
-// devtools, so they can never be a real secret. That check is left exactly
-// as-is (it still gates the dashboard UI so nothing about that flow
-// changes), but it cannot be trusted to gate SERVER endpoints, because
-// nothing stops a request being sent directly to the server without ever
-// loading the dashboard UI at all.
-//
-// This adds a second, genuine check: the same raw credentials the admin
-// types are ALSO verified here, server-side, against the identical hash
-// target constants (mirrored from AdminDashboard.jsx — not a new secret,
-// so nothing new is exposed by this file). On success the server issues a
-// cryptographically random, unguessable session token that is NEVER
-// derivable from the client bundle. Admin-only endpoints then require that
-// real token, closing the "just curl the endpoint" exploit class even
-// though the underlying credential hash itself remains weak (a deeper fix
-// to the credential scheme is a separate, larger change).
+// Server-side admin session authentication.
 // ─────────────────────────────────────────────────────────────────────────
-function _adminHash(s) {
-  return [...s].reduce((a, c) => Math.imul(31, a) + c.charCodeAt(0) | 0, 0x811c9dc5).toString(16);
+// Admin email and password come from the VPS .env (ADMIN_EMAIL, ADMIN_PASSWORD).
+// The old 32-bit hash in this file could be reversed by anyone reading the
+// public repo, so it is gone. Both values are compared as SHA-256 digests in
+// constant time.
+function _sha256(s) {
+  return crypto.createHash('sha256').update(String(s)).digest();
 }
-const ADMIN_VALID_EMAIL_HASH = '6c24b307';
-const ADMIN_VALID_PASSWORD_HASH = '-4d18553';
+function adminCredentialsMatch(email, password) {
+  const wantEmail = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+  const wantPassword = String(process.env.ADMIN_PASSWORD || '');
+  if (!wantEmail || wantPassword.length < 12) return false;
+  const okEmail = crypto.timingSafeEqual(_sha256(email), _sha256(wantEmail));
+  const okPassword = crypto.timingSafeEqual(_sha256(password), _sha256(wantPassword));
+  return okEmail && okPassword;
+}
 // RFC 6238 TOTP Authenticator for Admin (Google Authenticator, Microsoft Authenticator, Authy)
-// The TOTP secret is loaded EXCLUSIVELY from backend environment variables (process.env.ADMIN_TOTP_SECRET).
-// Hardcoded secrets and fallback keys have been completely removed from all source code.
+// The TOTP secret is loaded only from the VPS .env (ADMIN_TOTP_SECRET).
+//
+// TOTP secrets that were once committed to the public repo. They are refused
+// so a server still running with one of them blocks admin login instead of
+// letting anyone who read the git history generate codes.
+const LEAKED_TOTP_SECRET_HASHES = new Set([
+  '23ec37fae35e64ca047160fc64e476c46daff6d486afb07f807975ffc63d62d0',
+]);
 function getAdminTotpSecret() {
   const secret = process.env.ADMIN_TOTP_SECRET;
   if (!secret || typeof secret !== 'string' || !secret.trim()) {
+    return null;
+  }
+  const clean = secret.trim().toUpperCase().replace(/[\s=-]/g, '');
+  if (LEAKED_TOTP_SECRET_HASHES.has(crypto.createHash('sha256').update(clean).digest('hex'))) {
     return null;
   }
   return secret.trim();
@@ -354,21 +355,18 @@ function requireAdminSession(req, res, next) {
 }
 
 app.post('/api/admin/login', rateLimiter(8, 300000), (req, res) => {
-  const cleanEmail = String(req.body?.email || '').trim().toLowerCase().replace(/['"`;=\-]/g, '');
-  const cleanPassword = String(req.body?.password || '').trim();
+  const cleanEmail = String(req.body?.email || '').trim().toLowerCase();
+  const cleanPassword = String(req.body?.password || '');
   const cleanCode = String(req.body?.securityCode || '').trim();
 
-  const validEmail = _adminHash(cleanEmail) === ADMIN_VALID_EMAIL_HASH;
-  const validPassword = _adminHash(cleanPassword) === ADMIN_VALID_PASSWORD_HASH;
-
-  if (!validEmail || !validPassword) {
+  if (!adminCredentialsMatch(cleanEmail, cleanPassword)) {
     return res.status(401).json({ error: 'Invalid admin email or password.' });
   }
 
   const totpResult = verifyAdminTOTP(cleanCode);
   if (!totpResult.valid) {
     if (totpResult.reason === 'NOT_CONFIGURED') {
-      return res.status(500).json({ error: 'Server configuration error: ADMIN_TOTP_SECRET is missing from backend environment variables (.env).' });
+      return res.status(500).json({ error: 'Server configuration error: ADMIN_TOTP_SECRET in .env is missing, or is the old leaked one. Set a new one.' });
     }
     if (totpResult.reason === 'ALREADY_CONSUMED') {
       return res.status(401).json({ error: 'This 2FA code was already used. Please wait for the next 30-second code from your Authenticator app.' });
@@ -1033,7 +1031,7 @@ async function sendOtpEmail(email, otp, displayName) {
 
     // Option 1: Try Zoho Mail SMTP (Primary - High Speed Direct Mailer to any inbox)
     const zohoUser = process.env.ZOHO_EMAIL || process.env.VITE_ZOHO_EMAIL || 'info@trivexit.com';
-    const zohoPass = process.env.ZOHO_PASSWORD || process.env.VITE_ZOHO_PASSWORD || 'jXi8hF56aCYb';
+    const zohoPass = process.env.ZOHO_PASSWORD || '';
 
     if (nodemailer && zohoPass) {
       try {
@@ -1063,8 +1061,7 @@ async function sendOtpEmail(email, otp, displayName) {
     }
 
     // Option 2: Fallback to Resend API
-    const defaultResendKey = Buffer.from('cmVfaEQzS0x0eDhfR24ydFJUdlRwNkh0aVhKa1pOSFpWQ1h6', 'base64').toString('utf8');
-    const resendApiKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY || defaultResendKey;
+    const resendApiKey = process.env.RESEND_API_KEY || '';
     if (resendApiKey && Resend) {
       try {
         const resend = new Resend(resendApiKey);
@@ -1209,8 +1206,7 @@ app.post('/api/send-reseller-approval', rateLimiter(10, 60000), requireAdminSess
     `;
 
     // Option 1: Try Resend API (Primary - Instant REST API)
-    const defaultResendKey = Buffer.from('cmVfaEQzS0x0eDhfR24ydFJUdlRwNkh0aVhKa1pOSFpWQ1h6', 'base64').toString('utf8');
-    const resendApiKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY || defaultResendKey;
+    const resendApiKey = process.env.RESEND_API_KEY || '';
     if (resendApiKey && Resend) {
       try {
         const resend = new Resend(resendApiKey);
@@ -1230,11 +1226,11 @@ app.post('/api/send-reseller-approval', rateLimiter(10, 60000), requireAdminSess
     }
 
     // Option 2: Fallback to Zoho Mail SMTP
-    const zohoUser = 'info@trivexit.com';
-    const zohoPass = 'jXi8hF56aCYb';
+    const zohoUser = process.env.ZOHO_EMAIL || 'info@trivexit.com';
+    const zohoPass = process.env.ZOHO_PASSWORD || '';
     let lastError = null;
 
-    if (nodemailer) {
+    if (nodemailer && zohoPass) {
       try {
         const mailTransporter = nodemailer.createTransport({
           host: 'smtppro.zoho.com',

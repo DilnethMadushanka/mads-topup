@@ -170,8 +170,8 @@ export const lookupFreePlayerIgn = async (gameId = '', playerId = '', zoneId = '
 
   // 4. RapidAPI Lookup for All Games
   const rapidApiKey = (typeof process !== 'undefined' && process.env?.VITE_RAPIDAPI_KEY) || 
-                      (typeof import.meta !== 'undefined' && import.meta.env?.VITE_RAPIDAPI_KEY) || 
-                      '59700d286cmsh2ce0c96f798ab10p15ad77jsnb92bdbb87d29';
+                      (typeof import.meta !== 'undefined' && import.meta.env?.VITE_RAPIDAPI_KEY) ||
+                      '';
 
   let apiPath = '';
   if (gKey.includes('freefire') || gKey.includes('ff')) {

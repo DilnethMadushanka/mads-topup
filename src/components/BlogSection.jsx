@@ -1,104 +1,71 @@
 import React from 'react';
 import { BLOG_POSTS } from '../data/games';
-import { BookOpen, Calendar, User, ArrowRight } from 'lucide-react';
+import { BookOpen, Calendar, ArrowRight, ArrowUpRight, Clock } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+
+// Reading time from the summary length, so each card shows a small hint.
+const readMinutes = (post) => Math.max(3, Math.round(String(post.summary || '').split(/\s+/).length / 6));
 
 export const BlogSection = () => {
   const { openBlogPage } = useApp();
 
   return (
-    <section id="blog-section" className="py-24 bg-[#F8FAFF] border-t border-slate-200/80">
+    <section id="blog-section" className="blg-section">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Section Header */}
-        <div className="section-header text-center space-y-3">
-          <span className="section-badge">
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>LATEST GAMING ARTICLES</span>
-          </span>
-          <h2 className="midas-heading text-4xl sm:text-5xl font-extrabold text-slate-900 font-heading tracking-tight uppercase">
-            News & <span className="text-[#1677ff]">Guides</span>
-          </h2>
-          <p className="text-slate-500 text-sm sm:text-base font-medium max-w-lg mx-auto leading-relaxed">
-            Stay updated with the latest gaming top-up guides, Garena Shell tips, and esports news
-          </p>
+
+        <div className="blg-head">
+          <div className="blg-head-text">
+            <span className="blg-eyebrow">
+              <BookOpen className="w-3.5 h-3.5" />
+              Latest gaming articles
+            </span>
+            <h2 className="blg-title">News &amp; <span>Guides</span></h2>
+            <p className="blg-sub">Top-up guides, Garena Shell tips and esports news.</p>
+          </div>
+          <button type="button" onClick={openBlogPage} className="blg-all">
+            <span>View all</span>
+            <span className="blg-all-ico"><ArrowRight /></span>
+          </button>
         </div>
 
-        {/* 2 Blog Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {BLOG_POSTS.map((post) => (
-            <div 
+        <div className="blg-grid">
+          {BLOG_POSTS.map((post, i) => (
+            <article
               key={post.id}
               onClick={openBlogPage}
-              className="mads-card flex flex-col justify-between group cursor-pointer"
+              className={`blg-card ${i % 2 ? 'is-teal' : ''}`}
             >
-              {/* Image Container */}
-              <div className="relative h-60 overflow-hidden bg-slate-950">
-                <img 
-                  src={post.image} 
-                  alt={post.title}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-90 group-hover:opacity-100"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent"></div>
-
-                <div className="absolute top-4 left-4">
-                  <span className="px-3 py-1 rounded-full bg-[#3B2896] text-white text-[10px] font-black uppercase tracking-wider shadow">
-                    {post.tag}
-                  </span>
-                </div>
+              <div className="blg-media">
+                <img src={post.image} alt={post.title} loading="lazy" />
+                <span className="blg-tag">{post.tag}</span>
               </div>
 
-              {/* Content */}
-              <div className="p-8 sm:p-9 space-y-4 flex-1 flex flex-col justify-between relative z-10">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-4 text-xs text-slate-500 font-medium">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5 text-[#1677ff]" />
-                      {post.date}
-                    </span>
-                    <span>•</span>
-                    <span className="flex items-center gap-1">
-                      <User className="w-3.5 h-3.5 text-[#1677ff]" />
-                      {post.author}
-                    </span>
-                  </div>
-
-                  <h3 className="text-xl font-extrabold text-slate-900 font-heading leading-snug tracking-tight group-hover:text-[#1677ff] transition-colors">
-                    {post.title}
-                  </h3>
-
-                  <p className="text-[13px] text-slate-500 leading-relaxed font-medium">
-                    {post.summary}
-                  </p>
+              <div className="blg-body">
+                <div className="blg-meta">
+                  <span><Calendar /> {post.date}</span>
+                  <span className="blg-dot" />
+                  <span><Clock /> {readMinutes(post)} min read</span>
                 </div>
+                <h3 className="blg-card-title">{post.title}</h3>
+                <p className="blg-summary">{post.summary}</p>
 
-                <div className="pt-4 border-t border-slate-200">
+                <div className="blg-foot">
+                  <span className="blg-author">
+                    <span className="blg-avatar">{String(post.author || 'M').charAt(0)}</span>
+                    {post.author}
+                  </span>
                   <button
+                    type="button"
+                    aria-label={`Read ${post.title}`}
                     onClick={(e) => { e.stopPropagation(); openBlogPage(); }}
-                    className="text-xs font-bold text-[#1677ff] group-hover:text-[#0b5ed7] flex items-center gap-2 cursor-pointer transition-colors"
+                    className="blg-go"
                   >
-                    <span>Read Article</span>
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    <ArrowUpRight />
                   </button>
                 </div>
               </div>
-
-              {/* Animated Bottom Cyan Glow Line */}
-              <div className="mads-card-glow-bar"></div>
-            </div>
+            </article>
           ))}
-        </div>
-
-        {/* View All CTA */}
-        <div className="text-center mt-10">
-          <button
-            onClick={openBlogPage}
-            className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#1677ff] hover:bg-[#0b5ed7] text-white font-black text-sm rounded-full transition-all shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 cursor-pointer group"
-          >
-            <BookOpen className="w-4 h-4" />
-            <span>View All Articles</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </button>
         </div>
 
       </div>
