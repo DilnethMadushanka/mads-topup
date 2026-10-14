@@ -4,7 +4,7 @@ import { filterUserOrders } from '../utils/ownership';
 import {
   Gamepad2, Gift, BookOpen, Download, User, Wallet, ChevronDown,
   Headset, Menu, X, LogIn, UserPlus, Home, ShoppingBag, Smartphone,
-  Crown, ChevronRight, ArrowRight, Star, Zap, LogOut } from 'lucide-react';
+  Crown, ChevronRight, ArrowRight, Star, Zap, LogOut, Plus } from 'lucide-react';
 
 export const Navbar = () => {
   const {
@@ -115,6 +115,37 @@ export const Navbar = () => {
     { label: 'Download App', icon: Download, action: () => setIsDownloadAppModalOpen(true) },
   ];
 
+  const fmtLkr = (v, compact) => (Number(v) || 0).toLocaleString('en-US', compact
+    ? { maximumFractionDigits: 0 }
+    : { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmtUsdt = (v) => (Number(v) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  // LKR + USDT balances in one pill; each half opens its top-up tab.
+  const walletChip = (compact) => (
+    <div className={`nw${compact ? ' is-compact' : ''}`}>
+      <button type="button" onClick={() => handleWalletClick('ezcash')} className="nw-seg" title="LKR wallet · Top up">
+        <span className="nw-ico is-lkr"><Wallet /></span>
+        <span className="nw-txt">
+          <span className="nw-label">LKR</span>
+          <span className="nw-amt"><span className="nw-cur">Rs</span>{fmtLkr(userProfile.walletBalance, compact)}</span>
+        </span>
+      </button>
+      <span className="nw-div" />
+      <button type="button" onClick={() => handleWalletClick('binance')} className="nw-seg" title="USDT wallet · Top up">
+        <span className="nw-ico is-usdt">₮</span>
+        <span className="nw-txt">
+          <span className="nw-label">USDT</span>
+          <span className="nw-amt"><span className="nw-cur">$</span>{fmtUsdt(userProfile.walletUsdt)}</span>
+        </span>
+      </button>
+      {!compact && (
+        <button type="button" onClick={() => handleWalletClick('ezcash')} className="nw-add" aria-label="Top up wallet" title="Top up wallet">
+          <Plus />
+        </button>
+      )}
+    </div>
+  );
+
   const linkCls = (active) =>
     `relative flex items-center gap-2 h-10 px-3 text-[15px] font-semibold whitespace-nowrap cursor-pointer transition-colors duration-200 after:absolute after:left-3 after:right-3 after:-bottom-1 after:h-[3px] after:rounded-full after:bg-[#1677ff] dark:after:bg-[#8dc2ff]! after:transition-transform after:duration-300 after:origin-center ${
       active
@@ -137,7 +168,8 @@ export const Navbar = () => {
             <div className="w-10 h-10 rounded-full bg-slate-950 ring-2 ring-white shadow-md dark:ring-[#2b86ff]! dark:shadow-[0_0_18px_rgba(43,134,255,0.55)]! flex items-center justify-center overflow-hidden group-hover:scale-105 transition-transform duration-300">
               <img src="/mads-logo.jpg" alt="MADS TOPUP Logo" className="w-full h-full object-contain" />
             </div>
-            <div className="flex flex-col leading-none">
+            {/* On small phones the wallet pill needs the room, so only the logo mark shows when signed in. */}
+            <div className={`flex flex-col leading-none ${isUserLoggedIn ? 'max-[459px]:hidden' : ''}`}>
               <div className="flex items-center gap-1 font-heading font-extrabold text-[19px] tracking-tight text-slate-950 dark:text-white!">
                 <span>MADS</span>
                 <span className="text-[#1677ff] dark:text-[#3d95ff]!">TOPUP</span>
@@ -178,28 +210,7 @@ export const Navbar = () => {
           <div className="hidden lg:flex items-center gap-2 shrink-0">
             {isUserLoggedIn ? (
               <>
-                {/* Wallets — one segmented control */}
-                <div className="flex items-stretch h-11 rounded-full overflow-hidden border border-slate-200 bg-white shadow-sm dark:border-white/10! dark:bg-white/[0.05]! dark:shadow-none!">
-                  <button onClick={() => handleWalletClick('ezcash')}
-                    className="group flex items-center gap-2 pl-3 pr-3.5 hover:bg-brand-50 dark:hover:bg-white/10! cursor-pointer transition-colors">
-                    <span className="w-6 h-6 rounded-full bg-[#1677ff] text-white flex items-center justify-center shrink-0">
-                      <Wallet className="w-3 h-3" />
-                    </span>
-                    <span className="text-left leading-none">
-                      <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/40!">LKR</span>
-                      <span className="block text-[13px] font-extrabold text-slate-900 dark:text-white! tabular-nums mt-0.5">{(userProfile.walletBalance || 0).toFixed(2)}</span>
-                    </span>
-                  </button>
-                  <span className="w-px bg-slate-200 dark:bg-white/10! my-2" />
-                  <button onClick={() => handleWalletClick('binance')}
-                    className="group flex items-center gap-2 pl-3 pr-3.5 hover:bg-brand-50 dark:hover:bg-white/10! cursor-pointer transition-colors">
-                    <span className="w-6 h-6 rounded-full bg-emerald-600 text-white font-extrabold text-[10px] italic flex items-center justify-center shrink-0">B</span>
-                    <span className="text-left leading-none">
-                      <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/40!">USDT</span>
-                      <span className="block text-[13px] font-extrabold text-slate-900 dark:text-white! tabular-nums mt-0.5">{(userProfile.walletUsdt || 0).toFixed(2)}</span>
-                    </span>
-                  </button>
-                </div>
+                {walletChip(false)}
 
                 {/* Profile */}
                 <button onClick={openUserProfilePage}
@@ -232,29 +243,7 @@ export const Navbar = () => {
 
           {/* ── MOBILE RIGHT ── */}
           <div className="lg:hidden flex items-center gap-1.5">
-            {isUserLoggedIn && (
-              <div className="flex items-center h-10 rounded-full border border-slate-200 bg-white overflow-hidden shadow-sm dark:border-white/10! dark:bg-white/[0.05]! dark:shadow-none!">
-                <button onClick={() => handleWalletClick('ezcash')}
-                  className="flex items-center gap-1.5 pl-2 pr-2.5 h-full active:bg-brand-50 dark:active:bg-white/10! cursor-pointer">
-                  <span className="w-5 h-5 rounded-full bg-[#1677ff] text-white flex items-center justify-center shrink-0">
-                    <Wallet className="w-2.5 h-2.5" />
-                  </span>
-                  <span className="text-left leading-none">
-                    <span className="block text-[8px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/40!">LKR</span>
-                    <span className="block text-[12px] font-extrabold text-slate-900 dark:text-white! tabular-nums">{(userProfile.walletBalance || 0).toFixed(0)}</span>
-                  </span>
-                </button>
-                <span className="w-px h-5 bg-slate-200 dark:bg-white/10!" />
-                <button onClick={() => handleWalletClick('binance')}
-                  className="flex items-center gap-1.5 pl-2 pr-2.5 h-full active:bg-brand-50 dark:active:bg-white/10! cursor-pointer">
-                  <span className="w-5 h-5 rounded-full bg-emerald-600 text-white font-extrabold text-[9px] italic flex items-center justify-center shrink-0">B</span>
-                  <span className="text-left leading-none">
-                    <span className="block text-[8px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/40!">USDT</span>
-                    <span className="block text-[12px] font-extrabold text-slate-900 dark:text-white! tabular-nums">{(userProfile.walletUsdt || 0).toFixed(2)}</span>
-                  </span>
-                </button>
-              </div>
-            )}
+            {isUserLoggedIn && walletChip(true)}
 
             <button
               onClick={() => setIsMobileMenuOpen(true)}
