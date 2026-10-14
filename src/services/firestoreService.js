@@ -1142,60 +1142,23 @@ export const saveCustomGamePricesToFirestore = async (customPricesMap) => {
   const { ok, data } = await postServerApi('/api/admin/custom-prices', { prices: customPricesMap });
   if (!ok) throw new Error(data?.error || 'Prices were not saved');
 
-  if (db) {
-    try {
-      const settingsDocRef = doc(db, 'settings', 'customPrices');
-      await setDoc(settingsDocRef, {
-        prices: customPricesMap,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
-    } catch (err) {
-      console.warn('Firestore custom prices save note:', err);
-    }
-  }
-
   return true;
 };
 
-/**
- * Subscribe to realtime custom game prices from Firestore & Realtime Database
- */
+// Prices come only from the Realtime Database settings/customPrices, the same
+// record the server checks orders against. A second Firestore copy used to be
+// read too; whenever it was stale or failed to save, it could overwrite the
+// real prices on screen and orders were then rejected as a price mismatch.
 export const subscribeCustomGamePricesFromFirestore = (callback) => {
-  let unsubRtdb = null;
-  let unsubFirestore = null;
-
-  if (rtdb) {
-    try {
-      const pricesRef = dbRef(rtdb, 'settings/customPrices');
-      unsubRtdb = rtdbOnValue(pricesRef, (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.val();
-          if (data) callback(data);
-        }
-      });
-    } catch (e) {
-      console.warn('RTDB custom prices listener note:', e);
-    }
+  if (!rtdb) return () => {};
+  try {
+    return rtdbOnValue(dbRef(rtdb, 'settings/customPrices'), (snapshot) => {
+      if (snapshot.exists()) callback(snapshot.val() || {});
+    });
+  } catch (e) {
+    console.warn('RTDB custom prices listener note:', e);
+    return () => {};
   }
-
-  if (db) {
-    try {
-      const docRef = doc(db, 'settings', 'customPrices');
-      unsubFirestore = onSnapshot(docRef, (docSnap) => {
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (data && data.prices) callback(data.prices);
-        }
-      });
-    } catch (err) {
-      console.warn('Firestore custom prices listener note:', err);
-    }
-  }
-
-  return () => {
-    if (typeof unsubRtdb === 'function') unsubRtdb();
-    if (typeof unsubFirestore === 'function') unsubFirestore();
-  };
 };
 
 /**

@@ -239,6 +239,25 @@ function findGameInCatalog(gameArg) {
   return GAMES_DATA[0];
 }
 
+// Admin price changes (settings/customPrices, keyed by package id) apply to
+// bot orders too, the same as on the website and in /api/moogold.
+let botCustomPricesCache = { at: 0, map: {} };
+async function withCustomPrices(game) {
+  if (Date.now() - botCustomPricesCache.at > 30000) {
+    try {
+      const map = (await rtdbGet('settings/customPrices')) || {};
+      botCustomPricesCache = { at: Date.now(), map: typeof map === 'object' ? map : {} };
+    } catch (e) {
+      console.warn('[Telegram Bot] Custom prices read warning:', e.message);
+    }
+  }
+  const overrides = botCustomPricesCache.map;
+  return {
+    ...game,
+    packages: (game.packages || []).map(p => (Number(overrides[p.id]) > 0 ? { ...p, priceLkr: Number(overrides[p.id]) } : p))
+  };
+}
+
 /**
  * Match package in selected game & calculate wholesale price (5% reseller discount)
  */
@@ -579,14 +598,14 @@ Support for ALL games on website: Mobile Legends, Free Fire, PUBG Mobile, Blood 
       return safeReply(ctx, helpText);
     };
 
-    const handlePackages = (ctx) => {
+    const handlePackages = async (ctx) => {
       try {
         const text = ctx.message?.text || ctx.msg?.text || '';
         const parts = text.split(/\s+/).filter(Boolean);
         const gameArg = parts[1]?.toLowerCase();
 
         if (gameArg) {
-          const matchedGame = findGameInCatalog(gameArg);
+          const matchedGame = await withCustomPrices(findGameInCatalog(gameArg));
           let replyText = `📦 ${matchedGame.name.toUpperCase()} PACKAGES & RESELLER WHOLESALE PRICES (5% OFF):\n\n`;
 
           matchedGame.packages.forEach((pkg, index) => {
@@ -1018,7 +1037,7 @@ Examples:
         processingLocks.add(lockKey);
 
         try {
-          const pkgInfo = findPackageInGame(matchedGame, pkgArg);
+          const pkgInfo = findPackageInGame(await withCustomPrices(matchedGame), pkgArg);
           const orderId = 'ORD-TG-' + Math.floor(100000 + Math.random() * 900000);
 
           // Bug 4 fix: apply 5% wholesale discount — resellers pay wholesale, not retail
