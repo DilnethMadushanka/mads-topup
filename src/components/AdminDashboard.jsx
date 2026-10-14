@@ -11,7 +11,7 @@ import {
   Smartphone, Copy, Crown, Mail, Building2, Sparkles, ArrowRight, Loader2,
   LayoutDashboard, PanelLeftClose, PanelLeftOpen, Moon, Sun, Bell, LogOut,
   ArrowUp, ArrowDown, ChevronsUpDown, ShoppingCart,
-  Gamepad2, Command, Inbox
+  Gamepad2, Command, Inbox, LayoutGrid
 } from 'lucide-react';
 
 /* ============================================================
@@ -365,6 +365,7 @@ const NAV_GROUPS = [
   { label: 'Catalog & Marketing', items: [
     { id: 'games', label: 'Game Prices', icon: Gamepad2 },
     { id: 'popupAd', label: 'Popup Banner', icon: Sparkles },
+    { id: 'gameStrip', label: 'Games Bar', icon: LayoutGrid },
     { id: 'announcement', label: 'Ticker Notice', icon: Megaphone }
   ]},
   { label: 'System', items: [
@@ -385,6 +386,7 @@ const TAB_TITLES = {
   support: ['Support Desk', 'Live customer support tickets & chat'],
   games: ['Game Catalog & Live Price Manager', 'Edit retail prices — publish instantly to web & Telegram bot'],
   popupAd: ['Popup Banner Ad Manager', 'Configure the promotional popup shown to visitors'],
+  gameStrip: ['Discover Games Bar', 'Choose the game icons shown in the scrolling bar on the home page'],
   announcement: ['Ticker Notice Banner', 'Update the marquee text shown across the website header'],
   moongold: ['Moongold Supplier Gateway', 'Configure live API credentials and automated dispatch'],
   r2: ['Cloudflare R2 Object Storage', 'Configure the bucket endpoint used for receipts & assets']
@@ -399,6 +401,7 @@ export const AdminDashboard = () => {
     setUserExactBalance, manualPayments, approveManualPayment, rejectManualPayment, addManualPayment,
     supportTickets, sendTicketMessage, updateTicketStatus, updateTicketPriority, resellerApplications,
     updateResellerApplicationStatus, gamesCatalog, updateGamePrices, popupAdConfig, updatePopupAdConfig,
+    gameStripConfig, updateGameStripConfig,
     isAdminAuthenticated, setIsAdminAuthenticated
   } = useApp();
 
@@ -440,6 +443,13 @@ export const AdminDashboard = () => {
   const [adShowOncePerSession, setAdShowOncePerSession] = useState(popupAdConfig?.showOncePerSession ?? false);
   const [isSavingAd, setIsSavingAd] = useState(false);
   const [isUploadingAdImg, setIsUploadingAdImg] = useState(false);
+
+  const [stripEnabled, setStripEnabled] = useState(gameStripConfig?.enabled ?? true);
+  const [stripTitle, setStripTitle] = useState(gameStripConfig?.title || 'Discover More Games');
+  const [stripItems, setStripItems] = useState(gameStripConfig?.items || []);
+  const [isSavingStrip, setIsSavingStrip] = useState(false);
+  const [uploadingStripIdx, setUploadingStripIdx] = useState(null);
+  const [stripAddGameId, setStripAddGameId] = useState('');
 
   const [supportSearch, setSupportSearch] = useState('');
   const [supportStatusFilter, setSupportStatusFilter] = useState('ALL');
@@ -561,6 +571,14 @@ export const AdminDashboard = () => {
       setAdShowOncePerSession(popupAdConfig.showOncePerSession ?? false);
     }
   }, [popupAdConfig]);
+
+  useEffect(() => {
+    if (gameStripConfig) {
+      setStripEnabled(gameStripConfig.enabled ?? true);
+      setStripTitle(gameStripConfig.title || 'Discover More Games');
+      setStripItems(gameStripConfig.items || []);
+    }
+  }, [gameStripConfig]);
 
   // On every open: ask the server whether the HttpOnly admin session cookie
   // is still valid. The page itself never sees the token.
@@ -986,6 +1004,60 @@ export const AdminDashboard = () => {
     setIsSavingAd(false);
     if (success) showToast('🎉 POPUP BANNER AD UPDATED & PUBLISHED LIVE TO WEBSITE!');
     else showToast('Failed to save Popup Ad configuration.', 'error');
+  };
+
+  // ── Games Bar (home page "Discover more games" strip) ──
+  const STRIP_PAGE_LINKS = [
+    { value: '#catalog', label: 'Open Game Catalog' },
+    { value: '#wallet', label: 'Open Deposit Wallet' },
+    { value: '#referral', label: 'Open Referral Page' },
+    { value: '#reseller', label: 'Open Reseller Program' },
+    { value: '#support', label: 'Open Live Support Chat' },
+  ];
+  const stripGameItem = (game) => ({ name: game.name, imageUrl: game.logo || game.banner || '', link: `#game:${game.id}` });
+  const updateStripItem = (idx, patch) => setStripItems(prev => prev.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
+  const moveStripItem = (idx, dir) => setStripItems(prev => {
+    const next = [...prev];
+    const j = idx + dir;
+    if (j < 0 || j >= next.length) return prev;
+    [next[idx], next[j]] = [next[j], next[idx]];
+    return next;
+  });
+
+  const handleStripImageUpload = async (idx, e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { showToast('Please select a valid image file (PNG, JPG, WEBP)!', 'error'); return; }
+    setUploadingStripIdx(idx);
+    try {
+      let uploaded = null;
+      try { uploaded = await uploadToR2Storage(file, 'game_strip'); } catch (r2Err) { uploaded = null; }
+      if (uploaded?.success && uploaded.url) {
+        updateStripItem(idx, { imageUrl: uploaded.url });
+        showToast('Icon uploaded ☁️');
+      } else {
+        const dataUrl = await compressImageToDataUrl(file, 200);
+        updateStripItem(idx, { imageUrl: dataUrl });
+        showToast('Storage upload unavailable — applied a small compressed copy instead.');
+      }
+    } catch (err) {
+      showToast(err?.message || 'Icon upload failed.', 'error');
+    } finally {
+      setUploadingStripIdx(null);
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  const handleSaveGameStrip = async () => {
+    const items = stripItems.filter(it => String(it.imageUrl || '').trim());
+    if (items.length !== stripItems.length) { showToast('Every game in the bar needs an icon image.', 'error'); return; }
+    if (items.some(it => !/^(#|\/(?![\/\\])|https:\/\/)/i.test(String(it.link || '')))) { showToast('Each link must start with #, / or https://', 'error'); return; }
+    if (items.length > 40) { showToast('Max 40 games in the bar.', 'error'); return; }
+    setIsSavingStrip(true);
+    const ok = await updateGameStripConfig({ enabled: stripEnabled, title: stripTitle, items });
+    setIsSavingStrip(false);
+    if (ok) showToast('🎮 GAMES BAR UPDATED & PUBLISHED LIVE!');
+    else showToast('Failed to publish the games bar. Check your admin session and try again.', 'error');
   };
 
   const handleSaveMoongoldSettings = () => {
@@ -2207,6 +2279,75 @@ export const AdminDashboard = () => {
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {adminTab === 'gameStrip' && (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-3xl border-2 p-6" style={cardStyle}>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black font-mono border ${stripEnabled ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'border'}`} style={!stripEnabled ? { borderColor: 'var(--adm-border)', ...mutedStyle } : undefined}>{stripEnabled ? 'LIVE ON WEB' : 'HIDDEN'}</span>
+                  <span className="text-xs" style={mutedStyle}>{stripItems.length ? `${stripItems.length} game${stripItems.length === 1 ? '' : 's'} in the bar` : 'No games picked — the bar shows every catalog game'}</span>
+                </div>
+                <button onClick={handleSaveGameStrip} disabled={isSavingStrip} className="px-6 py-3 bg-[#cc040a] hover:bg-red-700 disabled:opacity-60 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-red-600/30 cursor-pointer flex items-center gap-2 shrink-0">
+                  {isSavingStrip ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}<span>Save & Publish Live</span>
+                </button>
+              </div>
+
+              <div className="rounded-3xl border-2 p-6 space-y-5" style={cardStyle}>
+                <ToggleSwitch checked={stripEnabled} onChange={setStripEnabled} label="Show Games Bar" description="Scrolling row of game icons under All Games on the home page" />
+                <div><label className="text-xs font-bold block mb-1" style={mutedStyle}>Bar Title</label><input type="text" maxLength={80} placeholder="e.g. Discover More Games" value={stripTitle} onChange={(e) => setStripTitle(e.target.value)} className={fieldCls} style={fieldStyle} /></div>
+
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <select value={stripAddGameId} onChange={(e) => setStripAddGameId(e.target.value)} className={`${fieldCls} sm:flex-1`} style={fieldStyle}>
+                    <option value="">Pick a game to add…</option>
+                    {(gamesCatalog || []).map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                  </select>
+                  <button type="button" onClick={() => { const g = (gamesCatalog || []).find(x => x.id === stripAddGameId); if (g) { setStripItems(prev => [...prev, stripGameItem(g)]); setStripAddGameId(''); } }} disabled={!stripAddGameId} className="px-4 py-2.5 rounded-xl border-2 text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50" style={{ borderColor: 'var(--adm-border)', color: 'var(--adm-text)' }}><Plus className="w-4 h-4" />Add Game</button>
+                  <button type="button" onClick={() => setStripItems(prev => [...prev, { name: '', imageUrl: '', link: '#catalog' }])} className="px-4 py-2.5 rounded-xl border-2 text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer" style={{ borderColor: 'var(--adm-border)', color: 'var(--adm-text)' }}><UploadCloud className="w-4 h-4" />Custom Icon</button>
+                  <button type="button" onClick={() => setStripItems((gamesCatalog || []).map(stripGameItem))} className="px-4 py-2.5 rounded-xl border-2 text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer" style={{ borderColor: 'var(--adm-border)', ...mutedStyle }}><RefreshCw className="w-4 h-4" />Load All Games</button>
+                </div>
+
+                {stripItems.length === 0 ? (
+                  <div className="rounded-2xl border-2 border-dashed p-8 text-center text-xs" style={{ borderColor: 'var(--adm-border)', ...mutedStyle }}>
+                    Nothing picked yet, so the website shows every game in the catalog. Add games above to choose your own list and order.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {stripItems.map((it, idx) => {
+                      const link = String(it.link || '');
+                      const known = link.startsWith('#game:') || STRIP_PAGE_LINKS.some(o => o.value === link);
+                      return (
+                        <div key={idx} className="rounded-2xl border p-3 sm:p-4 flex flex-col sm:flex-row gap-3 sm:items-center" style={{ borderColor: 'var(--adm-border)', background: 'var(--adm-surface-2)' }}>
+                          <div className="flex items-center gap-3 shrink-0">
+                            <div className="flex flex-col">
+                              <button type="button" onClick={() => moveStripItem(idx, -1)} disabled={idx === 0} className="p-1 rounded cursor-pointer disabled:opacity-30" style={mutedStyle} aria-label="Move up"><ArrowUp className="w-3.5 h-3.5" /></button>
+                              <button type="button" onClick={() => moveStripItem(idx, 1)} disabled={idx === stripItems.length - 1} className="p-1 rounded cursor-pointer disabled:opacity-30" style={mutedStyle} aria-label="Move down"><ArrowDown className="w-3.5 h-3.5" /></button>
+                            </div>
+                            <label className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-dashed flex items-center justify-center cursor-pointer shrink-0" style={{ borderColor: 'var(--adm-border)' }} title="Upload icon">
+                              {uploadingStripIdx === idx ? <Loader2 className="w-5 h-5 animate-spin text-red-500" /> : it.imageUrl ? <img src={it.imageUrl} alt="" className="w-full h-full object-cover" /> : <UploadCloud className="w-5 h-5 text-red-500" />}
+                              <input type="file" accept="image/*" className="hidden" disabled={uploadingStripIdx !== null} onChange={(e) => handleStripImageUpload(idx, e)} />
+                            </label>
+                          </div>
+                          <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2 min-w-0">
+                            <input type="text" maxLength={60} placeholder="Name (shown on hover)" value={it.name || ''} onChange={(e) => updateStripItem(idx, { name: e.target.value })} className={fieldCls} style={fieldStyle} />
+                            <input type="text" placeholder="Icon URL (https://…) or upload" value={it.imageUrl || ''} onChange={(e) => updateStripItem(idx, { imageUrl: e.target.value })} className={`${fieldCls} font-mono`} style={fieldStyle} />
+                            <div className="flex flex-col gap-2">
+                              <select value={known ? link : '__custom'} onChange={(e) => updateStripItem(idx, { link: e.target.value === '__custom' ? 'https://' : e.target.value })} className={fieldCls} style={fieldStyle}>
+                                {(gamesCatalog || []).map(g => <option key={g.id} value={`#game:${g.id}`}>Top up: {g.name}</option>)}
+                                {STRIP_PAGE_LINKS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                <option value="__custom">Custom link…</option>
+                              </select>
+                              {!known && <input type="text" placeholder="https://…" value={link} onChange={(e) => updateStripItem(idx, { link: e.target.value })} className={`${fieldCls} font-mono`} style={fieldStyle} />}
+                            </div>
+                          </div>
+                          <button type="button" onClick={() => setStripItems(prev => prev.filter((_, i) => i !== idx))} className="self-end sm:self-center p-2.5 rounded-xl border cursor-pointer text-red-400 hover:bg-red-500/10" style={{ borderColor: 'var(--adm-border)' }} aria-label="Remove"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           )}

@@ -134,7 +134,7 @@ function rateLimiter(maxRequests = 30, windowMs = 60000) {
 // the VITE_-prefixed client-bundle equivalents, which would expose the
 // bucket's write credentials to anyone reading the JS bundle).
 const R2_UPLOAD_MAX_BYTES = 5 * 1024 * 1024; // 5MB — matches the client's own limit
-const R2_ALLOWED_FOLDERS = new Set(['receipts', 'support-attachments', 'popup_ads']);
+const R2_ALLOWED_FOLDERS = new Set(['receipts', 'support-attachments', 'popup_ads', 'game_strip']);
 
 let r2Client = null;
 if (process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY && process.env.R2_ENDPOINT) {
@@ -477,6 +477,36 @@ app.post('/api/admin/popup-ad', requireAdminSession, async (req, res) => {
   } catch (e) {
     console.error('[Admin Popup Ad Error]:', e.message);
     res.status(500).json({ error: 'Could not publish the popup.' });
+  }
+});
+
+// Admin: publish the home page "Discover more games" icon bar.
+// Same reason as the popup: browsers can't write siteConfig.
+app.post('/api/admin/game-strip', requireAdminSession, async (req, res) => {
+  try {
+    const c = req.body?.config || {};
+    const rawItems = Array.isArray(c.items) ? c.items : [];
+    if (rawItems.length > 40) return res.status(400).json({ error: 'Too many games in the bar (max 40).' });
+    const items = [];
+    for (const it of rawItems) {
+      const link = String(it?.link || '#catalog').slice(0, 500);
+      const image = String(it?.imageUrl || '');
+      if (!image) continue;
+      if (!/^(#|\/(?![\/\\])|https:\/\/)/i.test(link)) return res.status(400).json({ error: 'Each link must start with #, / or https://' });
+      if (!/^(https:\/\/|\/|data:image\/)/i.test(image)) return res.status(400).json({ error: 'Each icon must be an https:// link.' });
+      items.push({ name: String(it?.name || '').slice(0, 60), imageUrl: image, link });
+    }
+    const clean = {
+      enabled: Boolean(c.enabled),
+      title: String(c.title || '').slice(0, 80),
+      items,
+    };
+    if (JSON.stringify(clean).length > 900 * 1024) return res.status(400).json({ error: 'Games bar is too large. Upload the icons so they are stored as links.' });
+    await rtdbPut('siteConfig/gameStrip', clean);
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[Admin Game Strip Error]:', e.message);
+    res.status(500).json({ error: 'Could not publish the games bar.' });
   }
 });
 

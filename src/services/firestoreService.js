@@ -1366,6 +1366,74 @@ export const subscribePopupAdConfigFromFirestore = (callback) => {
   };
 };
 
+/**
+ * "Discover more games" icon bar on the home page.
+ * Admin edits it in the "Games Bar" tab; the server publishes it to siteConfig/gameStrip.
+ * An empty item list means "show every game in the catalog".
+ */
+export const DEFAULT_GAME_STRIP_CONFIG = {
+  enabled: true,
+  title: 'Discover More Games',
+  items: [],
+};
+
+export const GAME_STRIP_MAX_ITEMS = 40;
+
+// RTDB hands arrays back as objects when keys have gaps; always give the UI a clean array.
+export const normalizeGameStripConfig = (raw) => {
+  const c = raw && typeof raw === 'object' ? raw : {};
+  const list = Array.isArray(c.items) ? c.items : (c.items && typeof c.items === 'object' ? Object.values(c.items) : []);
+  return {
+    enabled: c.enabled === undefined ? true : Boolean(c.enabled),
+    title: String(c.title ?? DEFAULT_GAME_STRIP_CONFIG.title).slice(0, 80),
+    items: list
+      .filter((it) => it && typeof it === 'object' && it.imageUrl)
+      .slice(0, GAME_STRIP_MAX_ITEMS)
+      .map((it) => ({
+        name: String(it.name || '').slice(0, 60),
+        imageUrl: String(it.imageUrl || ''),
+        link: String(it.link || '#catalog').slice(0, 500),
+      })),
+  };
+};
+
+export const saveGameStripConfig = async (config) => {
+  const clean = normalizeGameStripConfig(config);
+  if (JSON.stringify(clean).length > 900 * 1024) {
+    console.warn('[GameStrip] Config too large to publish. Upload the icons so they are stored as links.');
+    return false;
+  }
+  const { ok, data } = await postServerApi('/api/admin/game-strip', { config: clean });
+  if (!ok) {
+    console.warn('[GameStrip] Publish failed:', data?.error);
+    return false;
+  }
+  try { localStorage.setItem('mads_game_strip_config', JSON.stringify(clean)); } catch (e) {}
+  return true;
+};
+
+export const subscribeGameStripConfig = (callback) => {
+  if (typeof callback !== 'function') return () => {};
+  let cached = null;
+  try {
+    const item = localStorage.getItem('mads_game_strip_config');
+    if (item) cached = JSON.parse(item);
+  } catch (e) {}
+  callback(normalizeGameStripConfig(cached || DEFAULT_GAME_STRIP_CONFIG));
+
+  if (!rtdb) return () => {};
+  try {
+    return rtdbOnValue(dbRef(rtdb, 'siteConfig/gameStrip'), (snap) => {
+      if (!snap.exists()) return;
+      const data = normalizeGameStripConfig(snap.val());
+      try { localStorage.setItem('mads_game_strip_config', JSON.stringify(data)); } catch (e) {}
+      callback(data);
+    });
+  } catch (e) {
+    return () => {};
+  }
+};
+
 /* ================================================================
    SUPPORT TICKET SYSTEM — Firestore + RTDB dual-sync
    ================================================================ */

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { GAMES_DATA } from '../data/games';
+import { GameStripBar } from './GameStripBar';
 import {
   Zap, ArrowRight, ChevronLeft, ChevronRight, Wallet, Gift, Headphones,
   Search, Flame, ShieldCheck, Clock, Fingerprint, LayoutGrid
@@ -218,6 +219,11 @@ export const HeroSection = () => {
               ))}
             </div>
           )}
+        </div>
+
+        {/* ── Discover more games icon bar (admin: Games Bar tab) ── */}
+        <div className="pt-6 sm:pt-10">
+          <GameStripBar />
         </div>
 
         {/* ── Below the first screen: promos, catalog link, trust ── */}

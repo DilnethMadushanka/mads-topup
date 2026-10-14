@@ -13,6 +13,7 @@ import {
   saveManualPaymentToFirestore, updateManualPaymentStatusInFirestore, approveManualPaymentOnServer, subscribeManualPaymentsFromFirestore, creditUserWalletInDatabase, setUserExactBalanceInDatabase,
   saveVouchersToFirestore, subscribeVouchersFromFirestore, redeemVoucherInDatabase,
   savePopupAdConfigToFirestore, subscribePopupAdConfigFromFirestore, DEFAULT_POPUP_AD_CONFIG,
+  saveGameStripConfig, subscribeGameStripConfig, DEFAULT_GAME_STRIP_CONFIG,
   saveSupportTicketToFirestore, updateSupportTicketInFirestore, subscribeSupportTicketsFromFirestore,
   saveReviewToFirestore, subscribeReviewsFromFirestore,
   saveReferralClick, isAccountBlockedAsync, ACCOUNT_BLOCKED_MESSAGE
@@ -303,6 +304,22 @@ export const AppProvider = ({ children }) => {
       return true;
     } catch (e) {
       console.error('[AppContext] Save Popup Ad Error:', e);
+      return false;
+    }
+  };
+
+  // "Discover more games" icon bar (admin: Games Bar tab)
+  const [gameStripConfig, setGameStripConfig] = useState(DEFAULT_GAME_STRIP_CONFIG);
+
+  useEffect(() => subscribeGameStripConfig((config) => { if (config) setGameStripConfig(config); }), []);
+
+  const updateGameStripConfig = async (newConfig) => {
+    try {
+      const ok = await saveGameStripConfig(newConfig);
+      if (ok) setGameStripConfig(newConfig);
+      return ok;
+    } catch (e) {
+      console.error('[AppContext] Save Game Strip Error:', e);
       return false;
     }
   };
@@ -1845,6 +1862,8 @@ export const AppProvider = ({ children }) => {
       updateTicketPriority,
       popupAdConfig,
       updatePopupAdConfig,
+      gameStripConfig,
+      updateGameStripConfig,
       isPolicyModalOpen,
       setIsPolicyModalOpen,
       activePolicyTab,
