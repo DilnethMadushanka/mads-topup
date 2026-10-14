@@ -1480,13 +1480,26 @@
 
 /* Page stage: deep neutral navy with a faint blue glow at the top */
 .mads-stage-dark {
-  background-color: #151a2b !important;
-  background-image:
-    radial-gradient(1000px 520px at 6% -12%, rgba(38, 96, 238, 0.62) 0%, rgba(38, 96, 238, 0.18) 45%, transparent 70%),
-    radial-gradient(900px 460px at 96% -10%, rgba(52, 72, 190, 0.32) 0%, transparent 65%),
-    radial-gradient(520px 900px at -8% 55%, rgba(24, 120, 150, 0.16) 0%, transparent 70%),
-    linear-gradient(180deg, #1a2046 0px, #171c33 520px, #151a2b 1100px) !important;
-  background-repeat: no-repeat !important;
+  background-color: #131829 !important;
+  background-image: none !important;
+  position: relative;
+  isolation: isolate;
+}
+/* Midasbuy-style backdrop: blue glows that stay in view while the page scrolls */
+.mads-stage-dark::before,
+.mads-stage-light::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.mads-stage-dark::before {
+  background:
+    radial-gradient(60vw 70vh at 0% 18%, rgba(38, 110, 238, 0.42) 0%, rgba(38, 110, 238, 0.12) 45%, transparent 72%),
+    radial-gradient(55vw 60vh at 100% 0%, rgba(70, 82, 210, 0.26) 0%, transparent 70%),
+    radial-gradient(50vw 55vh at 100% 100%, rgba(24, 130, 170, 0.16) 0%, transparent 70%),
+    linear-gradient(165deg, #1b2350 0%, #161c36 40%, #121728 100%);
 }
 html:has(.mads-stage-dark) { background-color: #151a2b; }
 .home-dark { background: transparent !important; color: #e9f0ff; }
@@ -1626,11 +1639,16 @@ html:has(.mads-stage-dark) { background-color: #151a2b; }
 
 /* Light mode keeps the same shapes on a soft blue page */
 .mads-stage-light {
+  background: #f8faff !important;
+  position: relative;
+  isolation: isolate;
+}
+.mads-stage-light::before {
   background:
-    radial-gradient(1000px 520px at 8% -10%, rgba(22, 119, 255, 0.16), transparent 62%),
-    linear-gradient(180deg, #eef5ff 0px, #f8faff 900px) !important;
-  background-color: #f8faff !important;
-  background-repeat: no-repeat !important;
+    radial-gradient(60vw 70vh at 0% 15%, rgba(22, 119, 255, 0.16) 0%, transparent 70%),
+    radial-gradient(55vw 60vh at 100% 0%, rgba(90, 168, 255, 0.14) 0%, transparent 70%),
+    radial-gradient(50vw 55vh at 100% 100%, rgba(14, 165, 164, 0.08) 0%, transparent 70%),
+    linear-gradient(170deg, #eaf3ff 0%, #f6f9ff 50%, #fbfcff 100%);
 }
 
 /* Scrollbar in the new palette */
