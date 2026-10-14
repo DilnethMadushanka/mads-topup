@@ -7,7 +7,7 @@ import { ServicesSection } from './components/ServicesSection';
 import { StatsSection } from './components/StatsSection';
 import { useSiteTheme } from './hooks/useSiteTheme';
 import { GameGrid } from './components/GameGrid';
-import { WhyChooseUs } from './components/WhyChooseUs';
+import { OfferSection } from './components/OfferSection';
 import { HowItWorksSection } from './components/HowItWorksSection';
 import { ReviewsSection } from './components/ReviewsSection';
 import { PromoSection } from './components/PromoSection';
@@ -137,9 +137,9 @@ const MainContent = () => {
               <HowItWorksSection />
             </ScrollReveal>
 
-            {/* Why Choose Us — fade up slower */}
+            {/* What MADS TOPUP offers — fade up slower */}
             <ScrollReveal animation="fade-up" duration={750} delay={60}>
-              <WhyChooseUs />
+              <OfferSection />
             </ScrollReveal>
 
             {/* Reviews — fade in */}

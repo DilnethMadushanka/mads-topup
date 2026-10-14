@@ -243,7 +243,7 @@ export const HowItWorksSection = () => {
                     <div style={{
                       position: "absolute", inset: 0, display: "flex", flexDirection: "column",
                       alignItems: "center", justifyContent: "center", gap: 12,
-                      background: "linear-gradient(135deg, #0a1a4a 0%, #06123a 100%)",
+                      background: "linear-gradient(135deg, #151a28 0%, #151a2b 100%)",
                     }}>
                       <div style={{
                         width: 64, height: 64, borderRadius: "50%",
