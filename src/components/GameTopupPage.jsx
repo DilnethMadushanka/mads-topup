@@ -12,7 +12,7 @@ import {
   ArrowLeft, Check, ShieldCheck, Zap, AlertCircle, RefreshCw, 
   CreditCard, ChevronRight, BookmarkPlus, CheckCircle2, Copy, UploadCloud, Cloud,
   Clipboard, Plus, Minus, ChevronUp, ChevronDown, HelpCircle, Shield, Edit3, Crown,
-  ArrowUpDown, ArrowUp, ArrowDown
+  ArrowUpDown, ArrowUp, ArrowDown, Wallet
 } from 'lucide-react';
 
 // Pay for the selected packages by card (Dialog Genie) without topping up the
@@ -1109,79 +1109,102 @@ export const GameTopupPage = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
-              {[...PAYMENT_METHODS, CARD_METHOD].filter(m => (isLoggedIn || (m.id !== 'wallet' && m.id !== 'card')) && (!isVoucherGame || m.id === 'wallet' || m.id === 'card')).map((method) => {
-                const isSelected = selectedPayment.id === method.id;
-                return (
-                  <div
-                    key={method.id}
-                    onClick={() => setSelectedPayment(method)}
-                    className={`relative p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center gap-3.5 ${
-                      isSelected
-                        ? 'bg-brand-50/60 border-[#1677ff] shadow-md shadow-brand-600/10'
-                        : 'bg-white border-slate-200 hover:border-[#1677ff]/40 hover:shadow-sm'
-                    }`}
-                  >
-                    <div className={`w-12 h-12 shrink-0 rounded-xl flex items-center justify-center text-2xl transition-colors ${
-                      isSelected ? 'bg-[#1677ff] shadow-md shadow-brand-600/25' : 'bg-slate-100'
-                    }`}>
-                      {method.icon}
-                    </div>
+            {(() => {
+              const methods = [...PAYMENT_METHODS, CARD_METHOD].filter(m =>
+                (isLoggedIn || (m.id !== 'wallet' && m.id !== 'card')) && (!isVoucherGame || m.id === 'wallet' || m.id === 'card'));
+              const walletLkr = parseFloat(userProfile?.walletBalance || 0);
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4" role="radiogroup" aria-label="Payment method">
+                  {methods.map((method) => {
+                    const isSelected = selectedPayment.id === method.id;
+                    const isCard = method.id === 'card';
+                    return (
+                      <button
+                        key={method.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={isSelected}
+                        onClick={() => setSelectedPayment(method)}
+                        className={`pay-opt group text-left cursor-pointer ${isSelected ? 'is-selected' : ''}`}
+                      >
+                        <span className={`pay-opt-icon ${isCard ? 'is-card' : 'is-wallet'}`}>
+                          {isCard ? <CreditCard className="w-6 h-6" /> : <Wallet className="w-6 h-6" />}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-2 flex-wrap">
+                            <span className="font-heading font-black text-[15px] text-slate-900">
+                              {isCard ? 'Card / eZ Cash' : 'MADS Wallet'}
+                            </span>
+                            <span className={`pay-opt-tag ${isCard ? 'is-card' : ''}`}>{isCard ? 'Pay direct' : 'Instant 24/7'}</span>
+                          </span>
+                          <span className="block mt-1 text-xs text-slate-500 leading-snug">
+                            {isCard ? 'Pay for this order now. No wallet top-up needed.' : 'Pay from your wallet balance. Delivered in seconds.'}
+                          </span>
+                          {isCard ? (
+                            <span className="mt-2.5 flex items-center gap-1.5 flex-wrap">
+                              {['VISA', 'Mastercard', 'eZ Cash'].map((b) => (
+                                <span key={b} className="pay-brand">{b}</span>
+                              ))}
+                            </span>
+                          ) : (
+                            <span className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-bold text-slate-600">
+                              Balance
+                              <span className={`font-heading font-black ${walletLkr >= totalLkr && totalLkr > 0 ? 'text-emerald-600' : 'text-slate-900'}`}>
+                                {formatLkr(walletLkr)}
+                              </span>
+                            </span>
+                          )}
+                        </span>
+                        <span className={`pay-opt-radio ${isSelected ? 'is-on' : ''}`} aria-hidden="true">
+                          {isSelected && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3.5} />}
+                        </span>
+                      </button>
+                    );
+                  })}
 
-                    <div className="min-w-0 flex-1">
-                      <div className="font-extrabold text-sm text-slate-900 font-heading truncate">{method.name}</div>
-                      <div className="text-xs mt-0.5 text-slate-500 leading-snug">{method.subtitle}</div>
-                      <span className="inline-block mt-1.5 text-[10px] font-black px-2 py-0.5 rounded-full bg-brand-50 text-[#1677ff] border border-brand-100">
-                        {method.badge}
+                  {!isLoggedIn && (
+                    <button
+                      type="button"
+                      onClick={() => openAuth('login')}
+                      className="pay-opt pay-opt-login md:col-span-2 text-left cursor-pointer"
+                    >
+                      <span className="pay-opt-icon is-wallet"><Wallet className="w-6 h-6" /></span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-heading font-black text-[15px] text-slate-900">Log in to pay</span>
+                        <span className="block mt-1 text-xs text-slate-500">Pay with your MADS Wallet or directly by card / eZ Cash.</span>
                       </span>
-                    </div>
-
-                    <div className={`w-6 h-6 shrink-0 rounded-full flex items-center justify-center border-2 transition-all ${
-                      isSelected ? 'bg-[#1677ff] border-[#1677ff]' : 'border-slate-300 bg-white'
-                    }`}>
-                      {isSelected && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {/* Login prompt card for wallet — only when logged out */}
-              {!isLoggedIn && (
-                <div
-                  onClick={() => openAuth('login')}
-                  className="p-4 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 hover:border-[#1677ff]/60 hover:bg-brand-50 cursor-pointer transition-all flex items-center gap-3.5"
-                >
-                  <div className="w-12 h-12 shrink-0 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-2xl">💳</div>
-                  <div className="min-w-0 flex-1">
-                    <div className="font-extrabold text-sm text-slate-800 font-heading">MADS Wallet</div>
-                    <div className="text-xs text-slate-500 mt-0.5">Log in to pay with wallet balance</div>
-                    <span className="inline-block mt-1.5 text-[10px] bg-[#1677ff] text-white px-2.5 py-0.5 rounded-full font-bold">Login Required</span>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-slate-400 shrink-0" />
+                      <ChevronRight className="w-5 h-5 text-[#1677ff] shrink-0" />
+                    </button>
+                  )}
                 </div>
-              )}
+              );
+            })()}
 
-              {/* Recharge Wallet Helper Card */}
-              <div
-                onClick={() => openWalletModal()}
-                className="p-4 rounded-2xl border-2 border-dashed border-emerald-300 bg-emerald-50/50 hover:bg-emerald-50 cursor-pointer transition-all flex items-center gap-3.5 group"
-              >
-                <div className="w-12 h-12 shrink-0 rounded-xl bg-white border border-emerald-200 flex items-center justify-center text-2xl">📥</div>
-                <div className="min-w-0 flex-1">
-                  <div className="font-extrabold text-sm text-emerald-900 font-heading group-hover:text-emerald-700">
-                    Recharge Wallet Balance
-                  </div>
-                  <div className="text-xs text-emerald-700 mt-0.5 leading-snug">
-                    Deposit via EZ Cash, Binance Pay, or Bank Transfer
-                  </div>
-                  <span className="inline-block mt-1.5 text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-600 text-white uppercase tracking-wider">
-                    Recharge Wallet
-                  </span>
-                </div>
-                <ChevronRight className="w-5 h-5 text-emerald-500 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+            {/* Wallet short? Offer card, or a recharge */}
+            {isLoggedIn && selectedPayment.id === 'wallet' && totalLkr > 0 && parseFloat(userProfile?.walletBalance || 0) < totalLkr && (
+              <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <span className="text-xs font-semibold text-amber-800">
+                  Your wallet is short by <strong>{formatLkr(totalLkr - parseFloat(userProfile?.walletBalance || 0))}</strong> for this order.
+                </span>
+                <span className="flex items-center gap-2">
+                  <button type="button" onClick={() => setSelectedPayment(CARD_METHOD)} className="h-8 px-3.5 rounded-full bg-[#1677ff] text-white text-xs font-black cursor-pointer hover:bg-[#0d68e6]">
+                    Pay by card
+                  </button>
+                  <button type="button" onClick={() => openWalletModal()} className="h-8 px-3.5 rounded-full bg-white border border-amber-300 text-amber-800 text-xs font-black cursor-pointer hover:bg-amber-100">
+                    Recharge wallet
+                  </button>
+                </span>
               </div>
-            </div>
+            )}
 
+            <button
+              type="button"
+              onClick={() => openWalletModal()}
+              className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-[#1677ff] cursor-pointer transition-colors"
+            >
+              <span className="text-left">Recharge wallet (eZ Cash, Binance Pay, bank)</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
 
             {/* Payment Details Instructions & R2 Upload */}
             {selectedPayment.accountDetails && (
@@ -1255,14 +1278,14 @@ export const GameTopupPage = () => {
             )}
 
             {/* Bottom Final Checkout Action Bar */}
-            <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div>
-                <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block">Total Amount</span>
-                <div className="text-2xl sm:text-3xl font-black text-[#1677ff] font-heading">
+            <div className="pay-summary mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="min-w-0">
+                <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/60 block">Total to pay</span>
+                <div className="mt-1 text-3xl sm:text-4xl font-black text-white font-heading leading-none">
                   {formatLkr(totalLkr)}
                 </div>
-                <span className="text-[11px] text-slate-500 font-medium">
-                  {totalItemsCount} package(s) selected
+                <span className="mt-2 block text-xs text-white/70 font-medium">
+                  {totalItemsCount} package{totalItemsCount === 1 ? '' : 's'} · {selectedPayment.id === 'card' ? 'Card / eZ Cash' : 'MADS Wallet'}
                 </span>
               </div>
 
@@ -1270,21 +1293,30 @@ export const GameTopupPage = () => {
                 type="button"
                 onClick={handleCompleteOrder}
                 disabled={isSubmitting}
-                className="w-full sm:w-auto px-10 py-4 bg-[#1677ff] hover:bg-[#0d68e6] text-white font-black text-sm rounded-2xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-brand-600/25"
+                className="pay-cta w-full sm:w-auto px-9 h-14 font-black text-sm rounded-2xl flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
                     <span>{selectedPayment.id === 'card' ? 'Opening card payment...' : 'Dispatching via Moongold...'}</span>
                   </>
+                ) : selectedPayment.id === 'card' ? (
+                  <>
+                    <CreditCard className="w-4 h-4" />
+                    <span>Pay by Card & Top Up</span>
+                  </>
                 ) : (
                   <>
-                    <Zap className="w-4 h-4 fill-white" />
-                    <span>{selectedPayment.id === 'card' ? 'Pay by Card & Top Up' : 'Confirm & Top Up Now'}</span>
+                    <Zap className="w-4 h-4 fill-current" />
+                    <span>Confirm & Top Up Now</span>
                   </>
                 )}
               </button>
             </div>
+            <p className="mt-3 flex items-center justify-center sm:justify-end gap-1.5 text-[11px] font-medium text-slate-400">
+              <Shield className="w-3.5 h-3.5" />
+              {selectedPayment.id === 'card' ? 'Secure checkout by Dialog Genie. We never see your card details.' : 'Paid from your wallet and delivered automatically.'}
+            </p>
           </div>
 
           {/* STICKY BOTTOM CART BAR — visible on all screen sizes when cart has items */}
