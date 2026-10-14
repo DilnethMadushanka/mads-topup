@@ -325,10 +325,27 @@ function pruneExpiredAdminSessions() {
   }
 }
 
+// The admin session token lives only in an HttpOnly cookie, so page
+// scripts (including an injected one) can never read it. SameSite=Strict
+// keeps other sites from sending it, which also covers CSRF.
+const ADMIN_COOKIE = 'mads_admin';
+
+function readCookie(req, name) {
+  for (const part of String(req.headers.cookie || '').split(';')) {
+    const i = part.indexOf('=');
+    if (i > 0 && part.slice(0, i).trim() === name) return decodeURIComponent(part.slice(i + 1).trim());
+  }
+  return '';
+}
+
+function setAdminCookie(req, res, token, maxAgeMs) {
+  const https = req.secure || String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'https';
+  res.append('Set-Cookie', `${ADMIN_COOKIE}=${token}; Path=/api; HttpOnly; SameSite=Strict; Max-Age=${Math.max(0, Math.floor(maxAgeMs / 1000))}${https ? '; Secure' : ''}`);
+}
+
 function requireAdminSession(req, res, next) {
   pruneExpiredAdminSessions();
-  const authHeader = req.headers.authorization || '';
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+  const token = readCookie(req, ADMIN_COOKIE);
   const expiresAt = token && adminSessions.get(token);
   if (!expiresAt || expiresAt <= Date.now()) {
     return res.status(401).json({ error: 'Admin session required or expired. Please log in to the Admin Dashboard again.' });
@@ -364,16 +381,15 @@ app.post('/api/admin/login', rateLimiter(8, 300000), (req, res) => {
   adminSessions.set(token, expiresAt);
   pruneExpiredAdminSessions();
 
-  res.json({ success: true, token, expiresAt });
+  setAdminCookie(req, res, token, ADMIN_SESSION_TTL_MS);
+  res.json({ success: true, expiresAt });
 });
 
-// Verify an existing admin session token — called by the dashboard on every
-// open so a refreshed page re-confirms the token with the server rather than
-// trusting any localStorage flag.
+// Verify the admin session cookie — called by the dashboard on every open so
+// a refreshed page re-confirms the session with the server.
 app.get('/api/admin/verify-session', (req, res) => {
   pruneExpiredAdminSessions();
-  const authHeader = req.headers.authorization || '';
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+  const token = readCookie(req, ADMIN_COOKIE);
   const expiresAt = token && adminSessions.get(token);
   if (!expiresAt || expiresAt <= Date.now()) {
     return res.status(401).json({ valid: false });
@@ -383,11 +399,11 @@ app.get('/api/admin/verify-session', (req, res) => {
 
 // Revoke an admin session token immediately on logout.
 app.post('/api/admin/logout', (req, res) => {
-  const authHeader = req.headers.authorization || '';
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+  const token = readCookie(req, ADMIN_COOKIE);
   if (token && adminSessions.has(token)) {
     adminSessions.delete(token);
   }
+  setAdminCookie(req, res, '', 0);
   res.json({ success: true });
 });
 

@@ -2,7 +2,6 @@ import { db, rtdb } from './firebaseAuth.js';
 import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { ref as dbRef, get as rtdbGet, set as rtdbSet, update as rtdbUpdate, onValue as rtdbOnValue } from 'firebase/database';
 import { postServerApi, getUserAuthToken, getSessionToken, setSessionToken } from './serverApi.js';
-import { getAdminToken } from './adminSession.js';
 
 /**
  * SHA-256 password hashing using Web Crypto API (runs in browser & Node).
@@ -658,7 +657,7 @@ export const setUserExactBalanceInDatabase = async (identifier, exactLkr, exactU
 // Wallet changes are made by the server (admin session required). Returns
 // the user's database key, or false/throws (strict) on failure.
 const adminWalletRequest = async (body, opts = {}) => {
-  const { ok, data } = await postServerApi('/api/admin/wallet', body, getAdminToken());
+  const { ok, data } = await postServerApi('/api/admin/wallet', body);
   if (!ok || !data?.success) {
     const message = data?.error || 'Wallet update failed';
     console.warn('Admin wallet update failed:', message);
@@ -809,7 +808,7 @@ export const updateOrderStatusInFirestore = async (orderId, newStatus, moongoldR
   };
 
   // Existing orders can only be changed by the server (admin session).
-  const { ok, data } = await postServerApi('/api/admin/order-status', { orderId, status: newStatus, moongoldRef }, getAdminToken());
+  const { ok, data } = await postServerApi('/api/admin/order-status', { orderId, status: newStatus, moongoldRef });
   if (!ok) console.warn('Order status was not saved:', data?.error);
 
   // Also update Firestore orders collection (was missing before)
@@ -862,7 +861,7 @@ export const saveManualPaymentToFirestore = async (payment) => {
 // Deposits are approved and credited on the server, which reads the amount
 // and account from the stored record. Browsers can't edit deposits.
 export const approveManualPaymentOnServer = async (paymentId) => {
-  const { ok, data } = await postServerApi('/api/admin/manual-payment/approve', { payId: paymentId }, getAdminToken());
+  const { ok, data } = await postServerApi('/api/admin/manual-payment/approve', { payId: paymentId });
   return { ok, ...(data || {}) };
 };
 
@@ -870,7 +869,7 @@ export const updateManualPaymentStatusInFirestore = async (paymentId, newStatus)
   if (!paymentId) return;
 
   if (newStatus === 'REJECTED') {
-    const { ok, data } = await postServerApi('/api/admin/manual-payment/reject', { payId: paymentId }, getAdminToken());
+    const { ok, data } = await postServerApi('/api/admin/manual-payment/reject', { payId: paymentId });
     if (!ok) console.warn('Deposit was not rejected:', data?.error);
   }
 
@@ -1069,7 +1068,7 @@ export const updateResellerApplicationStatusInFirestore = async (appId, userId, 
       // Application status is written by the server (browsers can only
       // create an application).
       if (newStatus !== 'APPROVED') {
-        const { ok, data } = await postServerApi('/api/admin/reseller-status', { appId, status: newStatus }, getAdminToken());
+        const { ok, data } = await postServerApi('/api/admin/reseller-status', { appId, status: newStatus });
         if (!ok) console.warn('Reseller status was not saved:', data?.error);
       }
       if (newStatus === 'APPROVED') {
@@ -1089,7 +1088,7 @@ export const updateResellerApplicationStatusInFirestore = async (appId, userId, 
           email: approvedAppEmail,
           resellerCode,
           securityKey
-        }, getAdminToken());
+        });
         if (!ok) console.warn('Reseller approval was not saved:', data?.error);
         else approval = data;
       }
@@ -1140,7 +1139,7 @@ export const saveCustomGamePricesToFirestore = async (customPricesMap) => {
   if (!customPricesMap) return false;
 
   // The server charges these prices, so only it may store them (admin session).
-  const { ok, data } = await postServerApi('/api/admin/custom-prices', { prices: customPricesMap }, getAdminToken());
+  const { ok, data } = await postServerApi('/api/admin/custom-prices', { prices: customPricesMap });
   if (!ok) throw new Error(data?.error || 'Prices were not saved');
 
   if (db) {
@@ -1206,7 +1205,7 @@ export const saveVouchersToFirestore = async (vouchersList) => {
   if (!Array.isArray(vouchersList)) return false;
 
   // Saved by the server (admin session required) — browsers can't write vouchers.
-  const { ok, data } = await postServerApi('/api/admin/vouchers', { vouchers: vouchersList }, getAdminToken());
+  const { ok, data } = await postServerApi('/api/admin/vouchers', { vouchers: vouchersList });
   if (!ok) {
     console.warn('Vouchers save failed:', data?.error);
     return false;
@@ -1333,7 +1332,7 @@ export const savePopupAdConfigToFirestore = async (config) => {
   // Published by the server (the rules stop browsers writing siteConfig).
   attempted = true;
   {
-    const { ok, data } = await postServerApi('/api/admin/popup-ad', { config: clean }, getAdminToken());
+    const { ok, data } = await postServerApi('/api/admin/popup-ad', { config: clean });
     if (ok) published = true;
     else console.warn('[PopupAd] Publish failed:', data?.error);
   }
