@@ -828,7 +828,7 @@ export const GameTopupPage = () => {
               if (sortOrder === 'lth') packages.sort((a, b) => a.priceLkr - b.priceLkr);
               if (sortOrder === 'htl') packages.sort((a, b) => b.priceLkr - a.priceLkr);
               return (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
                   {packages.map((pkg) => {
                 const qty = cartQuantities[pkg.id] || 0;
                 const isSelected = qty > 0;
@@ -840,70 +840,84 @@ export const GameTopupPage = () => {
                     onClick={() => {
                       if (qty === 0) updateQuantity(pkg.id, 1);
                     }}
-                    className={`group relative flex flex-col items-center text-center rounded-[1.4rem] border bg-white p-3 sm:p-4 cursor-pointer transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 ${
-                      isSelected
-                        ? 'border-[#1677ff] bg-gradient-to-b from-brand-50/70 to-white shadow-[0_18px_40px_-18px_rgba(22,119,255,0.45)] ring-2 ring-[#1677ff]/20'
-                        : 'border-slate-200/80 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_10px_24px_-16px_rgba(15,23,42,0.18)] hover:border-[#1677ff]/35 hover:shadow-[0_22px_44px_-20px_rgba(22,119,255,0.35)]'
-                    }`}
+                    className={`pkg-card group relative flex flex-col text-center cursor-pointer ${isSelected ? 'is-selected' : ''}`}
                   >
-                    {/* Popular ribbon */}
-                    {pkg.isPopular && (
-                      <span className="absolute top-2.5 left-2.5 z-10 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r from-[#1677ff] to-[#4da3ff] text-white text-[9px] font-bold uppercase tracking-wider shadow-md shadow-brand-600/30">
-                        🔥 Popular
-                      </span>
-                    )}
-
-                    {/* Selected check */}
-                    {isSelected && (
-                      <span className="absolute top-2.5 right-2.5 z-10 w-6 h-6 rounded-full bg-[#1677ff] text-white text-xs font-bold flex items-center justify-center shadow-md shadow-brand-600/40">
-                        ✓
-                      </span>
-                    )}
-
-                    {/* Artwork */}
-                    <div className="relative w-full aspect-[5/4] rounded-2xl overflow-hidden bg-gradient-to-br from-slate-50 via-white to-brand-50/60 border border-slate-100 flex items-center justify-center">
-                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_60%,rgba(22,119,255,0.10),transparent_65%)] opacity-70 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    {/* Artwork band */}
+                    <div className="pkg-art relative w-full aspect-[16/10] flex items-center justify-center overflow-hidden">
+                      {pkg.isPopular && (
+                        <span className="pkg-hot absolute top-0 left-0 z-10">🔥 Popular</span>
+                      )}
+                      {isSelected && (
+                        <span className="absolute top-2 right-2 z-10 w-6 h-6 rounded-full bg-[#1677ff] text-white text-xs font-bold flex items-center justify-center shadow-md shadow-brand-600/40">
+                          ✓
+                        </span>
+                      )}
                       {pkg.image ? (
                         <img
                           src={pkg.image}
                           alt={pkg.name}
-                          className="relative w-[68%] h-[68%] object-contain drop-shadow-[0_8px_14px_rgba(15,23,42,0.18)] group-hover:scale-110 group-hover:-translate-y-0.5 transition-transform duration-500 ease-out"
+                          loading="lazy"
+                          className="relative w-[62%] h-[78%] object-contain drop-shadow-[0_10px_16px_rgba(0,10,40,0.45)] group-hover:scale-110 group-hover:-translate-y-0.5 transition-transform duration-500 ease-out"
                         />
                       ) : (
                         <span className="relative text-4xl">{selectedGame.currencyIcon}</span>
                       )}
                     </div>
 
-                    {/* Package title */}
-                    <div className="mt-3 min-h-[2.4rem] flex items-center justify-center font-heading font-bold text-[13px] sm:text-sm text-slate-900 leading-tight">
-                      {pkg.name}
-                    </div>
+                    <div className="flex-1 flex flex-col items-center px-2.5 sm:px-3 pt-3 pb-3 sm:pb-3.5">
+                      {/* Amount: base in white, bonus in gold (e.g. 300 + 25 UC) */}
+                      {(() => {
+                        const m = String(pkg.name).match(/^([\d,]+)\s*\+\s*([\d,]+)\s*(.*)$/) || String(pkg.name).match(/^([\d,]+)\s+(.*?)\s*\+\s*([\d,]+)\s*Bonus$/i);
+                        if (!m) {
+                          return (
+                            <div className="min-h-[2.6rem] flex items-center justify-center font-heading font-extrabold text-[13px] sm:text-[15px] text-slate-900 leading-tight">
+                              {pkg.name}
+                            </div>
+                          );
+                        }
+                        const isBonusFirst = m[0].toLowerCase().endsWith('bonus');
+                        const base = m[1];
+                        const extra = isBonusFirst ? m[3] : m[2];
+                        const unit = (isBonusFirst ? m[2] : m[3]).replace(/\(.*\)/, '').trim();
+                        const pct = Math.round((Number(extra.replace(/,/g, '')) / Number(base.replace(/,/g, ''))) * 100);
+                        return (
+                          <div className="min-h-[2.6rem] flex flex-col items-center justify-end">
+                            {pct > 0 && selectedGame?.id !== 'freefire_sg' && (
+                              <span className="pkg-pct mb-1">+{pct}%</span>
+                            )}
+                            <div className="font-heading font-extrabold text-[15px] sm:text-lg leading-none text-slate-900 whitespace-nowrap">
+                              {base}<span className="pkg-gold"> +{extra}</span>
+                              {unit && <span className="ml-1 text-[10px] sm:text-xs font-bold text-slate-500 uppercase">{unit}</span>}
+                            </div>
+                          </div>
+                        );
+                      })()}
 
-                    {/* Bonus tag — hidden for Free Fire since additional diamonds are not delivered */}
-                    {pkg.bonus && selectedGame?.id !== 'freefire_sg' && (
-                      <span className="mt-1 text-[10px] font-bold text-[#1677ff] bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-full">
-                        {pkg.bonus}
-                      </span>
-                    )}
-
-                    {/* Price (with reseller wholesale discounting) */}
-                    <div className="mt-auto pt-2 text-center">
-                      {isApprovedReseller ? (
-                        <div className="flex flex-col items-center">
-                          <span className="font-heading font-extrabold text-lg text-emerald-600 tracking-tight leading-none">
-                            {formatLkr(effectivePrice)}
-                          </span>
-                          <span className="mt-1 inline-flex items-center gap-1.5 text-[10px] font-bold">
-                            <span className="text-slate-400 line-through">{formatLkr(pkg.priceLkr)}</span>
-                            <span className="px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">-5%</span>
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="font-heading font-extrabold text-lg text-[#1677ff] tracking-tight leading-none">
-                          {formatLkr(pkg.priceLkr)}
-                        </div>
+                      {/* Extra info tag (region, PIN type…) — hidden for Free Fire since additional diamonds are not delivered */}
+                      {pkg.bonus && !/^\+/.test(pkg.bonus) && selectedGame?.id !== 'freefire_sg' && (
+                        <span className="mt-1.5 text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                          {pkg.bonus}
+                        </span>
                       )}
-                    </div>
+
+                      {/* Price (with reseller wholesale discounting) */}
+                      <div className="mt-auto pt-2.5 text-center">
+                        {isApprovedReseller ? (
+                          <div className="flex flex-col items-center">
+                            <span className="font-heading font-extrabold text-lg text-emerald-600 tracking-tight leading-none">
+                              {formatLkr(effectivePrice)}
+                            </span>
+                            <span className="mt-1 inline-flex items-center gap-1.5 text-[10px] font-bold">
+                              <span className="text-slate-400 line-through">{formatLkr(pkg.priceLkr)}</span>
+                              <span className="px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">-5%</span>
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="pkg-price font-heading font-extrabold text-lg sm:text-xl tracking-tight leading-none">
+                            {formatLkr(pkg.priceLkr)}
+                          </div>
+                        )}
+                      </div>
 
                     {/* Quantity stepper */}
                     <div className="mt-3 w-full flex items-center justify-between rounded-full bg-slate-100/80 border border-slate-200/70 p-1">
@@ -931,6 +945,7 @@ export const GameTopupPage = () => {
                       >
                         +
                       </button>
+                    </div>
                     </div>
                   </div>
                 );
