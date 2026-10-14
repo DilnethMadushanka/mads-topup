@@ -32,6 +32,7 @@ export const ResellerDashboard = () => {
   const [selectedGameId, setSelectedGameId] = useState(GAMES_DATA[0]?.id || 'freefire');
   const [customerUid, setCustomerUid] = useState('');
   const [customerZoneId, setCustomerZoneId] = useState('');
+  const [lastVoucher, setLastVoucher] = useState(null); // { packageName, codes } of the last PIN order
   const [customerIgn, setCustomerIgn] = useState('');
   // Bug 4: Pre-select first package so wholesale price shows immediately
   const [selectedPackageId, setSelectedPackageId] = useState(GAMES_DATA[0]?.packages?.[0]?.id || '');
@@ -116,12 +117,13 @@ export const ResellerDashboard = () => {
   const handleFulfillOrder = async (e) => {
     e.preventDefault();
 
-    if (!customerUid.trim()) {
+    const isVoucher = currentGame?.fulfilment === 'voucher';
+    if (!isVoucher && !customerUid.trim()) {
       showToast('Please enter the customer Player ID (UID)!', 'error');
       return;
     }
 
-    if (currentGame.requiresServer && !customerZoneId.trim()) {
+    if (!isVoucher && currentGame.requiresServer && !customerZoneId.trim()) {
       showToast('Please enter the customer Zone / Server ID!', 'error');
       return;
     }
@@ -256,7 +258,13 @@ export const ResellerDashboard = () => {
     addOrder(newOrder);
 
     setIsFulfilling(false);
-    showToast(`⚡ TOPUP DISPATCHED! ${selectedPackage.name} sent to UID: ${customerUid.trim()}`);
+    if (isVoucher) {
+      // PIN codes are shown here only; they never go into the saved order.
+      setLastVoucher({ packageName: selectedPackage.name, codes: moongoldResult.voucherCodes || [] });
+      showToast(`⚡ ${selectedPackage.name} PIN ready!`);
+    } else {
+      showToast(`⚡ TOPUP DISPATCHED! ${selectedPackage.name} sent to UID: ${customerUid.trim()}`);
+    }
 
     try {
       confetti({
@@ -555,10 +563,10 @@ export const ResellerDashboard = () => {
                 {stepHead(2, 'Customer Details')}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className={labelCls}>Customer Player ID (UID) *</label>
+                    <label className={labelCls}>{currentGame.fulfilment === 'voucher' ? 'Customer Name / Note (optional)' : 'Customer Player ID (UID) *'}</label>
                     <input
                       type="text"
-                      required
+                      required={currentGame.fulfilment !== 'voucher'}
                       placeholder={currentGame.idPlaceholder || "e.g. 248901234"}
                       value={customerUid}
                       onChange={(e) => setCustomerUid(e.target.value)}
@@ -659,6 +667,26 @@ export const ResellerDashboard = () => {
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
+
+              {lastVoucher && (
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-xs space-y-2">
+                  <div className="font-black text-sm text-emerald-900">🐚 {lastVoucher.packageName} PIN</div>
+                  {lastVoucher.codes.length > 0 ? lastVoucher.codes.map((code, i) => (
+                    <div key={i} className="flex items-center justify-between gap-2 bg-white border border-emerald-200 rounded-xl px-3 py-2">
+                      <span className="font-mono font-bold text-slate-900 break-all">{code}</span>
+                      <button
+                        type="button"
+                        onClick={() => { try { navigator.clipboard.writeText(code); showToast('PIN copied!'); } catch (e) {} }}
+                        className="shrink-0 px-2.5 py-1 bg-emerald-600 text-white rounded-lg font-bold cursor-pointer"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  )) : (
+                    <div className="text-amber-700 font-semibold">The PIN is being prepared by the supplier. It will appear under My Profile → My Codes in a few minutes.</div>
+                  )}
+                </div>
+              )}
 
             </form>
           </div>

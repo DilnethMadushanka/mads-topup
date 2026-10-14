@@ -69,10 +69,15 @@ export const GameTopupPage = () => {
       setIgnVerified(false);
       setVerifyModalData(null);
       setCompletedOrder(null);
+      if (selectedGame.fulfilment === 'voucher') setSelectedPayment(PAYMENT_METHODS[0]);
     }
   }, [selectedGame]);
 
   if (!selectedGame) return null;
+
+  // eVoucher products (Garena Shells): no player ID, wallet payment only,
+  // and the buyer gets PIN codes back.
+  const isVoucherGame = selectedGame.fulfilment === 'voucher';
 
   // Handle Paste Player ID
   const handlePastePlayerId = async () => {
@@ -155,12 +160,16 @@ export const GameTopupPage = () => {
 
   // Dispatch Topup Order
   const handleCompleteOrder = async () => {
-    if (!playerId.trim()) {
+    if (isVoucherGame && selectedPayment.id !== 'wallet') {
+      showToast('Garena Shells PINs are paid from your MADS Wallet. Please select MADS Wallet.', 'error');
+      return;
+    }
+    if (!isVoucherGame && !playerId.trim()) {
       showToast('Please enter a valid Player ID (UID)!', 'error');
       window.scrollTo({ top: 300, behavior: 'smooth' });
       return;
     }
-    if (selectedGame.requiresServer && !zoneId.trim()) {
+    if (!isVoucherGame && selectedGame.requiresServer && !zoneId.trim()) {
       showToast('Please enter your Zone / Server ID!', 'error');
       window.scrollTo({ top: 300, behavior: 'smooth' });
       return;
@@ -235,6 +244,7 @@ export const GameTopupPage = () => {
       const partnerOrderIds = [];
       let lastNewBalanceLkr = undefined;
       let lastNewBalanceUsdt = undefined;
+      const voucherCodes = [];
 
       // Loop through all selected packages in cart to process each item/quantity
       for (const item of selectedItems) {
@@ -265,6 +275,7 @@ export const GameTopupPage = () => {
             if (res.partnerOrderId) partnerOrderIds.push(res.partnerOrderId);
             if (res.newBalanceLkr !== undefined) lastNewBalanceLkr = res.newBalanceLkr;
             if (res.newBalanceUsdt !== undefined) lastNewBalanceUsdt = res.newBalanceUsdt;
+            if (Array.isArray(res.voucherCodes)) voucherCodes.push(...res.voucherCodes);
           } else {
             allSuccess = false;
             if (res.moongoldRef) partnerOrderIds.push(res.moongoldRef);
@@ -285,6 +296,7 @@ export const GameTopupPage = () => {
         moongoldRef: lastRef,
         partnerOrderId: lastPartnerOrderId,
         partnerOrderIds,
+        voucherCodes,
         message: lastErrMsg
       };
 
@@ -344,9 +356,9 @@ export const GameTopupPage = () => {
       gameName: selectedGame.name,
       packageName: packageSummary,
       amount: selectedItems.reduce((s, i) => s + (i.amount * cartQuantities[i.id]), 0),
-      playerId,
-      zoneId,
-      ign: ign || (`Player ${playerId}`),
+      playerId: isVoucherGame ? 'PIN' : playerId,
+      zoneId: isVoucherGame ? '' : zoneId,
+      ign: isVoucherGame ? 'Garena Shells PIN' : (ign || (`Player ${playerId}`)),
       paymentMethod: selectedPayment.name,
       priceLkr: totalLkr,
       status: finalStatus,
@@ -359,8 +371,10 @@ export const GameTopupPage = () => {
       createdAt: new Date().toISOString()
     };
 
+    // PIN codes stay out of the saved order (the order list is public); they
+    // are only shown here and in the profile's PIN list.
     addOrder(newOrder);
-    setCompletedOrder(newOrder);
+    setCompletedOrder(isVoucherGame ? { ...newOrder, voucherCodes: moongoldResult.voucherCodes || [] } : newOrder);
 
     // Confetti celebration
     try {
@@ -422,6 +436,31 @@ export const GameTopupPage = () => {
             </p>
           </div>
 
+          {/* Garena Shells PIN codes */}
+          {completedOrder.voucherCodes && (
+            <div className="bg-emerald-50 p-5 rounded-2xl border border-emerald-300 text-left space-y-3 text-xs">
+              <div className="font-black text-sm text-emerald-900">🐚 Your Garena Shells PIN</div>
+              {completedOrder.voucherCodes.length > 0 ? (
+                <>
+                  {completedOrder.voucherCodes.map((code, i) => (
+                    <div key={i} className="flex items-center justify-between gap-2 bg-white border border-emerald-200 rounded-xl px-3 py-2">
+                      <span className="font-mono font-bold text-slate-900 break-all">{code}</span>
+                      <button
+                        onClick={() => { try { navigator.clipboard.writeText(code); showToast('PIN copied!'); } catch (e) {} }}
+                        className="shrink-0 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Copy className="w-3.5 h-3.5" /> Copy
+                      </button>
+                    </div>
+                  ))}
+                  <p className="text-emerald-800 font-medium">Redeem it at shop.garena.sg (Garena Shells SG). You can see this PIN again in My Profile → My Codes.</p>
+                </>
+              ) : (
+                <p className="text-emerald-800 font-medium">Your PIN is being prepared by the supplier. It will appear in My Profile → My Codes in a few minutes.</p>
+              )}
+            </div>
+          )}
+
           {/* Receipt Details Box */}
           <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 text-left space-y-3 text-xs">
             <div className="flex justify-between border-b border-slate-200 pb-2">
@@ -440,10 +479,12 @@ export const GameTopupPage = () => {
               <span className="text-slate-500 font-semibold">Package Items:</span>
               <span className="font-bold text-slate-900">{completedOrder.packageName}</span>
             </div>
-            <div className="flex justify-between border-b border-slate-200 pb-2">
-              <span className="text-slate-500 font-semibold">Player UID / IGN:</span>
-              <span className="font-bold text-slate-900">{completedOrder.playerId} ({completedOrder.ign})</span>
-            </div>
+            {!completedOrder.voucherCodes && (
+              <div className="flex justify-between border-b border-slate-200 pb-2">
+                <span className="text-slate-500 font-semibold">Player UID / IGN:</span>
+                <span className="font-bold text-slate-900">{completedOrder.playerId} ({completedOrder.ign})</span>
+              </div>
+            )}
             <div className="flex justify-between border-b border-slate-200 pb-2">
               <span className="text-slate-500 font-semibold">Payment Method:</span>
               <span className="font-bold text-slate-900">{completedOrder.paymentMethod}</span>
@@ -517,6 +558,27 @@ export const GameTopupPage = () => {
             </div>
           </div>
 
+          {/* STEP 1 for eVouchers: what the buyer gets */}
+          {isVoucherGame ? (
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 sm:p-7 mb-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 rounded-full bg-[#cc040a] text-white font-extrabold flex items-center justify-center text-sm shadow-md">
+                1
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-slate-900 font-heading leading-none">
+                  You Get a PIN Code
+                </h2>
+                <div className="w-12 h-1 bg-amber-500 rounded-full mt-1.5"></div>
+              </div>
+            </div>
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-950 text-xs font-bold flex items-start gap-2.5">
+              <HelpCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <span className="leading-snug">No Player ID needed. After payment you get a Garena Shells (SG) PIN code instantly. Redeem it at shop.garena.sg. Paid from your MADS Wallet.</span>
+            </div>
+          </div>
+          ) : (
+          <>
           {/* STEP 1: Verify Your Player ID (Matching Screenshot 1) */}
           <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 sm:p-7 mb-6">
             <div className="flex items-center gap-3 mb-4">
@@ -663,6 +725,9 @@ export const GameTopupPage = () => {
               </div>
             )}
           </div>
+
+          </>
+          )}
 
           {/* STEP 2: Select Diamond Packages (Matching Screenshot 2) */}
           <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 sm:p-7 mb-6">
@@ -890,7 +955,7 @@ export const GameTopupPage = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
-              {PAYMENT_METHODS.filter(m => isLoggedIn || m.id !== 'wallet').map((method) => {
+              {PAYMENT_METHODS.filter(m => (isLoggedIn || m.id !== 'wallet') && (!isVoucherGame || m.id === 'wallet')).map((method) => {
                 const isSelected = selectedPayment.id === method.id;
                 return (
                   <div

@@ -1,4 +1,5 @@
 import { rtdbUrl } from '../../lib/rtdbAdmin.js';
+import { redactVoucherCodes } from '../../lib/moogoldVoucher.js';
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -8,7 +9,8 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const payload = req.method === 'GET' ? req.query : req.body;
+  // Voucher PIN codes never go into logs or the public order records.
+  const payload = redactVoucherCodes(req.method === 'GET' ? req.query : req.body);
   console.log('[MooGold Serverless Callback Received]:', payload);
 
   const partnerOrderId = payload?.partnerOrderId || payload?.partner_order_id || payload?.data?.partnerOrderId;

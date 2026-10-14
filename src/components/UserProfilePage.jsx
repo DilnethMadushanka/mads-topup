@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { GAMES_DATA } from '../data/games';
 import { filterUserOrders } from '../utils/ownership';
+import { fetchMyVouchers } from '../services/moongoldApi';
 import { 
   User, ShoppingBag, Bookmark, Wallet, RefreshCw, 
   CheckCircle2, Clock, Zap, Trash2, ArrowLeft, ShieldCheck,
@@ -32,6 +33,7 @@ export const UserProfilePage = () => {
   const [activeTab, setActiveTab] = useState('orders'); // 'orders' | 'referrals' | 'reports' | 'ids'
   const [isRecentPurchasesOpen, setIsRecentPurchasesOpen] = useState(true);
   const [isMyCodesOpen, setIsMyCodesOpen] = useState(false);
+  const [myVouchers, setMyVouchers] = useState(null); // null = not loaded yet
   const [isManualPaymentsOpen, setIsManualPaymentsOpen] = useState(false);
   const [isWalletTopupsOpen, setIsWalletTopupsOpen] = useState(false);
   const [isSecurityLogOpen, setIsSecurityLogOpen] = useState(true);
@@ -527,11 +529,48 @@ Thank you for using MADS TOPUP Sri Lanka!
             )
           })}
 
-          {/* My Codes */}
+          {/* My Codes: Garena Shells PINs, read from the server */}
           {section({
-            icon: Key, title: 'My Codes',
-            open: isMyCodesOpen, toggle: () => setIsMyCodesOpen(!isMyCodesOpen),
-            children: emptyState('🔑', 'No active digital codes or vouchers redeemed yet.')
+            icon: Key, title: 'My Codes', count: myVouchers ? myVouchers.length : undefined,
+            open: isMyCodesOpen,
+            toggle: () => {
+              const opening = !isMyCodesOpen;
+              setIsMyCodesOpen(opening);
+              if (opening) fetchMyVouchers().then(r => setMyVouchers(r.vouchers));
+            },
+            children: myVouchers === null ? (
+              emptyState('⏳', 'Loading your codes...')
+            ) : myVouchers.length === 0 ? (
+              emptyState('🔑', 'No digital codes or vouchers yet.')
+            ) : (
+              <div className="p-4 sm:p-5 bg-slate-50/60 space-y-3">
+                {myVouchers.map(v => (
+                  <div key={v.partnerOrderId} className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs text-xs space-y-2">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <span className="font-black text-slate-900 text-sm font-heading">{v.gameName} - {v.packageName}</span>
+                      <span className="text-[11px] text-slate-400 font-mono">{v.createdAt ? new Date(v.createdAt).toLocaleString() : ''}</span>
+                    </div>
+                    {(v.codes || []).length > 0 ? (v.codes || []).map((code, i) => (
+                      <div key={i} className="flex items-center justify-between gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
+                        <span className="font-mono font-bold text-slate-900 break-all">{code}</span>
+                        <button
+                          onClick={() => { try { navigator.clipboard.writeText(code); showToast('Code copied!'); } catch (e) {} }}
+                          className="shrink-0 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold flex items-center gap-1 cursor-pointer"
+                        >
+                          <Copy className="w-3.5 h-3.5" /> Copy
+                        </button>
+                      </div>
+                    )) : (
+                      <div className="text-amber-700 font-semibold">
+                        {['refunded', 'cancelled', 'canceled', 'failed'].includes(v.moogoldStatus)
+                          ? 'This order was not fulfilled by the supplier. Please contact support.'
+                          : 'Code is being prepared. Open this section again in a few minutes.'}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )
           })}
 
           {/* Manual Payments */}

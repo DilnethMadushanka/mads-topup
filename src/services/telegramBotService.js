@@ -5,6 +5,7 @@ import { lookupFreePlayerIgn } from './playerLookup.js';
 import { getResellerProfileByKey, getResellerProfileByKeyAsync, saveOrderToFirestore } from './firestoreService.js';
 import { findUserKey, spendWallet, adjustWallet, rtdbGet, rtdbPut } from '../../lib/rtdbAdmin.js';
 import { verifyPasswordLogin } from '../../lib/userAuth.js';
+import { fetchVoucherCodes, saveUserVoucher, isVoucherGame, redactVoucherCodes } from '../../lib/moogoldVoucher.js';
 
 const require = createRequire(import.meta.url);
 // Bot orders are written with the database secret: browsers can't update an
@@ -318,13 +319,15 @@ async function sendMoongoldLiveOrder(game, pkg, playerId, zoneId, orderRef) {
   // quantity as `type: integer` for create_order — sending them as quoted
   // strings gets rejected by MooGold's validation.
   const dataPayload = {
-    category: 1,
+    category: isVoucherGame(game) ? 2 : 1,
     'product-id': parseInt(productId, 10),
     quantity: 1
   };
 
   const gId = (game.id || '').toLowerCase();
-  if (gId.includes('pubg')) {
+  if (isVoucherGame(game)) {
+    // eVoucher (Garena Shells): no player fields, MooGold returns a PIN.
+  } else if (gId.includes('pubg')) {
     dataPayload['Character ID'] = playerId;
   } else if (gId.includes('freefire') || gId.includes('ff')) {
     // MooGold Free Fire (SG/MY) requires 'Player ID', not 'User ID' —
@@ -373,10 +376,9 @@ async function sendMoongoldLiveOrder(game, pkg, playerId, zoneId, orderRef) {
     });
 
     const resText = await res.text();
-    console.log(`[Moongold API Response] HTTP ${res.status}:`, resText);
-
     let resJson = null;
     try { resJson = JSON.parse(resText); } catch (e) {}
+    console.log(`[Moongold API Response] HTTP ${res.status}:`, resJson ? JSON.stringify(redactVoucherCodes(resJson)) : resText);
 
     if (res.ok && resJson && (resJson.order_id || resJson.status === 'processing' || resJson.status === true || resJson.status === 1)) {
       return {
@@ -537,7 +539,7 @@ Support for ALL games on website: Mobile Legends, Free Fire, PUBG Mobile, Blood 
 • /topup pubg <ID> <UC> (e.g. /topup pubg 512345678 60)
 • /topup bs <ID> <Gold> (e.g. /topup bs 981247192 100)
 • /topup df <ID> <Coins> (e.g. /topup df 981247192 60)
-• /topup gs <AccountID> <Shells> (e.g. /topup gs 0771234567 100)
+• /topup gs <Shells> (e.g. /topup gs 320, you get the PIN here)
 
 📌 Reseller Wallet Commands:
 • /balance - Live Reseller Wallet Balance & Security Key
@@ -568,7 +570,7 @@ Support for ALL games on website: Mobile Legends, Free Fire, PUBG Mobile, Blood 
 • /topup pubg 5123984712 60 (PUBG 60 UC)
 • /topup bs 981247192 100 (Blood Strike 100 Gold)
 • /topup df 981247192 60 (Delta Force 60 Coins)
-• /topup gs 0771234567 100 (Garena 100 Shells)
+• /topup gs 320 (Garena 320 Shells PIN)
 
 💼 4. Wallet Management:
 • /balance - View Balance & Security Key
@@ -594,8 +596,10 @@ Support for ALL games on website: Mobile Legends, Free Fire, PUBG Mobile, Blood 
             replyText += `   • Topup Code: ${pkg.amount || pkg.id}\n\n`;
           });
 
-          const gAlias = matchedGame.id === 'mobilelegends' ? 'ml' : matchedGame.id === 'freefire_sg' ? 'ff' : matchedGame.id;
-          replyText += `⚡ How to Order:\n• /topup ${gAlias} <player_id> ${matchedGame.requiresServer ? '<zone_id> ' : ''}<code_or_amount>`;
+          const gAlias = matchedGame.id === 'mobilelegends' ? 'ml' : matchedGame.id === 'freefire_sg' ? 'ff' : matchedGame.id === 'garenashells' ? 'gs' : matchedGame.id;
+          replyText += isVoucherGame(matchedGame)
+            ? `⚡ How to Order:\n• /topup ${gAlias} <code_or_amount> (you get the PIN in this chat)`
+            : `⚡ How to Order:\n• /topup ${gAlias} <player_id> ${matchedGame.requiresServer ? '<zone_id> ' : ''}<code_or_amount>`;
           return safeReply(ctx, replyText);
         }
 
@@ -979,6 +983,14 @@ Once authenticated, your Telegram chat will be linked and authorized for instant
           zoneArg = '';
         }
 
+        // eVoucher (Garena Shells): `/topup gs 320` — no player ID, the
+        // reseller gets the PIN code in this chat.
+        if (isVoucherGame(matchedGame)) {
+          pkgArg = (parts[2] || '').replace(/[()[\]]/g, '');
+          idArg = pkgArg ? 'PIN' : '';
+          zoneArg = '';
+        }
+
         if (!idArg || !pkgArg) {
           const usageMsg = `
 ❌ TOP-UP COMMAND USAGE
@@ -991,6 +1003,12 @@ Examples:
 • /topup pubg 5123984712 60 (PUBG 60 UC)
           `.trim();
           return safeReply(ctx, usageMsg);
+        }
+
+        // Vouchers are paid up front, so never fall back to a different
+        // package when the amount typed doesn't match one exactly.
+        if (isVoucherGame(matchedGame) && !matchedGame.packages.some(p => String(p.amount) === pkgArg || p.id === pkgArg.toLowerCase())) {
+          return safeReply(ctx, `❌ Unknown ${matchedGame.name} package "${pkgArg}".\nAvailable: ${matchedGame.packages.map(p => p.amount).join(', ')}\nExample: /topup gs ${matchedGame.packages[0].amount}`);
         }
 
         const lockKey = `${chatId}_${matchedGame.id}_${idArg}_${pkgArg}`;
@@ -1039,7 +1057,7 @@ Examples:
           await safeReply(ctx, `⌛ Processing Top-up Order #${orderId}...\n\n${matchedGame.currencyIcon} Game: ${matchedGame.name}\n🆔 Player ID: ${idArg} ${zoneArg ? `\n🌐 Zone ID: ${zoneArg}` : ''}\n📦 Package: ${pkgInfo.name}\n💵 Wholesale Price: Rs. ${wholesalePrice.toLocaleString()} LKR\n\nDispatching order to MooGold API & verifying IGN...`);
 
           let realIgn = `Player ${idArg}`;
-          try {
+          if (!isVoucherGame(matchedGame)) try {
             const ignLookup = await lookupFreePlayerIgn(matchedGame.id, idArg, zoneArg);
             if (ignLookup && ignLookup.ign) {
               realIgn = ignLookup.ign;
@@ -1108,6 +1126,36 @@ Examples:
               completedAt: new Date().toISOString()
             };
             try { await saveBotOrder(reseller.walletKey || freshReseller.uid || reseller.uid, completedOrder); } catch (e) {}
+
+            if (isVoucherGame(matchedGame)) {
+              // PIN codes go only to this private chat and the reseller's
+              // private voucher list, never into the saved order.
+              const { codes, status } = await fetchVoucherCodes(mgResult.moongoldRef);
+              await saveUserVoucher(freshReseller.uid || reseller.uid || reseller.walletKey, orderId, {
+                gameId: matchedGame.id,
+                gameName: matchedGame.name,
+                packageName: pkgInfo.name,
+                moogoldOrderId: String(mgResult.moongoldRef || ''),
+                moogoldStatus: status || '',
+                codes,
+                priceLkr: wholesalePrice,
+                channel: 'Telegram Bot',
+                createdAt: new Date().toISOString()
+              });
+              const pinMsg = `
+✅ ${pkgInfo.name} PIN READY
+
+📦 Order Ref ID: ${orderId}
+🔖 MooGold Ref: #${mgResult.moongoldRef}
+
+${codes.length ? codes.map(c => `🔑 ${c}`).join('\n') : '⏳ The PIN is still being prepared by the supplier. It will appear on the website under My Profile → My Codes in a few minutes.'}
+
+Redeem at shop.garena.sg (Garena Shells SG).
+💵 Wholesale Price Paid (5% OFF): Rs. ${wholesalePrice.toLocaleString()} LKR
+💰 Confirmed Remaining Balance: Rs. ${confirmedBalance.toLocaleString()} LKR
+              `.trim();
+              return safeReply(ctx, pinMsg);
+            }
 
             const successMsg = `
 ✅ TOP-UP SUCCESSFUL!

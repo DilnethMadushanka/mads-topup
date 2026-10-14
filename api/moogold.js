@@ -80,6 +80,13 @@ export default async function handler(req, res) {
       return;
     }
 
+    // Same allowlist as server.js: order/order_detail and similar would let
+    // any logged-in user read other people's orders, including voucher PINs.
+    if (!['order/create_order', 'product/validate', 'user/check_id', 'user/balance'].includes(apiPath)) {
+      res.status(400).json({ error: 'Unsupported request.' });
+      return;
+    }
+
     // 1. HARDENED AUTHENTICATION CHECK
     const authHeader = req.headers.authorization || req.headers.Authorization || req.headers['authorization'] || '';
     const authenticatedUser = await verifyFirebaseIdToken(authHeader);
