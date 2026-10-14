@@ -95,6 +95,7 @@ export const PopupAdModal = () => {
   };
 
   const hasImage = Boolean(cfg.imageUrl) && !imgError;
+  const showText = Boolean(cfg.title || cfg.description || cfg.buttonText) || !hasImage;
   const shadow = { textShadow: '0 2px 14px rgba(0,0,0,0.85), 0 1px 3px rgba(0,0,0,0.9)' };
 
   return (
@@ -103,7 +104,7 @@ export const PopupAdModal = () => {
       aria-modal="true"
       aria-label={cfg.title || 'Announcement'}
       onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/65 backdrop-blur-sm select-none"
+      className="fixed inset-0 z-[10001] flex items-center justify-center p-4 bg-black/65 backdrop-blur-sm select-none"
       style={{ animation: 'mpFade 0.3s ease both' }}
     >
       <div
@@ -124,7 +125,8 @@ export const PopupAdModal = () => {
               alt={cfg.title || 'Promo Offer'}
               draggable={false}
               onError={() => setImgError(true)}
-              className="w-auto max-w-full max-h-[56vh] object-contain"
+              onClick={handleButtonClick}
+              className={`w-auto max-w-full object-contain cursor-pointer ${showText ? 'max-h-[56vh]' : 'max-h-[74vh]'}`}
               style={{ filter: 'drop-shadow(0 24px 50px rgba(43,134,255,0.45))', animation: 'mpFloat 5s ease-in-out infinite' }}
             />
           </div>
@@ -143,7 +145,8 @@ export const PopupAdModal = () => {
           </div>
         )}
 
-        {/* Text + CTA — floating, no background */}
+        {/* Text + CTA — floating, no background. Skipped when the artwork carries its own text. */}
+        {showText && (
         <div className="mt-4 w-full text-center space-y-2.5">
           {cfg.title && (
             <h3 className="text-xl sm:text-2xl font-black text-white font-heading tracking-tight leading-snug" style={shadow}>
@@ -156,6 +159,7 @@ export const PopupAdModal = () => {
             </p>
           )}
 
+          {(cfg.buttonText || !hasImage) && (
           <div className="pt-1 flex justify-center">
             <button
               onClick={handleButtonClick}
@@ -166,7 +170,9 @@ export const PopupAdModal = () => {
               <span className="absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/35 to-transparent pointer-events-none" style={{ animation: 'mpShine 2.8s ease-in-out infinite' }} />
             </button>
           </div>
+          )}
         </div>
+        )}
 
         {/* Floating circular close, below the content (Midasbuy style) */}
         <button
