@@ -1290,25 +1290,18 @@ export const savePopupAdConfigToFirestore = async (config) => {
   }
 
   // Report the truth: success means the config reached at least one live database.
-  let attempted = false;
-  let published = false;
-  // Published by the server (the rules stop browsers writing siteConfig).
-  attempted = true;
-  {
-    const { ok, data } = await postServerApi('/api/admin/popup-ad', { config: clean });
-    if (ok) published = true;
-    else console.warn('[PopupAd] Publish failed:', data?.error);
+  // Published by the server to the realtime database (the rules stop browsers writing
+  // siteConfig). Visitors read that copy, so only the server's answer counts as "live".
+  const { ok, data } = await postServerApi('/api/admin/popup-ad', { config: clean });
+  if (!ok) {
+    console.warn('[PopupAd] Publish failed:', data?.error);
+    return false;
   }
+  // Best-effort mirror so the Firestore fallback never serves an older ad.
   if (db) {
-    attempted = true;
-    try {
-      await setDoc(doc(db, 'siteConfig', 'popupAd'), clean);
-      published = true;
-    } catch (e) {
-      console.warn('[PopupAd] Firestore publish failed:', e?.message || e);
-    }
+    try { await setDoc(doc(db, 'siteConfig', 'popupAd'), clean); } catch (e) { /* rules may deny it */ }
   }
-  return attempted ? published : true;
+  return true;
 };
 
 export const subscribePopupAdConfigFromFirestore = (callback) => {
@@ -1329,12 +1322,16 @@ export const subscribePopupAdConfigFromFirestore = (callback) => {
 
   let unsubDb = null;
   let unsubRtdb = null;
+  // The server publishes to the realtime database; once it answers, a stale Firestore
+  // copy must not overwrite it (the two listeners fire in any order).
+  let rtdbHasAd = false;
 
   if (rtdb) {
     try {
       const adRef = dbRef(rtdb, 'siteConfig/popupAd');
       unsubRtdb = rtdbOnValue(adRef, (snap) => {
         if (snap.exists() && snap.val()) {
+          rtdbHasAd = true;
           const data = snap.val();
           if (typeof window !== 'undefined' && window.localStorage) {
             try { localStorage.setItem('mads_popup_ad_config', JSON.stringify(data)); } catch (e) {}
@@ -1349,7 +1346,7 @@ export const subscribePopupAdConfigFromFirestore = (callback) => {
     try {
       const adDocRef = doc(db, 'siteConfig', 'popupAd');
       unsubDb = onSnapshot(adDocRef, (docSnap) => {
-        if (docSnap.exists()) {
+        if (docSnap.exists() && !rtdbHasAd) {
           const data = docSnap.data();
           if (typeof window !== 'undefined' && window.localStorage) {
             try { localStorage.setItem('mads_popup_ad_config', JSON.stringify(data)); } catch (e) {}
