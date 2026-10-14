@@ -672,7 +672,7 @@ export const AdminDashboard = () => {
         setAdminAuthError('3 Failed attempts detected! Admin Portal locked out for 15 minutes for security.');
         showToast('3 Failed Attempts! Admin Portal Locked.', 'error');
       } else {
-        setAdminAuthError(`Invalid Admin Email, Password, or 2FA Security Code! Attempt ${nextFailures}/3.`);
+        setAdminAuthError(`${err?.message || 'Invalid Admin Email, Password, or 2FA Security Code!'} Attempt ${nextFailures}/3.`);
         showToast('Invalid Admin Security Credentials', 'error');
       }
     } finally {
