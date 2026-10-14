@@ -204,7 +204,7 @@ export const SupportModal = () => {
     <>
       {/* Global 24/7 Support Floating Button */}
       {(!isSupportOpen || isMinimized) && (
-        <button
+        <button data-support-fab=""
           onClick={() => { setIsSupportOpen(true); setIsMinimized(false); }}
           aria-label="Open 24/7 Live Customer Support"
           title="24/7 Live Customer Support"
