@@ -2249,7 +2249,7 @@ async function verifyAndCreditGenieTransaction(transactionId) {
   }
   if (record.status === 'CREDITED') {
     return {
-      success: true, isPaid: true, alreadyCredited: true,
+      success: true, isPaid: true, alreadyCredited: true, purpose: record.purpose || 'DEPOSIT',
       amount: record.amountLkr, newBalanceLkr: record.newBalanceLkr, newBalanceUsdt: record.newBalanceUsdt
     };
   }
@@ -2298,7 +2298,10 @@ async function verifyAndCreditGenieTransaction(transactionId) {
     // the MooGold order-price check.
     // Includes the recharge bonus (previously added by the customer's
     // browser, which can no longer write wallet balances).
-    const creditResult = await creditUserWalletServer(record.uid, record.amountLkr + genieRechargeBonus(record.amountLkr), record.email);
+    // Card-paid orders (purpose ORDER) are a straight purchase, not a wallet
+    // recharge, so they don't earn the recharge bonus.
+    const bonusLkr = record.purpose === 'ORDER' ? 0 : genieRechargeBonus(record.amountLkr);
+    const creditResult = await creditUserWalletServer(record.uid, record.amountLkr + bonusLkr, record.email);
     if (!creditResult.success) {
       console.error(`[Genie Credit Failed] txn=${transactionId} user=${record.uid || record.email} reason=${creditResult.reason}`);
       return { success: false, error: creditResult.reason || 'Wallet credit failed', isPaid: true };
@@ -2312,8 +2315,8 @@ async function recordGenieManualPaymentToRtdb(transactionId, record) {
       userId: record.uid || '',
       userEmail: record.email || '',
       userName: record.userName || 'Gamer',
-      method: 'Online Card / eZ Cash',
-      referenceNumber: `Txn: ${transactionId}`,
+      method: record.purpose === 'ORDER' ? 'Card Payment (Top-up Order)' : 'Online Card / eZ Cash',
+      referenceNumber: record.purpose === 'ORDER' && record.order?.summary ? `Txn: ${transactionId} · ${record.order.summary}` : `Txn: ${transactionId}`,
       amount: record.amountLkr,
       currency: 'LKR',
       slipUrl: '',
@@ -2344,7 +2347,7 @@ async function recordGenieManualPaymentToRtdb(transactionId, record) {
 
     console.log(`[Genie Wallet Credited] txn=${transactionId} user=${record.uid || record.email} amount=Rs.${record.amountLkr} newBalance=Rs.${creditResult.newBalanceLkr}`);
     return {
-      success: true, isPaid: true, credited: true,
+      success: true, isPaid: true, credited: true, purpose: record.purpose || 'DEPOSIT',
       amount: record.amountLkr, newBalanceLkr: creditResult.newBalanceLkr, newBalanceUsdt: creditResult.newBalanceUsdt
     };
   } finally {
@@ -2352,7 +2355,91 @@ async function recordGenieManualPaymentToRtdb(transactionId, record) {
   }
 }
 
-// Create Genie Business IPG Transaction
+// Creates a Genie checkout and stores who it belongs to and the real amount
+// BEFORE the customer is sent to pay, so the webhook/verify-status can credit
+// the right wallet even if the browser never comes back.
+async function startGenieCheckout({ uid, email, name, amountLkr, localId, returnUrl, extraRecord = {} }) {
+  let appKey = (process.env.GENIE_APP_KEY || process.env.VITE_GENIE_APP_KEY || GENIE_DEFAULT_APP_KEY).replace(/[\r\n\s]/g, '');
+  if (!appKey.includes('699c294bec9aae0002066016')) {
+    appKey = GENIE_DEFAULT_APP_KEY;
+  }
+  const baseUrl = (process.env.GENIE_BASE_URL || process.env.VITE_GENIE_BASE_URL || GENIE_DEFAULT_BASE_URL).replace(/[\r\n\s\/]+$/, '');
+
+  const cleanEmail = sanitizeString(email || 'customer@madstopup.com', 100);
+  const cleanName = sanitizeString(name || 'MADS Gamer', 100);
+  const sep = returnUrl.includes('?') ? '&' : '?';
+  const fullReturnUrl = `${returnUrl}${sep}orderRef=${encodeURIComponent(localId)}`;
+
+  const payload = {
+    amount: Math.round(amountLkr * 100),
+    currency: 'LKR',
+    redirectUrl: fullReturnUrl,
+    webhook: 'https://madstopup.com/api/genie/webhook',
+    localId,
+    customerReference: cleanName,
+    billingDetails: {
+      email: cleanEmail,
+      name: cleanName,
+      address1: 'Colombo, Sri Lanka',
+      city: 'Colombo',
+      country: 'LK'
+    }
+  };
+
+  console.log(`[Geniebiz IPG Create Attempt] Amount: Rs. ${amountLkr} (${payload.amount} cents), User: ${cleanEmail}, Ref: ${localId}, Purpose: ${extraRecord.purpose || 'DEPOSIT'}, KeyLen: ${appKey.length}, Target: ${baseUrl}/public/v2/transactions`);
+
+  const apiRes = await fetch(`${baseUrl}/public/v2/transactions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': appKey
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const resText = await apiRes.text();
+  let resJson = null;
+  try { resJson = JSON.parse(resText); } catch (e) {}
+
+  console.log(`[Geniebiz IPG Create Response] HTTP ${apiRes.status}:`, resText.substring(0, 300));
+
+  if (apiRes.ok && resJson && (resJson.url || resJson.shortUrl)) {
+    if (resJson.id) {
+      await saveGenieTransactionRecord(resJson.id, {
+        uid: uid || '',
+        email: cleanEmail,
+        userName: cleanName,
+        amountLkr,
+        localId,
+        status: 'PENDING',
+        createdAt: new Date().toISOString(),
+        ...extraRecord
+      });
+    } else {
+      console.error(`[Genie Create Warning] No transaction id returned by Genie for localId=${localId} — wallet cannot be auto-credited for this attempt.`);
+    }
+    return {
+      success: true,
+      body: {
+        success: true,
+        transactionId: resJson.id,
+        redirectUrl: resJson.url || resJson.shortUrl,
+        shortUrl: resJson.shortUrl,
+        localId: resJson.localId,
+        state: resJson.state
+      }
+    };
+  }
+
+  let friendlyError = resJson?.message || resText.substring(0, 200) || 'Failed to create Genie Business IPG transaction';
+  if (apiRes.status === 401 || friendlyError === 'Unauthorized') {
+    friendlyError = 'Dialog Genie IPG Key Unauthorized. Please use eZ Cash, Bank Deposit or Binance Pay!';
+  }
+  return { success: false, status: apiRes.status || 400, error: friendlyError };
+}
+
+// Create Genie Business IPG Transaction (wallet deposit)
 app.post('/api/genie/create-transaction', rateLimiter(15, 60000), async (req, res) => {
   try {
     const { amount, userName, redirectUrl, orderRef } = req.body || {};
@@ -2360,22 +2447,12 @@ app.post('/api/genie/create-transaction', rateLimiter(15, 60000), async (req, re
     const authUser = await verifyFirebaseIdToken(req.headers.authorization || '');
     if (!authUser) return res.status(401).json({ error: 'Please log in again to deposit.' });
     if (await rejectIfBlocked(authUser, res)) return;
-    const userId = authUser.uid;
-    const userEmail = authUser.email || authUser.displayEmail || '';
     const numAmount = Math.round(parseFloat(amount) * 100) / 100;
 
     if (!numAmount || numAmount < 50 || numAmount > 500000) {
       return res.status(400).json({ error: 'Please enter an amount between Rs. 50 and Rs. 500,000.' });
     }
 
-    let appKey = (process.env.GENIE_APP_KEY || process.env.VITE_GENIE_APP_KEY || GENIE_DEFAULT_APP_KEY).replace(/[\r\n\s]/g, '');
-    if (!appKey.includes('699c294bec9aae0002066016')) {
-      appKey = GENIE_DEFAULT_APP_KEY;
-    }
-    const baseUrl = (process.env.GENIE_BASE_URL || process.env.VITE_GENIE_BASE_URL || GENIE_DEFAULT_BASE_URL).replace(/[\r\n\s\/]+$/, '');
-
-    const cleanEmail = sanitizeString(userEmail || 'customer@madstopup.com', 100);
-    const cleanName = sanitizeString(userName || 'MADS Gamer', 100);
     const localId = /^[A-Za-z0-9_-]{1,60}$/.test(String(orderRef || '')) ? orderRef : ('ORD-GENIE-' + Date.now());
 
     // After paying, the customer may only be sent back to this site.
@@ -2383,81 +2460,92 @@ app.post('/api/genie/create-transaction', rateLimiter(15, 60000), async (req, re
     if (!/^https:\/\/(www\.)?madstopup\.com(\/|$)/i.test(returnUrl)) {
       returnUrl = 'https://madstopup.com/wallet?genie=success';
     }
-    const sep = returnUrl.includes('?') ? '&' : '?';
-    returnUrl = `${returnUrl}${sep}orderRef=${encodeURIComponent(localId)}`;
 
-    const payload = {
-      amount: Math.round(numAmount * 100),
-      currency: 'LKR',
-      redirectUrl: returnUrl,
-      webhook: 'https://madstopup.com/api/genie/webhook',
+    const result = await startGenieCheckout({
+      uid: authUser.uid,
+      email: authUser.email || authUser.displayEmail || '',
+      name: userName,
+      amountLkr: numAmount,
       localId,
-      customerReference: cleanName,
-      billingDetails: {
-        email: cleanEmail,
-        name: cleanName,
-        address1: 'Colombo, Sri Lanka',
-        city: 'Colombo',
-        country: 'LK'
-      }
-    };
-
-    console.log(`[Geniebiz IPG Create Attempt] Amount: Rs. ${numAmount} (${payload.amount} cents), User: ${cleanEmail}, Ref: ${localId}, KeyLen: ${appKey.length}, Target: ${baseUrl}/public/v2/transactions`);
-
-    let apiRes = await fetch(`${baseUrl}/public/v2/transactions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': appKey
-      },
-      body: JSON.stringify(payload)
+      returnUrl
     });
-
-    let resText = await apiRes.text();
-    let resJson = null;
-    try { resJson = JSON.parse(resText); } catch (e) {}
-
-    console.log(`[Geniebiz IPG Create Response] HTTP ${apiRes.status}:`, resText.substring(0, 300));
-
-    if (apiRes.ok && resJson && (resJson.url || resJson.shortUrl)) {
-      // Persist who this transaction belongs to and the real amount BEFORE
-      // redirecting the customer to checkout, so the webhook/verify-status
-      // can credit the right wallet even if the browser never comes back.
-      if (resJson.id) {
-        await saveGenieTransactionRecord(resJson.id, {
-          uid: userId || '',
-          email: cleanEmail,
-          userName: cleanName,
-          amountLkr: numAmount,
-          localId,
-          status: 'PENDING',
-          createdAt: new Date().toISOString()
-        });
-      } else {
-        console.error(`[Genie Create Warning] No transaction id returned by Genie for localId=${localId} — wallet cannot be auto-credited for this attempt.`);
-      }
-
-      return res.json({
-        success: true,
-        transactionId: resJson.id,
-        redirectUrl: resJson.url || resJson.shortUrl,
-        shortUrl: resJson.shortUrl,
-        localId: resJson.localId,
-        state: resJson.state
-      });
-    } else {
-      let friendlyError = resJson?.message || resText.substring(0, 200) || 'Failed to create Genie Business IPG transaction';
-      if (apiRes.status === 401 || friendlyError === 'Unauthorized') {
-        friendlyError = 'Dialog Genie IPG Key Unauthorized. Please use eZ Cash, Bank Deposit or Binance Pay!';
-      }
-      return res.status(apiRes.status || 400).json({
-        success: false,
-        error: friendlyError
-      });
-    }
+    if (!result.success) return res.status(result.status).json({ success: false, error: result.error });
+    return res.json(result.body);
   } catch (err) {
     console.error('[Geniebiz Create Error]:', err);
+    return res.status(500).json({ error: SERVER_ERROR });
+  }
+});
+
+// Pay for a top-up order by card (Dialog Genie) instead of the wallet.
+// The amount is worked out HERE from the catalog (with admin price overrides),
+// never taken from the browser. Once Genie confirms the payment, the same
+// verify/webhook path credits that amount to the buyer's wallet (no recharge
+// bonus) and the page places the order from the wallet through /api/moogold,
+// which re-checks price and balance as usual. If the browser never comes back
+// after paying, the money is safe in the buyer's wallet.
+const MAX_CARD_ORDER_ITEMS = 20;
+app.post('/api/genie/create-order-payment', rateLimiter(10, 60000), async (req, res) => {
+  try {
+    const authUser = await verifyFirebaseIdToken(req.headers.authorization || '');
+    if (!authUser) return res.status(401).json({ error: 'Please log in again to pay by card.' });
+    if (await rejectIfBlocked(authUser, res)) return;
+
+    const { gameId, items, playerId, zoneId, redirectUrl, orderRef } = req.body || {};
+    const game = GAMES_DATA.find(g => g.id === gameId);
+    if (!game) return res.status(400).json({ error: 'Unknown game.' });
+    if (!Array.isArray(items) || items.length < 1 || items.length > MAX_CARD_ORDER_ITEMS) {
+      return res.status(400).json({ error: 'Please select at least 1 package.' });
+    }
+
+    const voucher = isVoucherGame(game);
+    const cleanPlayerId = sanitizeString(String(playerId || ''), 40);
+    const cleanZoneId = sanitizeString(String(zoneId || ''), 20);
+    if (!voucher && !cleanPlayerId) return res.status(400).json({ error: 'Please enter your Player ID.' });
+    if (!voucher && game.requiresServer && !cleanZoneId) return res.status(400).json({ error: 'Please enter your Zone / Server ID.' });
+
+    let totalLkr = 0;
+    const lines = [];
+    const seen = new Set();
+    for (const item of items) {
+      const pkg = (game.packages || []).find(p => p.id === item?.packageId);
+      const qty = Number(item?.quantity);
+      if (!pkg || seen.has(pkg.id) || !Number.isInteger(qty) || qty < 1 || qty > MAX_ORDER_QUANTITY) {
+        return res.status(400).json({ error: 'Invalid package selection.' });
+      }
+      seen.add(pkg.id);
+      const unit = await getCatalogPriceLkr(pkg.moongoldProductId);
+      if (!(unit > 0)) return res.status(400).json({ error: 'Invalid package selection.' });
+      totalLkr += unit * qty;
+      lines.push({ packageId: pkg.id, name: pkg.name, quantity: qty, unitPriceLkr: unit });
+    }
+    totalLkr = Math.round(totalLkr * 100) / 100;
+    if (totalLkr < 50 || totalLkr > 500000) {
+      return res.status(400).json({ error: 'Card payments must be between Rs. 50 and Rs. 500,000. Please use your wallet for this order.' });
+    }
+
+    const localId = /^[A-Za-z0-9_-]{1,60}$/.test(String(orderRef || '')) ? orderRef : ('ORD-CARD-' + Date.now());
+    let returnUrl = String(redirectUrl || '');
+    if (!/^https:\/\/(www\.)?madstopup\.com(\/|$)/i.test(returnUrl)) {
+      returnUrl = 'https://madstopup.com/?genie=order';
+    }
+    const summary = lines.map(l => `${l.quantity}x ${l.name}`).join(', ');
+    const result = await startGenieCheckout({
+      uid: authUser.uid,
+      email: authUser.email || authUser.displayEmail || '',
+      name: sanitizeString(req.body?.userName || 'MADS Gamer', 100),
+      amountLkr: totalLkr,
+      localId,
+      returnUrl,
+      extraRecord: {
+        purpose: 'ORDER',
+        order: { gameId: game.id, gameName: game.name, items: lines, playerId: cleanPlayerId, zoneId: cleanZoneId, summary }
+      }
+    });
+    if (!result.success) return res.status(result.status || 400).json({ success: false, error: result.error });
+    return res.json({ ...result.body, amountLkr: totalLkr });
+  } catch (err) {
+    console.error('[Genie Order Payment Error]:', err);
     return res.status(500).json({ error: SERVER_ERROR });
   }
 });
