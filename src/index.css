@@ -2297,3 +2297,85 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
 .home-dark .msb-copy { color: rgba(255, 255, 255, .4); }
 .home-dark .msb-online { color: #34d399; }
 @media (prefers-reduced-motion: reduce) { .msb.is-open .msb-item { animation: none; opacity: 1; transform: none; } }
+
+/* ── Home quick actions, catalog link and trust bar ── */
+.qa-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding-top: 16px; }
+.qa-card { --c: #1677ff; --c2: #5aa8ff; --soft: #eaf3ff; position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 14px 8px 12px; border-radius: 18px; background: #fff; border: 1px solid #e5ecf6; box-shadow: 0 10px 30px -22px rgba(15, 23, 42, .35); cursor: pointer; transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
+.qa-card.is-gold { --c: #f59e0b; --c2: #fcd34d; --soft: #fff6e0; }
+.qa-card.is-teal { --c: #0ea5a4; --c2: #5eead4; --soft: #e2f8f6; }
+.qa-card::before { content: ''; position: absolute; top: -60px; right: -50px; width: 170px; height: 170px; border-radius: 999px; background: radial-gradient(circle, color-mix(in srgb, var(--c) 22%, transparent), transparent 70%); pointer-events: none; transition: transform .4s ease; }
+.qa-card:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--c) 45%, transparent); box-shadow: 0 22px 44px -26px color-mix(in srgb, var(--c) 70%, transparent); }
+.qa-card:hover::before { transform: scale(1.25); }
+.qa-watermark { display: none; }
+.qa-top { position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; }
+.qa-ico { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; color: #fff; background: linear-gradient(135deg, var(--c2), var(--c)); box-shadow: 0 10px 22px -10px var(--c); transition: transform .3s ease; }
+.qa-ico svg { width: 22px; height: 22px; }
+.qa-card:hover .qa-ico { transform: rotate(-6deg) scale(1.06); }
+.qa-tag { display: none; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--c); background: var(--soft); }
+.qa-live { width: 6px; height: 6px; border-radius: 999px; background: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, .22); animation: qaPulse 1.8s ease-in-out infinite; }
+.qa-title { position: relative; font-family: var(--font-heading); font-weight: 900; font-size: 12px; line-height: 1.2; color: #0f172a; }
+.qa-text { display: none; position: relative; font-size: 13px; font-weight: 600; color: #64748b; }
+.qa-go { display: none; }
+
+@media (min-width: 640px) {
+  .qa-grid { gap: 16px; padding-top: 24px; }
+  .qa-card { align-items: flex-start; text-align: left; gap: 0; padding: 20px 20px 18px; border-radius: 22px; }
+  .qa-watermark { display: block; position: absolute; right: -14px; bottom: -18px; width: 108px; height: 108px; color: var(--c); opacity: .07; transform: rotate(-12deg); transition: transform .4s ease, opacity .4s ease; }
+  .qa-card:hover .qa-watermark { opacity: .12; transform: rotate(-4deg) scale(1.06); }
+  .qa-top { width: 100%; justify-content: space-between; }
+  .qa-ico { width: 48px; height: 48px; }
+  .qa-tag { display: inline-flex; }
+  .qa-title { margin-top: 16px; font-size: 17px; }
+  .qa-text { display: block; margin-top: 4px; }
+  .qa-go { position: absolute; right: 18px; bottom: 18px; display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 999px; color: var(--c); background: var(--soft); transition: transform .25s ease, background .25s ease, color .25s ease; }
+  .qa-go svg { width: 16px; height: 16px; }
+  .qa-card:hover .qa-go { color: #fff; background: var(--c); transform: translateX(3px); }
+}
+
+.qa-catalog-row { display: flex; justify-content: center; }
+.qa-catalog { display: inline-flex; align-items: center; gap: 12px; max-width: 100%; padding: 7px 7px 7px 10px; border-radius: 999px; background: #fff; border: 1px solid #e5ecf6; box-shadow: 0 14px 34px -24px rgba(22, 119, 255, .55); cursor: pointer; transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
+.qa-catalog:hover { transform: translateY(-2px); border-color: rgba(22, 119, 255, .45); box-shadow: 0 20px 40px -22px rgba(22, 119, 255, .7); }
+.qa-stack { display: flex; flex-shrink: 0; }
+.qa-stack img { width: 34px; height: 34px; border-radius: 999px; object-fit: cover; border: 2px solid #fff; margin-left: -10px; box-shadow: 0 4px 10px -4px rgba(15, 23, 42, .4); transition: margin .25s ease; }
+.qa-stack img:first-child { margin-left: 0; }
+.qa-catalog:hover .qa-stack img { margin-left: -4px; }
+.qa-catalog:hover .qa-stack img:first-child { margin-left: 0; }
+.qa-catalog-label { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; text-align: left; font-family: var(--font-heading); font-weight: 900; font-size: 14px; line-height: 1.15; color: #0f172a; }
+.qa-catalog-label > span { white-space: nowrap; }
+.qa-catalog-label small { font-family: var(--font-sans, inherit); font-size: 11px; font-weight: 600; color: #64748b; }
+.qa-catalog-go { flex-shrink: 0; width: 40px; height: 40px; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #fff; background: linear-gradient(135deg, #5aa8ff, #1677ff); box-shadow: 0 8px 18px -8px #1677ff; transition: transform .3s ease; }
+.qa-catalog-go svg { width: 18px; height: 18px; }
+.qa-catalog:hover .qa-catalog-go { transform: rotate(90deg); }
+
+.qa-trust { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; padding: 14px 6px; border-radius: 20px; background: #f6f9ff; border: 1px solid #e5ecf6; }
+.qa-trust-item { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 0 6px; }
+.qa-trust-item + .qa-trust-item { border-left: 1px solid #e2e8f0; }
+.qa-trust-ico { width: 36px; height: 36px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #1677ff; background: #fff; border: 1px solid #e5ecf6; }
+.qa-trust-ico svg { width: 18px; height: 18px; }
+.qa-trust-value { font-family: var(--font-heading); font-weight: 900; font-size: 17px; line-height: 1; letter-spacing: -.01em; color: #0f172a; }
+.qa-trust-label { margin: 4px 0 0; font-size: 10.5px; font-weight: 600; color: #64748b; }
+@media (min-width: 640px) {
+  .qa-trust { padding: 20px 8px; border-radius: 24px; }
+  .qa-trust-item { flex-direction: row; justify-content: center; text-align: left; gap: 14px; padding: 0 16px; }
+  .qa-trust-ico { width: 46px; height: 46px; border-radius: 14px; }
+  .qa-trust-ico svg { width: 22px; height: 22px; }
+  .qa-trust-value { font-size: 22px; }
+  .qa-trust-label { font-size: 12px; }
+}
+@keyframes qaPulse { 0%, 100% { box-shadow: 0 0 0 3px rgba(16, 185, 129, .22); } 50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); } }
+
+.home-dark .qa-card { background: linear-gradient(160deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .02)); border-color: rgba(255, 255, 255, .08); box-shadow: none; }
+.home-dark .qa-card:hover { border-color: color-mix(in srgb, var(--c) 60%, transparent); box-shadow: 0 22px 44px -26px color-mix(in srgb, var(--c) 80%, transparent); }
+.home-dark .qa-card.is-blue { --c: #2b86ff; }
+.home-dark .qa-tag, .home-dark .qa-go { color: var(--c2); background: color-mix(in srgb, var(--c) 16%, transparent); }
+.home-dark .qa-card:hover .qa-go { color: #fff; background: var(--c); }
+.home-dark .qa-watermark { opacity: .1; }
+.home-dark .qa-title, .home-dark .qa-catalog-label, .home-dark .qa-trust-value { color: #fff; }
+.home-dark .qa-text, .home-dark .qa-catalog-label small, .home-dark .qa-trust-label { color: rgba(255, 255, 255, .55); }
+.home-dark .qa-catalog { background: rgba(255, 255, 255, .05); border-color: rgba(255, 255, 255, .1); box-shadow: none; }
+.home-dark .qa-catalog:hover { border-color: rgba(43, 134, 255, .7); box-shadow: 0 20px 40px -22px rgba(43, 134, 255, .8); }
+.home-dark .qa-stack img { border-color: #1c2236; }
+.home-dark .qa-trust { background: rgba(255, 255, 255, .03); border-color: rgba(255, 255, 255, .08); }
+.home-dark .qa-trust-item + .qa-trust-item { border-left-color: rgba(255, 255, 255, .08); }
+.home-dark .qa-trust-ico { color: #74b8ff; background: rgba(43, 134, 255, .14); border-color: transparent; }
+@media (prefers-reduced-motion: reduce) { .qa-live { animation: none; } }
