@@ -37,7 +37,14 @@ export const PopupAdModal = () => {
 
     let cancelled = false;
     let openTimer;
-    const show = () => { if (!cancelled) { openTimer = setTimeout(() => !cancelled && setIsOpen(true), 350); } };
+    // show() can be called by the image load AND the 3s safety timer; only the first
+    // call may open it, or a popup the user already closed pops up again.
+    let shown = false;
+    const show = () => {
+      if (cancelled || shown) return;
+      shown = true;
+      openTimer = setTimeout(() => { if (!cancelled && !dismissedSigRef.current) setIsOpen(true); }, 350);
+    };
 
     setImgError(false);
     if (cfg.imageUrl) {
