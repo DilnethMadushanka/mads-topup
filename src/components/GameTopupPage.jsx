@@ -7,7 +7,7 @@ import { uploadToR2Storage } from '../services/storageService';
 import confetti from 'canvas-confetti';
 import { auth } from '../services/firebaseAuth';
 import { getUserAuthToken } from '../services/serverApi';
-import { gamePathFor } from '../data/seoPages';
+import { gamePathFor } from '../data/sitePages';
 import { useResellerStatus, resellerRateOf } from '../hooks/useResellerStatus';
 import { resellerUnitPrice } from '../data/resellerTiers';
 import { 
