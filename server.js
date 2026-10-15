@@ -529,6 +529,19 @@ app.post('/api/admin/game-strip', requireAdminSession, async (req, res) => {
   }
 });
 
+// Admin: publish the running ticker notice. Same reason as the popup:
+// browsers can't write siteConfig, so every visitor reads this one copy live.
+app.post('/api/admin/ticker', requireAdminSession, async (req, res) => {
+  try {
+    const text = String(req.body?.text || '').trim().slice(0, 500);
+    await rtdbPut('siteConfig/ticker', { text, updatedAt: Date.now() });
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[Admin Ticker Error]:', e.message);
+    res.status(500).json({ error: 'Could not publish the ticker notice.' });
+  }
+});
+
 // Admin: save package price overrides ({ packageId: priceLkr }). Browsers
 // can't write settings/customPrices (database rules), because the server
 // charges these prices.
