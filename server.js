@@ -4,13 +4,12 @@ import path from 'path';
 import crypto from 'crypto';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import nodemailer from 'nodemailer';
-import { Resend } from 'resend';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { initTelegramBot, getTelegramBotHealthStatus, forceTelegramBotRefresh } from './src/services/telegramBotService.js';
 import { lookupFreePlayerIgn } from './src/services/playerLookup.js';
 import { GAMES_DATA } from './src/data/games.js';
 import { isSessionToken, verifySession, signSession } from './lib/session.js';
+import { sendMail, mailProvidersConfigured } from './lib/mailer.js';
 import { verifyPasswordLogin, setPasswordForEmail, publicProfile } from './lib/userAuth.js';
 import { rtdbUrl, rtdbGet, rtdbPut, rtdbPatch, rtdbTransaction, findUserKey, adjustWallet, spendWallet, isUserBlocked } from './lib/rtdbAdmin.js';
 import { fetchVoucherCodes, saveUserVoucher, listUserVouchers, findCatalogPackage, isVoucherGame, redactVoucherCodes } from './lib/moogoldVoucher.js';
@@ -990,6 +989,8 @@ app.post('/api/auth/reset-request', rateLimiter(5, 60000), async (req, res) => {
       const name = email.split('@')[0];
       const sent = await sendOtpEmail(email, code, name.charAt(0).toUpperCase() + name.slice(1));
       if (!sent.success) return res.status(503).json({ success: false, message: 'Email service temporarily unavailable. Please try again.' });
+    } else {
+      console.warn(`[Password Reset] No account with email ${email}; no code sent.`);
     }
     res.json({ success: true });
   } catch (e) {
@@ -1037,7 +1038,7 @@ async function sendOtpEmail(email, otp, displayName) {
           <p style="color: #94a3b8; font-size: 12px; margin-top: 4px;">Email Verification Code</p>
         </div>
         <p style="font-size: 14px; color: #e2e8f0;">Hello ${displayName},</p>
-        <p style="font-size: 14px; color: #cbd5e1;">Please use the following 6-digit verification code to complete your account setup:</p>
+        <p style="font-size: 14px; color: #cbd5e1;">Use this 6-digit code to continue (sign up or password reset):</p>
         <div style="background-color: #1e293b; border: 2px dashed #ef4444; border-radius: 12px; padding: 16px; text-align: center; margin: 20px 0;">
           <span style="font-size: 32px; font-weight: 900; letter-spacing: 8px; color: #f87171; font-family: monospace;">${otp}</span>
         </div>
@@ -1047,61 +1048,13 @@ async function sendOtpEmail(email, otp, displayName) {
       </div>
     `;
 
-    // Using top-level imported nodemailer directly
-
-    // Option 1: Try Zoho Mail SMTP (Primary - High Speed Direct Mailer to any inbox)
-    const zohoUser = process.env.ZOHO_EMAIL || process.env.VITE_ZOHO_EMAIL || 'info@trivexit.com';
-    const zohoPass = process.env.ZOHO_PASSWORD || '';
-
-    if (nodemailer && zohoPass) {
-      try {
-        const mailTransporter = nodemailer.createTransport({
-          host: 'smtppro.zoho.com',
-          port: 465,
-          secure: true,
-          auth: { user: zohoUser, pass: zohoPass },
-          tls: { rejectUnauthorized: false },
-          connectionTimeout: 5000,
-          greetingTimeout: 5000,
-          socketTimeout: 10000
-        });
-        const info = await mailTransporter.sendMail({
-          from: `"MADS TOPUP" <${zohoUser}>`,
-          replyTo: 'support@madstopup.com',
-          to: email,
-          subject: `Your MADS TOPUP Verification Code: ${otp}`,
-          text: `Your MADS TOPUP verification code is: ${otp}. Valid for 15 minutes.`,
-          html: emailHtml
-        });
-        console.log(`[Zoho Mail OTP Sent] Successfully sent to ${email} via ${zohoUser}`, info?.messageId);
-        return { success: true, provider: 'Zoho Mail SMTP', messageId: info?.messageId };
-      } catch (z465Err) {
-        console.warn('[Zoho OTP Note]:', z465Err.message);
-      }
-    }
-
-    // Option 2: Fallback to Resend API
-    const resendApiKey = process.env.RESEND_API_KEY || '';
-    if (resendApiKey && Resend) {
-      try {
-        const resend = new Resend(resendApiKey);
-        const data = await resend.emails.send({
-          from: process.env.RESEND_FROM_EMAIL || 'MADS TOPUP <onboarding@madstopup.com>',
-          to: [email],
-          subject: `Your Verification Code: ${otp}`,
-          html: emailHtml
-        });
-        if (data?.id && !data?.error) {
-          console.log(`[Resend OTP Sent] Sent to ${email}, id: ${data?.id}`);
-          return { success: true, provider: 'Resend API', messageId: data?.id };
-        }
-      } catch (rErr) {
-        console.warn('[Resend OTP Error]:', rErr.message);
-      }
-    }
-
-    console.error('[OTP Email] Both Zoho SMTP and Resend failed — OTP not delivered to', email);
-    return { success: false };
+    return sendMail({
+      to: email,
+      replyTo: 'support@madstopup.com',
+      subject: `Your MADS TOPUP Verification Code: ${otp}`,
+      text: `Your MADS TOPUP verification code is: ${otp}. Valid for 15 minutes.`,
+      html: emailHtml
+    });
 }
 
 // Signup email check. The server makes the code and checks it (the browser
@@ -1225,58 +1178,13 @@ app.post('/api/send-reseller-approval', rateLimiter(10, 60000), requireAdminSess
       </div>
     `;
 
-    // Option 1: Try Resend API (Primary - Instant REST API)
-    const resendApiKey = process.env.RESEND_API_KEY || '';
-    if (resendApiKey && Resend) {
-      try {
-        const resend = new Resend(resendApiKey);
-        const data = await resend.emails.send({
-          from: process.env.RESEND_FROM_EMAIL || 'MADS TOPUP <onboarding@madstopup.com>',
-          to: [email],
-          subject: `🎉 Reseller Partner Approved! Your Reseller Code & Security Key`,
-          html: emailHtml
-        });
-        if (data?.id && !data?.error) {
-          console.log(`[Resend Reseller Approval Sent] Sent to ${email}, id: ${data?.id}`);
-          return res.json({ success: true, provider: 'Resend API', messageId: data?.id });
-        }
-      } catch (rErr) {
-        console.warn('[Resend Approval Error]:', rErr.message);
-      }
-    }
-
-    // Option 2: Fallback to Zoho Mail SMTP
-    const zohoUser = process.env.ZOHO_EMAIL || 'info@trivexit.com';
-    const zohoPass = process.env.ZOHO_PASSWORD || '';
-    let lastError = null;
-
-    if (nodemailer && zohoPass) {
-      try {
-        const mailTransporter = nodemailer.createTransport({
-          host: 'smtppro.zoho.com',
-          port: 465,
-          secure: true,
-          auth: { user: zohoUser, pass: zohoPass },
-          tls: { rejectUnauthorized: false },
-          connectionTimeout: 3000,
-          greetingTimeout: 3000,
-          socketTimeout: 5000
-        });
-        const info = await mailTransporter.sendMail({
-          from: '"MADS TOPUP" <info@trivexit.com>',
-          to: email,
-          subject: `🎉 Reseller Partner Approved! Your Reseller Code & Security Key`,
-          html: emailHtml
-        });
-        console.log(`[Zoho SMTP 465 Approval Sent] Successfully sent to ${email}`, info?.messageId);
-        return res.json({ success: true, provider: 'Zoho Mail SMTP (Port 465)', messageId: info?.messageId });
-      } catch (z465Err) {
-        console.warn('[Zoho SMTP 465 Note]:', z465Err.message);
-        lastError = z465Err.message;
-      }
-    }
-
-    return res.json({ success: false, simulated: true, error: lastError || 'SMTP connection failed' });
+    const sent = await sendMail({
+      to: email,
+      subject: `🎉 Reseller Partner Approved! Your Reseller Code & Security Key`,
+      html: emailHtml
+    });
+    if (sent.success) return res.json({ success: true, provider: sent.provider, messageId: sent.messageId });
+    return res.json({ success: false, simulated: true, error: sent.errors.join(' | ') || 'Email sending failed' });
   } catch (err) {
     console.error('Mail Reseller Approval Error:', err);
     return res.status(500).json({ error: SERVER_ERROR });
@@ -2833,6 +2741,9 @@ app.use((req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 Production Server running on port ${PORT}`);
+  const mailers = mailProvidersConfigured();
+  if (mailers.length) console.log('[Mail] Email providers:', mailers.join(', '));
+  else console.error('[Mail] No email provider set. OTP and reset emails will fail. Set ZOHO_PASSWORD or RESEND_API_KEY in .env.');
   try {
     initTelegramBot();
   } catch (e) {
