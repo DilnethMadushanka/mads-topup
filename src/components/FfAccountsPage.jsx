@@ -3,8 +3,9 @@ import { createPortal } from 'react-dom';
 import { useApp } from '../context/AppContext';
 import { useSiteTheme } from '../hooks/useSiteTheme';
 import { buyFfAccount } from '../services/ffAccountsService';
+import { FF_ACCOUNT_PROMO, ffAccountPromoActive, ffAccountSalePrice } from '../data/ffAccountPromo';
 import {
-  ArrowLeft, ArrowRight, ShieldCheck, Wallet, MessageCircle, X, Crown, Star,
+  ArrowLeft, ArrowRight, ShieldCheck, Wallet, MessageCircle, X, Crown, Star, BadgePercent,
   Image as ImageIcon, CheckCircle2, Loader2, ChevronLeft, ChevronRight, UserCheck
 } from 'lucide-react';
 
@@ -12,6 +13,21 @@ const WHATSAPP = '94740436276';
 const waLink = (text) => `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(text)}`;
 const lkr = (v) => `Rs. ${Math.round(Number(v) || 0).toLocaleString('en-US')}`;
 const FALLBACK_ART = '/game_banners/freefire.jpg';
+const PROMO_PCT = Math.round(FF_ACCOUNT_PROMO.rate * 100);
+const PROMO_LAST_DAY = new Date(Date.parse(FF_ACCOUNT_PROMO.endsAt) - 1).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', timeZone: 'Asia/Colombo' });
+
+// Struck-through price above the price the buyer pays: the listing's old
+// price, or its listed price while the account sale runs.
+const Price = ({ acc, className }) => {
+  const pay = ffAccountSalePrice(acc.priceLkr);
+  const was = pay < acc.priceLkr ? acc.priceLkr : (acc.oldPriceLkr > acc.priceLkr ? acc.oldPriceLkr : 0);
+  return (
+    <span className={className}>
+      {was > 0 && <s>{lkr(was)}</s>}
+      <b>{lkr(pay)}</b>
+    </span>
+  );
+};
 
 const STATUS_LABEL = { AVAILABLE: 'Available', RESERVED: 'Reserved', SOLD: 'Sold' };
 const FILTERS = [
@@ -45,6 +61,7 @@ const AccountCard = ({ acc, onOpen }) => {
           {acc.images.length > 1 && <span className="ffa-count"><ImageIcon />{acc.images.length}</span>}
         </span>
         {acc.featured && !sold && <span className="ffa-featured"><Star />Featured</span>}
+        {!sold && ffAccountPromoActive() && <span className="ffa-off">-{PROMO_PCT}%</span>}
       </span>
       <span className="ffa-card-body">
         <span className="ffa-stats">
@@ -60,10 +77,7 @@ const AccountCard = ({ acc, onOpen }) => {
           </span>
         )}
         <span className="ffa-card-foot">
-          <span className="ffa-price">
-            {acc.oldPriceLkr > acc.priceLkr && <s>{lkr(acc.oldPriceLkr)}</s>}
-            <b>{lkr(acc.priceLkr)}</b>
-          </span>
+          <Price acc={acc} className="ffa-price" />
           <span className="ffa-go"><ArrowRight /></span>
         </span>
       </span>
@@ -82,7 +96,8 @@ const AccountModal = ({ acc, onClose }) => {
 
   const images = acc.images.length ? acc.images : [FALLBACK_ART];
   const balance = (Number(userProfile?.walletBalance) || 0) + (Number(userProfile?.walletUsdt) || 0) * 305;
-  const short = balance < acc.priceLkr;
+  const pay = ffAccountSalePrice(acc.priceLkr);
+  const short = balance < pay;
   const available = acc.status === 'AVAILABLE';
 
   useEffect(() => {
@@ -117,7 +132,7 @@ const AccountModal = ({ acc, onClose }) => {
     setStep('done');
   };
 
-  const enquiry = waLink(`Hi MADS TOPUP, I'm interested in the Free Fire account "${acc.title}" (${lkr(acc.priceLkr)}). Ref: ${acc.id}`);
+  const enquiry = waLink(`Hi MADS TOPUP, I'm interested in the Free Fire account "${acc.title}" (${lkr(pay)}). Ref: ${acc.id}`);
   const handover = waLink(`Hi MADS TOPUP, I bought the Free Fire account "${acc.title}". Order: ${orderId}. Please send the login details.`);
 
   // Portalled to <body>: the page wrapper is animated (transform), which would
@@ -192,21 +207,19 @@ const AccountModal = ({ acc, onClose }) => {
               <div className="ffa-buybox">
                 <div className="ffa-buy-price">
                   <span>Price</span>
-                  <div>
-                    {acc.oldPriceLkr > acc.priceLkr && <s>{lkr(acc.oldPriceLkr)}</s>}
-                    <b>{lkr(acc.priceLkr)}</b>
-                  </div>
+                  <Price acc={acc} className="ffa-buy-amt" />
                 </div>
+                {available && pay < acc.priceLkr && <p className="ffa-promo-note"><BadgePercent />{PROMO_PCT}% account sale: you save {lkr(acc.priceLkr - pay)}. Ends {PROMO_LAST_DAY}.</p>}
 
                 {step === 'confirm' ? (
                   <div className="ffa-confirm">
-                    <p>Pay <b>{lkr(acc.priceLkr)}</b> from your MADS wallet? Your balance is <b>{lkr(balance)}</b>.</p>
+                    <p>Pay <b>{lkr(pay)}</b> from your MADS wallet? Your balance is <b>{lkr(balance)}</b>.</p>
                     {error && <p className="ffa-error">{error}</p>}
                     {short ? (
                       <button type="button" className="ffa-btn is-primary" onClick={() => { onClose(); openWalletModal('ezcash'); }}><Wallet />Add money to wallet</button>
                     ) : (
                       <button type="button" className="ffa-btn is-primary" onClick={confirmBuy} disabled={busy}>
-                        {busy ? <Loader2 className="ffa-spin animate-spin" /> : <ShieldCheck />}{busy ? 'Paying…' : `Confirm & pay ${lkr(acc.priceLkr)}`}
+                        {busy ? <Loader2 className="ffa-spin animate-spin" /> : <ShieldCheck />}{busy ? 'Paying…' : `Confirm & pay ${lkr(pay)}`}
                       </button>
                     )}
                     <button type="button" className="ffa-btn is-ghost" onClick={() => setStep('view')} disabled={busy}>Back</button>
@@ -271,6 +284,12 @@ export const FfAccountsPage = () => {
           <span className="section-badge">— OTHER SERVICES —</span>
           <h1>Free Fire <span>Accounts</span></h1>
           <p>Ready accounts with rare bundles, guns and high levels. Pay from your wallet and get the login on WhatsApp.</p>
+          {ffAccountPromoActive() && (
+            <div className="ffa-promo">
+              <span className="ffa-promo-ico"><BadgePercent /></span>
+              <span><b>{PROMO_PCT}% off every account</b>Account sale ends {PROMO_LAST_DAY}. The discount is taken off when you pay.</span>
+            </div>
+          )}
           <div className="ffa-trust">
             <span><span className="ffa-t-ico is-blue"><UserCheck /></span>Checked accounts</span>
             <span><span className="ffa-t-ico is-gold"><Wallet /></span>Pay from wallet</span>

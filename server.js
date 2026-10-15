@@ -8,6 +8,7 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { initTelegramBot, getTelegramBotHealthStatus, forceTelegramBotRefresh, createTelegramLinkCode } from './src/services/telegramBotService.js';
 import { lookupFreePlayerIgn } from './src/services/playerLookup.js';
 import { GAMES_DATA } from './src/data/games.js';
+import { ffAccountSalePrice } from './src/data/ffAccountPromo.js';
 import { RESELLER_MIN_DEPOSIT_LKR, RESELLER_TIERS, resellerTierFor, nextResellerTier, tierById } from './src/data/resellerTiers.js';
 import { isSessionToken, verifySession, signSession } from './lib/session.js';
 import { sendMail, mailProvidersConfigured } from './lib/mailer.js';
@@ -648,7 +649,9 @@ app.post('/api/ff-accounts/buy', rateLimiter(10, 60000), async (req, res) => {
     });
     if (!claim.committed || !listing) return res.status(409).json({ error: reason });
 
-    const priceLkr = Math.round(Number(listing.priceLkr) || 0);
+    // The listed price, less the account sale discount while it runs.
+    const listPriceLkr = Math.round(Number(listing.priceLkr) || 0);
+    const priceLkr = ffAccountSalePrice(listPriceLkr);
     const release = () => rtdbTransaction(path, (cur) => (cur && cur.saleRef === saleRef
       ? { ...cur, status: 'AVAILABLE', saleRef: null, reservedAt: null } : undefined)).catch(() => {});
     if (!(priceLkr > 0)) { await release(); return res.status(400).json({ error: 'This account has no price yet.' }); }
@@ -667,7 +670,7 @@ app.post('/api/ff-accounts/buy', rateLimiter(10, 60000), async (req, res) => {
     const buyerName = String(profile?.name || profile?.displayName || user.displayName || '').slice(0, 80);
     const buyerEmail = String(user.email || user.displayEmail || profile?.email || '');
     await rtdbPut(`ffAccountSales/${saleRef}`, {
-      saleRef, listingId: id, title: listing.title || '', priceLkr,
+      saleRef, listingId: id, title: listing.title || '', priceLkr, listPriceLkr,
       userId: user.uid, userKey: deduct.rtdbKey || '', userEmail: buyerEmail, userName: buyerName,
       userPhone: String(profile?.phone || profile?.whatsapp || '').slice(0, 30),
       paidWith: deduct.usedCurrency || 'LKR', ip: clientIp(req), createdAt: now,
