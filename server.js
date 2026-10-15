@@ -1972,6 +1972,18 @@ app.post('/api/me', rateLimiter(120, 60000), async (req, res) => {
   }
 });
 
+// Screen crashes caught by the app's ErrorBoundary, written to the pm2 log
+// so they can be fixed. Text only, trimmed; nothing is stored.
+app.post('/api/client-error', rateLimiter(10, 60000), (req, res) => {
+  const b = req.body || {};
+  const clip = (v, n) => String(v || '').replace(/[\r\n]+/g, ' | ').slice(0, n);
+  console.error('[Client Error]', JSON.stringify({
+    where: clip(b.where, 40), message: clip(b.message, 500), url: clip(b.url, 200),
+    userAgent: clip(b.userAgent, 300), stack: clip(b.stack, 2000), componentStack: clip(b.componentStack, 2000),
+  }));
+  res.json({ success: true });
+});
+
 // The caller's own support tickets (matched by account, or by a verified email).
 app.post('/api/tickets/mine', rateLimiter(60, 60000), async (req, res) => {
   try {

@@ -4457,3 +4457,24 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
   body:has(.rr-backdrop) #rr-print { position: fixed; top: 0; left: 0; right: 0; margin: 0 auto; max-width: 420px; background: #fff !important; color: #000 !important; }
   #rr-print .rd-copy button { display: none; }
 }
+
+/* Error screen (ErrorBoundary): shown instead of a blank page when a screen crashes */
+.eb-wrap { display: flex; align-items: center; justify-content: center; padding: 24px 16px; min-height: 60vh; font-family: var(--font-body, 'Plus Jakarta Sans', system-ui, sans-serif); color: #0f172a; }
+.eb-full { position: fixed; inset: 0; z-index: 2147482000; min-height: 0; background: radial-gradient(ellipse 70% 50% at 10% 0%, rgba(22, 119, 255, .12), transparent 70%), #f6f9ff; }
+.eb-card { width: 100%; max-width: 420px; padding: 28px 24px 22px; border-radius: 24px; background: #fff; border: 1px solid #e5ecf6; box-shadow: 0 30px 70px -40px rgba(22, 119, 255, .55); text-align: center; }
+.eb-icon { width: 48px; height: 48px; margin: 0 auto 14px; display: grid; place-items: center; border-radius: 14px; color: #fff; font: 900 24px/1 'Outfit', system-ui, sans-serif; background: linear-gradient(135deg, #f59e0b, #ef4444); }
+.eb-title { margin: 0; font: 900 22px/1.2 'Outfit', system-ui, sans-serif; letter-spacing: -.02em; }
+.eb-sub { margin: 6px 0 14px; font-size: 14px; color: #64748b; }
+.eb-msg { display: block; padding: 10px 12px; border-radius: 12px; background: #f6f9ff; border: 1px solid #e5ecf6; font: 600 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; color: #b91c1c; text-align: left; word-break: break-word; white-space: pre-wrap; }
+.eb-actions { display: flex; gap: 10px; margin-top: 16px; }
+.eb-btn { flex: 1; height: 46px; border-radius: 14px; border: 1px solid #e5ecf6; background: #fff; color: #0f172a; font-weight: 800; font-size: 14px; cursor: pointer; }
+.eb-btn-primary { border-color: transparent; color: #fff; background: linear-gradient(135deg, #3d95ff, #1677ff); box-shadow: 0 12px 24px -12px rgba(22, 119, 255, .8); }
+@media (prefers-color-scheme: dark) {
+  .eb-wrap { color: #e9f0ff; }
+  .eb-full { background: radial-gradient(ellipse 70% 50% at 10% 0%, rgba(43, 134, 255, .18), transparent 70%), #151a2b; }
+  .eb-card { background: rgba(255, 255, 255, .05); border-color: rgba(255, 255, 255, .1); }
+  .eb-sub { color: rgba(255, 255, 255, .55); }
+  .eb-msg { background: rgba(255, 255, 255, .04); border-color: rgba(255, 255, 255, .08); color: #fca5a5; }
+  .eb-btn { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .1); color: #e9f0ff; }
+  .eb-btn-primary { background: linear-gradient(135deg, #5aa8ff, #2b86ff); border-color: transparent; }
+}
