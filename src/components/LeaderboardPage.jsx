@@ -396,6 +396,43 @@ export const LeaderboardPage = () => {
         .hof-foot-top { display: flex; align-items: center; justify-content: center; gap: 7px; margin-bottom: 6px; font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #1677ff; }
         .hof-foot p { margin: 0; font-size: 12px; font-weight: 500; color: #94a3b8; }
 
+        /* Dark mode: navy glass on the site gradient */
+        .home-dark .hof-page { background: transparent; color: #e9f0ff; }
+        .home-dark .hof-glow-a { background: rgba(43,134,255,0.22); }
+        .home-dark .hof-grid-bg { opacity: 0.07; }
+        .home-dark .hof-nav { background: rgba(19,24,41,0.78); border-bottom-color: rgba(255,255,255,0.08); box-shadow: 0 8px 24px -16px rgba(0,0,0,0.6); }
+        .home-dark .hof-back { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.12); color: #e9f0ff; }
+        .home-dark .hof-back:hover { background: #2b86ff; border-color: #2b86ff; }
+        .home-dark .hof-nav-title, .home-dark .hof-h1, .home-dark .hof-name, .home-dark .hof-row-name { color: #fff; }
+        .home-dark .hof-h1 span, .home-dark .hof-row-amount, .home-dark .hof-foot-top { color: #5aa8ff; }
+        .home-dark .hof-sub, .home-dark .hof-foot p, .home-dark .hof-row-orders, .home-dark .hof-state { color: rgba(255,255,255,0.55); }
+        .home-dark .hof-period { background: rgba(43,134,255,0.12); border-color: rgba(90,168,255,0.3); color: #74b8ff; }
+        .home-dark .hof-tabs { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
+        .home-dark .hof-tab { color: rgba(255,255,255,0.6); }
+        .home-dark .hof-tab:hover { color: #fff; }
+        .home-dark .hof-tab-active { background: #2b86ff; color: #fff; }
+        .home-dark .hof-podium { background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.025)); border-color: rgba(255,255,255,0.1); box-shadow: 0 30px 60px -34px rgba(43,134,255,0.45); }
+        .home-dark .hof-ring-inner { background: #1b2132; }
+        .home-dark .hof-rank-dot { border-color: #1b2132; }
+        .home-dark .hof-amount { color: #fff !important; }
+        .home-dark .hof-rank-1 .hof-amount { color: #5aa8ff !important; }
+        .home-dark .hof-orders { color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
+        .home-dark .hof-step-empty, .home-dark .hof-empty-avatar { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.18); color: rgba(255,255,255,0.3); }
+        .home-dark .hof-divider span { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12)); }
+        .home-dark .hof-divider span:last-child { background: linear-gradient(270deg, transparent, rgba(255,255,255,0.12)); }
+        .home-dark .hof-divider em { color: rgba(255,255,255,0.45); }
+        .home-dark .hof-row, .home-dark .hof-foot { background: rgba(255,255,255,0.045); border-color: rgba(255,255,255,0.09); box-shadow: none; }
+        .home-dark .hof-row:hover { border-color: rgba(90,168,255,0.35); box-shadow: 0 18px 34px -18px rgba(43,134,255,0.45); }
+        .home-dark .hof-row-rank { color: rgba(255,255,255,0.55); background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
+        .home-dark .hof-row-rank-hot { color: #74b8ff; background: rgba(43,134,255,0.14); border-color: rgba(90,168,255,0.3); }
+        .home-dark .hof-av-sm > div { border-color: #1b2132 !important; }
+        .home-dark .hof-bar { background: rgba(255,255,255,0.08); }
+        .home-dark .hof-spinner { border-color: rgba(255,255,255,0.1); border-top-color: #2b86ff; }
+        @media (prefers-reduced-motion: reduce) { .hof-crown { animation: none; } }
+        /* Light mode: blue-white instead of the old pink tint */
+        .hof-page { background: linear-gradient(170deg, #eef5ff 0%, #ffffff 42%, #fafbff 100%); }
+        .home-dark .hof-page { background: transparent; }
+
         @keyframes hof-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
         @keyframes hof-spin { to { transform: rotate(360deg); } }
 

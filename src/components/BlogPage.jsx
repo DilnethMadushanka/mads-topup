@@ -88,39 +88,37 @@ export const BlogPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFF] pb-20 font-sans text-slate-900 animate-in fade-in duration-300">
+    <div className="min-h-screen pb-20 font-sans text-slate-900 animate-in fade-in duration-300">
 
-      {/* Hero Banner */}
-      <div className="bg-gradient-to-r from-[#1677ff] via-[#1764f5] to-[#0b5ed7] text-white py-16 sm:py-20 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-brand-950/50 rounded-full blur-3xl pointer-events-none" />
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 relative z-10">
-          <div className="flex items-center gap-2 text-xs text-brand-200 font-bold mb-6">
-            <button onClick={goHome} className="hover:text-white transition-colors cursor-pointer flex items-center gap-1"><Home className="w-3.5 h-3.5" /> Home</button>
-            <ChevronRight className="w-3.5 h-3.5 opacity-60" />
-            <span className="text-white">Blog & News</span>
-          </div>
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
-              <BookOpen className="w-5 h-5 text-white" />
+      {/* Header */}
+      <div className="blgp-hero">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 blgp-hero-inner">
+          <div className="blgp-hero-text">
+            <div className="blgp-crumbs">
+              <button type="button" onClick={goHome}><Home /> Home</button>
+              <ChevronRight className="blgp-crumb-sep" />
+              <span>Blog &amp; News</span>
             </div>
-            <span className="text-xs font-black uppercase tracking-widest text-brand-200">MADS TOPUP BLOG</span>
+            <span className="blgp-eyebrow"><BookOpen /> MADS TOPUP blog</span>
+            <h1 className="blgp-title">Game News &amp; <span>Guides</span></h1>
+            <p className="blgp-sub">Top-up guides, redeem codes, esports news and the latest updates from MADS TOPUP Sri Lanka.</p>
+            <div className="blgp-search">
+              <Search />
+              <input
+                type="text"
+                placeholder="Search articles..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
+            </div>
           </div>
-          <h1 className="text-4xl sm:text-5xl font-extrabold font-heading tracking-tight text-white mb-3">
-            Game News &amp; <span className="text-brand-200">Guides</span>
-          </h1>
-          <p className="text-brand-100 text-sm sm:text-base font-medium max-w-xl">
-            Top-up guides, redeem codes, esports news and the latest updates from MADS TOPUP Sri Lanka.
-          </p>
-          <div className="mt-8 relative max-w-lg">
-            <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search articles..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white text-slate-900 text-sm font-semibold placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-white/50 shadow-lg"
-            />
+          <div className="blgp-stack" aria-hidden="true">
+            {EXTENDED_POSTS.slice(0, 2).map((p, i) => (
+              <div key={p.id} className={`blgp-stack-card is-${i + 1}`}>
+                <img src={p.image} alt="" />
+                <span>{p.tag}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
