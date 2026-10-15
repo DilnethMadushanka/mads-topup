@@ -1550,11 +1550,12 @@ export const AppProvider = ({ children }) => {
     const { ok, data } = await postServerApi(isAdmin ? '/api/admin/tickets/message' : '/api/tickets/message', { ticketId, text, attachmentUrl }, token);
     if (!ok || !data?.ticket) {
       showToast(data?.error || 'Could not send the reply. Please try again.', 'error');
-      return;
+      return false;
     }
     setSupportTickets(prev => prev.map(tck => (tck.id === ticketId ? { ...tck, ...data.ticket } : tck)));
     // Keep the Firestore copy in step (the ticket listener also reads it).
     saveSupportTicketToFirestore(data.ticket).catch(() => {});
+    return true;
   };
 
   const updateTicketStatus = (ticketId, newStatus) => {
