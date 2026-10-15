@@ -802,6 +802,10 @@ export const AppProvider = ({ children }) => {
                 walletBalance: ru.walletBalance || 0,
                 walletUsdt: ru.walletUsdt || 0,
                 isVerified: ru.isVerified || false,
+                isReseller: ru.isReseller || false,
+                resellerStatus: ru.resellerStatus,
+                resellerTier: ru.resellerTier,
+                resellerSalesLkr: ru.resellerSalesLkr || 0,
                 status: ru.status || 'ACTIVE',
                 createdAt: ru.createdAt || (ru.joinedAt ? new Date(ru.joinedAt).toISOString() : null),
                 joinedAt: ru.createdAt
@@ -1181,6 +1185,20 @@ export const AppProvider = ({ children }) => {
     const { ok, data } = await postServerApi('/api/admin/user-fields', { identifier: uid, fields });
     if (!ok) console.warn('saveAdminUserField failed:', data?.error);
     return ok;
+  };
+
+  // Reseller tier: 'AUTO' follows their sales, or fix BRONZE / SILVER / GOLD.
+  const setResellerTier = async (uid, tier) => {
+    const { ok, data } = await postServerApi('/api/admin/user-fields', { identifier: uid, fields: { resellerTier: tier } }, getAdminToken());
+    if (!ok) { showToast(data?.error || 'Could not change the tier.', 'error'); return false; }
+    setUsersList(prev => prev.map(u => u.uid === uid ? { ...u, resellerTier: tier === 'AUTO' ? undefined : tier } : u));
+    return true;
+  };
+
+  // How much a reseller applicant has deposited towards joining.
+  const fetchResellerDeposit = async (appId) => {
+    const { ok, data } = await postServerApi('/api/admin/reseller-deposit', { appId }, getAdminToken());
+    return ok ? data : null;
   };
 
   const verifyUserAccount = async (uid) => {
@@ -1686,6 +1704,19 @@ export const AppProvider = ({ children }) => {
 
     const targetFirestoreId = targetApp?.firestoreId || (targetId && targetId !== targetUserId ? targetId : null);
     const approval = await updateResellerApplicationStatusInFirestore(targetId || targetUserId, targetUserId, newStatus, targetFirestoreId, securityKey, resellerCode);
+    if (approval?.error) {
+      // Put the application back the way it was and say why.
+      setResellerApplications(prev => {
+        const reverted = prev.map(app => {
+          const same = (targetId && (app.id === targetId || app.firestoreId === targetId)) || (targetUserId && app.userId === targetUserId);
+          return same && targetApp ? { ...app, status: targetApp.status } : app;
+        });
+        localStorage.setItem('mads_reseller_applications', JSON.stringify(reverted));
+        return reverted;
+      });
+      showToast(approval.error, 'error');
+      return;
+    }
     // The server keeps an account's existing codes; the email must match them.
     if (approval?.resellerCode) resellerCode = approval.resellerCode;
     if (approval?.securityKey) securityKey = approval.securityKey;
@@ -1886,6 +1917,8 @@ export const AppProvider = ({ children }) => {
       toasts,
       dismissToast,
       showToast,
+      setResellerTier,
+      fetchResellerDeposit,
       formatPrice,
       formatLkr,
       savePlayerId,

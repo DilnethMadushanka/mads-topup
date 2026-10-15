@@ -4,6 +4,8 @@ import { GAMES_DATA, getVerifiedPackagePriceLkr } from '../data/games';
 import { generateUniqueSecurityKey, ensureResellerCredentials, getResellerProfileByKeyAsync, updateUserProfileInFirestore } from '../services/firestoreService';
 import { dispatchMoongoldOrder } from '../services/moongoldApi';
 import { orderBelongsToUser } from '../utils/ownership';
+import { useResellerStatus, resellerRateOf } from '../hooks/useResellerStatus';
+import { resellerUnitPrice } from '../data/resellerTiers';
 import confetti from 'canvas-confetti';
 import { 
   Crown, Wallet, Zap, Copy, Check, ArrowLeft, Send, ShieldCheck, 
@@ -79,9 +81,14 @@ export const ResellerDashboard = () => {
   const currentGame = GAMES_DATA.find(g => g.id === selectedGameId) || GAMES_DATA[0];
   const selectedPackage = currentGame?.packages?.find(p => p.id === selectedPackageId) || currentGame?.packages?.[0];
 
-  // Calculate Reseller Wholesale Price (5% discount) with Hardened Anti-Tamper Verification
+  // Wholesale price at the reseller's tier discount (3/5/8%), as the server
+  // reports and charges it, with Hardened Anti-Tamper Verification
+  const resellerStatus = useResellerStatus(userProfile);
+  const resellerRate = resellerRateOf(resellerStatus);
+  const resellerPct = Math.round(resellerRate * 100);
+  const tierName = resellerStatus?.tier?.name || '';
   const untamperedPackagePrice = getVerifiedPackagePriceLkr(currentGame?.id, selectedPackage);
-  const calculateWholesalePrice = (priceLkr) => Math.round(priceLkr * 0.95);
+  const calculateWholesalePrice = (priceLkr) => resellerUnitPrice(priceLkr, resellerRate);
   const currentWholesalePrice = untamperedPackagePrice ? calculateWholesalePrice(untamperedPackagePrice) : 0;
   const currentSavings = untamperedPackagePrice ? (untamperedPackagePrice - currentWholesalePrice) : 0;
 
@@ -96,11 +103,10 @@ export const ResellerDashboard = () => {
 
   const completedResellerOrders = resellerOrders.filter(o => o.status === 'COMPLETED' || o.status === 'DELIVERED');
   const totalWholesaleTurnover = resellerOrders.reduce((sum, o) => sum + (o.priceLkr || 0), 0);
-  // True saving is originalPrice - wholesalePrice (5% of the ORIGINAL catalog
-  // price), not 5% of the already-discounted wholesale price (0.95P * 0.05 =
-  // 0.0475P, undercounting every order's saving). originalPriceLkr is set at
-  // dispatch time (below); fall back to reconstructing it from the wholesale
-  // price for any order that predates that field.
+  // True saving is originalPrice - wholesalePrice (the tier % of the ORIGINAL
+  // catalog price), not a % of the already-discounted wholesale price.
+  // originalPriceLkr is set at dispatch time (below); orders that predate
+  // that field were all at the old flat 5%.
   const totalWholesaleSavings = resellerOrders.reduce((sum, o) => {
     const wholesale = o.priceLkr || 0;
     const original = o.originalPriceLkr || (wholesale / 0.95);
@@ -138,6 +144,11 @@ export const ResellerDashboard = () => {
     // which causes a server-side price mismatch rejection on every order.
     if (currentGame?.resellerDisabled) {
       showToast(`⚠️ ${currentGame.name} is not yet available for reseller dispatch. Please contact admin to enable it.`, 'error');
+      return;
+    }
+
+    if (!resellerRate) {
+      showToast('Loading your reseller tier price. Please try again in a moment.', 'error');
       return;
     }
 
@@ -267,12 +278,9 @@ export const ResellerDashboard = () => {
     }
 
     try {
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#ef4444', '#f59e0b', '#10b981', '#3b82f6']
-      });
+      if (!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#1677ff', '#5aa8ff', '#10b981', '#f59e0b'] });
+      }
     } catch (err) {}
 
     setCustomerUid('');
@@ -299,30 +307,15 @@ export const ResellerDashboard = () => {
     showToast('Reseller Store profile saved successfully!');
   };
 
-  // ── Shared style tokens ──
-  const inputCls = 'w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-medium focus:outline-none focus:border-[#1677ff] focus:ring-4 focus:ring-[#1677ff]/10 transition-all';
-  const labelCls = 'block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-2';
-  const btnRed = 'bg-[#1677ff] hover:bg-[#0d68e6] text-white font-black rounded-xl transition-all shadow-lg shadow-brand-600/25 cursor-pointer active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed';
-  const panelCls = 'bg-white rounded-3xl p-5 sm:p-8 border-2 border-slate-200 shadow-sm space-y-6 animate-in fade-in';
-
-  const stepHead = (n, text) => (
-    <div className="flex items-center gap-2.5 mb-3">
-      <span className="w-6 h-6 rounded-full bg-[#1677ff] text-white text-xs font-black flex items-center justify-center shrink-0 shadow-sm shadow-brand-600/30">{n}</span>
-      <span className="text-xs font-black text-slate-800 uppercase tracking-wider">{text}</span>
-    </div>
-  );
-
   const panelHead = (icon, title, subtitle, right) => {
     const Icon = icon;
     return (
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-100">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-11 h-11 rounded-xl bg-[#1677ff] text-white flex items-center justify-center shadow-md shadow-brand-600/25 shrink-0">
-            <Icon className="w-5 h-5" />
-          </div>
+      <div className="rd-panel-head">
+        <div className="rd-panel-title">
+          <span className="rp-stat-ic rp-tone-blue"><Icon className="w-5 h-5" /></span>
           <div className="min-w-0">
-            <h3 className="text-lg sm:text-xl font-black font-heading text-slate-900 leading-tight">{title}</h3>
-            <p className="text-xs text-slate-500 font-medium">{subtitle}</p>
+            <h3>{title}</h3>
+            <p>{subtitle}</p>
           </div>
         </div>
         {right}
@@ -330,660 +323,395 @@ export const ResellerDashboard = () => {
     );
   };
 
+  const stepHead = (n, text) => (
+    <div className="rd-step-head"><span className="rp-num rd-num-sm">{n}</span><span>{text}</span></div>
+  );
+
+  const tiersLowFirst = resellerStatus?.tiers ? [...resellerStatus.tiers].sort((a, b) => a.minSalesLkr - b.minSalesLkr) : [];
+  const nextPct = resellerStatus?.next ? Math.min(100, Math.round((resellerStatus.salesLkr / resellerStatus.next.minSalesLkr) * 100)) : 100;
+  const tierCls = resellerStatus?.tier ? `rd-tier-${resellerStatus.tier.id.toLowerCase()}` : 'rd-tier-bronze';
+
   const kpis = [
-    { icon: Wallet, label: 'Available Reseller Balance', value: `LKR ${(userProfile?.walletBalance || 0).toLocaleString()}`, sub: `${(userProfile?.walletUsdt || 0).toFixed(2)} USDT Available`, valueCls: 'text-emerald-600' },
-    { icon: ShoppingBag, label: 'Orders Fulfilled', value: `${completedResellerOrders.length} Orders`, sub: 'Automated Instant Delivery', valueCls: 'text-slate-900' },
-    { icon: TrendingUp, label: 'Wholesale Sales Turnover', value: `LKR ${totalWholesaleTurnover.toLocaleString()}`, sub: 'Customer Top-Up Sales Volume', valueCls: 'text-[#1677ff]' },
-    { icon: Award, label: 'Total Wholesale Savings', value: `LKR ${totalWholesaleSavings.toLocaleString()}`, sub: 'Saved via 5% Reseller Margin', valueCls: 'text-violet-600' },
+    { icon: Wallet, tone: 'green', label: 'Wallet balance', value: `Rs. ${(userProfile?.walletBalance || 0).toLocaleString()}`, sub: `${(userProfile?.walletUsdt || 0).toFixed(2)} USDT` },
+    { icon: ShoppingBag, tone: 'blue', label: 'Orders done', value: completedResellerOrders.length.toLocaleString(), sub: 'Delivered instantly' },
+    { icon: TrendingUp, tone: 'teal', label: 'Turnover', value: `Rs. ${totalWholesaleTurnover.toLocaleString()}`, sub: 'Paid at your prices' },
+    { icon: Award, tone: 'gold', label: 'Saved', value: `Rs. ${totalWholesaleSavings.toLocaleString()}`, sub: 'Versus retail prices' },
+  ];
+
+  const tabs = [
+    { id: 'dispatch', label: 'Top up', icon: Zap },
+    { id: 'orders', label: 'Orders', icon: ShoppingBag, count: resellerOrders.length },
+    { id: 'pricing', label: 'Price list', icon: Award },
+    { id: 'bot', label: 'Telegram bot', icon: Send },
+    { id: 'settings', label: 'Store', icon: Settings }
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20 pt-6 font-sans">
+    <div className="rp rd">
 
-      {/* Top Header Navigation Bar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
-          <div className="flex items-center gap-3 min-w-0">
-            <button
-              onClick={closeResellerDashboard}
-              className="px-4 py-2 bg-white hover:text-[#1677ff] hover:border-[#1677ff]/40 border border-slate-200 text-slate-600 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer shadow-xs shrink-0"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span className="hidden sm:inline">Back to Store</span>
-            </button>
-
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#2f8bff] to-[#0b5ed7] flex items-center justify-center shadow-lg shadow-brand-600/30 shrink-0">
-                <Crown className="w-5 h-5 fill-amber-300 text-amber-300" />
-              </div>
-              <div className="min-w-0">
-                <h1 className="text-lg sm:text-xl font-black font-heading tracking-tight text-slate-900 flex items-center gap-2 flex-wrap">
-                  <span className="truncate">{storeName}</span>
-                  <span className="px-2 py-0.5 rounded-full bg-[#1677ff] text-white text-[10px] font-mono font-bold uppercase">
-                    PARTNER
-                  </span>
-                </h1>
-                <p className="text-xs text-slate-500 font-medium truncate">MADS Reseller Wholesale Control Panel & Instant Dispatch Desk</p>
-              </div>
-            </div>
-          </div>
-
-          <button
-            onClick={() => openWalletModal('ezcash')}
-            className={`${btnRed} px-5 py-3 text-xs flex items-center justify-center gap-2 uppercase tracking-wider shrink-0`}
-          >
-            <Wallet className="w-4 h-4" />
-            <span>Recharge Wallet</span>
-          </button>
+      {/* TOP BAR */}
+      <div className="rd-top">
+        <button type="button" onClick={closeResellerDashboard} className="rp-back">
+          <ArrowLeft className="w-4 h-4" />
+          <span>Store</span>
+        </button>
+        <div className="rd-top-title">
+          <h1>{storeName}</h1>
+          <span className={`rd-tier-pill ${tierCls}`}><Crown className="w-3.5 h-3.5" /> {tierName ? `${tierName} partner` : 'Partner'}</span>
         </div>
+        <button type="button" onClick={() => openWalletModal('ezcash')} className="rp-btn rp-btn-sm">
+          <Wallet className="w-4 h-4" /> <span>Recharge</span>
+        </button>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-
-        {/* HERO RESELLER STORE BANNER */}
-        <div className="relative rounded-3xl bg-white text-slate-900 border-2 border-slate-200 shadow-sm overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#2f8bff] via-[#1677ff] to-[#0b5ed7]"></div>
-          <div className="absolute -top-24 -right-16 w-96 h-96 rounded-full bg-brand-50 pointer-events-none"></div>
-          <div className="absolute -bottom-28 -left-16 w-80 h-80 rounded-full bg-brand-50/70 pointer-events-none"></div>
-          <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #1677ff 1px, transparent 1px)', backgroundSize: '22px 22px' }}></div>
-
-          <div className="relative z-10 p-6 sm:p-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-            <div className="space-y-4 lg:max-w-xl">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-50 border border-brand-100 text-[#1677ff] text-xs font-mono font-black uppercase tracking-widest">
-                <Crown className="w-4 h-4 text-amber-500 fill-amber-400" />
-                <span>Verified Reseller Partner Tier</span>
-              </div>
-
-              <h2 className="text-3xl sm:text-4xl font-black font-heading tracking-tight leading-[1.1]">
-                Reseller Partner Wholesale Dashboard
-              </h2>
-
-              <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                Enjoy 5% wholesale discount across all Free Fire, PUBG, Mobile Legends & Garena Shell top-ups. Fulfill customer orders instantly via Website or Telegram Bot!
+      {/* HERO: tier + credentials */}
+      <div className="rd-hero">
+        <section className={`rd-tier-card ${tierCls}`} aria-label="Your reseller tier">
+          <div className="rd-tier-top">
+            <span className="rd-tier-badge"><Crown className="w-6 h-6" /></span>
+            <div className="min-w-0">
+              <span className="rp-pill rp-pill-light">Your tier</span>
+              <h2>{resellerStatus?.approved ? `${tierName} · ${resellerPct}% off` : 'Loading your tier…'}</h2>
+              <p>
+                {resellerStatus?.next
+                  ? <>Sell Rs. {resellerStatus.next.remainingLkr.toLocaleString()} more to reach {resellerStatus.next.name} ({Math.round(resellerStatus.next.rate * 100)}% off).</>
+                  : resellerStatus?.approved ? <>You have the top discount on every game.</> : <>Your discount applies to every order.</>}
               </p>
-
-              <div className="inline-flex items-center gap-2 text-[11px] font-black font-mono bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-1.5 rounded-full">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                5% WHOLESALE MARGIN ACTIVE
-              </div>
-            </div>
-
-            {/* Reseller Wallet ID & Security Key Card */}
-            <div className="bg-slate-50 text-slate-900 rounded-2xl p-5 w-full lg:w-[320px] border-2 border-slate-200 shrink-0 space-y-4">
-              <div>
-                <span className="text-[10px] text-slate-400 font-mono font-black uppercase tracking-wider block mb-1.5">
-                  Your Unique Reseller Code
-                </span>
-                <div className="flex items-center justify-between gap-2 bg-white px-3.5 py-2.5 rounded-xl border-2 border-slate-200">
-                  <span className="font-mono text-sm font-black text-[#1677ff] tracking-wider truncate">{resellerWalletId}</span>
-                  <button
-                    onClick={handleCopyResellerId}
-                    className="p-1.5 rounded-lg bg-[#1677ff] hover:bg-[#0d68e6] text-white transition-colors cursor-pointer shrink-0"
-                    title="Copy Reseller Code"
-                  >
-                    {isCopiedId ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <span className="text-[10px] text-slate-400 font-mono font-black uppercase tracking-wider block mb-1.5">
-                  Telegram Bot Security Key
-                </span>
-                <div className="flex items-center justify-between gap-2 bg-white px-3.5 py-2.5 rounded-xl border-2 border-slate-200">
-                  <span className="font-mono text-xs font-black text-slate-800 tracking-wider truncate">{resellerSecurityKey}</span>
-                  <button
-                    onClick={handleCopySecurityKey}
-                    className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-700 text-white transition-colors cursor-pointer shrink-0"
-                    title="Copy Security Key"
-                  >
-                    {isCopiedKey ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
-        </div>
+          {resellerStatus?.approved && (
+            <>
+              <div className="rd-tier-bar" aria-label="Progress to next tier"><span style={{ width: `${nextPct}%` }} /></div>
+              <div className="rd-tier-steps">
+                {tiersLowFirst.map(t => (
+                  <div key={t.id} className={`rd-tier-step ${resellerStatus.tier.id === t.id ? 'is-current' : ''} ${resellerStatus.salesLkr >= t.minSalesLkr || resellerStatus.tier.id === t.id ? 'is-reached' : ''}`}>
+                    <strong>{t.name} {Math.round(t.rate * 100)}%</strong>
+                    <span>{t.minSalesLkr ? `Rs. ${(t.minSalesLkr / 1000).toLocaleString()}k+` : 'Start'}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="rd-tier-foot">Total sales: Rs. {resellerStatus.salesLkr.toLocaleString()}</p>
+            </>
+          )}
+        </section>
 
-        {/* 4 KPI METRIC STAT CARDS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {kpis.map(({ icon: Icon, label, value, sub, valueCls }) => (
-            <div key={label} className="relative bg-white p-5 rounded-2xl border-2 border-slate-200 shadow-sm overflow-hidden hover:-translate-y-0.5 hover:shadow-lg hover:border-[#1677ff]/30 transition-all">
-              <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-[#1677ff]/5 pointer-events-none" />
-              <div className="relative flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block font-mono">{label}</span>
-                  <h3 className={`text-2xl font-black font-heading mt-1.5 truncate ${valueCls}`}>{value}</h3>
-                  <span className="text-[11px] text-slate-500 font-medium block mt-1">{sub}</span>
-                </div>
-                <div className="w-11 h-11 rounded-xl bg-brand-50 text-[#1677ff] flex items-center justify-center shrink-0">
-                  <Icon className="w-5 h-5" />
-                </div>
+        <section className="rd-cred" aria-label="Reseller credentials">
+          <div className="rd-cred-row">
+            <span>Reseller code</span>
+            <div className="rd-copy">
+              <code>{resellerWalletId}</code>
+              <button type="button" onClick={handleCopyResellerId} aria-label="Copy reseller code">
+                {isCopiedId ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+          <div className="rd-cred-row">
+            <span>Telegram security key</span>
+            <div className="rd-copy">
+              <code>{resellerSecurityKey}</code>
+              <button type="button" onClick={handleCopySecurityKey} aria-label="Copy security key">
+                {isCopiedKey ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+          <p className="rd-cred-note"><ShieldCheck className="w-4 h-4" /> Keep your key private. It links the Telegram bot to your wallet.</p>
+        </section>
+      </div>
+
+      {/* KPIs */}
+      <div className="rd-kpis">
+        {kpis.map(({ icon: Icon, tone, label, value, sub }) => (
+          <div key={label} className="rd-kpi">
+            <span className={`rp-stat-ic rp-tone-${tone}`}><Icon className="w-5 h-5" /></span>
+            <span className="rd-kpi-label">{label}</span>
+            <strong className="rd-kpi-value">{value}</strong>
+            <span className="rd-kpi-sub">{sub}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* TABS */}
+      <div className="rd-tabs" role="tablist">
+        {tabs.map(({ id, label, icon: Icon, count }) => (
+          <button key={id} type="button" role="tab" aria-selected={activeTab === id} onClick={() => setActiveTab(id)} className={`rd-tab ${activeTab === id ? 'is-on' : ''}`}>
+            <Icon className="w-4 h-4" />
+            <span>{label}</span>
+            {count !== undefined && <span className="rd-tab-count">{count}</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* TAB 1: TOP UP */}
+      {activeTab === 'dispatch' && (
+        <div className="rp-card rd-panel">
+          {panelHead(Zap, 'Top up a customer', 'Pick a game, enter the player ID and send it from your wallet.',
+            <span className="rd-tag">{resellerPct}% off applied</span>
+          )}
+
+          <form onSubmit={handleFulfillOrder} className="rd-form">
+            <div>
+              {stepHead(1, 'Game')}
+              <div className="rd-games">
+                {(gamesCatalog || GAMES_DATA).map((game) => {
+                  const on = selectedGameId === game.id;
+                  return (
+                    <button
+                      key={game.id}
+                      type="button"
+                      onClick={() => { setSelectedGameId(game.id); setSelectedPackageId(game.packages[0]?.id || ''); }}
+                      className={`rd-game ${on ? 'is-on' : ''}`}
+                      aria-pressed={on}
+                    >
+                      <span className="rd-game-img">
+                        {game.logo || game.banner || game.image ? (
+                          <img
+                            src={game.logo || game.banner || game.image}
+                            alt=""
+                            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/mads-logo.jpg'; }}
+                          />
+                        ) : <span>{game.currencyIcon || '🎮'}</span>}
+                      </span>
+                      <span className="rd-game-text">
+                        <strong>{game.name}</strong>
+                        <span>{game.currencyName}</span>
+                      </span>
+                      {on && <span className="rd-check"><Check className="w-3 h-3" strokeWidth={3} /></span>}
+                    </button>
+                  );
+                })}
               </div>
             </div>
-          ))}
-        </div>
 
-        {/* WORKSPACE NAVIGATION TABS */}
-        <div className="bg-white p-2 rounded-2xl border-2 border-slate-200 flex items-center gap-2 overflow-x-auto text-xs font-black shadow-sm">
-          {[
-            { id: 'dispatch', label: 'Instant Topup Dispatch', icon: Zap },
-            { id: 'orders', label: 'Order History', icon: ShoppingBag, count: resellerOrders.length },
-            { id: 'pricing', label: 'Wholesale Price Catalog', icon: Award },
-            { id: 'bot', label: 'Telegram Bot Connector', icon: Send },
-            { id: 'settings', label: 'Store Settings', icon: Settings }
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-3 rounded-xl flex items-center gap-2 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
-                  isActive
-                    ? 'bg-[#1677ff] text-white shadow-lg shadow-brand-600/25 font-black'
-                    : 'text-slate-500 hover:text-[#1677ff] hover:bg-brand-50 font-bold'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span>{tab.label}</span>
-                {tab.count !== undefined && (
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${isActive ? 'bg-white/25 text-white' : 'bg-brand-50 text-[#1677ff]'}`}>
-                    {tab.count}
-                  </span>
+            <div>
+              {stepHead(2, 'Customer')}
+              <div className="rp-grid rd-grid-3">
+                <label className="rp-field">
+                  <span>{currentGame.fulfilment === 'voucher' ? 'Customer name / note (optional)' : 'Player ID *'}</span>
+                  <input
+                    type="text"
+                    required={currentGame.fulfilment !== 'voucher'}
+                    placeholder={currentGame.idPlaceholder || 'e.g. 248901234'}
+                    value={customerUid}
+                    onChange={(e) => setCustomerUid(e.target.value)}
+                    className="rp-input rd-mono"
+                  />
+                </label>
+                {currentGame.requiresServer && (
+                  <label className="rp-field">
+                    <span>Zone / Server ID *</span>
+                    <input type="text" required placeholder="e.g. 9821" value={customerZoneId} onChange={(e) => setCustomerZoneId(e.target.value)} className="rp-input rd-mono" />
+                  </label>
                 )}
+                <label className="rp-field">
+                  <span>In-game name (optional)</span>
+                  <input type="text" placeholder="e.g. GamerLanka" value={customerIgn} onChange={(e) => setCustomerIgn(e.target.value)} className="rp-input" />
+                </label>
+              </div>
+            </div>
+
+            <div>
+              {stepHead(3, `${currentGame.currencyName} package`)}
+              <div className="rd-pkgs">
+                {currentGame.packages.map((pkg) => {
+                  const isSelected = selectedPackageId === pkg.id || (!selectedPackageId && pkg === currentGame.packages[0]);
+                  const wholesalePrice = calculateWholesalePrice(pkg.priceLkr);
+                  return (
+                    <button key={pkg.id} type="button" onClick={() => setSelectedPackageId(pkg.id)} className={`rd-pkg ${isSelected ? 'is-on' : ''}`} aria-pressed={isSelected}>
+                      {isSelected && <span className="rd-check"><Check className="w-3 h-3" strokeWidth={3} /></span>}
+                      <strong>{pkg.name}</strong>
+                      <span className="rd-pkg-bonus">{pkg.bonus || 'Instant delivery'}</span>
+                      <span className="rd-pkg-price">Rs. {wholesalePrice.toLocaleString()}</span>
+                      <span className="rd-pkg-old">Rs. {pkg.priceLkr.toLocaleString()}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="rd-summary">
+              <div>
+                <span className="rd-kpi-label">Charged to your wallet</span>
+                <div className="rd-summary-price">
+                  <strong>Rs. {currentWholesalePrice.toLocaleString()}</strong>
+                  <span className="rd-tag rd-tag-green">You save Rs. {currentSavings.toLocaleString()}</span>
+                </div>
+              </div>
+              <button type="submit" disabled={isFulfilling} className="rp-btn">
+                <Zap className="w-4 h-4" /> {isFulfilling ? 'Sending top-up…' : 'Send top-up'}
               </button>
-            );
-          })}
-        </div>
+            </div>
 
-        {/* TAB 1: INSTANT RESELLER TOPUP DISPATCH TOOL */}
-        {activeTab === 'dispatch' && (
-          <div className={panelCls}>
-            {panelHead(Zap, 'Instant Customer Top-Up Dispatch Tool', 'Select game, enter customer UID, choose package and fulfill instantly using your Reseller Wallet',
-              <span className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-[11px] font-mono font-black self-start sm:self-center">
-                WHOLESALE 5% DISCOUNT AUTO-APPLIED
-              </span>
+            {lastVoucher && (
+              <div className="rd-voucher">
+                <strong>🐚 {lastVoucher.packageName} PIN</strong>
+                {lastVoucher.codes.length > 0 ? lastVoucher.codes.map((code, i) => (
+                  <div key={i} className="rd-copy">
+                    <code>{code}</code>
+                    <button type="button" aria-label="Copy PIN" onClick={() => { try { navigator.clipboard.writeText(code); showToast('PIN copied!'); } catch (e) {} }}>
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                )) : (
+                  <p>The PIN is being prepared by the supplier. It will appear under My Profile → My Codes in a few minutes.</p>
+                )}
+              </div>
             )}
+          </form>
+        </div>
+      )}
 
-            <form onSubmit={handleFulfillOrder} className="space-y-7">
-
-              {/* 1. Game Selection Cards */}
-              <div>
-                {stepHead(1, 'Select Game')}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {(gamesCatalog || GAMES_DATA).map((game) => {
-                    const on = selectedGameId === game.id;
-                    return (
-                      <button
-                        key={game.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedGameId(game.id);
-                          setSelectedPackageId(game.packages[0]?.id || '');
-                        }}
-                        className={`relative p-3.5 rounded-2xl border-2 flex items-center gap-3 transition-all cursor-pointer text-left ${
-                          on
-                            ? 'border-[#1677ff] bg-brand-50/60 shadow-md shadow-brand-600/10'
-                            : 'border-slate-200 bg-white hover:border-[#1677ff]/40'
-                        }`}
-                      >
-                        <div className="w-11 h-11 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center">
-                          {game.logo || game.banner || game.image ? (
-                            <img
-                              src={game.logo || game.banner || game.image}
-                              alt={game.name}
-                              className="w-full h-full object-cover rounded-lg"
-                              onError={(e) => {
-                                e.currentTarget.onerror = null;
-                                e.currentTarget.src = '/mads-logo.jpg';
-                              }}
-                            />
-                          ) : (
-                            <span className="text-xl flex items-center justify-center h-full">{game.currencyIcon || '🎮'}</span>
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <h4 className="text-xs font-black text-slate-900 font-heading truncate">{game.name}</h4>
-                          <span className="text-[10px] text-slate-500 font-medium block truncate">{game.currencyName}</span>
-                        </div>
-                        {on && (
-                          <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#1677ff] flex items-center justify-center">
-                            <Check className="w-3 h-3 text-white" strokeWidth={3} />
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
+      {/* TAB 2: ORDERS */}
+      {activeTab === 'orders' && (
+        <div className="rp-card rd-panel">
+          {panelHead(ShoppingBag, 'Order history', 'Every top-up sent from the website or the Telegram bot.',
+            <div className="rd-filters">
+              <select value={orderChannelFilter} onChange={(e) => setOrderChannelFilter(e.target.value)} className="rp-input">
+                <option value="ALL">All channels</option>
+                <option value="TELEGRAM">Telegram bot</option>
+                <option value="WEB">Website</option>
+              </select>
+              <div className="rp-input-wrap">
+                <Search className="w-4 h-4" />
+                <input type="text" placeholder="Order ID, player ID or game" value={orderSearch} onChange={(e) => setOrderSearch(e.target.value)} className="rp-input" />
               </div>
+            </div>
+          )}
 
-              {/* 2. Customer Credentials */}
-              <div>
-                {stepHead(2, 'Customer Details')}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className={labelCls}>{currentGame.fulfilment === 'voucher' ? 'Customer Name / Note (optional)' : 'Customer Player ID (UID) *'}</label>
-                    <input
-                      type="text"
-                      required={currentGame.fulfilment !== 'voucher'}
-                      placeholder={currentGame.idPlaceholder || "e.g. 248901234"}
-                      value={customerUid}
-                      onChange={(e) => setCustomerUid(e.target.value)}
-                      className={inputCls + ' font-mono'}
-                    />
+          <div className="rd-orders">
+            {(() => {
+              const isTg = (o) => Boolean(o.viaTelegramBot || (o.id && String(o.id).startsWith('ORD-TG-')) || o.channel === 'Telegram Bot' || (o.paymentMethod && String(o.paymentMethod).toLowerCase().includes('telegram')));
+              const filteredOrders = resellerOrders.filter(o => {
+                if (!o) return false;
+                const search = (orderSearch || '').toLowerCase();
+                const matchesSearch = [o.id, o.playerId, o.gameName].some(v => String(v || '').toLowerCase().includes(search));
+                const tg = isTg(o);
+                const matchesChannel = orderChannelFilter === 'ALL' || (orderChannelFilter === 'TELEGRAM' && tg) || (orderChannelFilter === 'WEB' && !tg);
+                return matchesSearch && matchesChannel;
+              });
+
+              if (filteredOrders.length === 0) {
+                return (
+                  <div className="rd-empty">
+                    <span className="rp-stat-ic rp-tone-blue"><ShoppingBag className="w-5 h-5" /></span>
+                    <strong>{orderSearch || orderChannelFilter !== 'ALL' ? 'No orders match' : 'No orders yet'}</strong>
+                    <p>{orderSearch || orderChannelFilter !== 'ALL' ? 'Try another search or channel.' : 'Top-ups you send will show up here.'}</p>
                   </div>
+                );
+              }
 
-                  {currentGame.requiresServer && (
-                    <div>
-                      <label className={labelCls}>Zone / Server ID *</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="e.g. 9821"
-                        value={customerZoneId}
-                        onChange={(e) => setCustomerZoneId(e.target.value)}
-                        className={inputCls + ' font-mono'}
-                      />
+              return filteredOrders.map((ord) => {
+                const tg = isTg(ord);
+                const done = ord.status === 'COMPLETED';
+                return (
+                  <div key={ord.id} className="rd-order">
+                    <span className={`rp-stat-ic ${tg ? 'rp-tone-sky' : 'rp-tone-blue'}`}>{tg ? <Send className="w-5 h-5" /> : <Globe className="w-5 h-5" />}</span>
+                    <div className="rd-order-main">
+                      <strong>{ord.gameName} · {ord.packageName}</strong>
+                      <span>
+                        Player <b className="rd-mono">{ord.playerId}</b>{ord.zoneId ? ` (${ord.zoneId})` : ''}
+                        {ord.ign && ord.ign !== 'Reseller Customer' ? ` · ${ord.ign}` : ''} · {tg ? 'Telegram' : 'Website'}
+                      </span>
+                      <span className="rd-order-id">{ord.id} · {new Date(ord.createdAt).toLocaleString()}</span>
                     </div>
-                  )}
-
-                  <div>
-                    <label className={labelCls}>Customer In-Game Name (IGN)</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. GamerLanka"
-                      value={customerIgn}
-                      onChange={(e) => setCustomerIgn(e.target.value)}
-                      className={inputCls}
-                    />
+                    <div className="rd-order-side">
+                      <strong>Rs. {(ord.priceLkr || 0).toLocaleString()}</strong>
+                      <span className={`rd-status ${done ? 'is-done' : 'is-wait'}`}>{ord.status || 'COMPLETED'}</span>
+                    </div>
                   </div>
+                );
+              });
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: PRICE LIST */}
+      {activeTab === 'pricing' && (
+        <div className="rp-card rd-panel">
+          {panelHead(Award, 'Your price list', `Retail prices and your ${tierName ? `${tierName} ` : ''}${resellerPct}% prices, with your profit on each.`)}
+          <div className="rd-price-games">
+            {GAMES_DATA.map((game) => (
+              <div key={game.id} className="rd-price-game">
+                <div className="rd-price-head">
+                  <span className="rd-game-img"><img src={game.image} alt="" /></span>
+                  <div><strong>{game.name}</strong><span>{game.packages.length} packages</span></div>
                 </div>
-              </div>
-
-              {/* 3. Select Topup Package */}
-              <div>
-                {stepHead(3, `Select ${currentGame.currencyName} Package`)}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {currentGame.packages.map((pkg) => {
-                    const isSelected = selectedPackageId === pkg.id || (!selectedPackageId && pkg === currentGame.packages[0]);
+                <div className="rd-price-rows">
+                  {game.packages.map((pkg) => {
                     const wholesalePrice = calculateWholesalePrice(pkg.priceLkr);
-
                     return (
-                      <button
-                        key={pkg.id}
-                        type="button"
-                        onClick={() => setSelectedPackageId(pkg.id)}
-                        className={`relative p-4 rounded-2xl border-2 text-center transition-all cursor-pointer flex flex-col justify-between ${
-                          isSelected
-                            ? 'border-[#1677ff] bg-brand-50/60 shadow-md shadow-brand-600/10'
-                            : 'border-slate-200 bg-white hover:border-[#1677ff]/40'
-                        }`}
-                      >
-                        {isSelected && (
-                          <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#1677ff] flex items-center justify-center">
-                            <Check className="w-3 h-3 text-white" strokeWidth={3} />
-                          </span>
-                        )}
-                        <div>
-                          <h4 className="text-xs sm:text-sm font-black text-slate-900 font-heading">{pkg.name}</h4>
-                          <span className="text-[10px] text-slate-500 block mt-0.5">{pkg.bonus || 'Instant Delivery'}</span>
-                        </div>
-
-                        <div className="mt-3 pt-2.5 border-t border-slate-100">
-                          <span className="text-sm font-black text-[#1677ff] font-heading block">
-                            Rs. {wholesalePrice.toLocaleString()}
-                          </span>
-                          <span className="text-[10px] text-slate-400 line-through block font-mono">
-                            Rs. {pkg.priceLkr.toLocaleString()}
-                          </span>
-                        </div>
-                      </button>
+                      <div key={pkg.id} className="rd-price-row">
+                        <div className="min-w-0"><strong>{pkg.name}</strong><span>Retail Rs. {pkg.priceLkr.toLocaleString()}</span></div>
+                        <div className="rd-price-right"><strong>Rs. {wholesalePrice.toLocaleString()}</strong><span>+Rs. {(pkg.priceLkr - wholesalePrice).toLocaleString()}</span></div>
+                      </div>
                     );
                   })}
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-              {/* Order Summary & Dispatch Submit Button */}
-              <div className="bg-slate-50 p-5 rounded-2xl border-2 border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-                <div>
-                  <span className="text-[10px] text-slate-400 font-mono font-black uppercase tracking-wider block">Charged to Reseller Wallet</span>
-                  <div className="flex items-center flex-wrap gap-3 mt-1">
-                    <h3 className="text-2xl sm:text-3xl font-black text-[#1677ff] font-heading">
-                      Rs. {currentWholesalePrice.toLocaleString()} LKR
-                    </h3>
-                    <span className="text-xs text-emerald-700 font-mono font-black bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg">
-                      Save Rs. {currentSavings.toLocaleString()} (5% OFF)
-                    </span>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isFulfilling}
-                  className={`${btnRed} w-full sm:w-auto px-8 py-4 text-xs sm:text-sm tracking-widest uppercase rounded-2xl flex items-center justify-center gap-2`}
-                >
-                  <span>{isFulfilling ? 'Fulfilling Topup...' : '⚡ DISPATCH TOPUP NOW'}</span>
-                  <ArrowRight className="w-4 h-4" />
+      {/* TAB 4: TELEGRAM BOT */}
+      {activeTab === 'bot' && (
+        <div className="rp-card rd-panel">
+          {panelHead(Send, 'Telegram bot', 'Link the bot once, then top up from any Telegram chat, 24/7.',
+            <a href="https://t.me/mads_shell_topup_bot" target="_blank" rel="noopener noreferrer" className="rp-btn rp-btn-sm">
+              <Bot className="w-4 h-4" /> Open @mads_shell_topup_bot
+            </a>
+          )}
+          <div className="rd-bot">
+            <div className="rd-bot-step">
+              {stepHead(1, 'Link your wallet')}
+              <p>Send this to the bot, followed by your password:</p>
+              <div className="rd-copy rd-copy-lg">
+                <code>/auth {resellerSecurityKey} &lt;password&gt;</code>
+                <button type="button" onClick={handleCopySecurityKey} aria-label="Copy security key">
+                  {isCopiedKey ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                 </button>
               </div>
-
-              {lastVoucher && (
-                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-xs space-y-2">
-                  <div className="font-black text-sm text-emerald-900">🐚 {lastVoucher.packageName} PIN</div>
-                  {lastVoucher.codes.length > 0 ? lastVoucher.codes.map((code, i) => (
-                    <div key={i} className="flex items-center justify-between gap-2 bg-white border border-emerald-200 rounded-xl px-3 py-2">
-                      <span className="font-mono font-bold text-slate-900 break-all">{code}</span>
-                      <button
-                        type="button"
-                        onClick={() => { try { navigator.clipboard.writeText(code); showToast('PIN copied!'); } catch (e) {} }}
-                        className="shrink-0 px-2.5 py-1 bg-emerald-600 text-white rounded-lg font-bold cursor-pointer"
-                      >
-                        Copy
-                      </button>
-                    </div>
-                  )) : (
-                    <div className="text-amber-700 font-semibold">The PIN is being prepared by the supplier. It will appear under My Profile → My Codes in a few minutes.</div>
-                  )}
-                </div>
-              )}
-
-            </form>
-          </div>
-        )}
-
-        {/* TAB 2: RESELLER ORDER HISTORY LOG */}
-        {activeTab === 'orders' && (
-          <div className={panelCls}>
-            {panelHead(ShoppingBag, 'Reseller Order History', 'Complete log of customer orders fulfilled via your Reseller Wallet & Telegram Bot',
-              <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 w-full sm:w-auto">
-                <select
-                  value={orderChannelFilter}
-                  onChange={(e) => setOrderChannelFilter(e.target.value)}
-                  className="px-3.5 py-2.5 bg-white border-2 border-slate-200 focus:border-[#1677ff] focus:outline-none rounded-xl text-slate-900 text-xs font-bold cursor-pointer"
-                >
-                  <option value="ALL">All Channels</option>
-                  <option value="TELEGRAM">🤖 Telegram Bot Orders</option>
-                  <option value="WEB">🌐 Web Dispatch Orders</option>
-                </select>
-
-                <div className="relative flex-1 sm:w-64">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Search order ID or Player UID..."
-                    value={orderSearch}
-                    onChange={(e) => setOrderSearch(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-slate-900 text-xs font-bold placeholder:font-medium focus:outline-none focus:border-[#1677ff]"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Orders Table */}
-            <div className="space-y-3">
-              {(() => {
-                const filteredOrders = resellerOrders.filter(o => {
-                  if (!o) return false;
-                  const isTelegramOrder = Boolean(o.viaTelegramBot || (o.id && String(o.id).startsWith('ORD-TG-')) || o.channel === 'Telegram Bot' || (o.paymentMethod && String(o.paymentMethod).toLowerCase().includes('telegram')));
-
-                  const search = (orderSearch || '').toLowerCase();
-                  const oId = String(o.id || '').toLowerCase();
-                  const oPlayerId = String(o.playerId || '').toLowerCase();
-                  const oGameName = String(o.gameName || '').toLowerCase();
-
-                  const matchesSearch =
-                    oId.includes(search) ||
-                    oPlayerId.includes(search) ||
-                    oGameName.includes(search);
-
-                  const matchesChannel = orderChannelFilter === 'ALL' ||
-                    (orderChannelFilter === 'TELEGRAM' && isTelegramOrder) ||
-                    (orderChannelFilter === 'WEB' && !isTelegramOrder);
-
-                  return matchesSearch && matchesChannel;
-                });
-
-                // Bug 9: Empty state when no orders
-                if (filteredOrders.length === 0) {
-                  return (
-                    <div className="flex flex-col items-center justify-center py-14 text-center space-y-3 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
-                      <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 flex items-center justify-center">
-                        <ShoppingBag className="w-8 h-8 text-slate-300" />
-                      </div>
-                      <h4 className="text-sm font-black text-slate-600">
-                        {orderSearch || orderChannelFilter !== 'ALL' ? 'No orders match your filter' : 'No orders yet'}
-                      </h4>
-                      <p className="text-xs text-slate-400 font-medium max-w-xs">
-                        {orderSearch || orderChannelFilter !== 'ALL'
-                          ? 'Try adjusting your search or channel filter.'
-                          : 'Your dispatched customer top-ups will appear here. Use the Instant Dispatch tab to fulfill your first order!'}
-                      </p>
-                    </div>
-                  );
-                }
-
-                return filteredOrders.map((ord) => {
-                  const isTelegramOrder = Boolean(ord.viaTelegramBot || (ord.id && ord.id.startsWith('ORD-TG-')) || ord.channel === 'Telegram Bot' || (ord.paymentMethod && ord.paymentMethod.toLowerCase().includes('telegram')));
-                  const done = ord.status === 'COMPLETED';
-
-                  return (
-                    <div key={ord.id} className={`bg-white p-4 rounded-2xl border-2 border-slate-200 border-l-4 ${done ? 'border-l-emerald-500' : 'border-l-amber-400'} flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs hover:shadow-md hover:border-[#1677ff]/30 transition-all`}>
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-extrabold shrink-0 ${
-                          isTelegramOrder ? 'bg-sky-50 text-sky-600' : 'bg-brand-50 text-[#1677ff]'
-                        }`}>
-                          {isTelegramOrder ? <Send className="w-5 h-5" /> : <Zap className="w-5 h-5" />}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h4 className="font-black text-slate-900 font-heading text-sm">{ord.gameName} - {ord.packageName}</h4>
-                            <span className="text-[10px] font-mono text-slate-400">({ord.id})</span>
-                            {isTelegramOrder ? (
-                              <span className="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200 text-[9px] font-black font-mono inline-flex items-center gap-1">
-                                <Send className="w-2.5 h-2.5" />
-                                <span>🤖 Telegram Bot</span>
-                              </span>
-                            ) : (
-                              <span className="px-2 py-0.5 rounded-md bg-brand-50 text-[#1677ff] border border-brand-100 text-[9px] font-black font-mono inline-flex items-center gap-1">
-                                <Globe className="w-2.5 h-2.5" />
-                                <span>🌐 Web Dispatch</span>
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-slate-500 text-[11px] mt-0.5 font-medium break-words">
-                            Customer UID: <span className="text-slate-900 font-mono font-bold">{ord.playerId}</span> {ord.zoneId ? `(Zone: ${ord.zoneId})` : ''} {ord.ign && ord.ign !== 'Reseller Customer' ? `• IGN: ${ord.ign}` : ''}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between sm:justify-end gap-5 border-t sm:border-t-0 border-slate-100 pt-3 sm:pt-0">
-                        <div className="text-left sm:text-right">
-                          <span className="font-black text-[#1677ff] text-base font-heading block">Rs. {(ord.priceLkr || 0).toLocaleString()}</span>
-                          <span className="text-[10px] text-slate-400 font-mono">{new Date(ord.createdAt).toLocaleString()}</span>
-                        </div>
-
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-black font-mono uppercase border ${
-                          done ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
-                        }`}>
-                          {ord.status || 'COMPLETED'}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                });
-              })()}
             </div>
-          </div>
-        )}
-
-        {/* TAB 3: WHOLESALE PRICE CATALOG & PROFIT MARGIN VIEWER */}
-        {activeTab === 'pricing' && (
-          <div className={panelCls}>
-            {panelHead(Award, 'Reseller Wholesale Price Catalog', 'Compare standard retail prices with your 5% wholesale partner prices & calculated profit margins')}
-
-            <div className="space-y-5">
-              {GAMES_DATA.map((game) => (
-                <div key={game.id} className="bg-slate-50 p-4 sm:p-5 rounded-2xl border-2 border-slate-200 space-y-4">
-                  <div className="flex items-center gap-3 pb-3 border-b border-slate-200">
-                    <div className="w-11 h-11 rounded-xl bg-white p-1 border border-slate-200 shrink-0">
-                      <img src={game.image} alt={game.name} className="w-full h-full object-cover rounded-lg" />
-                    </div>
-                    <div>
-                      <h4 className="text-base font-black text-slate-900 font-heading">{game.name}</h4>
-                      <span className="text-xs text-slate-500 font-medium">{game.packages.length} Packages Available</span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
-                    {game.packages.map((pkg) => {
-                      const wholesalePrice = calculateWholesalePrice(pkg.priceLkr);
-                      const profitMargin = pkg.priceLkr - wholesalePrice;
-
-                      return (
-                        <div key={pkg.id} className="bg-white p-3.5 rounded-xl border border-slate-200 hover:border-[#1677ff]/40 transition-colors flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <h5 className="font-black text-slate-900">{pkg.name}</h5>
-                            <span className="text-[10px] text-slate-400 font-medium">Retail: Rs. {pkg.priceLkr.toLocaleString()}</span>
-                          </div>
-
-                          <div className="text-right shrink-0">
-                            <span className="font-black text-[#1677ff] block font-heading">Rs. {wholesalePrice.toLocaleString()}</span>
-                            <span className="text-[10px] text-emerald-600 font-mono font-black block">Profit: +Rs. {profitMargin.toLocaleString()}</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 4: TELEGRAM BOT CONNECTOR */}
-        {activeTab === 'bot' && (
-          <div className={panelCls}>
-            {panelHead(Send, 'Telegram Reseller Bot Integration', 'Connect your Telegram account to execute topups inside Telegram chat 24/7',
-              <a
-                href="https://t.me/mads_shell_topup_bot"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`${btnRed} px-4 py-3 text-xs flex items-center justify-center gap-2 uppercase tracking-wider shrink-0`}
-              >
-                <Send className="w-4 h-4" />
-                <span>Launch Bot (@mads_shell_topup_bot)</span>
-              </a>
-            )}
-
-            <div className="space-y-5">
-              <div className="bg-slate-50 p-5 sm:p-6 rounded-2xl border-2 border-slate-200 space-y-4">
-                {stepHead(1, 'Link Reseller Security Key to Telegram')}
-                <p className="text-xs text-slate-600 font-medium">Copy your unique auth command below and send it to the Telegram Bot to link your wallet:</p>
-
-                <div className="bg-white p-4 rounded-xl font-mono text-[#1677ff] font-black text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-2 border-slate-200">
-                  <span className="break-all">/auth {resellerSecurityKey}</span>
-                  <button
-                    onClick={handleCopySecurityKey}
-                    className={`${btnRed} px-4 py-2 text-xs font-sans rounded-lg flex items-center justify-center gap-1.5 shrink-0`}
-                  >
-                    {isCopiedKey ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>Copy Auth Key</span>
-                  </button>
-                </div>
-
-                <div className="bg-white p-3 rounded-xl font-mono text-slate-700 font-bold text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 border border-slate-200">
-                  <span className="break-all">Alternative Code: /link {resellerWalletId}</span>
-                  <button
-                    onClick={handleCopyResellerId}
-                    className="px-3 py-1.5 bg-slate-100 hover:bg-[#1677ff] hover:text-white text-slate-700 text-[11px] font-sans font-black rounded-lg cursor-pointer transition-colors shrink-0"
-                  >
-                    Copy Code
-                  </button>
-                </div>
-              </div>
-
-              <div className="bg-slate-50 p-5 sm:p-6 rounded-2xl border-2 border-slate-200 space-y-4">
-                {stepHead(2, 'Instant Topup Commands & Real IGN Lookup')}
-                <p className="text-xs text-slate-600 font-medium">Send topup commands to Telegram Bot. Real IGN Name is fetched live from API and confirmed in the message:</p>
-
-                <div className="space-y-2 text-xs font-mono">
-                  {[
-                    ['/topup ml 84218845 2168 86', 'Mobile Legends (86 Diamonds)', 'text-[#1677ff]'],
-                    ['/topup ff 248901234 100', 'Free Fire (100 Diamonds)', 'text-[#1677ff]'],
-                    ['/topup pubg 512345678 60', 'PUBG Mobile (60 UC)', 'text-[#1677ff]'],
-                    ['/ml 84218845 2168', 'Check Real MLBB IGN Only', 'text-sky-600'],
-                  ].map(([cmd, desc, cls]) => (
-                    <div key={cmd} className="bg-white p-3 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3">
-                      <span className={`${cls} font-black break-all`}>{cmd}</span>
-                      <span className="text-slate-500 text-[11px] font-sans font-semibold">{desc}</span>
-                    </div>
-                  ))}
-                </div>
+            <div className="rd-bot-step">
+              {stepHead(2, 'Send top-ups')}
+              <p>The bot checks the player name and charges your tier price.</p>
+              <div className="rd-cmds">
+                {[
+                  ['/topup ml 84218845 2168 86', 'Mobile Legends, 86 diamonds'],
+                  ['/topup ff 248901234 100', 'Free Fire, 100 diamonds'],
+                  ['/topup pubg 512345678 60', 'PUBG Mobile, 60 UC'],
+                  ['/ml 84218845 2168', 'Check an MLBB name only'],
+                  ['/packages ff', 'Your prices for a game'],
+                ].map(([cmd, desc]) => (
+                  <div key={cmd} className="rd-cmd"><code>{cmd}</code><span>{desc}</span></div>
+                ))}
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* TAB 5: STORE PROFILE SETTINGS */}
-        {activeTab === 'settings' && (
-          <div className={`${panelCls} max-w-2xl mx-auto`}>
-            {panelHead(Settings, 'Reseller Store Profile Settings', 'Manage your Store Name and Business Contact details')}
-
-            <form onSubmit={handleSaveStoreProfile} className="space-y-5 text-xs">
-              <div>
-                <label className={labelCls}>Store / Shop Name</label>
-                <div className="relative">
-                  <Store className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    required
-                    value={storeName}
-                    onChange={(e) => setStoreName(e.target.value)}
-                    className={inputCls + ' pl-11'}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className={labelCls}>WhatsApp Contact Number</label>
-                <div className="relative">
-                  <Smartphone className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    required
-                    value={whatsappContact}
-                    onChange={(e) => setWhatsappContact(e.target.value)}
-                    className={inputCls + ' pl-11'}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className={labelCls}>Store Email Address</label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="email"
-                    required
-                    value={storeEmail}
-                    onChange={(e) => setStoreEmail(e.target.value)}
-                    className={inputCls + ' pl-11'}
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className={`${btnRed} w-full py-4 text-xs uppercase tracking-wider mt-2`}
-              >
-                Save Store Profile
-              </button>
-            </form>
-          </div>
-        )}
-
-      </div>
+      {/* TAB 5: STORE */}
+      {activeTab === 'settings' && (
+        <div className="rp-card rd-panel rd-narrow">
+          {panelHead(Settings, 'Store profile', 'Your store name and contact details.')}
+          <form onSubmit={handleSaveStoreProfile} className="rp-form">
+            <label className="rp-field">
+              <span>Store name</span>
+              <div className="rp-input-wrap"><Store className="w-4 h-4" /><input type="text" required value={storeName} onChange={(e) => setStoreName(e.target.value)} className="rp-input" /></div>
+            </label>
+            <label className="rp-field">
+              <span>WhatsApp number</span>
+              <div className="rp-input-wrap"><Smartphone className="w-4 h-4" /><input type="tel" required value={whatsappContact} onChange={(e) => setWhatsappContact(e.target.value)} className="rp-input" /></div>
+            </label>
+            <label className="rp-field">
+              <span>Store email</span>
+              <div className="rp-input-wrap"><Mail className="w-4 h-4" /><input type="email" required value={storeEmail} onChange={(e) => setStoreEmail(e.target.value)} className="rp-input" /></div>
+            </label>
+            <button type="submit" className="rp-btn rp-btn-block">Save store profile</button>
+          </form>
+        </div>
+      )}
     </div>
   );
 };

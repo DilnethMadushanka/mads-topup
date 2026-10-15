@@ -1,19 +1,42 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import confetti from 'canvas-confetti';
-import { 
-  UserPlus, LogIn, Crown, ShieldCheck, DollarSign, TrendingUp, Send, 
-  Smartphone, FileText, Users, CheckCircle2, ArrowRight, Sparkles, CheckSquare, HelpCircle, ArrowLeft
+import { useResellerStatus } from '../hooks/useResellerStatus';
+import { RESELLER_MIN_DEPOSIT_LKR, RESELLER_TIERS } from '../data/resellerTiers';
+import {
+  UserPlus, LogIn, Crown, ShieldCheck, DollarSign, TrendingUp, Send,
+  Smartphone, FileText, CheckCircle2, ArrowRight, ArrowLeft, Wallet, BadgeCheck, Store, Megaphone
 } from 'lucide-react';
 
+const BENEFITS = [
+  { icon: DollarSign, tone: 'blue', title: 'Reseller prices', text: 'Every game at 3% to 8% off, depending on your tier.' },
+  { icon: TrendingUp, tone: 'teal', title: 'Sales tracking', text: 'See your orders, turnover and savings in your dashboard.' },
+  { icon: Send, tone: 'sky', title: 'Telegram bot', text: 'Top up Free Fire, MLBB, PUBG and more straight from Telegram.' },
+  { icon: Smartphone, tone: 'violet', title: 'Your own web & app', text: 'Get your own store website and Android app for a small monthly fee.' },
+  { icon: FileText, tone: 'gold', title: 'Order history', text: 'Every order with player ID, package and price, ready to share.' },
+  { icon: Crown, tone: 'green', title: 'Priority support', text: 'Faster help, early access to new games and reseller-only features.' },
+];
+
+const RULES = [
+  { title: 'Active presence', text: 'An active social media following, or a good order history on our site.' },
+  { title: 'Verified deposit', text: `Rs. ${RESELLER_MIN_DEPOSIT_LKR.toLocaleString()} deposited and verified before approval. It stays in your wallet.` },
+  { title: 'Monthly review', text: 'We review activity every month. Long inactivity may remove reseller access.' },
+  { title: 'Grow your tier', text: 'Your discount rises automatically as your total sales grow.' },
+];
+
 export const ResellerProgramPage = () => {
-  const { userProfile, isLoggedIn, openAuth, showToast, closeResellerPage, addResellerApplication, openResellerDashboard, resellerApplications } = useApp();
+  const { userProfile, isLoggedIn, openAuth, showToast, closeResellerPage, addResellerApplication, openResellerDashboard, resellerApplications, openWalletModal } = useApp();
+  const resellerStatus = useResellerStatus(isLoggedIn ? userProfile : null);
+  const isReseller = Boolean(userProfile?.isReseller || userProfile?.role === 'reseller');
+  const depositLkr = resellerStatus?.approved ? RESELLER_MIN_DEPOSIT_LKR : (resellerStatus?.depositLkr || 0);
+  const depositPct = Math.min(100, Math.round((depositLkr / RESELLER_MIN_DEPOSIT_LKR) * 100));
+  const tiersLowFirst = [...RESELLER_TIERS].sort((a, b) => a.minSalesLkr - b.minSalesLkr);
 
   const [realName, setRealName] = useState(userProfile?.name || '');
   const [storeName, setStoreName] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState(userProfile?.phone || '');
   const [emailAddress, setEmailAddress] = useState(userProfile?.email || '');
-  
+
   const [isRunningStore, setIsRunningStore] = useState(false);
   const [hasSocialReach, setHasSocialReach] = useState(false);
   const [dailySale, setDailySale] = useState('2,000 - 5,000 LKR');
@@ -24,15 +47,13 @@ export const ResellerProgramPage = () => {
 
   const scrollToForm = () => {
     const formEl = document.getElementById('application-form-section');
-    if (formEl) {
-      formEl.scrollIntoView({ behavior: 'smooth' });
-    }
+    if (formEl) formEl.scrollIntoView({ behavior: 'smooth' });
   };
 
   const handleSubmitApplication = (e) => {
     e.preventDefault();
 
-    // Bug 1: Guard — must be logged in to submit
+    // Must be logged in to submit
     if (!isLoggedIn || !userProfile?.uid) {
       showToast('Please log in or register an account before submitting a reseller application!', 'error');
       openAuth('login');
@@ -54,7 +75,7 @@ export const ResellerProgramPage = () => {
       return;
     }
 
-    // Bug 2: Prevent duplicate applications
+    // Prevent duplicate applications
     const existingApp = (resellerApplications || []).find(app =>
       (userProfile?.uid && app.userId === userProfile.uid) ||
       (userProfile?.email && app.emailAddress?.toLowerCase() === userProfile.email.toLowerCase())
@@ -63,7 +84,7 @@ export const ResellerProgramPage = () => {
       if (existingApp.status === 'APPROVED') {
         showToast('You are already an approved Reseller Partner! Open your Reseller Dashboard.', 'error');
       } else if (existingApp.status === 'PENDING') {
-        showToast('You already have a pending application! Our team will review it within 24 hours.', 'error');
+        showToast('You already have a pending application! Deposit to your wallet and we will review it.', 'error');
       } else {
         showToast('A previous application was found. Please contact support if you believe this is an error.', 'error');
       }
@@ -90,481 +111,238 @@ export const ResellerProgramPage = () => {
       addResellerApplication(newApp);
       setIsSubmitting(false);
       setIsSubmittedSuccess(true);
-      showToast('Application Submitted Successfully! Our Admin Team will review your application within 24 hours.');
+      showToast(`Application sent! Next, deposit Rs. ${RESELLER_MIN_DEPOSIT_LKR.toLocaleString()} to your wallet.`);
 
       try {
-        confetti({
-          particleCount: 120,
-          spread: 90,
-          origin: { y: 0.5 },
-          colors: ['#ef4444', '#f43f5e', '#10b981', '#f59e0b']
-        });
+        if (!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+          confetti({ particleCount: 110, spread: 90, origin: { y: 0.5 }, colors: ['#1677ff', '#5aa8ff', '#10b981', '#f59e0b'] });
+        }
       } catch (err) {}
 
-      window.scrollTo({ top: 200, behavior: 'smooth' });
-    }, 1000);
+      scrollToForm();
+    }, 800);
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFF] py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8">
-      
-      {/* Top Navigation Bar */}
-      <div className="flex items-center justify-between">
-        <button
-          onClick={closeResellerPage}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-slate-800 hover:bg-slate-100 font-extrabold text-xs border border-slate-200 cursor-pointer transition-all shadow-xs"
-        >
-          <ArrowLeft className="w-4 h-4 text-cyan-600" />
-          <span>Back to Homepage</span>
+    <div className="rp">
+      <div className="rp-top">
+        <button type="button" onClick={closeResellerPage} className="rp-back">
+          <ArrowLeft className="w-4 h-4" />
+          <span>Home</span>
         </button>
-
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 animate-pulse"></span>
-          <span className="text-xs font-bold text-slate-600 font-mono uppercase">24/7 Verified Reseller Network</span>
-        </div>
+        <span className="rp-live"><span className="rp-live-dot" />Reseller network open</span>
       </div>
 
-      {/* Verified Reseller Quick Access Banner */}
-      {(userProfile?.isReseller || userProfile?.role === 'reseller') && (
-        <div className="bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-slate-950 p-6 rounded-2xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 font-sans">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-slate-950 text-amber-400 flex items-center justify-center font-black shrink-0">
-              <Crown className="w-7 h-7 fill-amber-400" />
-            </div>
+      {/* HERO */}
+      <section className="rp-hero">
+        <div className="rp-hero-copy">
+          <span className="rp-pill">Partner program</span>
+          <h1 className="rp-h1">Sell game top-ups at <span>reseller prices</span></h1>
+          <p className="rp-lead">
+            Join MADS TOPUP as a reseller and get 3% to 8% off every top-up, your own dashboard and an instant Telegram bot.
+          </p>
+          <div className="rp-hero-actions">
+            {isReseller ? (
+              <button type="button" className="rp-btn" onClick={openResellerDashboard}>
+                <Crown className="w-4 h-4" /> Open reseller dashboard
+              </button>
+            ) : (
+              <button type="button" className="rp-btn" onClick={scrollToForm}>
+                <UserPlus className="w-4 h-4" /> Apply now
+              </button>
+            )}
+            {!isReseller && (
+              <button type="button" className="rp-btn rp-btn-ghost" onClick={() => openAuth('reseller')}>
+                <LogIn className="w-4 h-4" /> Reseller login
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="rp-hero-stats">
+          <div className="rp-stat">
+            <span className="rp-stat-ic rp-tone-blue"><DollarSign className="w-5 h-5" /></span>
+            <div><strong>3–8% off</strong><span>Every game, by tier</span></div>
+          </div>
+          <div className="rp-stat">
+            <span className="rp-stat-ic rp-tone-gold"><Wallet className="w-5 h-5" /></span>
+            <div><strong>Rs. {RESELLER_MIN_DEPOSIT_LKR.toLocaleString()} deposit</strong><span>Stays in your wallet</span></div>
+          </div>
+          <div className="rp-stat">
+            <span className="rp-stat-ic rp-tone-teal"><Send className="w-5 h-5" /></span>
+            <div><strong>Telegram bot</strong><span>Top up in seconds</span></div>
+          </div>
+        </div>
+      </section>
+
+      {/* HOW TO JOIN */}
+      <section className="rp-card" aria-labelledby="rp-join-title">
+        <div className="rp-head">
+          <span className="rp-pill">How to join</span>
+          <h2 id="rp-join-title" className="rp-h2">Three steps to reseller prices</h2>
+        </div>
+        <ol className="rp-steps">
+          <li className="rp-step">
+            <span className="rp-num">1</span>
+            <div><h3>Apply</h3><p>Fill in the short form below with your store and WhatsApp.</p></div>
+          </li>
+          <li className="rp-step">
+            <span className="rp-num">2</span>
             <div>
-              <h3 className="text-lg font-black tracking-tight">You are a Verified Reseller Partner!</h3>
-              <p className="text-xs font-bold text-slate-900/80">Access your live Reseller Dashboard, wholesale topup terminal, & Telegram bot setup.</p>
+              <h3>Deposit Rs. {RESELLER_MIN_DEPOSIT_LKR.toLocaleString()}</h3>
+              <p>Top up your wallet by bank, eZ Cash or Binance. Not a fee: you spend it on orders.</p>
             </div>
-          </div>
+          </li>
+          <li className="rp-step">
+            <span className="rp-num">3</span>
+            <div><h3>Get approved</h3><p>Once the deposit is verified you are approved and start at Bronze.</p></div>
+          </li>
+        </ol>
 
-          <button
-            onClick={openResellerDashboard}
-            className="px-6 py-3 bg-slate-950 hover:bg-slate-900 text-amber-400 font-extrabold text-xs rounded-xl shadow-lg flex items-center gap-2 transition-all shrink-0 cursor-pointer uppercase tracking-wider"
-          >
-            <span>OPEN RESELLER DASHBOARD</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-
-      {/* 1. HERO CHOICE BANNER CONTAINER (Matching Screenshot 1) */}
-      {/* 1. HERO CHOICE BANNER */}
-      <div className="bg-[#0B132B] text-white rounded-3xl p-6 sm:p-12 border border-slate-800 shadow-2xl relative overflow-hidden text-center">
-        
-        {/* Background Decorative Lighting */}
-        <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-brand-600/15 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute -bottom-24 right-10 w-80 h-80 bg-brand-600/15 rounded-full blur-3xl pointer-events-none"></div>
-
-        {/* Top Tag & Main Title */}
-        <div className="relative z-10 space-y-3 max-w-3xl mx-auto mb-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-950/80 border border-brand-500/30 text-brand-400 text-xs font-mono font-bold tracking-widest uppercase">
-            <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-ping"></span>
-            <span>PARTNER WITH US</span>
-          </div>
-
-          <h1 className="text-4xl sm:text-6xl font-extrabold font-heading tracking-tight drop-shadow-md">
-            Reseller <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 via-brand-500 to-pink-500">Program</span>
-          </h1>
-
-          <p className="text-slate-300 text-sm sm:text-base font-medium max-w-xl mx-auto">
-            Join our network and start earning competitive commissions today
-          </p>
-        </div>
-
-        {/* 2 Choice Action Cards */}
-        <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto text-left">
-          
-          {/* Card 1: Become a Reseller */}
-          <div className="bg-[#111A35]/90 border border-brand-900/40 hover:border-brand-500/60 rounded-2xl p-6 sm:p-8 flex flex-col justify-between space-y-6 transition-all duration-300 hover:shadow-xl hover:shadow-brand-950/50 group">
-            <div className="space-y-4">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white shadow-lg shadow-brand-500/30 group-hover:scale-110 transition-transform">
-                <UserPlus className="w-7 h-7" />
-              </div>
-
-              <div>
-                <h3 className="text-xl sm:text-2xl font-black text-white font-heading">
-                  Become a Reseller
-                </h3>
-                <p className="text-slate-300 text-xs sm:text-sm font-medium leading-relaxed mt-2">
-                  Get wholesale prices and exclusive benefits. Earn competitive commissions on every top-up you sell.
-                </p>
-              </div>
+        {isLoggedIn && resellerStatus && !resellerStatus.approved && (
+          <div className="rp-deposit">
+            <div className="rp-deposit-row">
+              <span>Your verified deposits</span>
+              <strong>Rs. {depositLkr.toLocaleString()} / {RESELLER_MIN_DEPOSIT_LKR.toLocaleString()}</strong>
             </div>
-
-            <button
-              onClick={scrollToForm}
-              className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-brand-600 via-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-500 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-brand-600/30 cursor-pointer uppercase tracking-wider active:scale-[0.99]"
-            >
-              <span>REGISTER NOW</span>
-              <Crown className="w-4 h-4 text-amber-300 fill-amber-300" />
-            </button>
+            <div className="rp-bar"><span style={{ width: `${depositPct}%` }} /></div>
+            {depositLkr < RESELLER_MIN_DEPOSIT_LKR ? (
+              <button type="button" className="rp-btn rp-btn-sm" onClick={() => openWalletModal()}>
+                Deposit Rs. {(RESELLER_MIN_DEPOSIT_LKR - depositLkr).toLocaleString()} more <ArrowRight className="w-4 h-4" />
+              </button>
+            ) : (
+              <p className="rp-ok"><CheckCircle2 className="w-4 h-4" /> Deposit done. We approve your application after review.</p>
+            )}
           </div>
+        )}
+      </section>
 
-          {/* Card 2: Reseller Login */}
-          <div className="bg-[#111A35]/90 border border-slate-800 hover:border-brand-500/40 rounded-2xl p-6 sm:p-8 flex flex-col justify-between space-y-6 transition-all duration-300 hover:shadow-xl group">
-            <div className="space-y-4">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white shadow-lg shadow-brand-500/30 group-hover:scale-110 transition-transform">
-                <LogIn className="w-7 h-7" />
-              </div>
-
-              <div>
-                <h3 className="text-xl sm:text-2xl font-black text-white font-heading">
-                  Reseller Login
-                </h3>
-                <p className="text-slate-300 text-xs sm:text-sm font-medium leading-relaxed mt-2">
-                  Already a reseller? Access your dashboard to manage orders, track sales and monitor your earnings.
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => openAuth('reseller')}
-              className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-brand-600 to-brand-600 hover:from-brand-500 hover:to-brand-500 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-brand-600/25 cursor-pointer uppercase tracking-wider active:scale-[0.99]"
-            >
-              <span>LOGIN</span>
-              <LogIn className="w-4 h-4" />
-            </button>
-          </div>
-
+      {/* TIERS */}
+      <section className="rp-card" aria-labelledby="rp-tier-title">
+        <div className="rp-head">
+          <span className="rp-pill">Tiers</span>
+          <h2 id="rp-tier-title" className="rp-h2">Sell more, pay less</h2>
+          <p className="rp-sub">Your discount goes up on its own as your total sales grow.</p>
         </div>
-      </div>
+        <div className="rp-tiers">
+          {tiersLowFirst.map(t => (
+            <div key={t.id} className={`rp-tier rp-tier-${t.id.toLowerCase()}`}>
+              <span className="rp-tier-badge"><Crown className="w-5 h-5" /></span>
+              <span className="rp-tier-name">{t.name}</span>
+              <span className="rp-tier-rate">{Math.round(t.rate * 100)}%<small> off</small></span>
+              <span className="rp-tier-min">{t.minSalesLkr ? `After Rs. ${t.minSalesLkr.toLocaleString()} in sales` : 'When you join'}</span>
+            </div>
+          ))}
+        </div>
+      </section>
 
-      {/* 2. APPLICATION FORM CONTAINER (Matching Screenshot 2) */}
-      <div id="application-form-section" className="bg-white rounded-3xl border border-slate-200 shadow-md p-6 sm:p-10 max-w-4xl mx-auto">
-        
-        <div className="mb-8">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold font-mono border border-emerald-200 mb-3">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-            <span>START HERE</span>
-          </div>
-
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading">
-            Application Form
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
-            Fill out the details below to apply for the MADS TOPUP Partner Reseller Network.
-          </p>
+      {/* APPLICATION FORM */}
+      <section id="application-form-section" className="rp-card rp-form-card" aria-labelledby="rp-form-title">
+        <div className="rp-head">
+          <span className="rp-pill">Start here</span>
+          <h2 id="rp-form-title" className="rp-h2">Application form</h2>
+          <p className="rp-sub">Takes a minute. We reply on WhatsApp and email.</p>
         </div>
 
         {isSubmittedSuccess ? (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 text-center space-y-4 animate-in zoom-in-95">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-300">
-              <CheckCircle2 className="w-10 h-10" />
-            </div>
-
-            <div>
-              <h3 className="text-xl font-black text-slate-900 font-heading">Application Submitted!</h3>
-              <p className="text-xs sm:text-sm text-slate-600 font-medium mt-1 max-w-md mx-auto">
-                Thank you for applying to the Reseller Program. Our admin team will review your application and send approval instructions to your WhatsApp & Email.
-              </p>
-            </div>
-
-            <button
-              onClick={() => {
-                // Bug 10: Reset all form state when submitting another application
-                setIsSubmittedSuccess(false);
-                setStoreName('');
-                setWhatsappNumber(userProfile?.phone || '');
-                setEmailAddress(userProfile?.email || '');
-                setRealName(userProfile?.name || '');
-                setIsRunningStore(false);
-                setHasSocialReach(false);
-                setDailySale('2,000 - 5,000 LKR');
-                setAgreedTerms(false);
-              }}
-              className="px-6 py-2.5 rounded-full bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700 transition-colors"
-            >
-              Submit Another Application
+          <div className="rp-done">
+            <span className="rp-done-ic"><CheckCircle2 className="w-8 h-8" /></span>
+            <h3>Application sent</h3>
+            <p>
+              Next, deposit Rs. {RESELLER_MIN_DEPOSIT_LKR.toLocaleString()} to your wallet (it stays yours for orders).
+              We approve you once it is verified and send your reseller details to your WhatsApp and email.
+            </p>
+            <button type="button" className="rp-btn" onClick={() => openWalletModal()}>
+              <Wallet className="w-4 h-4" /> Deposit now
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSubmitApplication} className="space-y-6">
-            
-            {/* Input Grid 2 Columns */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              
-              {/* Real Name */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700">Real Name</label>
-                <input
-                  type="text"
-                  placeholder="Gaming Mads"
-                  value={realName}
-                  onChange={(e) => setRealName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 font-medium focus:outline-none focus:border-cyan-500 focus:bg-white transition-all"
-                />
-              </div>
-
-              {/* Your Store Name */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700">Your Store Name *</label>
-                <input
-                  type="text"
-                  placeholder="Enter your store name"
-                  value={storeName}
-                  onChange={(e) => setStoreName(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 text-sm text-slate-900 font-medium focus:outline-none focus:border-cyan-500 transition-all"
-                />
-              </div>
-
-              {/* WhatsApp Number */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700">WhatsApp Number *</label>
-                <input
-                  type="text"
-                  placeholder="+94759566784"
-                  value={whatsappNumber}
-                  onChange={(e) => setWhatsappNumber(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 font-medium focus:outline-none focus:border-cyan-500 focus:bg-white transition-all"
-                />
-              </div>
-
-              {/* Email Address */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700">Email Address *</label>
-                <input
-                  type="email"
-                  placeholder="gamingmads0103@gmail.com"
-                  value={emailAddress}
-                  onChange={(e) => setEmailAddress(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 font-medium focus:outline-none focus:border-cyan-500 focus:bg-white transition-all"
-                />
-              </div>
-
-            </div>
-
-            {/* Current Activity Checkbox Box (Matching Screenshot 2) */}
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
-              <label className="text-xs font-extrabold text-slate-800 uppercase tracking-wider block">
-                Current Activity
+          <form onSubmit={handleSubmitApplication} className="rp-form">
+            <div className="rp-grid">
+              <label className="rp-field">
+                <span>Real name</span>
+                <input type="text" placeholder="Your name" value={realName} onChange={(e) => setRealName(e.target.value)} className="rp-input" />
               </label>
+              <label className="rp-field">
+                <span>Store name *</span>
+                <input type="text" placeholder="Your store name" value={storeName} onChange={(e) => setStoreName(e.target.value)} required className="rp-input" />
+              </label>
+              <label className="rp-field">
+                <span>WhatsApp number *</span>
+                <input type="tel" placeholder="+94 7X XXX XXXX" value={whatsappNumber} onChange={(e) => setWhatsappNumber(e.target.value)} required className="rp-input" />
+              </label>
+              <label className="rp-field">
+                <span>Email *</span>
+                <input type="email" placeholder="you@example.com" value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} required className="rp-input" />
+              </label>
+            </div>
 
-              <div className="space-y-2 text-xs font-medium text-slate-700">
-                <label className="flex items-center gap-3 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={isRunningStore}
-                    onChange={(e) => setIsRunningStore(e.target.checked)}
-                    className="w-4 h-4 rounded text-cyan-600 focus:ring-cyan-500 border-slate-300"
-                  />
-                  <span>Are you currently running a top-up store?</span>
-                </label>
-
-                <label className="flex items-center gap-3 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={hasSocialReach}
-                    onChange={(e) => setHasSocialReach(e.target.checked)}
-                    className="w-4 h-4 rounded text-cyan-600 focus:ring-cyan-500 border-slate-300"
-                  />
-                  <span>Do you have social media accounts with good reach?</span>
-                </label>
+            <div className="rp-field">
+              <span>About you</span>
+              <div className="rp-chips">
+                <button type="button" className={`rp-chip ${isRunningStore ? 'is-on' : ''}`} aria-pressed={isRunningStore} onClick={() => setIsRunningStore(v => !v)}>
+                  <Store className="w-4 h-4" /> I run a top-up store
+                </button>
+                <button type="button" className={`rp-chip ${hasSocialReach ? 'is-on' : ''}`} aria-pressed={hasSocialReach} onClick={() => setHasSocialReach(v => !v)}>
+                  <Megaphone className="w-4 h-4" /> I have social media reach
+                </button>
               </div>
             </div>
 
-            {/* Daily Average Sale Dropdown */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">Daily Average Sale (LKR)</label>
-              <select
-                value={dailySale}
-                onChange={(e) => setDailySale(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 text-sm text-slate-900 font-semibold focus:outline-none focus:border-cyan-500 cursor-pointer"
-              >
+            <label className="rp-field">
+              <span>Daily average sale (LKR)</span>
+              <select value={dailySale} onChange={(e) => setDailySale(e.target.value)} className="rp-input">
                 <option value="1,000 - 2,000 LKR">1,000 - 2,000 LKR</option>
                 <option value="2,000 - 5,000 LKR">2,000 - 5,000 LKR</option>
                 <option value="5,000 - 10,000 LKR">5,000 - 10,000 LKR</option>
                 <option value="10,000+ LKR">10,000+ LKR</option>
               </select>
-            </div>
+            </label>
 
-            {/* Agreement Checkbox */}
-            <div className="flex items-center gap-3 text-xs text-slate-600 font-medium pt-1">
-              <input
-                type="checkbox"
-                id="terms-check"
-                checked={agreedTerms}
-                onChange={(e) => setAgreedTerms(e.target.checked)}
-                className="w-4 h-4 rounded text-cyan-600 focus:ring-cyan-500 border-slate-300 cursor-pointer"
-              />
-              <label htmlFor="terms-check" className="cursor-pointer">
-                I agree to the <span className="text-cyan-600 font-bold underline">terms and conditions</span> and understand that inactivity may lead to account downgrade.
-              </label>
-            </div>
+            <label className="rp-terms">
+              <input type="checkbox" checked={agreedTerms} onChange={(e) => setAgreedTerms(e.target.checked)} />
+              <span>I agree to the terms and conditions and understand that inactivity may lead to removal.</span>
+            </label>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-brand-600 to-brand-600 hover:from-brand-500 hover:to-brand-500 text-white font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-brand-600/30 uppercase tracking-wider active:scale-[0.99]"
-            >
-              <span>{isSubmitting ? 'Submitting Application...' : 'Submit Application'}</span>
-              <ArrowRight className="w-5 h-5 text-white" />
+            <button type="submit" disabled={isSubmitting} className="rp-btn rp-btn-block">
+              {isSubmitting ? 'Sending application…' : 'Submit application'} <ArrowRight className="w-4 h-4" />
             </button>
-
           </form>
         )}
-      </div>
+      </section>
 
-      {/* 3. RESELLER BENEFITS (Matching Screenshot 3) */}
-      <div className="space-y-8 pt-6">
-        <div className="text-center space-y-2">
-          <span className="text-xs font-extrabold text-cyan-600 tracking-widest uppercase font-mono">
-            — WHY JOIN US —
-          </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 font-heading">
-            Reseller Benefits
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium">
-            Everything you get when you become a verified reseller partner
-          </p>
+      {/* BENEFITS */}
+      <section aria-labelledby="rp-ben-title">
+        <div className="rp-head rp-head-center">
+          <span className="rp-pill">Why join</span>
+          <h2 id="rp-ben-title" className="rp-h2">Everything a reseller gets</h2>
         </div>
-
-        {/* 6 Grid Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
-          {/* Card 1: Reseller Pricing */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-6 space-y-3 shadow-xs hover:shadow-md transition-shadow">
-            <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-              <DollarSign className="w-6 h-6" />
+        <div className="rp-benefits">
+          {BENEFITS.map(({ icon: Icon, tone, title, text }) => (
+            <div key={title} className="rp-benefit">
+              <span className={`rp-stat-ic rp-tone-${tone}`}><Icon className="w-5 h-5" /></span>
+              <h3>{title}</h3>
+              <p>{text}</p>
             </div>
-            <h3 className="text-base font-black text-slate-900 font-heading">Reseller Pricing</h3>
-            <p className="text-xs text-slate-500 font-medium leading-relaxed">
-              Access all games at exclusive reseller prices — up to <span className="text-cyan-600 font-bold">3%–8% discount</span> on every product.
-            </p>
-          </div>
-
-          {/* Card 2: Daily Sales Analytics */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-6 space-y-3 shadow-xs hover:shadow-md transition-shadow">
-            <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <TrendingUp className="w-6 h-6" />
-            </div>
-            <h3 className="text-base font-black text-slate-900 font-heading">Daily Sales Analytics</h3>
-            <p className="text-xs text-slate-500 font-medium leading-relaxed">
-              Analyse your daily sales with detailed charts and reports right from your dashboard.
-            </p>
-          </div>
-
-          {/* Card 3: Telegram FF Top-Up Bot */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-6 space-y-3 shadow-xs hover:shadow-md transition-shadow">
-            <div className="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
-              <Send className="w-6 h-6" />
-            </div>
-            <h3 className="text-base font-black text-slate-900 font-heading">Telegram FF Top-Up Bot</h3>
-            <p className="text-xs text-slate-500 font-medium leading-relaxed">
-              Access our automated Telegram bot for instant Free Fire & MLBB diamond top-ups at reseller rates.
-            </p>
-          </div>
-
-          {/* Card 4: Your Own Web & App */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-6 space-y-3 shadow-xs hover:shadow-md transition-shadow">
-            <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-              <Smartphone className="w-6 h-6" />
-            </div>
-            <h3 className="text-base font-black text-slate-900 font-heading">Your Own Web & App</h3>
-            <p className="text-xs text-slate-500 font-medium leading-relaxed">
-              Get your exclusive website and Android app with a small monthly fee — no coding or tech knowledge needed.
-            </p>
-          </div>
-
-          {/* Card 5: Sales Reports */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-6 space-y-3 shadow-xs hover:shadow-md transition-shadow">
-            <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-              <FileText className="w-6 h-6" />
-            </div>
-            <h3 className="text-base font-black text-slate-900 font-heading">Sales Reports</h3>
-            <p className="text-xs text-slate-500 font-medium leading-relaxed">
-              Get detailed sale reports with product breakdowns, recharge history, and performance tracking.
-            </p>
-          </div>
-
-          {/* Card 6: Priority Support & More */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-6 space-y-3 shadow-xs hover:shadow-md transition-shadow">
-            <div className="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center">
-              <Crown className="w-6 h-6" />
-            </div>
-            <h3 className="text-base font-black text-slate-900 font-heading">Priority Support & More</h3>
-            <p className="text-xs text-slate-500 font-medium leading-relaxed">
-              Enjoy priority customer support, early access to new games, and exclusive reseller-only features.
-            </p>
-          </div>
-
+          ))}
         </div>
-      </div>
+      </section>
 
-      {/* 4. ELIGIBILITY & RULES SECTION (Matching Screenshot 3) */}
-      <div className="bg-slate-100/70 border border-slate-200/80 rounded-3xl p-6 sm:p-10 space-y-6">
-        
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-cyan-600 text-white flex items-center justify-center font-bold text-sm">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="text-xl font-black text-slate-900 font-heading">Eligibility & Rules</h3>
-            <p className="text-xs text-slate-500 font-medium">Clear requirements for joining and maintaining reseller status</p>
-          </div>
+      {/* RULES */}
+      <section className="rp-card" aria-labelledby="rp-rules-title">
+        <div className="rp-head">
+          <span className="rp-pill"><ShieldCheck className="w-3.5 h-3.5" /> Rules</span>
+          <h2 id="rp-rules-title" className="rp-h2">Eligibility and rules</h2>
         </div>
-
-        {/* 4 Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          
-          {/* Rule 01 */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 space-y-2">
-            <div className="flex items-center gap-3">
-              <span className="w-7 h-7 rounded-lg bg-blue-600 text-white font-mono font-extrabold text-xs flex items-center justify-center">
-                01
-              </span>
-              <h4 className="font-extrabold text-sm text-slate-900">Active Presence Required</h4>
+        <div className="rp-rules">
+          {RULES.map((r, i) => (
+            <div key={r.title} className="rp-rule">
+              <span className="rp-rule-num">{String(i + 1).padStart(2, '0')}</span>
+              <div><h3>{r.title}</h3><p>{r.text}</p></div>
             </div>
-            <p className="text-xs text-slate-500 font-medium leading-relaxed pl-10">
-              You must have an <span className="font-bold text-slate-800">active social media fanbase OR be an active customer</span> with a strong transaction history on our site.
-            </p>
-          </div>
-
-          {/* Rule 02 */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 space-y-2">
-            <div className="flex items-center gap-3">
-              <span className="w-7 h-7 rounded-lg bg-cyan-600 text-white font-mono font-extrabold text-xs flex items-center justify-center">
-                02
-              </span>
-              <h4 className="font-extrabold text-sm text-slate-900">Manual Review Process</h4>
-            </div>
-            <p className="text-xs text-slate-500 font-medium leading-relaxed pl-10">
-              We manually check your social media reach and recent website transactions before approving or rejecting applications.
-            </p>
-          </div>
-
-          {/* Rule 03 */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 space-y-2">
-            <div className="flex items-center gap-3">
-              <span className="w-7 h-7 rounded-lg bg-indigo-600 text-white font-mono font-extrabold text-xs flex items-center justify-center">
-                03
-              </span>
-              <h4 className="font-extrabold text-sm text-slate-900">Monthly Monitoring</h4>
-            </div>
-            <p className="text-xs text-slate-500 font-medium leading-relaxed pl-10">
-              This is a performance-based program. We review transactions monthly. <span className="font-bold text-slate-800">Inactivity may result in removal</span> from the reseller program.
-            </p>
-          </div>
-
-          {/* Rule 04 */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 space-y-2">
-            <div className="flex items-center gap-3">
-              <span className="w-7 h-7 rounded-lg bg-emerald-600 text-white font-mono font-extrabold text-xs flex items-center justify-center">
-                04
-              </span>
-              <h4 className="font-extrabold text-sm text-slate-900">Top Performer Perks</h4>
-            </div>
-            <p className="text-xs text-slate-500 font-medium leading-relaxed pl-10">
-              Highly active resellers unlock exclusive future options, better rates, and priority support.
-            </p>
-          </div>
-
+          ))}
         </div>
-      </div>
-
+        <p className="rp-note"><BadgeCheck className="w-4 h-4" /> Reseller prices are checked by our server on every order.</p>
+      </section>
     </div>
   );
 };

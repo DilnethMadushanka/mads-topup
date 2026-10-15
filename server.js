@@ -8,11 +8,12 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { initTelegramBot, getTelegramBotHealthStatus, forceTelegramBotRefresh } from './src/services/telegramBotService.js';
 import { lookupFreePlayerIgn } from './src/services/playerLookup.js';
 import { GAMES_DATA } from './src/data/games.js';
+import { RESELLER_MIN_DEPOSIT_LKR, RESELLER_TIERS, resellerTierFor, nextResellerTier, tierById } from './src/data/resellerTiers.js';
 import { isSessionToken, verifySession, signSession } from './lib/session.js';
 import { sendMail, mailProvidersConfigured } from './lib/mailer.js';
 import { otpEmailHtml } from './lib/otpEmail.js';
 import { verifyPasswordLogin, setPasswordForEmail, publicProfile } from './lib/userAuth.js';
-import { rtdbUrl, rtdbGet, rtdbPut, rtdbPatch, rtdbTransaction, findUserKey, adjustWallet, spendWallet, isUserBlocked } from './lib/rtdbAdmin.js';
+import { rtdbUrl, rtdbGet, rtdbPut, rtdbPatch, rtdbTransaction, findUserKey, adjustWallet, spendWallet, isUserBlocked, addResellerSales } from './lib/rtdbAdmin.js';
 import { fetchVoucherCodes, saveUserVoucher, listUserVouchers, findCatalogPackage, isVoucherGame, redactVoucherCodes } from './lib/moogoldVoucher.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -704,6 +705,10 @@ app.post('/api/admin/user-fields', requireAdminSession, async (req, res) => {
     const { identifier, fields } = req.body || {};
     const update = {};
     if (fields && typeof fields.isVerified === 'boolean') update.isVerified = fields.isVerified;
+    // Reseller tier: AUTO follows sales; BRONZE/SILVER/GOLD fixes it.
+    if (fields && (fields.resellerTier === 'AUTO' || tierById(fields.resellerTier))) {
+      update.resellerTier = fields.resellerTier === 'AUTO' ? null : fields.resellerTier;
+    }
     if (fields && ['ACTIVE', 'BLOCKED'].includes(fields.status)) {
       update.status = fields.status;
       // Blocking or unblocking logs the account out everywhere, so a session
@@ -711,7 +716,7 @@ app.post('/api/admin/user-fields', requireAdminSession, async (req, res) => {
       update.sessionsValidAfter = Date.now();
     }
     if (!identifier || !Object.keys(update).length) {
-      return res.status(400).json({ error: 'identifier and a supported field (isVerified, status) are required.' });
+      return res.status(400).json({ error: 'identifier and a supported field (isVerified, status, resellerTier) are required.' });
     }
     const key = await findUserKey(identifier);
     if (!key) return res.status(404).json({ error: 'User not found in database' });
@@ -727,6 +732,25 @@ app.post('/api/admin/user-fields', requireAdminSession, async (req, res) => {
 // read from the stored application (never from the browser), and only that
 // one record is upgraded: a second record carrying the same email (anyone
 // can create one) never becomes a reseller.
+// The users/ key an application belongs to: { key } or { error, status }.
+async function resolveApplicationKey(application) {
+  const appUid = String(application.userId || application.uid || '');
+  if (appUid && /^[A-Za-z0-9_-]{1,128}$/.test(appUid)) {
+    const own = await rtdbGet(`users/${appUid}`).catch(() => null);
+    if (own && typeof own === 'object') return { key: appUid };
+  }
+  const target = String(application.emailAddress || application.email || application.userEmail || '').trim().toLowerCase();
+  const all = target ? await rtdbGet('users') : null;
+  const matches = Object.entries(all || {}).filter(([, u]) => u?.email && String(u.email).trim().toLowerCase() === target).map(([k]) => k);
+  if (matches.length > 1) return { status: 409, error: `More than one account uses ${target}. Approve from the user's own account record instead.` };
+  if (!matches[0]) return { status: 404, error: 'No user account found for this application.' };
+  return { key: matches[0] };
+}
+
+// A new reseller must have deposited RESELLER_MIN_DEPOSIT_LKR of real,
+// verified money first (src/data/resellerTiers.js). It stays in their
+// wallet as order balance. Resending the email to an existing reseller
+// skips the check.
 app.post('/api/admin/reseller-approve', requireAdminSession, async (req, res) => {
   try {
     const { appId, resellerCode, securityKey } = req.body || {};
@@ -734,23 +758,25 @@ app.post('/api/admin/reseller-approve', requireAdminSession, async (req, res) =>
     const application = await rtdbGet(`reseller_applications/${appId}`);
     if (!application || typeof application !== 'object') return res.status(404).json({ error: 'Application not found.' });
 
-    let key = null;
-    const appUid = String(application.userId || application.uid || '');
-    if (appUid && /^[A-Za-z0-9_-]{1,128}$/.test(appUid)) {
-      const own = await rtdbGet(`users/${appUid}`).catch(() => null);
-      if (own && typeof own === 'object') key = appUid;
-    }
-    if (!key) {
-      const target = String(application.emailAddress || application.email || application.userEmail || '').trim().toLowerCase();
-      const all = target ? await rtdbGet('users') : null;
-      const matches = Object.entries(all || {}).filter(([, u]) => u?.email && String(u.email).trim().toLowerCase() === target).map(([k]) => k);
-      if (matches.length > 1) return res.status(409).json({ error: `More than one account uses ${target}. Approve from the user's own account record instead.` });
-      key = matches[0] || null;
-    }
-    if (!key) return res.status(404).json({ error: 'No user account found for this application.' });
+    const found = await resolveApplicationKey(application);
+    if (!found.key) return res.status(found.status).json({ error: found.error });
+    const key = found.key;
 
     const user = await rtdbGet(`users/${key}`);
     const update = { isReseller: true, role: 'Reseller Partner', resellerStatus: 'APPROVED' };
+    const alreadyReseller = user?.isReseller && user?.resellerStatus === 'APPROVED';
+    if (!alreadyReseller) {
+      const depositLkr = await verifiedDepositsLkr(key);
+      if (depositLkr < RESELLER_MIN_DEPOSIT_LKR) {
+        return res.status(409).json({
+          error: `This applicant has deposited Rs. ${depositLkr.toLocaleString()} of the Rs. ${RESELLER_MIN_DEPOSIT_LKR.toLocaleString()} needed to join. Approve after their deposit is verified.`,
+          depositLkr, requiredLkr: RESELLER_MIN_DEPOSIT_LKR
+        });
+      }
+      // A fresh start: tier fields a browser might have put on the record
+      // when it was created don't carry over.
+      Object.assign(update, { resellerJoinedAt: new Date().toISOString(), resellerJoinDepositLkr: depositLkr, resellerSalesLkr: 0, resellerTier: null });
+    }
     for (const [field, value, re] of [['resellerCode', resellerCode, /^RS-[A-Z0-9]{4,12}$/], ['securityKey', securityKey, /^MADS-SEC-[A-Z0-9]{6,16}$/]]) {
       if (user?.[field]) continue;
       if (!re.test(String(value || ''))) continue;
@@ -768,11 +794,50 @@ app.post('/api/admin/reseller-approve', requireAdminSession, async (req, res) =>
       ...(finalUser.securityKey ? { securityKey: finalUser.securityKey } : {}),
       updatedAt: new Date().toISOString()
     });
-    console.log(`[Reseller Approved] ${appId} → ${key}`);
+    console.log(`[Reseller Approved] ${appId} → ${key}${alreadyReseller ? ' (already a reseller)' : ` with Rs. ${update.resellerJoinDepositLkr} deposited`}`);
     res.json({ success: true, keys: [key], resellerCode: finalUser.resellerCode, securityKey: finalUser.securityKey });
   } catch (e) {
     console.error('[Admin Reseller Approve Error]:', e.message);
     res.status(500).json({ error: 'Could not approve this application.' });
+  }
+});
+
+// Admin: how much an applicant has deposited towards joining.
+app.post('/api/admin/reseller-deposit', requireAdminSession, async (req, res) => {
+  try {
+    const appId = String(req.body?.appId || '');
+    if (!/^[A-Za-z0-9_-]{1,80}$/.test(appId)) return res.status(400).json({ error: 'A valid appId is required.' });
+    const application = await rtdbGet(`reseller_applications/${appId}`);
+    if (!application || typeof application !== 'object') return res.status(404).json({ error: 'Application not found.' });
+    const found = await resolveApplicationKey(application);
+    if (!found.key) return res.json({ depositLkr: 0, requiredLkr: RESELLER_MIN_DEPOSIT_LKR, note: found.error });
+    res.json({ depositLkr: await verifiedDepositsLkr(found.key), requiredLkr: RESELLER_MIN_DEPOSIT_LKR });
+  } catch (e) {
+    console.error('[Admin Reseller Deposit Error]:', e.message);
+    res.status(500).json({ error: SERVER_ERROR });
+  }
+});
+
+// Signed-in users: their reseller tier, sales and deposit towards joining.
+app.post('/api/reseller/status', rateLimiter(60, 60000), async (req, res) => {
+  try {
+    const authUser = await verifyFirebaseIdToken(req.headers.authorization || '');
+    if (!authUser) return res.status(401).json({ error: 'Please log in again.' });
+    const reseller = await getApprovedReseller(authUser.uid, authUser.email);
+    const tiers = RESELLER_TIERS.map(({ id, name, rate, minSalesLkr }) => ({ id, name, rate, minSalesLkr }));
+    if (reseller) {
+      return res.json({
+        approved: true, tiers,
+        tier: { id: reseller.tier.id, name: reseller.tier.name, rate: reseller.tier.rate },
+        salesLkr: Number(reseller.user.resellerSalesLkr) || 0,
+        next: nextResellerTier(reseller.user),
+      });
+    }
+    const key = await resolveUserWalletKey(authUser.uid, authUser.email).catch(() => null);
+    res.json({ approved: false, tiers, depositLkr: key ? await verifiedDepositsLkr(key) : 0, requiredLkr: RESELLER_MIN_DEPOSIT_LKR });
+  } catch (e) {
+    console.error('[Reseller Status Error]:', e.message);
+    res.status(500).json({ error: SERVER_ERROR });
   }
 });
 
@@ -1233,11 +1298,6 @@ async function verifyFirebaseIdToken(idToken) {
 }
 
 
-// The largest discount any legitimate promo code (TopupModal.jsx WELCOME50 /
-// LAUNCH100) can knock off a package's catalog price. Approved resellers get
-// a wider band (see isApprovedReseller below) since their wholesale price is
-// a genuine 5% off catalog, which can exceed this on larger packages.
-const RESELLER_WHOLESALE_DISCOUNT_RATE = 0.05;
 const MAX_ORDER_QUANTITY = 50;
 
 // Recompute the official price server-side from the catalog using the MooGold
@@ -1294,33 +1354,39 @@ async function rejectIfBlocked(user, res) {
 // Confirms the authenticated caller is a real, admin-approved reseller —
 // never trust a client-sent "isResellerOrder" flag on its own, since that
 // alone would let anyone claim reseller pricing. Mirrors resolveUserWalletKey's
-// uid-then-email lookup strategy.
-async function isApprovedReseller(uid, email) {
+// uid-then-email lookup strategy. Returns { key, user, tier } or null.
+async function getApprovedReseller(uid, email) {
+  const isApproved = (u) => u && typeof u === 'object' && u.isReseller && u.resellerStatus === 'APPROVED';
   try {
     if (uid) {
-      const res = await fetch(rtdbUrl(`users/${uid}`));
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.isReseller && data.resellerStatus === 'APPROVED') return true;
-      }
+      const own = await rtdbGet(`users/${uid}`).catch(() => null);
+      if (isApproved(own)) return { key: uid, user: own, tier: resellerTierFor(own) };
     }
     if (email) {
-      const allRes = await fetch(rtdbUrl(`users`));
-      if (allRes.ok) {
-        const allUsers = await allRes.json();
-        if (allUsers && typeof allUsers === 'object') {
-          for (const userData of Object.values(allUsers)) {
-            if (!userData) continue;
-            const emailMatch = userData.email && String(userData.email).toLowerCase() === String(email).toLowerCase();
-            if (emailMatch && userData.isReseller && userData.resellerStatus === 'APPROVED') return true;
-          }
-        }
+      const allUsers = await rtdbGet('users');
+      for (const [key, userData] of Object.entries(allUsers || {})) {
+        const emailMatch = userData?.email && String(userData.email).toLowerCase() === String(email).toLowerCase();
+        if (emailMatch && isApproved(userData)) return { key, user: userData, tier: resellerTierFor(userData) };
       }
     }
   } catch (e) {
-    console.warn('[isApprovedReseller check warning]:', e.message);
+    console.warn('[getApprovedReseller check warning]:', e.message);
   }
-  return false;
+  return null;
+}
+
+// Real money an account has deposited: admin-verified bank deposits, bank
+// SMS and Binance auto-credits (manual_payments marked credited). Bonuses
+// are left out. USDT counts at the refund rate (305).
+async function verifiedDepositsLkr(key) {
+  const all = (await rtdbGet('manual_payments')) || {};
+  let total = 0;
+  for (const p of Object.values(all)) {
+    if (!p || !p.credited || p.creditedTo !== key) continue;
+    const amount = Number(p.amount) || 0;
+    total += p.currency === 'USDT' ? amount * 305 : amount;
+  }
+  return Math.round(total);
 }
 
 // Resolve which RTDB user record a wallet operation applies to: the
@@ -1560,6 +1626,7 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
     const numPriceLkr = parseFloat(priceLkr || req.body.priceLkr || bodyObj?.priceLkr || 0);
 
     let deductResult = null;
+    let verifiedReseller = null;
     let orderCatalog = { game: null, pkg: null };
     if (isOrderCreation) {
       if (numPriceLkr <= 0) {
@@ -1597,21 +1664,23 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
         return res.status(400).json({ error: 'Invalid order quantity.' });
       }
       const catalogPriceLkr = unitCatalogPriceLkr * requestedQty;
-      // The only discount the site offers is the approved-reseller 5%
-      // (rounded per unit by the site, or on the total by the reseller
-      // panel). Anything cheaper is a tampered price: there used to be a flat
-      // Rs. 100 allowance here, which let any order under Rs. 100 (e.g. 5
-      // Diamonds at Rs. 40) be bought for Rs. 1.
-      const verifiedReseller = await isApprovedReseller(authenticatedUser.uid, authenticatedUser.email);
+      // The only discount the site offers is the approved reseller's tier
+      // discount (3/5/8%, src/data/resellerTiers.js; rounded per unit by the
+      // site, or on the total by the reseller panel). Anything cheaper is a
+      // tampered price: there used to be a flat Rs. 100 allowance here, which
+      // let any order under Rs. 100 (e.g. 5 Diamonds at Rs. 40) be bought
+      // for Rs. 1.
+      verifiedReseller = await getApprovedReseller(authenticatedUser.uid, authenticatedUser.email);
       if (bodyObj?.isResellerOrder && !verifiedReseller) {
         // A "Reseller Partner Wallet" order from an account that isn't an
         // admin-approved reseller is refused outright.
         console.warn(`[NON-RESELLER BLOCKED] ${authenticatedUser.uid} (${authenticatedUser.email}) attempted a reseller order`);
         return res.status(403).json({ error: 'Reseller orders are only available to approved reseller accounts.' });
       }
+      const resellerRate = verifiedReseller?.tier.rate || 0;
       const minPriceLkr = verifiedReseller
-        ? Math.min(Math.round(unitCatalogPriceLkr * (1 - RESELLER_WHOLESALE_DISCOUNT_RATE)) * requestedQty,
-                   Math.round(catalogPriceLkr * (1 - RESELLER_WHOLESALE_DISCOUNT_RATE)))
+        ? Math.min(Math.round(unitCatalogPriceLkr * (1 - resellerRate)) * requestedQty,
+                   Math.round(catalogPriceLkr * (1 - resellerRate)))
         : catalogPriceLkr;
       if (numPriceLkr > catalogPriceLkr || numPriceLkr < minPriceLkr) {
         console.warn(`[PRICE TAMPER BLOCKED] ${authenticatedUser.uid} product-id=${requestedProductId} qty=${requestedQty} sent Rs. ${numPriceLkr}, minimum Rs. ${minPriceLkr}`);
@@ -1724,6 +1793,12 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
     if (isOrderCreation && !isSuccess) {
       console.warn(`[MOOGOLD ORDER FAILED] Reverting & Refund Rs. ${numPriceLkr} to UID ${authenticatedUser.uid} via ${deductResult.usedCurrency || 'LKR'}`);
       await refundUserWallet(authenticatedUser.uid, numPriceLkr, deductResult.usedCurrency || 'LKR', authenticatedUser.email, deductResult.rtdbKey);
+    }
+
+    // A reseller's completed orders count towards their next tier.
+    if (isOrderCreation && isSuccess && deductResult?.success && verifiedReseller) {
+      addResellerSales(verifiedReseller.key, numPriceLkr)
+        .catch(e => console.warn('[Reseller Sales Error]:', e.message));
     }
 
     // Referral cashback for the referrer on this user's first paid order.

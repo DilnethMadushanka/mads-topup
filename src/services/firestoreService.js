@@ -1089,8 +1089,10 @@ export const updateResellerApplicationStatusInFirestore = async (appId, userId, 
           resellerCode,
           securityKey
         });
-        if (!ok) console.warn('Reseller approval was not saved:', data?.error);
-        else approval = data;
+        // Refused (e.g. the applicant has not deposited enough yet): stop
+        // here so nothing marks them approved.
+        if (!ok) return { error: data?.error || 'Reseller approval was not saved.' };
+        approval = data;
       }
     } catch (e) {
       console.warn('RTDB reseller app status update note:', e);

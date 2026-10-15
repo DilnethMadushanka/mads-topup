@@ -1,9 +1,10 @@
 import { createRequire } from 'module';
 import crypto from 'crypto';
 import { GAMES_DATA } from '../data/games.js';
+import { resellerTierFor, resellerUnitPrice } from '../data/resellerTiers.js';
 import { lookupFreePlayerIgn } from './playerLookup.js';
 import { getResellerProfileByKey, getResellerProfileByKeyAsync, saveOrderToFirestore } from './firestoreService.js';
-import { findUserKey, spendWallet, adjustWallet, rtdbGet, rtdbPut } from '../../lib/rtdbAdmin.js';
+import { findUserKey, spendWallet, adjustWallet, rtdbGet, rtdbPut, addResellerSales } from '../../lib/rtdbAdmin.js';
 import { verifyPasswordLogin } from '../../lib/userAuth.js';
 import { fetchVoucherCodes, saveUserVoucher, isVoucherGame, redactVoucherCodes } from '../../lib/moogoldVoucher.js';
 
@@ -261,7 +262,8 @@ async function withCustomPrices(game) {
 }
 
 /**
- * Match package in selected game & calculate wholesale price (5% reseller discount)
+ * Match package in selected game. priceLkr is the retail price; the reseller's
+ * tier discount is applied at order time.
  */
 function findPackageInGame(game, pkgArg) {
   if (!game || !game.packages || game.packages.length === 0) {
@@ -309,14 +311,12 @@ function findPackageInGame(game, pkgArg) {
 
   // Fallback to first package if no match
   const selected = match || game.packages[0];
-  const wholesalePrice = Math.round(selected.priceLkr * 0.95);
 
   return {
     ...selected,
     name: selected.name,
     countText: `${selected.amount || selected.name} ${game.currencyName}`,
-    priceLkr: wholesalePrice,
-    retailPriceLkr: selected.priceLkr,
+    priceLkr: selected.priceLkr,
     currencyIcon: game.currencyIcon || '💎',
     currencyName: game.currencyName || 'Items'
   };
@@ -554,7 +554,7 @@ Support for ALL games on website: Mobile Legends, Free Fire, PUBG Mobile, Blood 
 • /pubg <ID> - PUBG Mobile Real IGN
 • /check <Game> <ID> [Zone] - Check Any Game
 
-⚡ 3. Execute Top-up (5% Reseller Wholesale Margin):
+⚡ 3. Execute Top-up (3% / 5% / 8% off by reseller tier):
 • /topup ml <ID> <Zone> <Package> (e.g. /topup ml 84218845 2168 86)
 • /topup ff <ID> <Diamonds> (e.g. /topup ff 248901234 100)
 • /topup pubg <ID> <UC> (e.g. /topup pubg 512345678 60)
@@ -605,13 +605,17 @@ Support for ALL games on website: Mobile Legends, Free Fire, PUBG Mobile, Blood 
         const text = ctx.message?.text || ctx.msg?.text || '';
         const parts = text.split(/\s+/).filter(Boolean);
         const gameArg = parts[1]?.toLowerCase();
+        // Prices for the linked reseller's tier; Bronze until they /auth.
+        const bound = boundChatSessions.get(ctx.chat?.id);
+        const tier = bound ? resellerTierFor(bound) : resellerTierFor({ resellerJoinedAt: 'n/a' });
+        const tierLabel = `${tier.name} ${Math.round(tier.rate * 100)}% OFF`;
 
         if (gameArg) {
           const matchedGame = await withCustomPrices(findGameInCatalog(gameArg));
-          let replyText = `📦 ${matchedGame.name.toUpperCase()} PACKAGES & RESELLER WHOLESALE PRICES (5% OFF):\n\n`;
+          let replyText = `📦 ${matchedGame.name.toUpperCase()} PACKAGES & RESELLER WHOLESALE PRICES (${tierLabel}):\n\n`;
 
           matchedGame.packages.forEach((pkg, index) => {
-            const wholesalePrice = Math.round(pkg.priceLkr * 0.95);
+            const wholesalePrice = resellerUnitPrice(pkg.priceLkr, tier.rate);
             replyText += `${index + 1}. ${matchedGame.currencyIcon} ${pkg.name}\n`;
             replyText += `   • Reseller Price: Rs. ${wholesalePrice.toLocaleString()} LKR (Retail: Rs. ${pkg.priceLkr.toLocaleString()})\n`;
             replyText += `   • Topup Code: ${pkg.amount || pkg.id}\n\n`;
@@ -632,13 +636,13 @@ Support for ALL games on website: Mobile Legends, Free Fire, PUBG Mobile, Blood 
           summaryText += `${g.currencyIcon} ${g.name} (${g.packages.length} Packages):\n`;
           const top4 = g.packages.slice(0, 4);
           top4.forEach(p => {
-            const wPrice = Math.round(p.priceLkr * 0.95);
+            const wPrice = resellerUnitPrice(p.priceLkr, tier.rate);
             summaryText += `  • ${p.name}: Rs. ${wPrice.toLocaleString()} LKR\n`;
           });
           summaryText += `  👉 Type /packages ${gAlias} for full list\n\n`;
         });
 
-        summaryText += `⚡ Reseller Wholesale Advantage: 5% OFF All Retail Prices Instant Deduct from Reseller Balance!`;
+        summaryText += `⚡ Reseller Wholesale Advantage: ${tierLabel} All Retail Prices (Bronze 3%, Silver 5%, Gold 8%). Instant Deduct from Reseller Balance!`;
         return safeReply(ctx, summaryText);
       } catch (e) {
         console.error('Packages Error:', e);
@@ -731,7 +735,7 @@ Telegram long-polling connection is 100% active 24/7!
 👑 Reseller Name: ${reseller.name || 'Verified Reseller Partner'}
 🏷️ Unique Reseller Code: ${reseller.resellerCode}
 🔑 Security Key: ${reseller.securityKey}
-💼 Wholesale Tier: Verified Reseller Partner (5% Wholesale Discount)
+💼 Wholesale Tier: ${resellerTierFor(reseller).name} (${Math.round(resellerTierFor(reseller).rate * 100)}% Wholesale Discount)
 💰 Available LKR Balance: Rs. ${(reseller.walletBalance || 0).toLocaleString()} LKR
 💵 Available USDT Balance: $${(parseFloat(reseller.walletUsdt !== undefined ? reseller.walletUsdt : 0)).toFixed(2)} USDT
 
@@ -886,7 +890,7 @@ Send: /auth <SecurityKey> <Password>
 🔑 Security Key: ${reseller?.securityKey || 'N/A'}
 💰 Available LKR Balance: Rs. ${(reseller?.walletBalance || 0).toLocaleString()} LKR
 💵 Available USDT Balance: $${(parseFloat(reseller?.walletUsdt !== undefined ? reseller.walletUsdt : 0)).toFixed(2)} USDT
-⚡ Wholesale Discount: 5% OFF All Game Packages (${GAMES_DATA.length} Games)
+⚡ Wholesale Discount: ${reseller ? Math.round(resellerTierFor(reseller).rate * 100) : 3}% OFF All Game Packages (${GAMES_DATA.length} Games)
 
 📥 To Recharge Wallet: Type /deposit
 🎮 To Check Supported Games: Type /games
@@ -1042,8 +1046,17 @@ Examples:
           const pkgInfo = findPackageInGame(await withCustomPrices(matchedGame), pkgArg);
           const orderId = 'ORD-TG-' + Math.floor(100000 + Math.random() * 900000);
 
-          // Bug 4 fix: apply 5% wholesale discount — resellers pay wholesale, not retail
-          const wholesalePrice = Math.round(pkgInfo.priceLkr * 0.95);
+          // Spend only from the account that was verified at /auth, and only
+          // while it is still an approved reseller. Its tier sets the discount.
+          const walletKey = reseller.walletKey || null;
+          const walletRecord = walletKey ? await rtdbGet(`users/${walletKey}`).catch(() => null) : null;
+          if (!walletRecord || walletRecord.status === 'BLOCKED' || !walletRecord.isReseller || walletRecord.resellerStatus !== 'APPROVED') {
+            boundChatSessions.delete(chatId);
+            return safeReply(ctx, '🔒 Please link your reseller account again: /auth <SecurityKey> <Password>');
+          }
+          const tier = resellerTierFor(walletRecord);
+          const tierLabel = `${tier.name} ${Math.round(tier.rate * 100)}% OFF`;
+          const wholesalePrice = resellerUnitPrice(pkgInfo.priceLkr, tier.rate);
 
           let freshReseller = reseller;
           const keyToQuery = reseller.securityKey || reseller.resellerCode || reseller.uid;
@@ -1066,7 +1079,7 @@ Examples:
 🔑 Security Key: ${freshReseller.securityKey}
 
 📦 Retail Price: Rs. ${pkgInfo.priceLkr.toLocaleString()} LKR
-💵 Wholesale Price (5% OFF): Rs. ${wholesalePrice.toLocaleString()} LKR
+💵 Wholesale Price (${tierLabel}): Rs. ${wholesalePrice.toLocaleString()} LKR
 💰 Available Wallet Balance: Rs. ${currentBalance.toLocaleString()} LKR ($${(parseFloat(freshReseller.walletUsdt !== undefined ? freshReseller.walletUsdt : 0)).toFixed(2)} USDT)
 ⚠️ Shortfall Amount: Rs. ${shortfall.toLocaleString()} LKR
 
@@ -1111,14 +1124,6 @@ Examples:
           try { await saveBotOrder(reseller.walletKey || freshReseller.uid || reseller.uid, pendingOrder); } catch (e) {}
 
           // Take the money first (atomic, server-side), refund if MooGold fails.
-          // Spend only from the account that was verified at /auth, and only
-          // while it is still an approved reseller.
-          const walletKey = reseller.walletKey || null;
-          const walletRecord = walletKey ? await rtdbGet(`users/${walletKey}`).catch(() => null) : null;
-          if (!walletRecord || walletRecord.status === 'BLOCKED' || !walletRecord.isReseller || walletRecord.resellerStatus !== 'APPROVED') {
-            boundChatSessions.delete(chatId);
-            return safeReply(ctx, '🔒 Please link your reseller account again: /auth <SecurityKey> <Password>');
-          }
           const spend = walletKey
             ? await spendWallet(walletKey, wholesalePrice).catch(e => ({ success: false, reason: e.message }))
             : { success: false, reason: 'Reseller wallet not found' };
@@ -1130,6 +1135,7 @@ Examples:
           const mgResult = await sendMoongoldLiveOrder(matchedGame, pkgInfo, idArg, zoneArg, orderId);
 
           if (mgResult.success) {
+            addResellerSales(walletKey, wholesalePrice).catch(e => console.warn('[Telegram Bot] Reseller sales not counted:', e.message));
             // Bug 6+2 fix: fetch confirmed post-deduction balance from DB
             let confirmedBalance = Math.max(0, currentBalance - wholesalePrice);
             try {
@@ -1194,7 +1200,7 @@ ${matchedGame.currencyIcon} Topup Package: ${pkgInfo.name} (Credited Successfull
 ⚡ Quantity Added: ${pkgInfo.countText || pkgInfo.name}
 
 📦 Retail Price: Rs. ${pkgInfo.priceLkr.toLocaleString()} LKR
-💵 Wholesale Price Paid (5% OFF): Rs. ${wholesalePrice.toLocaleString()} LKR
+💵 Wholesale Price Paid (${tierLabel}): Rs. ${wholesalePrice.toLocaleString()} LKR
 💰 Confirmed Remaining Balance: Rs. ${confirmedBalance.toLocaleString()} LKR
 
 Order placed live on MooGold Reseller Portal & credited instantly!
