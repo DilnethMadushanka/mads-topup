@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { GAMES_DATA, getVerifiedPackagePriceLkr } from '../data/games';
 import { generateUniqueSecurityKey, ensureResellerCredentials, getResellerProfileByKeyAsync, updateUserProfileInFirestore } from '../services/firestoreService';
-import { dispatchMoongoldOrder } from '../services/moongoldApi';
+import { dispatchMoongoldOrder, checkPlayerIGN } from '../services/moongoldApi';
+import { ResellerReceipt } from './ResellerReceipt';
 import { orderBelongsToUser } from '../utils/ownership';
 import { useResellerStatus, resellerRateOf } from '../hooks/useResellerStatus';
 import { resellerUnitPrice } from '../data/resellerTiers';
@@ -34,7 +35,9 @@ export const ResellerDashboard = () => {
   const [selectedGameId, setSelectedGameId] = useState(GAMES_DATA[0]?.id || 'freefire');
   const [customerUid, setCustomerUid] = useState('');
   const [customerZoneId, setCustomerZoneId] = useState('');
-  const [lastVoucher, setLastVoucher] = useState(null); // { packageName, codes } of the last PIN order
+  const [receipt, setReceipt] = useState(null); // details of the last successful order
+  const [isCheckingIgn, setIsCheckingIgn] = useState(false);
+  const [ignVerified, setIgnVerified] = useState(false);
   const [customerIgn, setCustomerIgn] = useState('');
   // Bug 4: Pre-select first package so wholesale price shows immediately
   const [selectedPackageId, setSelectedPackageId] = useState(GAMES_DATA[0]?.packages?.[0]?.id || '');
@@ -120,6 +123,35 @@ export const ResellerDashboard = () => {
     setTimeout(() => setIsCopiedId(false), 2000);
   };
 
+  // Look up the customer's in-game name, as the customer top-up page does.
+  const handleCheckIgn = async () => {
+    if (!customerUid.trim()) {
+      showToast('Enter the Player ID first.', 'error');
+      return;
+    }
+    if (currentGame.requiresServer && !customerZoneId.trim()) {
+      showToast('Enter the Zone / Server ID first.', 'error');
+      return;
+    }
+    setIsCheckingIgn(true);
+    try {
+      const result = await checkPlayerIGN(currentGame.id, customerUid.trim(), customerZoneId.trim());
+      if (result?.success && result.ign) {
+        setCustomerIgn(result.ign);
+        setIgnVerified(true);
+        showToast(`Player found: ${result.ign}`);
+      } else {
+        setIgnVerified(false);
+        showToast('Could not find this player. Check the ID and try again.', 'error');
+      }
+    } catch (err) {
+      setIgnVerified(false);
+      showToast('Name check is not available right now. Please try again.', 'error');
+    } finally {
+      setIsCheckingIgn(false);
+    }
+  };
+
   const handleFulfillOrder = async (e) => {
     e.preventDefault();
 
@@ -144,6 +176,10 @@ export const ResellerDashboard = () => {
     // which causes a server-side price mismatch rejection on every order.
     if (currentGame?.resellerDisabled) {
       showToast(`⚠️ ${currentGame.name} is not yet available for reseller dispatch. Please contact admin to enable it.`, 'error');
+      return;
+    }
+
+    if (!isVoucher && !ignVerified && !window.confirm('The player name has not been checked. Send this top-up anyway?')) {
       return;
     }
 
@@ -269,13 +305,26 @@ export const ResellerDashboard = () => {
     addOrder(newOrder);
 
     setIsFulfilling(false);
-    if (isVoucher) {
-      // PIN codes are shown here only; they never go into the saved order.
-      setLastVoucher({ packageName: selectedPackage.name, codes: moongoldResult.voucherCodes || [] });
-      showToast(`⚡ ${selectedPackage.name} PIN ready!`);
-    } else {
-      showToast(`⚡ TOPUP DISPATCHED! ${selectedPackage.name} sent to UID: ${customerUid.trim()}`);
-    }
+    // PIN codes are shown in the receipt only; they never go into the saved order.
+    setReceipt({
+      orderId: newOrder.id,
+      createdAt: newOrder.createdAt,
+      gameName: currentGame.name,
+      packageName: selectedPackage.name,
+      playerId: customerUid.trim(),
+      zoneId: customerZoneId.trim(),
+      ign: customerIgn.trim(),
+      moongoldRef: moongoldResult.moongoldRef || '',
+      isVoucher,
+      codes: isVoucher ? (moongoldResult.voucherCodes || []) : [],
+      retailLkr: untamperedPackagePrice || selectedPackage.priceLkr,
+      paidLkr: currentWholesalePrice,
+      tierLabel: `${tierName} ${resellerPct}%`,
+      balanceLkr: moongoldResult?.newBalanceLkr,
+      storeName,
+      resellerCode: resellerWalletId,
+    });
+    showToast(isVoucher ? `${selectedPackage.name} PIN ready!` : `Top-up sent to ${customerIgn.trim() || customerUid.trim()}!`);
 
     try {
       if (!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
@@ -286,6 +335,7 @@ export const ResellerDashboard = () => {
     setCustomerUid('');
     setCustomerZoneId('');
     setCustomerIgn('');
+    setIgnVerified(false);
   };
 
   const handleSaveStoreProfile = async (e) => {
@@ -458,7 +508,7 @@ export const ResellerDashboard = () => {
                     <button
                       key={game.id}
                       type="button"
-                      onClick={() => { setSelectedGameId(game.id); setSelectedPackageId(game.packages[0]?.id || ''); }}
+                      onClick={() => { setSelectedGameId(game.id); setSelectedPackageId(game.packages[0]?.id || ''); setIgnVerified(false); }}
                       className={`rd-game ${on ? 'is-on' : ''}`}
                       aria-pressed={on}
                     >
@@ -492,20 +542,36 @@ export const ResellerDashboard = () => {
                     required={currentGame.fulfilment !== 'voucher'}
                     placeholder={currentGame.idPlaceholder || 'e.g. 248901234'}
                     value={customerUid}
-                    onChange={(e) => setCustomerUid(e.target.value)}
+                    onChange={(e) => { setCustomerUid(e.target.value); setIgnVerified(false); }}
                     className="rp-input rd-mono"
                   />
                 </label>
                 {currentGame.requiresServer && (
                   <label className="rp-field">
                     <span>Zone / Server ID *</span>
-                    <input type="text" required placeholder="e.g. 9821" value={customerZoneId} onChange={(e) => setCustomerZoneId(e.target.value)} className="rp-input rd-mono" />
+                    <input type="text" required placeholder="e.g. 9821" value={customerZoneId} onChange={(e) => { setCustomerZoneId(e.target.value); setIgnVerified(false); }} className="rp-input rd-mono" />
                   </label>
                 )}
-                <label className="rp-field">
-                  <span>In-game name (optional)</span>
-                  <input type="text" placeholder="e.g. GamerLanka" value={customerIgn} onChange={(e) => setCustomerIgn(e.target.value)} className="rp-input" />
-                </label>
+                {currentGame.fulfilment === 'voucher' ? null : (
+                  <div className="rp-field">
+                    <span>Player name</span>
+                    <div className="rd-ign">
+                      <input
+                        type="text"
+                        placeholder="Check to fill it in"
+                        value={customerIgn}
+                        onChange={(e) => { setCustomerIgn(e.target.value); setIgnVerified(false); }}
+                        className={`rp-input ${ignVerified ? 'is-verified' : ''}`}
+                        aria-label="Player name"
+                      />
+                      <button type="button" className="rp-btn rp-btn-sm rd-ign-btn" onClick={handleCheckIgn} disabled={isCheckingIgn}>
+                        {isCheckingIgn ? <RefreshCw className="w-4 h-4 rd-spin" /> : <Search className="w-4 h-4" />}
+                        <span>{isCheckingIgn ? 'Checking' : 'Check'}</span>
+                      </button>
+                    </div>
+                    {ignVerified && <span className="rd-ign-ok"><CheckCircle2 className="w-3.5 h-3.5" /> Verified player</span>}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -541,21 +607,6 @@ export const ResellerDashboard = () => {
               </button>
             </div>
 
-            {lastVoucher && (
-              <div className="rd-voucher">
-                <strong>🐚 {lastVoucher.packageName} PIN</strong>
-                {lastVoucher.codes.length > 0 ? lastVoucher.codes.map((code, i) => (
-                  <div key={i} className="rd-copy">
-                    <code>{code}</code>
-                    <button type="button" aria-label="Copy PIN" onClick={() => { try { navigator.clipboard.writeText(code); showToast('PIN copied!'); } catch (e) {} }}>
-                      <Copy className="w-4 h-4" />
-                    </button>
-                  </div>
-                )) : (
-                  <p>The PIN is being prepared by the supplier. It will appear under My Profile → My Codes in a few minutes.</p>
-                )}
-              </div>
-            )}
           </form>
         </div>
       )}
@@ -712,6 +763,8 @@ export const ResellerDashboard = () => {
           </form>
         </div>
       )}
+
+      <ResellerReceipt receipt={receipt} onClose={() => setReceipt(null)} showToast={showToast} />
     </div>
   );
 };
