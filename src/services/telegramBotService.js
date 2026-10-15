@@ -2,7 +2,6 @@ import { createRequire } from 'module';
 import crypto from 'crypto';
 import { GAMES_DATA } from '../data/games.js';
 import { lookupFreePlayerIgn } from './playerLookup.js';
-import { getResellerProfileByKey, getResellerProfileByKeyAsync, saveOrderToFirestore } from './firestoreService.js';
 import { findUserKey, spendWallet, adjustWallet, rtdbGet, rtdbPut } from '../../lib/rtdbAdmin.js';
 import { verifyPasswordLogin } from '../../lib/userAuth.js';
 import { fetchVoucherCodes, saveUserVoucher, isVoucherGame, redactVoucherCodes } from '../../lib/moogoldVoucher.js';
@@ -13,6 +12,33 @@ const require = createRequire(import.meta.url);
 const saveBotOrder = async (uid, order) => {
   if (!order?.id) return;
   await rtdbPut(`orders/${order.id}`, { ...order, userId: uid || 'guest', timestamp: new Date().toISOString() });
+};
+
+// Live reseller record, read with the database secret (the users list is
+// private). The bot only ever looks up the account the chat was linked to
+// with /auth, by its record key.
+const getResellerProfileByKeyAsync = async (keyOrRecord) => {
+  const key = String(keyOrRecord || '').trim();
+  if (!key) return null;
+  const walletKey = /^[A-Za-z0-9_-]{1,128}$/.test(key) && (await rtdbGet(`users/${key}`).catch(() => null)) ? key : await findUserKey(key).catch(() => null);
+  if (!walletKey) return null;
+  const u = await rtdbGet(`users/${walletKey}`).catch(() => null);
+  if (!u || typeof u !== 'object') return null;
+  const isReseller = Boolean(u.isReseller === true || u.resellerStatus === 'APPROVED' || u.role === 'Reseller Partner' || u.role === 'reseller');
+  return {
+    uid: u.uid || walletKey,
+    walletKey,
+    name: u.name || u.storeName || 'Verified Reseller Partner',
+    email: u.email || '',
+    phone: u.phone || '',
+    resellerCode: u.resellerCode || '',
+    securityKey: u.securityKey || '',
+    walletBalance: parseFloat(u.walletBalance || 0),
+    walletUsdt: parseFloat(u.walletUsdt || 0),
+    isReseller,
+    resellerStatus: isReseller ? 'APPROVED' : (u.resellerStatus || 'PENDING'),
+    status: u.status
+  };
 };
 
 const TelegramBot = require('node-telegram-bot-api');
@@ -865,7 +891,7 @@ Send: /auth <SecurityKey> <Password>
         }
 
         // Always query database live for latest reseller balance
-        const keyToQuery = reseller.securityKey || reseller.resellerCode || reseller.uid;
+        const keyToQuery = reseller.walletKey || reseller.securityKey || reseller.resellerCode || reseller.uid;
         if (keyToQuery) {
           try {
             const freshReseller = await getResellerProfileByKeyAsync(keyToQuery);
@@ -954,7 +980,7 @@ Send: /auth <SecurityKey> <Password>
 
         // Only a chat linked with /auth (key + password) can top up.
         if (reseller) {
-          const keyToQuery = reseller.securityKey || reseller.resellerCode || reseller.uid;
+          const keyToQuery = reseller.walletKey || reseller.securityKey || reseller.resellerCode || reseller.uid;
           if (keyToQuery) {
             const freshReseller = await getResellerProfileByKeyAsync(keyToQuery);
             if (freshReseller) {
@@ -1046,7 +1072,7 @@ Examples:
           const wholesalePrice = Math.round(pkgInfo.priceLkr * 0.95);
 
           let freshReseller = reseller;
-          const keyToQuery = reseller.securityKey || reseller.resellerCode || reseller.uid;
+          const keyToQuery = reseller.walletKey || reseller.securityKey || reseller.resellerCode || reseller.uid;
           if (keyToQuery) {
             try {
               const liveProfile = await getResellerProfileByKeyAsync(keyToQuery);

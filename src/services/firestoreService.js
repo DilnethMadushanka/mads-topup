@@ -1,7 +1,7 @@
 import { db, rtdb } from './firebaseAuth.js';
 import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { ref as dbRef, get as rtdbGet, set as rtdbSet, update as rtdbUpdate, onValue as rtdbOnValue } from 'firebase/database';
-import { postServerApi, getUserAuthToken, getSessionToken, setSessionToken } from './serverApi.js';
+import { postServerApi, getServerApi, getQuietAuthToken, pollServer, getUserAuthToken, getSessionToken, setSessionToken } from './serverApi.js';
 
 /**
  * SHA-256 password hashing using Web Crypto API (runs in browser & Node).
@@ -153,269 +153,46 @@ export const registerResellerInRegistry = (profile) => {
 };
 
 /**
- * Async lookup for reseller profile in memory, Realtime Database (RTDB), or Firestore
+ * Reseller details for the signed-in account, read through the server (the
+ * users list is not readable by browsers). keyOrCode is kept for older
+ * callers; only the caller's own account can be looked up.
  */
 export const getResellerProfileByKeyAsync = async (keyOrCode) => {
-  if (!keyOrCode) return null;
-  const cleanKey = String(keyOrCode).trim().toUpperCase();
-
-  // 1. Check in-memory registry first and perform a live DB wallet balance refresh
-  if (activeResellerRegistry.has(cleanKey)) {
-    const cachedProfile = activeResellerRegistry.get(cleanKey);
-    if (cachedProfile && cachedProfile.uid) {
-      try {
-        let updated = false;
-        if (db) {
-          try {
-            const userDocRef = doc(db, 'users', cachedProfile.uid);
-            const docSnap = await getDoc(userDocRef);
-            if (docSnap.exists() && docSnap.data().walletBalance !== undefined) {
-              const freshLkr = parseFloat(docSnap.data().walletBalance || 0);
-              cachedProfile.walletBalance = freshLkr;
-              if (docSnap.data().walletUsdt !== undefined) {
-                cachedProfile.walletUsdt = parseFloat(docSnap.data().walletUsdt || 0);
-              }
-              updated = true;
-            }
-          } catch (e) {}
-        }
-        if (!updated && rtdb) {
-          try {
-            const userRef = dbRef(rtdb, `users/${cachedProfile.uid}`);
-            const snap = await rtdbGet(userRef);
-            if (snap.exists() && snap.val().walletBalance !== undefined) {
-              const freshLkr = parseFloat(snap.val().walletBalance || 0);
-              cachedProfile.walletBalance = freshLkr;
-              if (snap.val().walletUsdt !== undefined) {
-                cachedProfile.walletUsdt = parseFloat(snap.val().walletUsdt || 0);
-              }
-              updated = true;
-            }
-          } catch (e) {}
-        }
-        if (!updated) {
-          // Direct HTTPS REST API query fallback to Realtime Database
-          try {
-            const res = await fetch(`https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/users/${cachedProfile.uid}.json`);
-            if (res.ok) {
-              const uData = await res.json();
-              if (uData && uData.walletBalance !== undefined) {
-                const freshLkr = parseFloat(uData.walletBalance || 0);
-                cachedProfile.walletBalance = freshLkr;
-                if (uData.walletUsdt !== undefined) {
-                  cachedProfile.walletUsdt = parseFloat(uData.walletUsdt || 0);
-                }
-              }
-            }
-          } catch (e) {}
-        }
-      } catch (e) {}
-    }
-    return cachedProfile;
-  }
-
-  let cachedApps = null;
-  const fetchAppsData = async () => {
-    if (cachedApps) return cachedApps;
-    try {
-      const res = await fetch('https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/reseller_applications.json');
-      if (res.ok) {
-        cachedApps = (await res.json()) || {};
-        return cachedApps;
-      }
-    } catch (e) {}
-    return {};
+  const token = getSessionToken() || await getQuietAuthToken();
+  if (!token) return null;
+  const { ok, data } = await getServerApi('/api/me/profile', token);
+  const u = ok ? data?.profile : null;
+  if (!u) return null;
+  const app = data.resellerApplication || null;
+  const creds = ensureResellerCredentials({
+    uid: u.uid,
+    email: u.email,
+    name: u.name,
+    resellerCode: u.resellerCode || app?.resellerCode,
+    securityKey: u.securityKey || app?.securityKey
+  });
+  const isApproved = Boolean(
+    u.isReseller === true ||
+    u.resellerStatus === 'APPROVED' ||
+    u.role === 'Reseller Partner' ||
+    u.role === 'reseller' ||
+    app?.status === 'APPROVED'
+  );
+  const profile = {
+    uid: u.uid,
+    name: u.name || u.storeName || app?.storeName || 'Verified Reseller Partner',
+    email: u.email || '',
+    phone: u.phone || u.whatsapp || '',
+    resellerCode: creds.resellerCode,
+    securityKey: creds.securityKey,
+    walletBalance: parseFloat(u.walletBalance || 0),
+    walletUsdt: parseFloat(u.walletUsdt || 0),
+    isReseller: isApproved,
+    resellerStatus: isApproved ? 'APPROVED' : (app?.status || u.resellerStatus || 'PENDING')
   };
-
-  const findAppInfo = async (userId) => {
-    const apps = await fetchAppsData();
-    for (const [appId, app] of Object.entries(apps)) {
-      if (!app) continue;
-      if (
-        (app.userId && String(app.userId).toUpperCase() === String(userId).toUpperCase()) ||
-        (app.securityKey && String(app.securityKey).toUpperCase() === cleanKey) ||
-        (app.resellerCode && String(app.resellerCode).toUpperCase() === cleanKey)
-      ) {
-        return app;
-      }
-    }
-    return null;
-  };
-
-  const isMatch = (userObj, uidKey) => {
-    if (!userObj) return false;
-    const userSecKey = String(userObj.securityKey || '').trim().toUpperCase();
-    const userCode = String(userObj.resellerCode || '').trim().toUpperCase();
-    const cleanUid = String(userObj.uid || uidKey || '').trim().toUpperCase();
-
-    if (userSecKey && userSecKey === cleanKey) return true;
-    if (userCode && userCode === cleanKey) return true;
-    if (cleanUid && cleanUid === cleanKey) return true;
-
-    return false;
-  };
-
-  const createProfile = async (userObj, uidKey) => {
-    const appInfo = await findAppInfo(userObj?.uid || uidKey);
-
-    let name = userObj?.name || userObj?.storeName || userObj?.fullName || appInfo?.realName || appInfo?.fullName || appInfo?.storeName || appInfo?.name || 'Verified Reseller Partner';
-    let email = userObj?.email || appInfo?.emailAddress || appInfo?.email || appInfo?.userEmail || '';
-    let phone = userObj?.phone || userObj?.whatsapp || appInfo?.phone || appInfo?.whatsapp || '';
-    let walletBalance = parseFloat(userObj?.walletBalance || 0);
-    let finalUid = userObj?.uid || uidKey;
-
-    // Check if there is a main registered user with the same email in RTDB / Firestore who has the actual wallet balance
-    if (email) {
-      const cleanEmail = email.trim().toLowerCase();
-      try {
-        const usersUrl = 'https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/users.json';
-        const res = await fetch(usersUrl);
-        if (res.ok) {
-          const allUsers = await res.json();
-          if (allUsers) {
-            for (const [uId, uData] of Object.entries(allUsers)) {
-              if (uData && uData.email && uData.email.trim().toLowerCase() === cleanEmail) {
-                if (uData.walletBalance !== undefined && parseFloat(uData.walletBalance || 0) >= walletBalance) {
-                  walletBalance = parseFloat(uData.walletBalance || 0);
-                  finalUid = uData.uid || uId;
-                  if (uData.name) name = uData.name;
-                  if (uData.phone) phone = uData.phone;
-                  break;
-                }
-              }
-            }
-          }
-        }
-      } catch (e) {}
-    }
-
-    const rawCreds = ensureResellerCredentials({
-      uid: finalUid,
-      email,
-      name,
-      resellerCode: userObj?.resellerCode || appInfo?.resellerCode,
-      securityKey: userObj?.securityKey || appInfo?.securityKey
-    });
-
-    const isApproved = Boolean(
-      userObj?.isReseller === true || 
-      userObj?.resellerStatus === 'APPROVED' || 
-      userObj?.role === 'Reseller Partner' || 
-      userObj?.role === 'reseller' ||
-      appInfo?.status === 'APPROVED'
-    );
-
-    return {
-      uid: finalUid,
-      name,
-      email,
-      phone,
-      resellerCode: rawCreds.resellerCode,
-      securityKey: rawCreds.securityKey,
-      walletBalance,
-      walletUsdt: parseFloat(userObj?.walletUsdt || appInfo?.walletUsdt || 0),
-      isReseller: isApproved,
-      resellerStatus: isApproved ? 'APPROVED' : (appInfo?.status || userObj?.resellerStatus || 'PENDING')
-    };
-  };
-
-  // 2. Search Realtime Database (RTDB) via Firebase SDK
-  if (rtdb) {
-    try {
-      const usersRef = dbRef(rtdb, 'users');
-      const snapshot = await rtdbGet(usersRef);
-      if (snapshot.exists()) {
-        const usersData = snapshot.val();
-        const matches = [];
-        for (const [uidKey, userObj] of Object.entries(usersData)) {
-          if (isMatch(userObj, uidKey)) {
-            matches.push({ uidKey, userObj });
-          }
-        }
-        if (matches.length > 0) {
-          matches.sort((a, b) => parseFloat(b.userObj?.walletBalance || 0) - parseFloat(a.userObj?.walletBalance || 0));
-          const topMatch = matches[0];
-          const profile = await createProfile(topMatch.userObj, topMatch.uidKey);
-          activeResellerRegistry.set(cleanKey, profile);
-          if (profile.securityKey) activeResellerRegistry.set(profile.securityKey.toUpperCase(), profile);
-          if (profile.resellerCode) activeResellerRegistry.set(profile.resellerCode.toUpperCase(), profile);
-          return profile;
-        }
-      }
-    } catch (e) {
-      console.warn('RTDB reseller lookup error:', e.message);
-    }
-  }
-
-  // 3. Fallback: Direct HTTPS REST API query to Firebase RTDB asia-southeast1
-  try {
-    const rtdbUrl = 'https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/users.json';
-    const res = await fetch(rtdbUrl);
-    if (res.ok) {
-      const usersData = await res.json();
-      if (usersData) {
-        const matches = [];
-        for (const [uidKey, userObj] of Object.entries(usersData)) {
-          if (isMatch(userObj, uidKey)) {
-            matches.push({ uidKey, userObj });
-          }
-        }
-        if (matches.length > 0) {
-          matches.sort((a, b) => parseFloat(b.userObj?.walletBalance || 0) - parseFloat(a.userObj?.walletBalance || 0));
-          const topMatch = matches[0];
-          const profile = await createProfile(topMatch.userObj, topMatch.uidKey);
-          activeResellerRegistry.set(cleanKey, profile);
-          if (profile.securityKey) activeResellerRegistry.set(profile.securityKey.toUpperCase(), profile);
-          if (profile.resellerCode) activeResellerRegistry.set(profile.resellerCode.toUpperCase(), profile);
-          return profile;
-        }
-      }
-    }
-  } catch (restErr) {
-    console.warn('RTDB REST API lookup note:', restErr.message);
-  }
-
-  // 4. Search reseller_applications node directly if not matched in users
-  try {
-    const apps = await fetchAppsData();
-    for (const [appId, app] of Object.entries(apps)) {
-      if (isMatch(app, appId)) {
-        if (app.status !== 'APPROVED') continue;
-        const profile = await createProfile(app, appId);
-        activeResellerRegistry.set(cleanKey, profile);
-        if (profile.securityKey) activeResellerRegistry.set(profile.securityKey.toUpperCase(), profile);
-        if (profile.resellerCode) activeResellerRegistry.set(profile.resellerCode.toUpperCase(), profile);
-        return profile;
-      }
-    }
-  } catch (e) {}
-
-  // 5. Search Firestore for matching securityKey or resellerCode
-  if (db) {
-    try {
-      const usersCol = collection(db, 'users');
-      const qSec = query(usersCol, where('securityKey', '==', cleanKey));
-      let qSnap = await getDocs(qSec);
-
-      if (qSnap.empty) {
-        const qCode = query(usersCol, where('resellerCode', '==', cleanKey));
-        qSnap = await getDocs(qCode);
-      }
-
-      if (!qSnap.empty) {
-        const docData = qSnap.docs[0].data();
-        const profile = await createProfile(docData, qSnap.docs[0].id);
-        activeResellerRegistry.set(cleanKey, profile);
-        if (profile.securityKey) activeResellerRegistry.set(profile.securityKey.toUpperCase(), profile);
-        if (profile.resellerCode) activeResellerRegistry.set(profile.resellerCode.toUpperCase(), profile);
-        return profile;
-      }
-    } catch (err) {
-      console.warn('Firestore reseller lookup error:', err.message);
-    }
-  }
-
-  return null;
+  registerResellerInRegistry(profile);
+  if (keyOrCode) activeResellerRegistry.set(String(keyOrCode).trim().toUpperCase(), profile);
+  return profile;
 };
 
 export const getResellerProfileByKey = (keyOrCode) => {
@@ -440,13 +217,16 @@ export const syncUserProfileToFirestore = async (user) => {
 
   let profileData = null;
 
-  // 1. Try Realtime Database (RTDB)
+  // 1. Realtime Database: the account record is read through the server
+  // (browsers can't read the users list); a new account is created here.
   if (rtdb) {
     try {
       const userRtdbRef = dbRef(rtdb, `users/${user.uid}`);
-      const snapshot = await rtdbGet(userRtdbRef);
-      if (snapshot.exists()) {
-        profileData = snapshot.val();
+      const token = await getQuietAuthToken();
+      const { ok, data } = token ? await getServerApi('/api/me/profile', token) : { ok: false };
+      const existing = ok && data?.profile && (data.profile.uid === user.uid) ? data.profile : null;
+      if (existing) {
+        profileData = existing;
         if (!profileData.securityKey || !profileData.resellerCode) {
           const creds = ensureResellerCredentials(profileData);
           profileData = { ...profileData, ...creds };
@@ -473,8 +253,14 @@ export const syncUserProfileToFirestore = async (user) => {
           createdAt: user.createdAt || new Date().toISOString()
         };
         if (user.password) newUserProfile.password = await hashPassword(user.password);
-        await rtdbSet(userRtdbRef, newUserProfile);
-        profileData = newUserProfile;
+        try {
+          await rtdbSet(userRtdbRef, newUserProfile);
+          profileData = newUserProfile;
+        } catch (e) {
+          // A record already exists (create-only rule) but couldn't be read
+          // without a login token yet; the live profile poll fills it in.
+          console.warn('RTDB profile create note:', e?.message || e);
+        }
       }
     } catch (e) {
       console.warn('Realtime Database sync note:', e);
@@ -591,17 +377,11 @@ export const ACCOUNT_BLOCKED_MESSAGE = 'Your account has been blocked. Please co
 // True when any user record for this uid or email is BLOCKED (a person can
 // have several records; the admin's Block button marks one of them).
 export const isAccountBlockedAsync = async (uid, email) => {
-  const cleanUid = String(uid || '').trim();
-  const cleanEmail = String(email || '').trim().toLowerCase();
-  if (!cleanUid && !cleanEmail) return false;
-  const res = await fetch('https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app/users.json');
-  if (!res.ok) return false;
-  const allUsers = await res.json();
-  if (!allUsers || typeof allUsers !== 'object') return false;
-  return Object.entries(allUsers).some(([key, u]) => u && u.status === 'BLOCKED' && (
-    (cleanUid && (key === cleanUid || u.uid === cleanUid)) ||
-    (cleanEmail && String(u.email || '').trim().toLowerCase() === cleanEmail)
-  ));
+  if (!uid && !email) return false;
+  const token = await getQuietAuthToken();
+  if (!token) return false;
+  const { ok, data } = await getServerApi('/api/me/profile', token);
+  return Boolean(ok && data?.blocked);
 };
 
 // Username/password and reseller login. The server checks the password and
@@ -682,20 +462,17 @@ export const subscribeUserProfile = (uid, callback) => {
   let unsubRtdb = null;
   let unsubFirestore = null;
 
-  if (rtdb) {
-    try {
-      const userRtdbRef = dbRef(rtdb, `users/${uid}`);
-      unsubRtdb = rtdbOnValue(userRtdbRef, (snapshot) => {
-        if (snapshot.exists()) {
-          const creds = ensureResellerCredentials(snapshot.val());
-          registerResellerInRegistry(creds);
-          callback(creds);
-        }
-      });
-    } catch (e) {
-      console.warn('RTDB listener note:', e);
+  // Realtime Database record, polled through the server.
+  unsubRtdb = pollServer(async () => {
+    const token = await getQuietAuthToken();
+    if (!token) return;
+    const { ok, data } = await getServerApi('/api/me/profile', token);
+    if (ok && data?.profile && data.profile.uid === uid) {
+      const creds = ensureResellerCredentials(data.profile);
+      registerResellerInRegistry(creds);
+      callback(creds);
     }
-  }
+  }, 20000);
 
   if (db) {
     try {
@@ -754,26 +531,28 @@ export const subscribeOrdersFromFirestore = (uid, callback) => {
   let unsubRtdb = null;
   let unsubFirestore = null;
 
-  if (rtdb) {
-    try {
-      const ordersRef = dbRef(rtdb, 'orders');
-      unsubRtdb = rtdbOnValue(ordersRef, (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.val();
-          const all = Object.keys(data).map(key => ({ ...data[key], key }));
-          // The server writes its own record of every order (source: 'server');
-          // show it only when the browser never saved its own copy.
-          const clientIds = new Set(all.filter(o => o.source !== 'server')
-            .flatMap(o => [o.partnerOrderId, ...(Array.isArray(o.partnerOrderIds) ? o.partnerOrderIds : [])]).filter(Boolean));
-          const list = all.filter(o => o.source !== 'server' || !clientIds.has(o.partnerOrderId));
-          const filtered = uid ? list.filter(o => o.userId === uid || o.userEmail === uid) : list;
-          if (filtered.length > 0) callback(filtered);
-        }
-      });
-    } catch (e) {
-      console.warn('RTDB orders listener note:', e);
+  // Realtime Database orders, polled through the server: the customer's
+  // own orders, or every order for the admin dashboard (uid = null).
+  unsubRtdb = pollServer(async () => {
+    let all;
+    if (uid) {
+      const token = await getQuietAuthToken();
+      if (!token) return;
+      const { ok, data } = await getServerApi('/api/me/orders', token);
+      if (!ok || !Array.isArray(data?.orders)) return;
+      all = data.orders;
+    } else {
+      const { ok, data } = await getServerApi('/api/admin/data/orders');
+      if (!ok || !data?.data) return;
+      all = Object.keys(data.data).map(key => ({ ...data.data[key], key }));
     }
-  }
+    // The server writes its own record of every order (source: 'server');
+    // show it only when the browser never saved its own copy.
+    const clientIds = new Set(all.filter(o => o.source !== 'server')
+      .flatMap(o => [o.partnerOrderId, ...(Array.isArray(o.partnerOrderIds) ? o.partnerOrderIds : [])]).filter(Boolean));
+    const list = all.filter(o => o.source !== 'server' || !clientIds.has(o.partnerOrderId));
+    if (list.length > 0) callback(list);
+  }, uid ? 30000 : 15000);
 
   if (db) {
     try {
@@ -894,20 +673,14 @@ export const subscribeManualPaymentsFromFirestore = (callback) => {
   let unsubRtdb = null;
   let unsubFirestore = null;
 
-  if (rtdb) {
-    try {
-      const payRef = dbRef(rtdb, 'manual_payments');
-      unsubRtdb = rtdbOnValue(payRef, (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.val();
-          const list = Object.keys(data).map(key => ({ id: key, ...data[key] }));
-          if (list.length > 0) callback(list);
-        }
-      });
-    } catch (e) {
-      console.warn('RTDB manual payments listener note:', e);
-    }
-  }
+  // Admin list, polled through the server (browsers can't read it).
+  unsubRtdb = pollServer(async () => {
+    const { ok, data } = await getServerApi('/api/admin/data/manual_payments');
+    if (!ok || !data?.data) return;
+    const raw = data.data;
+    const list = Object.keys(raw).map(key => ({ id: key, ...raw[key] }));
+    if (list.length > 0) callback(list);
+  }, 10000);
 
   if (db) {
     try {
@@ -936,24 +709,18 @@ export const subscribeAllUsersFromFirestore = (callback) => {
   let unsubRtdb = null;
   let unsubFirestore = null;
 
-  if (rtdb) {
-    try {
-      const usersRtdbRef = dbRef(rtdb, 'users');
-      unsubRtdb = rtdbOnValue(usersRtdbRef, (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.val();
-          const list = Object.keys(data).map(key => {
-            const creds = ensureResellerCredentials({ uid: key, ...data[key] });
-            registerResellerInRegistry(creds);
-            return creds;
-          });
-          if (list.length > 0) callback(list);
-        }
-      });
-    } catch (e) {
-      console.warn('RTDB users listener note:', e);
-    }
-  }
+  // Admin list, polled through the server (browsers can't read it).
+  unsubRtdb = pollServer(async () => {
+    const { ok, data } = await getServerApi('/api/admin/data/users');
+    if (!ok || !data?.data) return;
+    const raw = data.data;
+    const list = Object.keys(raw).map(key => {
+      const creds = ensureResellerCredentials({ uid: key, ...raw[key] });
+      registerResellerInRegistry(creds);
+      return creds;
+    });
+    if (list.length > 0) callback(list);
+  }, 15000);
 
   if (db) {
     try {
@@ -1014,20 +781,14 @@ export const subscribeResellerApplicationsFromFirestore = (callback) => {
   let unsubRtdb = null;
   let unsubFirestore = null;
 
-  if (rtdb) {
-    try {
-      const appsRef = dbRef(rtdb, 'reseller_applications');
-      unsubRtdb = rtdbOnValue(appsRef, (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.val();
-          const list = Object.keys(data).map(key => ({ id: key, ...data[key] }));
-          if (list.length > 0) callback(list);
-        }
-      });
-    } catch (e) {
-      console.warn('RTDB reseller apps listener note:', e);
-    }
-  }
+  // Admin list, polled through the server (browsers can't read it).
+  unsubRtdb = pollServer(async () => {
+    const { ok, data } = await getServerApi('/api/admin/data/reseller_applications');
+    if (!ok || !data?.data) return;
+    const raw = data.data;
+    const list = Object.keys(raw).map(key => ({ id: key, ...raw[key] }));
+    if (list.length > 0) callback(list);
+  }, 15000);
 
   if (db) {
     try {
@@ -1064,7 +825,6 @@ export const updateResellerApplicationStatusInFirestore = async (appId, userId, 
 
   if (rtdb) {
     try {
-      const appRef = dbRef(rtdb, `reseller_applications/${appId}`);
       // Application status is written by the server (browsers can only
       // create an application).
       if (newStatus !== 'APPROVED') {
@@ -1072,20 +832,11 @@ export const updateResellerApplicationStatusInFirestore = async (appId, userId, 
         if (!ok) console.warn('Reseller status was not saved:', data?.error);
       }
       if (newStatus === 'APPROVED') {
-        let approvedAppEmail = '';
-        try {
-          const appSnap = await rtdbGet(appRef);
-          if (appSnap.exists()) {
-            const appVal = appSnap.val();
-            approvedAppEmail = (appVal?.emailAddress || appVal?.email || appVal?.userEmail || '').trim().toLowerCase();
-          }
-        } catch (e) {}
-
-        // The reseller flag itself is granted by the server.
+        // The reseller flag itself is granted by the server, which also
+        // reads the application (and its email) itself.
         const { ok, data } = await postServerApi('/api/admin/reseller-approve', {
           appId,
           userId,
-          email: approvedAppEmail,
           resellerCode,
           securityKey
         });
@@ -1196,22 +947,12 @@ export const subscribeVouchersFromFirestore = (callback) => {
   let unsubRtdb = null;
   let unsubFirestore = null;
 
-  if (rtdb) {
-    try {
-      const vRef = dbRef(rtdb, 'settings/vouchers');
-      unsubRtdb = rtdbOnValue(vRef, (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.val();
-          if (data) {
-            const list = Array.isArray(data) ? data : Object.values(data);
-            callback(list);
-          }
-        }
-      });
-    } catch (e) {
-      console.warn('RTDB vouchers listener note:', e);
-    }
-  }
+  // Promo codes are private (promoVouchers); only the admin dashboard
+  // reads them, through the server.
+  unsubRtdb = pollServer(async () => {
+    const { ok, data } = await getServerApi('/api/admin/data/promoVouchers');
+    if (ok && Array.isArray(data?.data)) callback(data.data);
+  }, 15000);
 
   if (db) {
     try {
@@ -1485,7 +1226,7 @@ export const updateSupportTicketInFirestore = async (ticketId, updates) => {
  * Fires callback(ticketsArray) immediately from localStorage cache, then from live DB.
  * Returns an unsubscribe function.
  */
-export const subscribeSupportTicketsFromFirestore = (callback) => {
+export const subscribeSupportTicketsFromFirestore = (callback, scope = 'admin') => {
   if (typeof callback !== 'function') return () => {};
 
   // Seed from localStorage immediately so the UI shows previous data on mount
@@ -1500,21 +1241,26 @@ export const subscribeSupportTicketsFromFirestore = (callback) => {
   let unsubRtdb = null;
   let unsubDb = null;
 
-  if (rtdb) {
-    try {
-      const tRef = dbRef(rtdb, 'supportTickets');
-      unsubRtdb = rtdbOnValue(tRef, (snap) => {
-        if (snap.exists()) {
-          const val = snap.val();
-          const tickets = Object.values(val || {}).filter(Boolean);
-          if (tickets.length > 0) {
-            try { localStorage.setItem('mads_support_tickets', JSON.stringify(tickets)); } catch (e) {}
-            callback(tickets);
-          }
-        }
-      });
-    } catch (e) {}
-  }
+  // Realtime Database tickets, polled through the server: every ticket for
+  // the admin, or only the customer's own (scope 'me').
+  unsubRtdb = pollServer(async () => {
+    let tickets;
+    if (scope === 'me') {
+      const token = await getQuietAuthToken();
+      if (!token) return;
+      const { ok, data } = await getServerApi('/api/me/tickets', token);
+      if (!ok || !Array.isArray(data?.tickets)) return;
+      tickets = data.tickets;
+    } else {
+      const { ok, data } = await getServerApi('/api/admin/data/supportTickets');
+      if (!ok || !data?.data) return;
+      tickets = Object.values(data.data).filter(Boolean);
+    }
+    if (tickets.length > 0) {
+      try { localStorage.setItem('mads_support_tickets', JSON.stringify(tickets)); } catch (e) {}
+      callback(tickets);
+    }
+  }, scope === 'me' ? 20000 : 10000);
 
   if (db) {
     try {
@@ -1669,27 +1415,6 @@ export const saveReferralClick = async (referralCode, newUserIdentifier) => {
 export const lookupReferrerByCode = async (referralCode) => {
   if (!referralCode) return null;
   const cleanCode = String(referralCode).trim().toUpperCase();
-
-  // Search RTDB users node
-  if (rtdb) {
-    try {
-      const usersRef = dbRef(rtdb, 'users');
-      const snapshot = await rtdbGet(usersRef);
-      if (snapshot.exists()) {
-        for (const [uidKey, userObj] of Object.entries(snapshot.val() || {})) {
-          if (!userObj) continue;
-          const namePart = (userObj.displayName || userObj.name || 'USER')
-            .replace(/\s+/g, '').slice(0, 3).toUpperCase();
-          const uidSuffix = (userObj.uid || uidKey).slice(-4);
-          if (`MADS-${namePart}${uidSuffix}` === cleanCode) {
-            return { uid: userObj.uid || uidKey, email: userObj.email || '' };
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('[referral] RTDB lookup referrer:', e.message);
-    }
-  }
 
   // Fallback: Firestore users collection
   if (db) {
