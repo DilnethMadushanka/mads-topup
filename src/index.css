@@ -2001,7 +2001,7 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
 .auth-hero-foot { position: relative; z-index: 1; font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, .55); }
 
 .auth-brand { display: inline-flex; align-items: center; gap: 10px; }
-.auth-brand-logo { width: 42px; height: 42px; border-radius: 999px; overflow: hidden; background: #020617; box-shadow: 0 0 0 2px rgba(255,255,255,.9), 0 8px 18px -8px rgba(0,0,0,.6); flex-shrink: 0; }
+.auth-brand-logo { width: 42px; height: 42px; flex-shrink: 0; filter: drop-shadow(0 8px 14px rgba(22,119,255,.35)); }
 .auth-brand-logo img { width: 100%; height: 100%; object-fit: contain; }
 .auth-brand-name { font-family: var(--font-heading, inherit); font-weight: 900; font-size: 20px; letter-spacing: -.01em; }
 .auth-brand-name b { color: #5aa8ff; font-weight: 900; }
@@ -2166,7 +2166,7 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
 }
 @media (min-width: 640px) { .offer-card-big { font-size: 46px; } }
 .offer-card-logo { margin-top: 16px; display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-heading); font-weight: 900; font-size: 15px; color: #fff; }
-.offer-card-logo img { width: 26px; height: 26px; border-radius: 999px; background: #020617; box-shadow: 0 0 0 1.5px rgba(255,255,255,.8); }
+.offer-card-logo img { width: 26px; height: 26px; object-fit: contain; }
 .offer-card-logo b { color: #5aa8ff; }
 .offer-card-body { padding: 22px 22px 26px; animation: offerIn .45s ease both; }
 @media (min-width: 640px) { .offer-card-body { padding: 28px 44px 34px; } }
@@ -2213,7 +2213,7 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
 .msb-head::after { content: ''; position: absolute; right: -40px; top: -60px; width: 180px; height: 180px; border-radius: 999px; border: 28px solid rgba(255, 255, 255, .07); pointer-events: none; }
 .msb-top { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; }
 .msb-brand { display: flex; align-items: center; gap: 10px; }
-.msb-brand-logo { width: 38px; height: 38px; border-radius: 999px; overflow: hidden; background: #020617; box-shadow: 0 0 0 2px rgba(255, 255, 255, .5); }
+.msb-brand-logo { width: 38px; height: 38px; flex-shrink: 0; filter: drop-shadow(0 6px 12px rgba(0, 0, 0, .25)); }
 .msb-brand-logo img { width: 100%; height: 100%; object-fit: contain; }
 .msb-brand-name { font-family: var(--font-heading); font-weight: 900; font-size: 18px; letter-spacing: -.01em; }
 .msb-brand-name b { font-weight: 900; color: rgba(255, 255, 255, .72); }
@@ -3135,8 +3135,8 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
 .dl-close svg { width: 17px; height: 17px; }
 .dl-close:hover { background: rgba(255, 255, 255, .3); transform: rotate(90deg); }
 .dl-app { position: relative; display: flex; align-items: center; gap: 14px; padding: 12px; margin-right: 40px; border-radius: 20px; background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .24); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
-.dl-app-icon { flex-shrink: 0; width: 58px; height: 58px; border-radius: 16px; overflow: hidden; background: #000; box-shadow: 0 12px 24px -10px rgba(0, 0, 0, .6); }
-.dl-app-icon img { width: 100%; height: 100%; object-fit: cover; }
+.dl-app-icon { flex-shrink: 0; width: 58px; height: 58px; filter: drop-shadow(0 10px 16px rgba(0, 0, 0, .35)); }
+.dl-app-icon img { width: 100%; height: 100%; object-fit: contain; }
 .dl-app-meta { display: flex; flex-direction: column; min-width: 0; }
 .dl-app-tag { display: inline-flex; align-items: center; gap: 4px; align-self: flex-start; height: 20px; padding: 0 8px; border-radius: 999px; font-size: 9.5px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #3d2a00; background: linear-gradient(135deg, #fde68a, #f59e0b); }
 .dl-app-tag svg { width: 11px; height: 11px; }
@@ -3477,8 +3477,9 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
 .adm-login-exit { position: absolute; top: 14px; right: 14px; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 999px; font-size: 12px; font-weight: 700; color: #64748b; background: #f1f5fb; cursor: pointer; transition: background .2s ease, color .2s ease; }
 .adm-login-exit:hover { background: #eaf3ff; color: #1677ff; }
 .adm-login-head { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; margin-bottom: 22px; }
-.adm-login-logo { width: 56px; height: 56px; border-radius: 18px; display: flex; align-items: center; justify-content: center; color: #fff; background: linear-gradient(135deg, #5aa8ff, #1677ff); box-shadow: 0 16px 30px -14px #1677ff; }
+.adm-login-logo { width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 14px 18px rgba(22, 119, 255, .4)); }
 .adm-login-logo svg { width: 28px; height: 28px; }
+.adm-login-logo img { width: 100%; height: 100%; object-fit: contain; }
 .adm-login-pill { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #1677ff; background: #eaf3ff; }
 .adm-login-dot { width: 6px; height: 6px; border-radius: 999px; background: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, .22); }
 .adm-login-title { font-family: var(--font-heading); font-weight: 900; font-size: 26px; line-height: 1.05; letter-spacing: -.01em; text-transform: uppercase; color: #0f172a; }
@@ -3511,7 +3512,7 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
 .adm-login:not(.theme-light) .adm-login-card { background: rgba(255, 255, 255, .05); border-color: rgba(255, 255, 255, .1); box-shadow: 0 30px 80px -40px rgba(0, 0, 0, .8); backdrop-filter: blur(14px); }
 .adm-login:not(.theme-light) .adm-login-exit { color: rgba(255, 255, 255, .6); background: rgba(255, 255, 255, .06); }
 .adm-login:not(.theme-light) .adm-login-exit:hover { color: #74b8ff; background: rgba(43, 134, 255, .16); }
-.adm-login:not(.theme-light) .adm-login-logo { background: linear-gradient(135deg, #74b8ff, #2b86ff); box-shadow: 0 16px 30px -14px #2b86ff; }
+
 .adm-login:not(.theme-light) .adm-login-pill { color: #74b8ff; background: rgba(43, 134, 255, .16); }
 .adm-login:not(.theme-light) .adm-login-title, .adm-login:not(.theme-light) .adm-login-label { color: #fff; }
 .adm-login:not(.theme-light) .adm-login-title span { color: #5aa8ff; }

@@ -724,7 +724,7 @@ export const AdminDashboard = () => {
             </button>
 
             <div className="adm-login-head">
-              <div className="adm-login-logo"><ShieldCheck /></div>
+              <div className="adm-login-logo"><img src="/mads-icon-192.png" alt="MADS TOPUP" /></div>
               <span className="adm-login-pill"><span className="adm-login-dot" />Secure admin</span>
               <h2 className="adm-login-title">MADS <span>TOPUP</span> Admin</h2>
               <p className="adm-login-sub">Sign in with your admin email, password and Authenticator code.</p>
@@ -1217,9 +1217,7 @@ export const AdminDashboard = () => {
           <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)} className="hidden lg:flex p-2 rounded-xl border cursor-pointer" style={{ borderColor: 'var(--adm-border)', ...mutedStyle }} title="Toggle Sidebar">
             {sidebarCollapsed ? <PanelLeftOpen className="w-4.5 h-4.5" /> : <PanelLeftClose className="w-4.5 h-4.5" />}
           </button>
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#3b8cff] to-[#0b5ed7] flex items-center justify-center text-white shadow-lg shadow-blue-600/30 shrink-0">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
+          <img src="/mads-icon-192.png" alt="MADS TOPUP" width="40" height="40" className="w-10 h-10 shrink-0 drop-shadow-[0_6px_14px_rgba(22,119,255,0.35)]" />
           <div className="min-w-0 hidden sm:block">
             <div className="flex items-center gap-1.5">
               <h2 className="text-base font-black font-heading tracking-tight truncate" style={{ color: 'var(--adm-text)' }}>MADS ADMIN</h2>

@@ -34,7 +34,6 @@ import { ToastNotification } from './components/ToastNotification';
 import { BlogPage } from './components/BlogPage';
 import { LeaderboardPage } from './components/LeaderboardPage';
 import { ScrollReveal } from './hooks/useScrollReveal';
-import { Flame } from 'lucide-react';
 import { GAMES_DATA } from './data/games';
 import { GAME_SEO_PAGES } from './data/seoPages';
 
@@ -192,11 +191,9 @@ const MainContent = () => {
             {/* Brand */}
             <div className="md:col-span-5 lg:col-span-5">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#1677ff] to-[#4a9cff] flex items-center justify-center shadow-[0_8px_24px_-6px_rgba(22,119,255,0.6)] shrink-0">
-                  <Flame size={22} color="#fff" />
-                </div>
+                <img src="/mads-icon-192.png" alt="MADS TOPUP" width="48" height="48" className="w-12 h-12 shrink-0 drop-shadow-[0_8px_18px_rgba(22,119,255,0.45)]" />
                 <div className="leading-none">
-                  <div className="font-heading font-extrabold text-xl tracking-tight">MADS TOPUP</div>
+                  <div className="font-heading font-extrabold text-xl tracking-tight">MADS <span className="text-[#5aa8ff]">TOP</span><span className="text-[#f59e0b]">UP</span></div>
                   <div className="mt-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#1677ff]">Enterprise · Sri Lanka</div>
                 </div>
               </div>

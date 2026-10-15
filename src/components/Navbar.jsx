@@ -165,14 +165,14 @@ export const Navbar = () => {
             onClick={() => { setSelectedGame(null); closeCatalog(); setIsMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             className="flex items-center gap-2.5 cursor-pointer group shrink-0"
           >
-            <div className="w-10 h-10 rounded-full bg-slate-950 ring-2 ring-white shadow-md dark:ring-[#2b86ff]! dark:shadow-[0_0_18px_rgba(43,134,255,0.55)]! flex items-center justify-center overflow-hidden group-hover:scale-105 transition-transform duration-300">
-              <img src="/mads-logo.jpg" alt="MADS TOPUP Logo" className="w-full h-full object-contain" />
+            <div className="w-10 h-10 shrink-0 drop-shadow-[0_6px_12px_rgba(22,119,255,0.35)] dark:drop-shadow-[0_0_14px_rgba(43,134,255,0.5)]! group-hover:scale-105 transition-transform duration-300">
+              <img src="/mads-icon-192.png" alt="MADS TOPUP Logo" width="40" height="40" className="w-full h-full object-contain" />
             </div>
             {/* On small phones the wallet pill needs the room, so only the logo mark shows when signed in. */}
             <div className={`flex flex-col leading-none ${isUserLoggedIn ? 'max-[459px]:hidden' : ''}`}>
               <div className="flex items-center gap-1 font-heading font-extrabold text-[19px] tracking-tight text-slate-950 dark:text-white!">
                 <span>MADS</span>
-                <span className="text-[#1677ff] dark:text-[#3d95ff]!">TOPUP</span>
+                <span><span className="text-[#1677ff] dark:text-[#3d95ff]!">TOP</span><span className="text-[#f59e0b]">UP</span></span>
               </div>
               <span className="mt-1 text-[8px] font-bold text-slate-400 dark:text-white/40! tracking-[0.22em] uppercase font-mono">EVERYGAME LK</span>
             </div>
@@ -274,7 +274,7 @@ export const Navbar = () => {
         <div className="msb-head">
           <div className="msb-top">
             <div className="msb-brand">
-              <span className="msb-brand-logo"><img src="/mads-logo.jpg" alt="MADS TOPUP" /></span>
+              <span className="msb-brand-logo"><img src="/mads-icon-192.png" alt="MADS TOPUP" /></span>
               <span className="msb-brand-name">MADS <b>TOPUP</b></span>
             </div>
             <button onClick={() => setIsMobileMenuOpen(false)} aria-label="Close Menu" className="msb-close">

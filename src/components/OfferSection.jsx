@@ -104,7 +104,7 @@ export const OfferSection = () => {
               <div className="offer-card-brand">
                 <span className="offer-card-kicker">Sri Lanka's trusted</span>
                 <span className="offer-card-big">Game Top-Up Store</span>
-                <span className="offer-card-logo"><img src="/mads-logo.jpg" alt="" />MADS <b>TOPUP</b></span>
+                <span className="offer-card-logo"><img src="/mads-icon-192.png" alt="" />MADS <b>TOPUP</b></span>
               </div>
             </div>
             <div key={active} className="offer-card-body">
