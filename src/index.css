@@ -4529,6 +4529,15 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
 .ffa-count svg { width: 12px; height: 12px; }
 .ffa-featured { position: absolute; left: 8px; bottom: 8px; display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 99px; background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #fff; font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
 .ffa-featured svg { width: 11px; height: 11px; fill: currentColor; }
+/* Account sale: discount tag on cards, banner under the page title, note in the buy box */
+.ffa-off { position: absolute; right: 8px; bottom: 8px; padding: 3px 8px; border-radius: 99px; background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #fff; font-size: 11px; font-weight: 900; letter-spacing: .02em; box-shadow: 0 6px 14px -6px #f59e0b; }
+.ffa-promo { display: flex; align-items: center; gap: 12px; max-width: 520px; margin: 18px auto 0; padding: 12px 14px; border-radius: 18px; border: 1px solid rgba(245, 158, 11, .3); background: linear-gradient(135deg, #fff7e6, #fffdf7); text-align: left; }
+.ffa-promo-ico { width: 44px; height: 44px; border-radius: 14px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; color: #fff; background: linear-gradient(135deg, #fbbf24, #f59e0b); box-shadow: 0 10px 20px -10px #f59e0b; }
+.ffa-promo-ico svg { width: 22px; height: 22px; }
+.ffa-promo span:last-child { font-size: 12.5px; line-height: 1.45; color: #64748b; font-weight: 600; min-width: 0; }
+.ffa-promo b { display: block; font-family: var(--font-heading); font-size: 17px; font-weight: 900; letter-spacing: -.01em; color: #b45309; }
+.ffa-promo-note { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; font-weight: 700; color: #92400e; }
+.ffa-promo-note svg { width: 15px; height: 15px; flex-shrink: 0; color: #f59e0b; }
 .ffa-status { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 99px; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; background: rgba(255, 255, 255, .92); color: #059669; }
 .ffa-status .ffa-dot { width: 6px; height: 6px; }
 .ffa-status.is-reserved { color: #b45309; }
@@ -4614,7 +4623,7 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
 .ffa-buybox { margin-top: auto; padding: 16px; border-radius: 18px; background: linear-gradient(135deg, rgba(22, 119, 255, .07), rgba(22, 119, 255, .02)); border: 1px solid rgba(22, 119, 255, .18); display: flex; flex-direction: column; gap: 12px; }
 .ffa-buy-price { display: flex; align-items: center; justify-content: space-between; }
 .ffa-buy-price > span { font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #64748b; }
-.ffa-buy-price div { display: flex; align-items: baseline; gap: 8px; }
+.ffa-buy-amt { display: flex; align-items: baseline; gap: 8px; }
 .ffa-buy-price s { font-size: 13px; color: #94a3b8; font-weight: 600; }
 .ffa-buy-price b { font-family: var(--font-heading); font-size: 26px; font-weight: 900; color: #1677ff; letter-spacing: -.02em; }
 .ffa-actions, .ffa-confirm { display: grid; gap: 8px; }
@@ -4667,6 +4676,10 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
 .home-dark .ffa-hl span { background: rgba(255, 255, 255, .05); border-color: rgba(255, 255, 255, .08); color: rgba(255, 255, 255, .7); }
 .home-dark .ffa-hl span.is-more { color: #74b8ff; }
 .home-dark .ffa-price b, .home-dark .ffa-buy-price b { color: #5aa8ff; }
+.home-dark .ffa-promo { background: linear-gradient(135deg, rgba(245, 158, 11, .16), rgba(245, 158, 11, .05)); border-color: rgba(245, 158, 11, .3); }
+.home-dark .ffa-promo b { color: #fbbf24; }
+.home-dark .ffa-promo span:last-child, .home-dark .ffa-promo-note { color: rgba(255, 255, 255, .7); }
+.home-dark .ffa-promo-note svg { color: #fbbf24; }
 .home-dark .ffa-card.is-sold .ffa-price b { color: rgba(255, 255, 255, .4); }
 .home-dark .ffa-go { background: rgba(43, 134, 255, .16); color: #74b8ff; }
 .home-dark .ffa-card:hover .ffa-go { background: #2b86ff; color: #fff; }
