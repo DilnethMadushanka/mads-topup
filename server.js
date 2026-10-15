@@ -14,7 +14,7 @@ import { sendMail, mailProvidersConfigured } from './lib/mailer.js';
 import { otpEmailHtml } from './lib/otpEmail.js';
 import { verifyPasswordLogin, setPasswordForEmail, publicProfile } from './lib/userAuth.js';
 import { rtdbUrl, rtdbGet, rtdbPut, rtdbPatch, rtdbTransaction, findUserKey, adjustWallet, spendWallet, isUserBlocked, addResellerSales } from './lib/rtdbAdmin.js';
-import { fetchVoucherCodes, saveUserVoucher, listUserVouchers, findCatalogPackage, isVoucherGame, redactVoucherCodes } from './lib/moogoldVoucher.js';
+import { moogoldRequest, fetchVoucherCodes, saveUserVoucher, listUserVouchers, findCatalogPackage, isVoucherGame, redactVoucherCodes } from './lib/moogoldVoucher.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -2698,6 +2698,67 @@ app.post('/api/genie/webhook', async (req, res) => {
     console.error(`[Genie Webhook Error] txn=${transactionId}:`, e.message);
     return res.json({ success: true, message: 'Webhook received (processing error logged)' });
   }
+});
+
+// Player name check for the top-up pages. The browser cannot call MooGold
+// (the keys live here) and the community lookups block browsers (CORS), so
+// the check runs on the server: MooGold's product/validate first, then the
+// free lookups. Answers { success, ign } or { success: false } when no name
+// was found; it never makes a name up.
+const playerNameCache = new Map(); // `${gameId}|${id}|${zone}` -> { ign, at }
+const PLAYER_NAME_TTL_MS = 6 * 60 * 60 * 1000;
+
+const pickPlayerName = (data) => {
+  if (!data || typeof data !== 'object') return '';
+  const name = data.username || data.user_name || data.nickname || data.character_name || data.account_name || data.role_name || data.ign
+    || data.data?.username || data.data?.nickname || data.data?.role_name;
+  return typeof name === 'string' ? name.trim() : '';
+};
+
+app.post('/api/player-name', rateLimiter(30, 60000), async (req, res) => {
+  const gameId = String(req.body?.gameId || '').trim();
+  const playerId = String(req.body?.playerId || '').trim();
+  const zoneId = String(req.body?.zoneId || '').trim();
+  const game = GAMES_DATA.find(g => g.id === gameId);
+  if (!game || !/^[0-9A-Za-z_-]{3,30}$/.test(playerId) || zoneId.length > 20) {
+    return res.status(400).json({ success: false, message: 'Check the game and Player ID.' });
+  }
+
+  const cacheKey = `${gameId}|${playerId}|${zoneId}`;
+  const cached = playerNameCache.get(cacheKey);
+  if (cached && Date.now() - cached.at < PLAYER_NAME_TTL_MS) {
+    return res.json({ success: true, ign: cached.ign, source: 'CACHE' });
+  }
+  const found = (ign, source) => {
+    playerNameCache.set(cacheKey, { ign, at: Date.now() });
+    if (playerNameCache.size > 5000) playerNameCache.delete(playerNameCache.keys().next().value);
+    return res.json({ success: true, ign, source });
+  };
+
+  // 1. MooGold validate, with one of this game's products.
+  const productId = (game.packages || []).find(p => p.moongoldProductId)?.moongoldProductId;
+  if (productId) {
+    try {
+      const data = { 'product-id': productId, 'User ID': playerId };
+      if (zoneId) data.Server = zoneId;
+      const result = await moogoldRequest('product/validate', { path: 'product/validate', data }, 8000);
+      const ign = pickPlayerName(result.json);
+      if (ign) return found(ign, 'MOOGOLD');
+      console.log(`[Player name] MooGold validate ${gameId} ${playerId}: HTTP ${result.status} ${result.text.slice(0, 200)}`);
+    } catch (err) {
+      console.warn(`[Player name] MooGold validate error: ${err.message}`);
+    }
+  }
+
+  // 2. Free community lookups (they work from the server, not from browsers).
+  try {
+    const result = await lookupFreePlayerIgn(gameId, playerId, zoneId);
+    if (result?.ign && !/^Player \d+$/.test(result.ign)) return found(String(result.ign).trim(), result.source || 'COMMUNITY');
+  } catch (err) {
+    console.warn(`[Player name] community lookup error: ${err.message}`);
+  }
+
+  return res.json({ success: false, message: 'Player name not found.' });
 });
 
 // Express endpoint for Live Game Player IGN Lookup (Mobile Legends, Free Fire, PUBG, etc.)

@@ -142,7 +142,7 @@ export const ResellerDashboard = () => {
         showToast(`Player found: ${result.ign}`);
       } else {
         setIgnVerified(false);
-        showToast('Could not find this player. Check the ID and try again.', 'error');
+        showToast(result?.message || 'Player name not found. Check the ID and try again.', 'error');
       }
     } catch (err) {
       setIgnVerified(false);
