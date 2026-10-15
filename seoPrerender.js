@@ -6,6 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import { GAMES_DATA } from './src/data/games.js';
 import { SITE_URL, HOME_SEO, GAME_SEO_PAGES } from './src/data/seoPages.js';
+import { SITE_PAGES } from './src/data/sitePages.js';
 
 const esc = (v = '') => String(v)
   .replace(/&/g, '&amp;')
@@ -124,7 +125,8 @@ const STATIC_CSS = '<style>.seo-static{min-height:100vh;background:#f5f8ff;paddi
 
 const sitemap = (date) => {
   const urls = [{ loc: `${SITE_URL}/`, priority: '1.0' }]
-    .concat(GAME_SEO_PAGES.map((p) => ({ loc: `${SITE_URL}/${p.slug}/`, priority: '0.9' })));
+    .concat(GAME_SEO_PAGES.map((p) => ({ loc: `${SITE_URL}/${p.slug}/`, priority: '0.9' })))
+    .concat(SITE_PAGES.filter((p) => p.public).map((p) => ({ loc: `${SITE_URL}${p.path}`, priority: '0.6' })));
   return '<?xml version="1.0" encoding="UTF-8"?>\n'
     + '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
     + urls.map((u) => `  <url>\n    <loc>${u.loc}</loc>\n    <lastmod>${date}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>${u.priority}</priority>\n  </url>`).join('\n')

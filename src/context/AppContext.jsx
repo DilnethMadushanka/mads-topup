@@ -1,7 +1,20 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { GAMES_DATA } from '../data/games';
-import { HOME_SEO, SITE_URL, gamePathFor, seoPageForPath } from '../data/seoPages';
+import { HOME_SEO, SITE_URL, seoPageForPath } from '../data/seoPages';
+import { pageForPath, pagePathFor, gamePathFor, gameForPath } from '../data/sitePages';
+
+// The page to open on load: the one in the address bar (/wallet, /reviews …),
+// none on "/" or a game URL, otherwise the one saved for this tab.
+const initialPageName = () => {
+  try {
+    const path = window.location.pathname;
+    const page = pageForPath(path);
+    if (page) return page.name;
+    if (path === '/' || gameForPath(path)) return null;
+    return sessionStorage.getItem('mads_page');
+  } catch { return null; }
+};
 import { getMoongoldConfig, saveMoongoldConfig } from '../services/moongoldApi';
 import { getR2Config, saveR2Config } from '../services/storageService';
 import { auth, onAuthStateChanged, logoutGoogle, getRedirectResult } from '../services/firebaseAuth';
@@ -33,15 +46,14 @@ export const AppProvider = ({ children }) => {
   const [selectedGame, setSelectedGameRaw] = useState(() => {
     // A game landing URL (/pubg-uc-sri-lanka/ etc.) opens that game straight away
     try {
-      const landing = seoPageForPath(window.location.pathname);
-      const landingGame = landing && GAMES_DATA.find(g => g.id === landing.gameId);
+      const landingGame = gameForPath(window.location.pathname);
       if (landingGame) {
         sessionStorage.setItem('mads_selected_game_id', landingGame.id);
         return landingGame;
       }
       // Plain "/" is the home page now that an open game has its own URL (a refresh
       // lands on the game's path), so only restore the saved game on other paths.
-      if (window.location.pathname === '/') {
+      if (window.location.pathname === '/' || pageForPath(window.location.pathname)) {
         sessionStorage.removeItem('mads_selected_game_id');
         return null;
       }
@@ -64,7 +76,7 @@ export const AppProvider = ({ children }) => {
     } catch {}
   };
   const [isTopupModalOpen, setIsTopupModalOpen] = useState(false);
-  const [isUserProfileOpen, setIsUserProfileOpen] = useState(() => { try { return sessionStorage.getItem('mads_page') === 'profile'; } catch { return false; } });
+  const [isUserProfileOpen, setIsUserProfileOpen] = useState(() => { return initialPageName() === 'profile'; });
   const [isAdminOpen, setIsAdminOpen] = useState(() => {
     if (typeof window !== 'undefined') {
       const path = window.location.pathname.toLowerCase();
@@ -75,25 +87,25 @@ export const AppProvider = ({ children }) => {
     return false;
   });
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
-  const [isGameCatalogOpen, setIsGameCatalogOpen] = useState(() => { try { return sessionStorage.getItem('mads_page') === 'catalog'; } catch { return false; } });
-  const [isReviewsPageOpen, setIsReviewsPageOpen] = useState(() => { try { return sessionStorage.getItem('mads_page') === 'reviews'; } catch { return false; } });
-  const [isContactPageOpen, setIsContactPageOpen] = useState(() => { try { return sessionStorage.getItem('mads_page') === 'contact'; } catch { return false; } });
-  const [isReferralPageOpen, setIsReferralPageOpen] = useState(() => { try { return sessionStorage.getItem('mads_page') === 'referral'; } catch { return false; } });
-  const [isResellerPageOpen, setIsResellerPageOpen] = useState(() => { try { return sessionStorage.getItem('mads_page') === 'reseller'; } catch { return false; } });
-  const [isResellerLoginPageOpen, setIsResellerLoginPageOpen] = useState(() => { try { return sessionStorage.getItem('mads_page') === 'reseller-login'; } catch { return false; } });
-  const [isResellerDashboardOpen, setIsResellerDashboardOpen] = useState(() => { try { return sessionStorage.getItem('mads_page') === 'reseller-dashboard'; } catch { return false; } });
+  const [isGameCatalogOpen, setIsGameCatalogOpen] = useState(() => { return initialPageName() === 'catalog'; });
+  const [isReviewsPageOpen, setIsReviewsPageOpen] = useState(() => { return initialPageName() === 'reviews'; });
+  const [isContactPageOpen, setIsContactPageOpen] = useState(() => { return initialPageName() === 'contact'; });
+  const [isReferralPageOpen, setIsReferralPageOpen] = useState(() => { return initialPageName() === 'referral'; });
+  const [isResellerPageOpen, setIsResellerPageOpen] = useState(() => { return initialPageName() === 'reseller'; });
+  const [isResellerLoginPageOpen, setIsResellerLoginPageOpen] = useState(() => { return initialPageName() === 'reseller-login'; });
+  const [isResellerDashboardOpen, setIsResellerDashboardOpen] = useState(() => { return initialPageName() === 'reseller-dashboard'; });
   const [isBlogPageOpen, setIsBlogPageOpen] = useState(() => {
-    try { return sessionStorage.getItem('mads_page') === 'blog'; } catch { return false; }
+    return initialPageName() === 'blog';
   });
   const [isLeaderboardPageOpen, setIsLeaderboardPageOpen] = useState(() => {
-    try { return sessionStorage.getItem('mads_page') === 'leaderboard'; } catch { return false; }
+    return initialPageName() === 'leaderboard';
   });
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
 
   const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false);
-  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(() => initialPageName() === 'wallet');
   const [walletActiveTab, setWalletActiveTab] = useState('binance'); // 'ezcash' | 'binance' | 'redeem'
   const [isDownloadAppModalOpen, setIsDownloadAppModalOpen] = useState(false);
 
@@ -403,27 +415,48 @@ export const AppProvider = ({ children }) => {
     });
   };
 
-  // Keep the address bar and <head> in step with the open game, so every game has its own
-  // shareable, indexable URL (/free-fire-diamonds-sri-lanka/ …) and Back returns home.
-  // Only "/" and the game landing paths are touched; /admin, /ref/… etc. are left alone.
+  // The page that is showing, in the same order App.jsx picks it.
+  const currentPage = isUserProfileOpen ? 'profile'
+    : isWalletModalOpen ? 'wallet'
+    : isResellerDashboardOpen ? 'reseller-dashboard'
+    : isResellerLoginPageOpen ? 'reseller-login'
+    : isResellerPageOpen ? 'reseller'
+    : isReferralPageOpen ? 'referral'
+    : isContactPageOpen ? 'contact'
+    : isReviewsPageOpen ? 'reviews'
+    : isLeaderboardPageOpen ? 'leaderboard'
+    : isBlogPageOpen ? 'blog'
+    : isGameCatalogOpen ? 'catalog'
+    : null;
+
+  // Keep the address bar and <head> in step with the open game or page, so each one has
+  // its own shareable URL (/free-fire-diamonds-sri-lanka/, /game/<id>, /wallet, /reviews …)
+  // and Back / Forward move between them. Only "/", game and page URLs are touched;
+  // /admin, /ref/… etc. are left alone.
   const seoUrlFirstRun = React.useRef(true);
   useEffect(() => {
     const firstRun = seoUrlFirstRun.current;
     seoUrlFirstRun.current = false;
     const path = window.location.pathname;
-    const onGamePath = Boolean(seoPageForPath(path));
+    const onAppPath = path === '/' || Boolean(gameForPath(path)) || Boolean(pageForPath(path));
     const gamePath = selectedGame ? gamePathFor(selectedGame.id) : null;
-    const target = gamePath || '/';
-    if (path !== target && (path === '/' || onGamePath)) {
+    const pagePath = !selectedGame && currentPage ? pagePathFor(currentPage) : null;
+    const target = gamePath || pagePath || '/';
+    if (path !== target && onAppPath) {
       const url = target + window.location.search + window.location.hash;
       if (firstRun) window.history.replaceState(window.history.state, '', url);
       else window.history.pushState(null, '', url);
     }
 
-    const page = gamePath ? seoPageForPath(gamePath) : null;
-    const title = page ? page.title : HOME_SEO.title;
-    const description = page ? page.description : HOME_SEO.description;
-    const canonical = SITE_URL + (gamePath || '/');
+    const seoPage = gamePath ? seoPageForPath(gamePath) : null;
+    const sitePage = pagePath ? pageForPath(pagePath) : null;
+    const title = seoPage ? seoPage.title
+      : selectedGame ? `${selectedGame.name} Top Up Sri Lanka | MADS TOPUP`
+      : sitePage ? sitePage.title : HOME_SEO.title;
+    const description = seoPage ? seoPage.description
+      : selectedGame ? `Top up ${selectedGame.name} in Sri Lanka with your Player ID. Pay in LKR with eZ Cash, bank transfer or Binance USDT.`
+      : sitePage ? sitePage.description : HOME_SEO.description;
+    const canonical = SITE_URL + (gamePath || pagePath || '/');
     document.title = title;
     const setAttr = (selector, attr, value) => {
       const el = document.head.querySelector(selector);
@@ -438,18 +471,30 @@ export const AppProvider = ({ children }) => {
     setAttr('meta[name="twitter:title"]', 'content', title);
     setAttr('meta[name="twitter:description"]', 'content', description);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedGame?.id]);
+  }, [selectedGame?.id, currentPage]);
 
-  // Browser Back/Forward between home and game URLs
+  // Browser Back/Forward between home, game and page URLs
   useEffect(() => {
+    const pageSetters = {
+      catalog: setIsGameCatalogOpen, leaderboard: setIsLeaderboardPageOpen, reviews: setIsReviewsPageOpen,
+      contact: setIsContactPageOpen, reseller: setIsResellerPageOpen, 'reseller-login': setIsResellerLoginPageOpen,
+      'reseller-dashboard': setIsResellerDashboardOpen, referral: setIsReferralPageOpen, blog: setIsBlogPageOpen,
+      profile: setIsUserProfileOpen, wallet: setIsWalletModalOpen,
+    };
     const onPopState = () => {
       const path = window.location.pathname;
-      const page = seoPageForPath(path);
-      if (page) {
-        const game = GAMES_DATA.find(g => g.id === page.gameId);
-        if (game) setSelectedGame(game);
-      } else if (path === '/') {
-        setSelectedGame(null);
+      const game = gameForPath(path);
+      const page = pageForPath(path);
+      if (!game && !page && path !== '/') return;
+      _clearAllPages();
+      if (game) {
+        setSelectedGame(game);
+        _savePage(null);
+      } else if (page) {
+        pageSetters[page.name]?.(true);
+        _savePage(page.name === 'wallet' ? null : page.name);
+      } else {
+        _savePage(null);
       }
     };
     window.addEventListener('popstate', onPopState);
