@@ -259,7 +259,8 @@ export const PolicyModal = () => {
                   Reseller Partner Terms
                 </h3>
                 <p className="pl-8 text-xs sm:text-sm text-slate-600 font-medium">
-                  • Wholesale rates (5% wholesale discount) apply exclusively to approved reseller accounts.<br />
+                  • Joining needs a verified wallet deposit of Rs. 5,000, which stays in the reseller's wallet for orders.<br />
+                  • Wholesale rates (3%, 5% or 8% off by sales tier: Bronze, Silver, Gold) apply exclusively to approved reseller accounts.<br />
                   • Reseller balance deposits must be verified through official eZ Cash RN numbers or Binance Pay transaction IDs.<br />
                   • Pending reseller applications remain restricted until verified and approved by MADS TOPUP administration.
                 </p>

@@ -4088,3 +4088,79 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
 .home-dark .spt-attach-btn:hover { background: rgba(43,134,255,.18); color: #74b8ff; }
 .home-dark .spt-send:disabled { background: rgba(255,255,255,.08); color: rgba(255,255,255,.3); }
 .home-dark .spt-attach-note { background: rgba(16,185,129,.12); color: #34d399; }
+.home-dark input:-webkit-autofill { -webkit-text-fill-color: #fff; -webkit-box-shadow: 0 0 0 1000px #14141b inset; }
+.home-dark [style*="color: rgb(204, 4, 10)"] { color: #ff6b73 !important; }
+
+/* ---- Reseller: how to join (ResellerProgramPage) ---- */
+.rprog { background: #fff; border: 1px solid #e5ecf6; border-radius: 24px; padding: 28px; margin-bottom: 24px; box-shadow: 0 18px 40px -30px rgba(22, 119, 255, 0.35); }
+.rprog-pill, .rtier-pill { display: inline-block; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #1677ff; background: rgba(22, 119, 255, 0.1); padding: 4px 10px; border-radius: 999px; }
+.rprog-title { font-family: 'Outfit', sans-serif; font-weight: 900; letter-spacing: -0.02em; font-size: 26px; color: #0f172a; margin: 10px 0 18px; }
+.rprog-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; list-style: none; padding: 0; margin: 0; }
+.rprog-step { display: flex; gap: 12px; align-items: flex-start; border: 1px solid #e5ecf6; background: #f6f9ff; border-radius: 18px; padding: 16px; transition: transform .2s, box-shadow .2s; }
+.rprog-step:hover { transform: translateY(-2px); box-shadow: 0 14px 30px -20px rgba(22, 119, 255, 0.5); }
+.rprog-num { flex: 0 0 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; color: #fff; font-family: 'Outfit', sans-serif; font-weight: 900; font-size: 18px; background: linear-gradient(135deg, #4f9bff, #1677ff); }
+.rprog-step h3 { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 15px; color: #0f172a; margin: 2px 0 4px; }
+.rprog-step p { font-size: 12.5px; line-height: 1.5; color: #64748b; margin: 0; }
+.rprog-deposit { margin-top: 16px; border: 1px solid rgba(22, 119, 255, 0.25); background: rgba(22, 119, 255, 0.05); border-radius: 18px; padding: 16px; }
+.rprog-deposit-row { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; color: #64748b; }
+.rprog-deposit-row strong { color: #0f172a; font-weight: 800; }
+.rprog-bar, .rtier-bar { height: 8px; border-radius: 999px; background: #e5ecf6; overflow: hidden; margin: 10px 0 12px; }
+.rprog-bar span, .rtier-bar span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #4f9bff, #1677ff); transition: width .6s ease; }
+.rprog-btn { display: inline-flex; align-items: center; gap: 6px; background: #1677ff; color: #fff; font-weight: 800; font-size: 13px; padding: 10px 18px; border-radius: 999px; border: 0; cursor: pointer; }
+.rprog-btn:hover { background: #0b5ed7; }
+.rprog-ok { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #10b981; margin: 0; }
+.rprog-sub { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 17px; color: #0f172a; margin: 22px 0 12px; }
+.rprog-tiers, .rtier-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.rprog-tier, .rtier-step { border-radius: 18px; padding: 14px 16px; border: 1px solid #e5ecf6; background: #fff; display: flex; flex-direction: column; gap: 2px; }
+.rprog-tier-name, .rtier-step-name { font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.rprog-tier-rate, .rtier-step-rate { font-family: 'Outfit', sans-serif; font-weight: 900; font-size: 24px; color: #0f172a; letter-spacing: -0.02em; }
+.rprog-tier-min, .rtier-step-min { font-size: 12px; color: #64748b; }
+.rprog-tier-bronze .rprog-tier-name { color: #b45309; }
+.rprog-tier-silver .rprog-tier-name { color: #64748b; }
+.rprog-tier-gold .rprog-tier-name { color: #f59e0b; }
+.rprog-tier-gold { border-color: rgba(245, 158, 11, 0.4); background: linear-gradient(160deg, #fff, #fff8eb); }
+@media (max-width: 640px) {
+  .rprog { padding: 20px 16px; border-radius: 20px; }
+  .rprog-title { font-size: 22px; }
+  .rprog-steps { grid-template-columns: 1fr; }
+  .rprog-tiers, .rtier-steps { gap: 8px; }
+  .rprog-tier, .rtier-step { padding: 12px 10px; }
+  .rprog-tier-rate, .rtier-step-rate { font-size: 20px; }
+  .rprog-tier-min, .rtier-step-min { font-size: 11px; }
+}
+.home-dark .rprog { background: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.1); box-shadow: none; }
+.home-dark .rprog-title, .home-dark .rprog-step h3, .home-dark .rprog-sub, .home-dark .rprog-deposit-row strong, .home-dark .rprog-tier-rate { color: #fff; }
+.home-dark .rprog-step, .home-dark .rprog-tier { background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.08); }
+.home-dark .rprog-step p, .home-dark .rprog-deposit-row, .home-dark .rprog-tier-min { color: rgba(255, 255, 255, 0.55); }
+.home-dark .rprog-pill, .home-dark .rtier-pill { color: #74b8ff; background: rgba(43, 134, 255, 0.15); }
+.home-dark .rprog-num { background: linear-gradient(135deg, #5aa8ff, #2b86ff); }
+.home-dark .rprog-deposit { background: rgba(43, 134, 255, 0.08); border-color: rgba(90, 168, 255, 0.3); }
+.home-dark .rprog-bar, .home-dark .rtier-bar { background: rgba(255, 255, 255, 0.1); }
+.home-dark .rprog-btn { background: #2b86ff; }
+.home-dark .rprog-tier-gold { background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.35); }
+.home-dark .rprog-tier-silver .rprog-tier-name { color: rgba(255, 255, 255, 0.6); }
+
+/* ---- Reseller: tier progress card (ResellerDashboard) ---- */
+.rtier-card { background: #fff; border: 1px solid #e5ecf6; border-radius: 24px; padding: 22px; box-shadow: 0 18px 40px -30px rgba(22, 119, 255, 0.35); }
+.rtier-head { display: flex; gap: 14px; align-items: center; margin-bottom: 16px; }
+.rtier-badge { flex: 0 0 48px; height: 48px; border-radius: 16px; display: grid; place-items: center; color: #fff; }
+.rtier-bronze { background: linear-gradient(135deg, #f0a35e, #b45309); }
+.rtier-silver { background: linear-gradient(135deg, #cbd5e1, #64748b); }
+.rtier-gold { background: linear-gradient(135deg, #fcd34d, #f59e0b); }
+.rtier-title { font-family: 'Outfit', sans-serif; font-weight: 900; font-size: 20px; letter-spacing: -0.02em; color: #0f172a; margin: 6px 0 2px; }
+.rtier-sub, .rtier-foot { font-size: 13px; color: #64748b; margin: 0; }
+.rtier-step { opacity: .6; }
+.rtier-step.is-reached { opacity: 1; }
+.rtier-step.is-current { border-color: #1677ff; box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12); }
+.rtier-step-name { color: #1677ff; }
+.rtier-card .rtier-bar { margin-top: 16px; }
+.home-dark .rtier-card { background: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.1); box-shadow: none; }
+.home-dark .rtier-title, .home-dark .rtier-step-rate { color: #fff; }
+.home-dark .rtier-sub, .home-dark .rtier-foot, .home-dark .rtier-step-min { color: rgba(255, 255, 255, 0.55); }
+.home-dark .rtier-step { background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.08); }
+.home-dark .rtier-step.is-current { border-color: #5aa8ff; box-shadow: 0 0 0 3px rgba(43, 134, 255, 0.2); }
+.home-dark .rtier-step-name { color: #74b8ff; }
+@media (prefers-reduced-motion: reduce) {
+  .rprog-step, .rprog-bar span, .rtier-bar span { transition: none; }
+  .rprog-step:hover { transform: none; }
+}

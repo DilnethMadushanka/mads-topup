@@ -8,6 +8,8 @@ import confetti from 'canvas-confetti';
 import { auth } from '../services/firebaseAuth';
 import { getUserAuthToken } from '../services/serverApi';
 import { gamePathFor } from '../data/seoPages';
+import { useResellerStatus, resellerRateOf } from '../hooks/useResellerStatus';
+import { resellerUnitPrice } from '../data/resellerTiers';
 import { 
   ArrowLeft, Check, ShieldCheck, Zap, AlertCircle, RefreshCw, 
   CreditCard, ChevronRight, BookmarkPlus, CheckCircle2, Copy, UploadCloud, Cloud,
@@ -223,13 +225,16 @@ export const GameTopupPage = () => {
     });
   };
 
-  // Check if current user is an approved reseller partner
-  const isApprovedReseller = Boolean(userProfile?.isReseller || userProfile?.role === 'reseller');
+  // Approved resellers get their tier's discount, as the server reports it.
+  const resellerStatus = useResellerStatus(userProfile);
+  const resellerRate = resellerRateOf(resellerStatus);
+  const isApprovedReseller = resellerRate > 0;
+  const resellerPct = Math.round(resellerRate * 100);
 
   // Compute Total Price & Items
   const selectedItems = selectedGame.packages.filter(pkg => (cartQuantities[pkg.id] || 0) > 0);
   const totalLkr = selectedItems.reduce((sum, pkg) => {
-    const effectivePrice = isApprovedReseller ? Math.round(pkg.priceLkr * 0.95) : pkg.priceLkr;
+    const effectivePrice = isApprovedReseller ? resellerUnitPrice(pkg.priceLkr, resellerRate) : pkg.priceLkr;
     return sum + (effectivePrice * (cartQuantities[pkg.id] || 0));
   }, 0);
   const totalItemsCount = selectedItems.reduce((sum, pkg) => sum + (cartQuantities[pkg.id] || 0), 0);
@@ -394,7 +399,7 @@ export const GameTopupPage = () => {
       // Loop through all selected packages in cart to process each item/quantity
       for (const item of selectedItems) {
         const qty = cartQuantities[item.id] || 1;
-        const effectiveUnitPrice = isApprovedReseller ? Math.round(item.priceLkr * 0.95) : item.priceLkr;
+        const effectiveUnitPrice = isApprovedReseller ? resellerUnitPrice(item.priceLkr, resellerRate) : item.priceLkr;
         const itemTotalPrice = effectiveUnitPrice * qty;
 
         const orderPayload = {
@@ -960,11 +965,11 @@ export const GameTopupPage = () => {
                   </div>
                   <div>
                     <h4 className="text-xs sm:text-sm font-black uppercase tracking-wider text-amber-300">Reseller Partner Pricing Activated 👑</h4>
-                    <p className="text-[11px] sm:text-xs text-slate-300 font-medium">You are receiving exclusive reseller wholesale prices (5% discount applied across all packages)</p>
+                    <p className="text-[11px] sm:text-xs text-slate-300 font-medium">You are receiving exclusive reseller wholesale prices ({resellerStatus.tier.name} tier: {resellerPct}% discount applied across all packages)</p>
                   </div>
                 </div>
                 <span className="px-3.5 py-1.5 bg-brand-600/40 border border-brand-500/50 rounded-xl text-xs font-mono font-black text-amber-300 shrink-0 shadow-sm">
-                  5% DISCOUNT ACTIVE
+                  {resellerPct}% DISCOUNT ACTIVE
                 </span>
               </div>
             )}
@@ -979,7 +984,7 @@ export const GameTopupPage = () => {
                   {packages.map((pkg) => {
                 const qty = cartQuantities[pkg.id] || 0;
                 const isSelected = qty > 0;
-                const effectivePrice = isApprovedReseller ? Math.round(pkg.priceLkr * 0.95) : pkg.priceLkr;
+                const effectivePrice = isApprovedReseller ? resellerUnitPrice(pkg.priceLkr, resellerRate) : pkg.priceLkr;
 
                 return (
                   <div
@@ -1056,7 +1061,7 @@ export const GameTopupPage = () => {
                             </span>
                             <span className="mt-1 inline-flex items-center gap-1.5 text-[10px] font-bold">
                               <span className="text-slate-400 line-through">{formatLkr(pkg.priceLkr)}</span>
-                              <span className="px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">-5%</span>
+                              <span className="px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">-{resellerPct}%</span>
                             </span>
                           </div>
                         ) : (

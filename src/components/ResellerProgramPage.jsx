@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import confetti from 'canvas-confetti';
+import { useResellerStatus } from '../hooks/useResellerStatus';
+import { RESELLER_MIN_DEPOSIT_LKR, RESELLER_TIERS } from '../data/resellerTiers';
 import { 
   UserPlus, LogIn, Crown, ShieldCheck, DollarSign, TrendingUp, Send, 
   Smartphone, FileText, Users, CheckCircle2, ArrowRight, Sparkles, CheckSquare, HelpCircle, ArrowLeft
 } from 'lucide-react';
 
 export const ResellerProgramPage = () => {
-  const { userProfile, isLoggedIn, openAuth, showToast, closeResellerPage, addResellerApplication, openResellerDashboard, resellerApplications } = useApp();
+  const { userProfile, isLoggedIn, openAuth, showToast, closeResellerPage, addResellerApplication, openResellerDashboard, resellerApplications, openWalletModal } = useApp();
+  const resellerStatus = useResellerStatus(isLoggedIn ? userProfile : null);
+  const depositLkr = resellerStatus?.approved ? RESELLER_MIN_DEPOSIT_LKR : (resellerStatus?.depositLkr || 0);
+  const depositPct = Math.min(100, Math.round((depositLkr / RESELLER_MIN_DEPOSIT_LKR) * 100));
+  const tiersLowFirst = [...RESELLER_TIERS].sort((a, b) => a.minSalesLkr - b.minSalesLkr);
 
   const [realName, setRealName] = useState(userProfile?.name || '');
   const [storeName, setStoreName] = useState('');
@@ -229,6 +235,57 @@ export const ResellerProgramPage = () => {
         </div>
       </div>
 
+      {/* HOW TO JOIN: apply, deposit, approved; then tiers by sales */}
+      <section className="rprog max-w-4xl mx-auto" aria-labelledby="rprog-title">
+        <span className="rprog-pill">How to join</span>
+        <h2 id="rprog-title" className="rprog-title">Three steps to reseller prices</h2>
+        <ol className="rprog-steps">
+          <li className="rprog-step">
+            <span className="rprog-num">1</span>
+            <div><h3>Apply</h3><p>Fill in the form below with your store and WhatsApp details.</p></div>
+          </li>
+          <li className="rprog-step">
+            <span className="rprog-num">2</span>
+            <div>
+              <h3>Deposit Rs. {RESELLER_MIN_DEPOSIT_LKR.toLocaleString()}</h3>
+              <p>Top up your wallet by bank, eZ Cash or Binance. It is not a fee: the money stays in your wallet for orders.</p>
+            </div>
+          </li>
+          <li className="rprog-step">
+            <span className="rprog-num">3</span>
+            <div><h3>Get approved</h3><p>Once your deposit is verified we approve you and you start at Bronze prices.</p></div>
+          </li>
+        </ol>
+
+        {isLoggedIn && resellerStatus && !resellerStatus.approved && (
+          <div className="rprog-deposit">
+            <div className="rprog-deposit-row">
+              <span>Your verified deposits</span>
+              <strong>Rs. {depositLkr.toLocaleString()} / {RESELLER_MIN_DEPOSIT_LKR.toLocaleString()}</strong>
+            </div>
+            <div className="rprog-bar"><span style={{ width: `${depositPct}%` }} /></div>
+            {depositLkr < RESELLER_MIN_DEPOSIT_LKR ? (
+              <button type="button" className="rprog-btn" onClick={() => openWalletModal && openWalletModal()}>
+                Deposit Rs. {(RESELLER_MIN_DEPOSIT_LKR - depositLkr).toLocaleString()} more <ArrowRight className="w-4 h-4" />
+              </button>
+            ) : (
+              <p className="rprog-ok"><CheckCircle2 className="w-4 h-4" /> Deposit done. We approve your application after review.</p>
+            )}
+          </div>
+        )}
+
+        <h3 className="rprog-sub">Sell more, pay less</h3>
+        <div className="rprog-tiers">
+          {tiersLowFirst.map(t => (
+            <div key={t.id} className={`rprog-tier rprog-tier-${t.id.toLowerCase()}`}>
+              <span className="rprog-tier-name">{t.name}</span>
+              <span className="rprog-tier-rate">{Math.round(t.rate * 100)}% off</span>
+              <span className="rprog-tier-min">{t.minSalesLkr ? `After Rs. ${t.minSalesLkr.toLocaleString()} in sales` : 'When you join'}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* 2. APPLICATION FORM CONTAINER (Matching Screenshot 2) */}
       <div id="application-form-section" className="bg-white rounded-3xl border border-slate-200 shadow-md p-6 sm:p-10 max-w-4xl mx-auto">
         
@@ -255,7 +312,7 @@ export const ResellerProgramPage = () => {
             <div>
               <h3 className="text-xl font-black text-slate-900 font-heading">Application Submitted!</h3>
               <p className="text-xs sm:text-sm text-slate-600 font-medium mt-1 max-w-md mx-auto">
-                Thank you for applying to the Reseller Program. Our admin team will review your application and send approval instructions to your WhatsApp & Email.
+                Thank you for applying to the Reseller Program. Next, deposit Rs. {RESELLER_MIN_DEPOSIT_LKR.toLocaleString()} to your wallet (it stays yours for orders). We approve you once it is verified and send your reseller details to your WhatsApp & Email.
               </p>
             </div>
 

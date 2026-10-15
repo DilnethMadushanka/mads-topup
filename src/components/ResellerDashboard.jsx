@@ -4,6 +4,8 @@ import { GAMES_DATA, getVerifiedPackagePriceLkr } from '../data/games';
 import { generateUniqueSecurityKey, ensureResellerCredentials, getResellerProfileByKeyAsync, updateUserProfileInFirestore } from '../services/firestoreService';
 import { dispatchMoongoldOrder } from '../services/moongoldApi';
 import { orderBelongsToUser } from '../utils/ownership';
+import { useResellerStatus, resellerRateOf } from '../hooks/useResellerStatus';
+import { resellerUnitPrice } from '../data/resellerTiers';
 import confetti from 'canvas-confetti';
 import { 
   Crown, Wallet, Zap, Copy, Check, ArrowLeft, Send, ShieldCheck, 
@@ -79,9 +81,14 @@ export const ResellerDashboard = () => {
   const currentGame = GAMES_DATA.find(g => g.id === selectedGameId) || GAMES_DATA[0];
   const selectedPackage = currentGame?.packages?.find(p => p.id === selectedPackageId) || currentGame?.packages?.[0];
 
-  // Calculate Reseller Wholesale Price (5% discount) with Hardened Anti-Tamper Verification
+  // Wholesale price at the reseller's tier discount (3/5/8%), as the server
+  // reports and charges it, with Hardened Anti-Tamper Verification
+  const resellerStatus = useResellerStatus(userProfile);
+  const resellerRate = resellerRateOf(resellerStatus);
+  const resellerPct = Math.round(resellerRate * 100);
+  const tierName = resellerStatus?.tier?.name || '';
   const untamperedPackagePrice = getVerifiedPackagePriceLkr(currentGame?.id, selectedPackage);
-  const calculateWholesalePrice = (priceLkr) => Math.round(priceLkr * 0.95);
+  const calculateWholesalePrice = (priceLkr) => resellerUnitPrice(priceLkr, resellerRate);
   const currentWholesalePrice = untamperedPackagePrice ? calculateWholesalePrice(untamperedPackagePrice) : 0;
   const currentSavings = untamperedPackagePrice ? (untamperedPackagePrice - currentWholesalePrice) : 0;
 
@@ -96,11 +103,10 @@ export const ResellerDashboard = () => {
 
   const completedResellerOrders = resellerOrders.filter(o => o.status === 'COMPLETED' || o.status === 'DELIVERED');
   const totalWholesaleTurnover = resellerOrders.reduce((sum, o) => sum + (o.priceLkr || 0), 0);
-  // True saving is originalPrice - wholesalePrice (5% of the ORIGINAL catalog
-  // price), not 5% of the already-discounted wholesale price (0.95P * 0.05 =
-  // 0.0475P, undercounting every order's saving). originalPriceLkr is set at
-  // dispatch time (below); fall back to reconstructing it from the wholesale
-  // price for any order that predates that field.
+  // True saving is originalPrice - wholesalePrice (the tier % of the ORIGINAL
+  // catalog price), not a % of the already-discounted wholesale price.
+  // originalPriceLkr is set at dispatch time (below); orders that predate
+  // that field were all at the old flat 5%.
   const totalWholesaleSavings = resellerOrders.reduce((sum, o) => {
     const wholesale = o.priceLkr || 0;
     const original = o.originalPriceLkr || (wholesale / 0.95);
@@ -138,6 +144,11 @@ export const ResellerDashboard = () => {
     // which causes a server-side price mismatch rejection on every order.
     if (currentGame?.resellerDisabled) {
       showToast(`⚠️ ${currentGame.name} is not yet available for reseller dispatch. Please contact admin to enable it.`, 'error');
+      return;
+    }
+
+    if (!resellerRate) {
+      showToast('Loading your reseller tier price. Please try again in a moment.', 'error');
       return;
     }
 
@@ -334,7 +345,7 @@ export const ResellerDashboard = () => {
     { icon: Wallet, label: 'Available Reseller Balance', value: `LKR ${(userProfile?.walletBalance || 0).toLocaleString()}`, sub: `${(userProfile?.walletUsdt || 0).toFixed(2)} USDT Available`, valueCls: 'text-emerald-600' },
     { icon: ShoppingBag, label: 'Orders Fulfilled', value: `${completedResellerOrders.length} Orders`, sub: 'Automated Instant Delivery', valueCls: 'text-slate-900' },
     { icon: TrendingUp, label: 'Wholesale Sales Turnover', value: `LKR ${totalWholesaleTurnover.toLocaleString()}`, sub: 'Customer Top-Up Sales Volume', valueCls: 'text-[#1677ff]' },
-    { icon: Award, label: 'Total Wholesale Savings', value: `LKR ${totalWholesaleSavings.toLocaleString()}`, sub: 'Saved via 5% Reseller Margin', valueCls: 'text-violet-600' },
+    { icon: Award, label: 'Total Wholesale Savings', value: `LKR ${totalWholesaleSavings.toLocaleString()}`, sub: `Saved via ${resellerPct}% ${tierName} Reseller Margin`, valueCls: 'text-violet-600' },
   ];
 
   return (
@@ -399,12 +410,12 @@ export const ResellerDashboard = () => {
               </h2>
 
               <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                Enjoy 5% wholesale discount across all Free Fire, PUBG, Mobile Legends & Garena Shell top-ups. Fulfill customer orders instantly via Website or Telegram Bot!
+                Enjoy your {resellerPct}% {tierName} wholesale discount across all Free Fire, PUBG, Mobile Legends & Garena Shell top-ups. Fulfill customer orders instantly via Website or Telegram Bot!
               </p>
 
               <div className="inline-flex items-center gap-2 text-[11px] font-black font-mono bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-1.5 rounded-full">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                5% WHOLESALE MARGIN ACTIVE
+                {tierName.toUpperCase()} {resellerPct}% WHOLESALE MARGIN ACTIVE
               </div>
             </div>
 
@@ -444,6 +455,42 @@ export const ResellerDashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* TIER PROGRESS: Bronze 3% / Silver 5% / Gold 8% by lifetime sales */}
+        {resellerStatus?.approved && (
+          <div className="rtier-card">
+            <div className="rtier-head">
+              <div className={`rtier-badge rtier-${resellerStatus.tier.id.toLowerCase()}`}><Crown className="w-5 h-5" /></div>
+              <div className="min-w-0">
+                <span className="rtier-pill">Your tier</span>
+                <h3 className="rtier-title">{resellerStatus.tier.name} · {resellerPct}% off every top-up</h3>
+                <p className="rtier-sub">
+                  {resellerStatus.next
+                    ? <>Sell Rs. {resellerStatus.next.remainingLkr.toLocaleString()} more to reach {resellerStatus.next.name} ({Math.round(resellerStatus.next.rate * 100)}% off).</>
+                    : <>You are on the top discount.</>}
+                </p>
+              </div>
+            </div>
+            <div className="rtier-steps">
+              {[...resellerStatus.tiers].sort((a, b) => a.minSalesLkr - b.minSalesLkr).map(t => {
+                const reached = resellerStatus.tier.id === t.id || resellerStatus.salesLkr >= t.minSalesLkr;
+                return (
+                  <div key={t.id} className={`rtier-step ${resellerStatus.tier.id === t.id ? 'is-current' : ''} ${reached ? 'is-reached' : ''}`}>
+                    <span className="rtier-step-name">{t.name}</span>
+                    <span className="rtier-step-rate">{Math.round(t.rate * 100)}%</span>
+                    <span className="rtier-step-min">{t.minSalesLkr ? `Rs. ${t.minSalesLkr.toLocaleString()}+ sales` : 'On joining'}</span>
+                  </div>
+                );
+              })}
+            </div>
+            {resellerStatus.next && (
+              <div className="rtier-bar" aria-label="Progress to next tier">
+                <span style={{ width: `${Math.min(100, Math.round((resellerStatus.salesLkr / resellerStatus.next.minSalesLkr) * 100))}%` }} />
+              </div>
+            )}
+            <p className="rtier-foot">Total sales so far: Rs. {resellerStatus.salesLkr.toLocaleString()}</p>
+          </div>
+        )}
 
         {/* 4 KPI METRIC STAT CARDS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -502,7 +549,7 @@ export const ResellerDashboard = () => {
           <div className={panelCls}>
             {panelHead(Zap, 'Instant Customer Top-Up Dispatch Tool', 'Select game, enter customer UID, choose package and fulfill instantly using your Reseller Wallet',
               <span className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-[11px] font-mono font-black self-start sm:self-center">
-                WHOLESALE 5% DISCOUNT AUTO-APPLIED
+                WHOLESALE {resellerPct}% DISCOUNT AUTO-APPLIED
               </span>
             )}
 
@@ -653,7 +700,7 @@ export const ResellerDashboard = () => {
                       Rs. {currentWholesalePrice.toLocaleString()} LKR
                     </h3>
                     <span className="text-xs text-emerald-700 font-mono font-black bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg">
-                      Save Rs. {currentSavings.toLocaleString()} (5% OFF)
+                      Save Rs. {currentSavings.toLocaleString()} ({resellerPct}% OFF)
                     </span>
                   </div>
                 </div>
@@ -820,7 +867,7 @@ export const ResellerDashboard = () => {
         {/* TAB 3: WHOLESALE PRICE CATALOG & PROFIT MARGIN VIEWER */}
         {activeTab === 'pricing' && (
           <div className={panelCls}>
-            {panelHead(Award, 'Reseller Wholesale Price Catalog', 'Compare standard retail prices with your 5% wholesale partner prices & calculated profit margins')}
+            {panelHead(Award, 'Reseller Wholesale Price Catalog', `Compare standard retail prices with your ${resellerPct}% wholesale partner prices & calculated profit margins`)}
 
             <div className="space-y-5">
               {GAMES_DATA.map((game) => (

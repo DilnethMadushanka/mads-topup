@@ -26,6 +26,27 @@ const cardStyle = { background: 'var(--adm-surface)', borderColor: 'var(--adm-bo
 const mutedStyle = { color: 'var(--adm-text-muted)' };
 const faintStyle = { color: 'var(--adm-text-faint)' };
 
+// Verified deposit towards the reseller joining deposit, for one application.
+const ResellerDepositCell = ({ appId, fetchResellerDeposit }) => {
+  const [info, setInfo] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    if (appId && fetchResellerDeposit) fetchResellerDeposit(appId).then(d => { if (alive) setInfo(d); });
+    return () => { alive = false; };
+  }, [appId]);
+  const done = info && info.depositLkr >= info.requiredLkr;
+  return (
+    <div className="rounded-xl border p-3" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
+      <span className="text-[10px] font-mono font-bold uppercase block mb-0.5" style={mutedStyle}>Joining Deposit</span>
+      {info ? (
+        <span className={`font-bold ${done ? 'text-emerald-400' : 'text-amber-400'}`}>
+          Rs. {info.depositLkr.toLocaleString()} / {info.requiredLkr.toLocaleString()} {done ? '✓' : ''}
+        </span>
+      ) : <span style={mutedStyle}>Checking…</span>}
+    </div>
+  );
+};
+
 const STATUS_STYLES = {
   COMPLETED: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
   VERIFIED: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
@@ -403,7 +424,7 @@ export const AdminDashboard = () => {
     supportTickets, sendTicketMessage, updateTicketStatus, updateTicketPriority, resellerApplications,
     updateResellerApplicationStatus, gamesCatalog, updateGamePrices, popupAdConfig, updatePopupAdConfig,
     gameStripConfig, updateGameStripConfig,
-    isAdminAuthenticated, setIsAdminAuthenticated
+    isAdminAuthenticated, setIsAdminAuthenticated, setResellerTier, fetchResellerDeposit
   } = useApp();
 
   // Auth state is managed via AppContext — listeners to admin data only subscribe when
@@ -1928,11 +1949,12 @@ export const AdminDashboard = () => {
                       </div>
                       <StatusPill status={app.status} />
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                    <div className={`grid grid-cols-1 sm:grid-cols-2 ${app.status !== 'APPROVED' ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-3 text-xs`}>
                       <div className="rounded-xl border p-3" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}><span className="text-[10px] font-mono font-bold uppercase block mb-0.5" style={mutedStyle}>WhatsApp</span><span className="font-bold" style={{ color: 'var(--adm-text)' }}>{app.whatsappNumber}</span></div>
                       <div className="rounded-xl border p-3" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}><span className="text-[10px] font-mono font-bold uppercase block mb-0.5" style={mutedStyle}>Email</span><span className="font-bold" style={{ color: 'var(--adm-text)' }}>{app.emailAddress}</span></div>
                       <div className="rounded-xl border p-3" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}><span className="text-[10px] font-mono font-bold uppercase block mb-0.5" style={mutedStyle}>Daily Sale</span><span className="text-amber-400 font-bold">{app.dailySale}</span></div>
                       <div className="rounded-xl border p-3" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}><span className="text-[10px] font-mono font-bold uppercase block mb-0.5" style={mutedStyle}>Store & Reach</span><span style={mutedStyle}>{app.isRunningStore ? 'Active Store' : 'No Store'} • {app.hasSocialReach ? 'Social Reach' : 'No Reach'}</span></div>
+                      {app.status !== 'APPROVED' && <ResellerDepositCell appId={app.id || app.firestoreId} fetchResellerDeposit={fetchResellerDeposit} />}
                     </div>
                     <div className="flex items-center justify-between pt-2 flex-wrap gap-2">
                       <span className="text-[11px] font-mono" style={faintStyle}>Submitted: {new Date(app.submittedAt).toLocaleString()}</span>
@@ -2012,7 +2034,7 @@ export const AdminDashboard = () => {
                         {matchingPackages.map(pkg => {
                           const currentPrice = editedPricesMap[pkg.id] !== undefined ? editedPricesMap[pkg.id] : pkg.priceLkr;
                           const isChanged = editedPricesMap[pkg.id] !== undefined && editedPricesMap[pkg.id] !== pkg.priceLkr;
-                          const wholesalePrice = Math.round(currentPrice * 0.95);
+                          const wholesalePrice = Math.round(currentPrice * (1 - 0.05));
                           const usdPrice = (currentPrice / 340).toFixed(2);
                           return (
                             <div key={pkg.id} className={`rounded-2xl border-2 p-3.5 space-y-3 ${isChanged ? 'border-amber-500/50' : ''}`} style={isChanged ? { background: 'var(--adm-surface-2)' } : { background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
@@ -2047,13 +2069,13 @@ export const AdminDashboard = () => {
                       <div className="hidden md:block p-4 sm:p-6 overflow-x-auto">
                         <table className="w-full text-left text-xs">
                           <thead className="font-mono text-[10px] uppercase border-b" style={{ borderColor: 'var(--adm-border)', ...mutedStyle }}>
-                            <tr><th className="p-3">Package</th><th className="p-3">Retail (LKR)</th><th className="p-3">Wholesale (5% Off)</th><th className="p-3">USD</th><th className="p-3 text-right">Code</th></tr>
+                            <tr><th className="p-3">Package</th><th className="p-3">Retail (LKR)</th><th className="p-3">Silver (5% Off)</th><th className="p-3">USD</th><th className="p-3 text-right">Code</th></tr>
                           </thead>
                           <tbody className="divide-y font-medium" style={{ borderColor: 'var(--adm-border)' }}>
                             {matchingPackages.map(pkg => {
                               const currentPrice = editedPricesMap[pkg.id] !== undefined ? editedPricesMap[pkg.id] : pkg.priceLkr;
                               const isChanged = editedPricesMap[pkg.id] !== undefined && editedPricesMap[pkg.id] !== pkg.priceLkr;
-                              const wholesalePrice = Math.round(currentPrice * 0.95);
+                              const wholesalePrice = Math.round(currentPrice * (1 - 0.05));
                               const usdPrice = (currentPrice / 340).toFixed(2);
                               return (
                                 <tr key={pkg.id} className="hover:bg-[var(--adm-surface-hover)] transition-colors">
@@ -2366,6 +2388,32 @@ export const AdminDashboard = () => {
             <div><span className="text-[10px] font-bold uppercase block" style={mutedStyle}>EZ Cash Balance</span><span className="text-base font-black font-heading" style={{ color: 'var(--adm-text)' }}>Rs. {(selectedInspectUser.walletBalance || 0).toLocaleString()}</span></div>
             <div><span className="text-[10px] font-bold uppercase block" style={mutedStyle}>Binance USDT</span><span className="text-base font-black text-emerald-400 font-heading">${(selectedInspectUser.walletUsdt || 0).toFixed(2)}</span></div>
           </div>
+
+          {selectedInspectUser.isReseller && selectedInspectUser.resellerStatus === 'APPROVED' && (
+            <div className="rounded-2xl border p-4 space-y-2 text-xs" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] font-bold uppercase" style={mutedStyle}>Reseller Tier</span>
+                <span className="font-bold" style={mutedStyle}>Sales: Rs. {(Number(selectedInspectUser.resellerSalesLkr) || 0).toLocaleString()}</span>
+              </div>
+              <select
+                value={selectedInspectUser.resellerTier || 'AUTO'}
+                onChange={async (e) => {
+                  const tier = e.target.value;
+                  if (await setResellerTier(selectedInspectUser.uid, tier)) {
+                    setSelectedInspectUser(prev => ({ ...prev, resellerTier: tier === 'AUTO' ? undefined : tier }));
+                    showToast(`Tier set to ${tier === 'AUTO' ? 'automatic (by sales)' : tier}`);
+                  }
+                }}
+                className={fieldCls}
+                style={fieldStyle}
+              >
+                <option value="AUTO">Automatic by sales (Bronze 3% / Silver 5% / Gold 8%)</option>
+                <option value="BRONZE">Bronze 3% (fixed)</option>
+                <option value="SILVER">Silver 5% (fixed)</option>
+                <option value="GOLD">Gold 8% (fixed)</option>
+              </select>
+            </div>
+          )}
 
           <div className="space-y-3 pt-2 border-t" style={{ borderColor: 'var(--adm-border)' }}>
             <h4 className="text-xs font-bold" style={mutedStyle}>Manual Wallet Balance Editor</h4>

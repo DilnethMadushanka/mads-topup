@@ -34,6 +34,18 @@
         },
         "sessionsValidAfter": {
           ".validate": "newData.val() == data.val()"
+        },
+        "resellerSalesLkr": {
+          ".validate": "newData.val() == data.val()"
+        },
+        "resellerTier": {
+          ".validate": "newData.val() == data.val()"
+        },
+        "resellerJoinedAt": {
+          ".validate": "newData.val() == data.val()"
+        },
+        "resellerJoinDepositLkr": {
+          ".validate": "newData.val() == data.val()"
         }
       }
     },
