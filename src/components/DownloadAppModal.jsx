@@ -60,7 +60,7 @@ export const DownloadAppModal = () => {
           </button>
 
           <div className="dl-app">
-            <span className="dl-app-icon"><img src="/mads-logo.jpg" alt="MADS TOPUP" /></span>
+            <span className="dl-app-icon"><img src="/mads-icon.png" alt="MADS TOPUP" /></span>
             <span className="dl-app-meta">
               <span className="dl-app-tag"><Sparkles /> Web app</span>
               <span className="dl-app-name">MADS TOPUP</span>

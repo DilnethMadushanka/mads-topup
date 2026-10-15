@@ -606,7 +606,7 @@ export const AuthModal = () => {
           </div>
           <div className="auth-hero-inner">
             <div className="auth-brand">
-              <span className="auth-brand-logo"><img src="/mads-logo.jpg" alt="" /></span>
+              <span className="auth-brand-logo"><img src="/mads-icon-192.png" alt="" /></span>
               <span className="auth-brand-name">MADS <b>TOPUP</b></span>
             </div>
             <h2 className="auth-hero-title">Top up your favourite games in seconds.</h2>
@@ -624,7 +624,7 @@ export const AuthModal = () => {
         <main className="auth-main">
           <div className="auth-topbar">
             <span className="auth-brand auth-brand-sm">
-              <span className="auth-brand-logo"><img src="/mads-logo.jpg" alt="MADS TOPUP" /></span>
+              <span className="auth-brand-logo"><img src="/mads-icon-192.png" alt="MADS TOPUP" /></span>
               <span className="auth-brand-name">MADS <b>TOPUP</b></span>
             </span>
             <button type="button" onClick={() => setIsAuthModalOpen(false)} className="auth-close" aria-label="Back to store">

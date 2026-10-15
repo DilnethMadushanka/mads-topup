@@ -1,0 +1,13 @@
+{
+  "name": "MADS TOPUP",
+  "short_name": "MADS TOPUP",
+  "description": "Instant game top-ups in Sri Lanka: Free Fire diamonds, PUBG UC, Mobile Legends and more.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#151a2b",
+  "theme_color": "#1677ff",
+  "icons": [
+    { "src": "/mads-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/mads-icon.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
