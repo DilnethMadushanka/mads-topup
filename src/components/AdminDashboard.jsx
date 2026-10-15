@@ -816,12 +816,14 @@ export const AdminDashboard = () => {
     );
   }
 
-  const safeOrders = orders || [];
-  const safeUsers = usersList || [];
-  const safePayments = manualPayments || [];
-  const safeTickets = supportTickets || [];
-  const safeResellerApps = resellerApplications || [];
-  const safeVouchers = vouchers || [];
+  // Lists can hold stray null / non-object entries from the database; skip them.
+  const objList = (v) => (Array.isArray(v) ? v.filter(x => x && typeof x === 'object') : []);
+  const safeOrders = objList(orders);
+  const safeUsers = objList(usersList);
+  const safePayments = objList(manualPayments);
+  const safeTickets = objList(supportTickets);
+  const safeResellerApps = objList(resellerApplications);
+  const safeVouchers = objList(vouchers);
 
   const completedOrders = safeOrders.filter(o => o.status === 'COMPLETED');
   const totalRevenueLkr = completedOrders.reduce((sum, o) => sum + (o.priceLkr || 0), 0);
@@ -1444,7 +1446,7 @@ export const AdminDashboard = () => {
                       {todayNewUsers.map(u => (
                         <div key={u.uid || u.email} className="flex items-center gap-2.5 p-2.5 rounded-xl border" style={{ borderColor: 'var(--adm-border)', background: 'var(--adm-input-bg)' }}>
                           <div className="w-8 h-8 rounded-full bg-violet-600/20 border border-violet-500/30 flex items-center justify-center shrink-0">
-                            <span className="text-xs font-black text-violet-400">{(u.name || u.email || '?')[0].toUpperCase()}</span>
+                            <span className="text-xs font-black text-violet-400">{String(u.name || u.email || '?').charAt(0).toUpperCase() || '?'}</span>
                           </div>
                           <div className="min-w-0">
                             <div className="text-xs font-bold truncate" style={{ color: 'var(--adm-text)' }}>{u.name || 'New User'}</div>
@@ -1873,7 +1875,7 @@ export const AdminDashboard = () => {
                   { key: 'verify', label: 'Verification', render: u => u.isVerified ? <StatusPill status="VERIFIED" /> : <StatusPill status="UNVERIFIED" /> },
                   { key: 'status', label: 'Account Status', sortable: true, sortValue: u => u.status || '', render: u => <StatusPill status={u.status} /> },
                   { key: 'lkr', label: 'EZ Wallet LKR', sortable: true, sortValue: u => u.walletBalance || 0, render: u => <span className="font-mono font-bold" style={{ color: 'var(--adm-text)' }}>Rs. {(u.walletBalance || 0).toLocaleString()}</span> },
-                  { key: 'usdt', label: 'Binance USDT', sortable: true, sortValue: u => u.walletUsdt || 0, render: u => <span className="font-mono font-bold text-emerald-400">${(u.walletUsdt || 0).toFixed(2)}</span> },
+                  { key: 'usdt', label: 'Binance USDT', sortable: true, sortValue: u => u.walletUsdt || 0, render: u => <span className="font-mono font-bold text-emerald-400">${Number(u.walletUsdt || 0).toFixed(2)}</span> },
                   { key: 'createdAt', label: 'Joined', sortable: false, sortValue: u => { const t = u.createdAt ? new Date(u.createdAt).getTime() : 0; return isNaN(t) ? 0 : t; }, render: u => (
                     <div className="text-[11px] font-mono" style={mutedStyle}>
                       {u.createdAt ? (
@@ -2387,7 +2389,7 @@ export const AdminDashboard = () => {
           )}
           <div className="grid grid-cols-2 gap-3 text-xs rounded-2xl border p-4" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
             <div><span className="text-[10px] font-bold uppercase block" style={mutedStyle}>EZ Cash Balance</span><span className="text-base font-black font-heading" style={{ color: 'var(--adm-text)' }}>Rs. {(selectedInspectUser.walletBalance || 0).toLocaleString()}</span></div>
-            <div><span className="text-[10px] font-bold uppercase block" style={mutedStyle}>Binance USDT</span><span className="text-base font-black text-emerald-400 font-heading">${(selectedInspectUser.walletUsdt || 0).toFixed(2)}</span></div>
+            <div><span className="text-[10px] font-bold uppercase block" style={mutedStyle}>Binance USDT</span><span className="text-base font-black text-emerald-400 font-heading">${Number(selectedInspectUser.walletUsdt || 0).toFixed(2)}</span></div>
           </div>
 
           {selectedInspectUser.isReseller && selectedInspectUser.resellerStatus === 'APPROVED' && (
@@ -2426,7 +2428,7 @@ export const AdminDashboard = () => {
             <div className="rounded-2xl border p-3.5 space-y-3" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
               {/* Current balance reminder */}
               <div className="text-[10px] font-bold px-1 py-0.5 rounded" style={{ color: 'var(--adm-muted)', background: 'var(--adm-surface)' }}>
-                Current: Rs.{(selectedInspectUser.walletBalance||0).toLocaleString()} LKR &nbsp;|&nbsp; ${(selectedInspectUser.walletUsdt||0).toFixed(2)} USDT
+                Current: Rs.{(selectedInspectUser.walletBalance||0).toLocaleString()} LKR &nbsp;|&nbsp; ${Number(selectedInspectUser.walletUsdt||0).toFixed(2)} USDT
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>

@@ -4,6 +4,21 @@ import { GAMES_DATA } from '../data/games';
 import { HOME_SEO, SITE_URL, seoPageForPath } from '../data/seoPages';
 import { pageForPath, pagePathFor, gamePathFor, gameForPath } from '../data/sitePages';
 
+// A date as an ISO string, or null. Accepts ISO strings, ms numbers and
+// Firestore Timestamps; never throws (an invalid date used to crash the page).
+const safeIso = (v) => {
+  if (v === undefined || v === null || v === '') return null;
+  try {
+    const d = typeof v === 'object' && typeof v.seconds === 'number' ? new Date(v.seconds * 1000)
+      : typeof v === 'object' && typeof v.toDate === 'function' ? v.toDate()
+      : new Date(v);
+    return Number.isNaN(d.getTime()) ? null : d.toISOString();
+  } catch { return null; }
+};
+const safeDay = (v) => (safeIso(v) || new Date().toISOString()).split('T')[0];
+const str = (v) => String(v ?? '').trim();
+const lc = (v) => str(v).toLowerCase();
+
 // The page to open on load: the one in the address bar (/wallet, /reviews …),
 // none on "/" or a game URL, otherwise the one saved for this tab.
 const initialPageName = () => {
@@ -815,9 +830,7 @@ export const AppProvider = ({ children }) => {
           isVerified: true,
           status: 'ACTIVE',
           createdAt: userProfile.createdAt || new Date().toISOString(),
-          joinedAt: userProfile.createdAt
-            ? new Date(userProfile.createdAt).toISOString().split('T')[0]
-            : new Date().toISOString().split('T')[0],
+          joinedAt: safeDay(userProfile.createdAt),
           totalOrders: 0,
           lifetimeSpendLkr: 0
         };
@@ -836,7 +849,7 @@ export const AppProvider = ({ children }) => {
         setUsersList(prev => {
           const merged = [];
           remoteUsersList.forEach(ru => {
-            const cached = prev.find(u => (ru.uid && u.uid === ru.uid) || (ru.email && u.email && u.email.toLowerCase() === ru.email.toLowerCase()));
+            const cached = prev.find(u => u && ((ru.uid && u.uid === ru.uid) || (ru.email && u.email && lc(u.email) === lc(ru.email))));
             if (cached) {
               merged.push({ ...cached, ...ru });
             } else {
@@ -853,10 +866,8 @@ export const AppProvider = ({ children }) => {
                 resellerTier: ru.resellerTier,
                 resellerSalesLkr: ru.resellerSalesLkr || 0,
                 status: ru.status || 'ACTIVE',
-                createdAt: ru.createdAt || (ru.joinedAt ? new Date(ru.joinedAt).toISOString() : null),
-                joinedAt: ru.createdAt
-                  ? new Date(ru.createdAt).toISOString().split('T')[0]
-                  : (ru.joinedAt || new Date().toISOString().split('T')[0]),
+                createdAt: safeIso(ru.createdAt) || safeIso(ru.joinedAt),
+                joinedAt: ru.createdAt ? safeDay(ru.createdAt) : (typeof ru.joinedAt === 'string' && ru.joinedAt ? ru.joinedAt : safeDay(ru.joinedAt)),
                 totalOrders: 0,
                 lifetimeSpendLkr: 0
               });
@@ -870,10 +881,10 @@ export const AppProvider = ({ children }) => {
           if (!prev) return prev;
           const match = remoteUsersList.find(ru => 
             (ru.uid && prev.uid && ru.uid === prev.uid) || 
-            (ru.email && prev.email && ru.email.toLowerCase() === prev.email.toLowerCase()) ||
-            (ru.securityKey && prev.securityKey && ru.securityKey.trim() === prev.securityKey.trim()) ||
-            (ru.resellerCode && prev.resellerCode && ru.resellerCode.trim() === prev.resellerCode.trim()) ||
-            (ru.key && prev.key && ru.key.trim() === prev.key.trim())
+            (ru.email && prev.email && lc(ru.email) === lc(prev.email)) ||
+            (ru.securityKey && prev.securityKey && str(ru.securityKey) === str(prev.securityKey)) ||
+            (ru.resellerCode && prev.resellerCode && str(ru.resellerCode) === str(prev.resellerCode)) ||
+            (ru.key && prev.key && str(ru.key) === str(prev.key))
           );
           if (match && (match.walletBalance !== prev.walletBalance || match.walletUsdt !== prev.walletUsdt)) {
             return {
@@ -1242,7 +1253,7 @@ export const AppProvider = ({ children }) => {
 
   // Reseller tier: 'AUTO' follows their sales, or fix BRONZE / SILVER / GOLD.
   const setResellerTier = async (uid, tier) => {
-    const { ok, data } = await postServerApi('/api/admin/user-fields', { identifier: uid, fields: { resellerTier: tier } }, getAdminToken());
+    const { ok, data } = await postServerApi('/api/admin/user-fields', { identifier: uid, fields: { resellerTier: tier } });
     if (!ok) { showToast(data?.error || 'Could not change the tier.', 'error'); return false; }
     setUsersList(prev => prev.map(u => u.uid === uid ? { ...u, resellerTier: tier === 'AUTO' ? undefined : tier } : u));
     return true;
@@ -1250,7 +1261,7 @@ export const AppProvider = ({ children }) => {
 
   // How much a reseller applicant has deposited towards joining.
   const fetchResellerDeposit = async (appId) => {
-    const { ok, data } = await postServerApi('/api/admin/reseller-deposit', { appId }, getAdminToken());
+    const { ok, data } = await postServerApi('/api/admin/reseller-deposit', { appId });
     return ok ? data : null;
   };
 

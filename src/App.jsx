@@ -17,6 +17,7 @@ import { AuthModal } from './components/AuthModal';
 import { UserProfilePage } from './components/UserProfilePage';
 import { WalletPage } from './components/WalletPage';
 import { AdminDashboard } from './components/AdminDashboard';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { ImportantNoticeModal } from './components/ImportantNoticeModal';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { SupportModal } from './components/SupportModal';
@@ -345,7 +346,9 @@ const MainContent = () => {
         <PolicyModal />
         <AuthModal />
       </div>
-      <AdminDashboard />
+      <ErrorBoundary name="admin" fullScreen onClose={() => setIsAdminOpen(false)}>
+        <AdminDashboard />
+      </ErrorBoundary>
       <div className={`${themeCls} contents`}>
         <ImportantNoticeModal />
         <SupportModal />
@@ -359,8 +362,12 @@ const MainContent = () => {
 
 export default function App() {
   return (
-    <AppProvider>
-      <MainContent />
-    </AppProvider>
+    <ErrorBoundary name="app" fullScreen>
+      <AppProvider>
+        <ErrorBoundary name="store" fullScreen>
+          <MainContent />
+        </ErrorBoundary>
+      </AppProvider>
+    </ErrorBoundary>
   );
 }
