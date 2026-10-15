@@ -7,6 +7,7 @@ import { ResellerReceipt } from './ResellerReceipt';
 import { orderBelongsToUser } from '../utils/ownership';
 import { useResellerStatus, resellerRateOf } from '../hooks/useResellerStatus';
 import { resellerUnitPrice } from '../data/resellerTiers';
+import { postServerApi, getUserAuthToken } from '../services/serverApi';
 import confetti from 'canvas-confetti';
 import { 
   Crown, Wallet, Zap, Copy, Check, ArrowLeft, Send, ShieldCheck, 
@@ -73,6 +74,32 @@ export const ResellerDashboard = () => {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userProfile?.uid]);
+
+  // One-time code that links the Telegram bot without a password (works for
+  // Google sign-in accounts too). Valid for 10 minutes, once.
+  const [tgLink, setTgLink] = useState(null);
+  const [tgLinkBusy, setTgLinkBusy] = useState(false);
+  const [isCopiedLink, setIsCopiedLink] = useState(false);
+  const handleMakeTelegramLink = async () => {
+    setTgLinkBusy(true);
+    try {
+      const token = await getUserAuthToken();
+      if (!token) return showToast('Please log in again.', 'error');
+      const { ok, data } = await postServerApi('/api/reseller/telegram-link', {}, token);
+      if (!ok || !data?.code) return showToast(data?.error || 'Could not make a link code. Please try again.', 'error');
+      setTgLink(data);
+    } catch (e) {
+      showToast('Could not make a link code. Please try again.', 'error');
+    } finally {
+      setTgLinkBusy(false);
+    }
+  };
+  const handleCopyLinkCmd = () => {
+    navigator.clipboard.writeText(`/auth ${tgLink.code}`);
+    setIsCopiedLink(true);
+    showToast('Link command copied. Paste it in the bot chat.');
+    setTimeout(() => setIsCopiedLink(false), 2000);
+  };
 
   const handleCopySecurityKey = () => {
     navigator.clipboard.writeText(resellerSecurityKey);
@@ -464,7 +491,7 @@ export const ResellerDashboard = () => {
               </button>
             </div>
           </div>
-          <p className="rd-cred-note"><ShieldCheck className="w-4 h-4" /> Keep your key private. It links the Telegram bot to your wallet.</p>
+          <p className="rd-cred-note"><ShieldCheck className="w-4 h-4" /> Keep your key private. To link the Telegram bot, open the Telegram bot tab and tap "Link Telegram". The key alone can't link it.</p>
         </section>
       </div>
 
@@ -715,13 +742,34 @@ export const ResellerDashboard = () => {
           <div className="rd-bot">
             <div className="rd-bot-step">
               {stepHead(1, 'Link your wallet')}
-              <p>Send this to the bot, followed by your password:</p>
-              <div className="rd-copy rd-copy-lg">
-                <code>/auth {resellerSecurityKey} &lt;password&gt;</code>
-                <button type="button" onClick={handleCopySecurityKey} aria-label="Copy security key">
-                  {isCopiedKey ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                </button>
-              </div>
+              {!tgLink ? (
+                <>
+                  <p>Tap the button to get a one-time link. It opens the bot and links this wallet. Works for Google sign-in too.</p>
+                  <button type="button" onClick={handleMakeTelegramLink} disabled={tgLinkBusy} className="rp-btn rp-btn-sm">
+                    <Send className="w-4 h-4" /> {tgLinkBusy ? 'Making link…' : 'Link Telegram'}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p>Open the bot and press Start. The link works once and lasts 10 minutes.</p>
+                  <div className="rd-link-actions">
+                    <a href={tgLink.link} target="_blank" rel="noopener noreferrer" className="rp-btn rp-btn-sm">
+                      <Send className="w-4 h-4" /> Open Telegram and link
+                    </a>
+                    <button type="button" onClick={handleMakeTelegramLink} disabled={tgLinkBusy} className="rp-btn rp-btn-sm rp-btn-ghost">
+                      <RefreshCw className="w-4 h-4" /> New link
+                    </button>
+                  </div>
+                  <p className="rd-link-or">Bot on another device? Send this message to it:</p>
+                  <div className="rd-copy rd-copy-lg">
+                    <code>/auth {tgLink.code}</code>
+                    <button type="button" onClick={handleCopyLinkCmd} aria-label="Copy link command">
+                      {isCopiedLink ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </>
+              )}
+              <p className="rd-link-or">Password account? You can also send <code>/auth {resellerSecurityKey} YourWebsitePassword</code>.</p>
             </div>
             <div className="rd-bot-step">
               {stepHead(2, 'Send top-ups')}

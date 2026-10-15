@@ -4,7 +4,7 @@ import { GAMES_DATA } from '../data/games.js';
 import { resellerTierFor, resellerUnitPrice } from '../data/resellerTiers.js';
 import { lookupFreePlayerIgn } from './playerLookup.js';
 import { saveOrderToFirestore } from './firestoreService.js';
-import { findUserKey, spendWallet, adjustWallet, rtdbGet, rtdbPut, addResellerSales } from '../../lib/rtdbAdmin.js';
+import { findUserKey, spendWallet, adjustWallet, rtdbGet, rtdbPut, addResellerSales, isUserBlocked } from '../../lib/rtdbAdmin.js';
 import { verifyPasswordLogin } from '../../lib/userAuth.js';
 import { fetchVoucherCodes, saveUserVoucher, isVoucherGame, redactVoucherCodes } from '../../lib/moogoldVoucher.js';
 
@@ -32,6 +32,36 @@ async function loadLinkedReseller(walletKey) {
 
 // Chat session bindings: chatId -> resellerProfile
 const boundChatSessions = new Map();
+
+// One-time link codes made by the signed-in reseller on the dashboard:
+// code -> { walletKey, expires }. Works for Google sign-in accounts too,
+// which have no password to send with /auth.
+const pendingLinkCodes = new Map();
+const LINK_CODE_TTL_MS = 10 * 60 * 1000;
+const LINK_CODE_RE = /^LINK-[A-F0-9]{12}$/;
+
+export function createTelegramLinkCode(walletKey) {
+  const now = Date.now();
+  for (const [c, v] of pendingLinkCodes) {
+    if (v.walletKey === walletKey || v.expires < now) pendingLinkCodes.delete(c);
+  }
+  const code = 'LINK-' + crypto.randomBytes(6).toString('hex').toUpperCase();
+  pendingLinkCodes.set(code, { walletKey, expires: now + LINK_CODE_TTL_MS });
+  return { code, expiresInSec: LINK_CODE_TTL_MS / 1000 };
+}
+
+// Use up a link code. Returns the wallet key, or null if unknown/expired.
+function consumeTelegramLinkCode(code) {
+  const c = String(code || '').trim().toUpperCase();
+  const entry = pendingLinkCodes.get(c);
+  if (!entry) return null;
+  pendingLinkCodes.delete(c);
+  return entry.expires >= Date.now() ? entry.walletKey : null;
+}
+
+const AUTH_HOW_TO = `🔑 How to link:
+• Easiest: open your Reseller Dashboard on madstopup.com → Telegram bot → tap "Link Telegram". (Works for Google sign-in accounts too.)
+• Or send: /auth <SecurityKey> <YourWebsitePassword>`;
 
 // Security Rate Limiter: chatId -> { failedAttempts, lockoutUntil }
 const authRateLimiter = new Map();
@@ -534,7 +564,7 @@ export function initTelegramBot() {
           { command: 'ff', description: '🔥 Check Free Fire IGN (/ff 1017871735)' },
           { command: 'ml', description: '⚔️ Check MLBB IGN (/ml 84218845 2168)' },
           { command: 'pubg', description: '🪂 Check PUBG Mobile IGN (/pubg 512345678)' },
-          { command: 'auth', description: '🔑 Link Reseller Wallet (/auth SecurityKey Password)' },
+          { command: 'auth', description: '🔑 Link Reseller Wallet (dashboard code, or SecurityKey + Password)' },
           { command: 'topup', description: '⚡ Execute Topup (/topup ff 1017871735 100)' },
           { command: 'balance', description: '💰 View Wallet Balance & Security Key' },
           { command: 'deposit', description: '📥 Wallet Recharge Info (EZ Cash, Binance)' },
@@ -555,8 +585,8 @@ export function initTelegramBot() {
 Support for ALL games on website: Mobile Legends, Free Fire, PUBG Mobile, Blood Strike, Delta Force & Garena Shells!
 
 🔑 1. Reseller Authentication:
-• /auth <SecurityKey> <Password> or /link <SecurityKey> <Password>
-  (e.g. /auth MADS-SEC-50048A92 YourPassword)
+• Reseller Dashboard → Telegram bot → "Link Telegram" (one tap)
+• or /auth <SecurityKey> <YourWebsitePassword>
 
 🎮 2. Live Player IGN Lookup (All Games):
 • /ml <ID> <Zone> - Mobile Legends (e.g. /ml 84218845 2168)
@@ -587,7 +617,8 @@ Support for ALL games on website: Mobile Legends, Free Fire, PUBG Mobile, Blood 
 ℹ️ MADS TOPUP BOT COMMAND GUIDE (ALL GAMES)
 
 🔑 1. Account Link:
-• /auth MADS-SEC-50048A92 YourPassword
+• Dashboard → Telegram bot → "Link Telegram"
+• or /auth <SecurityKey> <YourWebsitePassword>
 
 🎮 2. Live IGN Lookup:
 • /ml 84218845 2168
@@ -700,6 +731,42 @@ Telegram long-polling connection is 100% active 24/7!
       }
     };
 
+    const linkedText = (reseller) => `
+✅ RESELLER ACCOUNT LINKED SUCCESSFULLY!
+
+👑 Reseller Name: ${reseller.name || 'Verified Reseller Partner'}
+🏷️ Unique Reseller Code: ${reseller.resellerCode}
+🔑 Security Key: ${reseller.securityKey}
+💼 Wholesale Tier: ${resellerTierFor(reseller).name} (${Math.round(resellerTierFor(reseller).rate * 100)}% Wholesale Discount)
+💰 Available LKR Balance: Rs. ${(reseller.walletBalance || 0).toLocaleString()} LKR
+💵 Available USDT Balance: $${(parseFloat(reseller.walletUsdt !== undefined ? reseller.walletUsdt : 0)).toFixed(2)} USDT
+
+Your Telegram chat is now bound to your Reseller Wallet! You can use /topup for any game on the website.
+    `.trim();
+
+    // Link with a one-time code from the dashboard (the signed-in owner made it).
+    const linkWithCode = async (ctx, chatId, code) => {
+      const now = Date.now();
+      const rateData = authRateLimiter.get(chatId) || { failedAttempts: 0, lockoutUntil: 0 };
+      if (rateData.lockoutUntil > now) {
+        const waitMins = Math.ceil((rateData.lockoutUntil - now) / 60000);
+        return safeReply(ctx, `🛡️ SECURITY LOCKOUT ACTIVATED\n\nToo many failed auth attempts. Chat locked for ${waitMins} minute(s).`);
+      }
+      const walletKey = consumeTelegramLinkCode(code);
+      const record = walletKey ? await loadLinkedReseller(walletKey) : null;
+      const ok = record && record.isReseller && record.resellerStatus === 'APPROVED' && record.status !== 'BLOCKED'
+        && !(await isUserBlocked(walletKey, record.email).catch(() => false));
+      if (!ok) {
+        rateData.failedAttempts += 1;
+        if (rateData.failedAttempts >= 5) rateData.lockoutUntil = now + (15 * 60 * 1000);
+        authRateLimiter.set(chatId, rateData);
+        return safeReply(ctx, `❌ This link code is wrong or has expired (codes last 10 minutes and work once).\n\nOpen your Reseller Dashboard → Telegram bot and tap "Link Telegram" again.`);
+      }
+      boundChatSessions.set(chatId, record);
+      authRateLimiter.delete(chatId);
+      return safeReply(ctx, linkedText(record));
+    };
+
     const handleAuth = async (ctx) => {
       try {
         const chatId = ctx.message?.chat?.id || ctx.chat?.id;
@@ -713,8 +780,14 @@ Telegram long-polling connection is 100% active 24/7!
         // its own let anyone spend a reseller's wallet.
         const keyArg = (parts[1] || '').trim();
         const passwordArg = parts.slice(2).join(' ').trim();
-        if (!keyArg || keyArg.startsWith('/') || !passwordArg) {
-          return safeReply(ctx, '❌ Error: Please send your Security Key and your account password.\nUsage: /auth MADS-SEC-50048A92 YourPassword');
+        if (keyArg && LINK_CODE_RE.test(keyArg.toUpperCase()) && !passwordArg) {
+          return linkWithCode(ctx, chatId, keyArg);
+        }
+        if (!keyArg || keyArg.startsWith('/')) {
+          return safeReply(ctx, `🔗 Link your reseller wallet to this chat.\n\n${AUTH_HOW_TO}`);
+        }
+        if (!passwordArg) {
+          return safeReply(ctx, `🔒 Your Security Key alone can't link the bot (this keeps your wallet safe if someone sees your key).\n\n${AUTH_HOW_TO}`);
         }
 
         // Don't leave the password sitting in the chat.
@@ -739,19 +812,7 @@ Telegram long-polling connection is 100% active 24/7!
           boundChatSessions.set(chatId, reseller);
           authRateLimiter.delete(chatId);
 
-          const successText = `
-✅ RESELLER ACCOUNT LINKED SUCCESSFULLY!
-
-👑 Reseller Name: ${reseller.name || 'Verified Reseller Partner'}
-🏷️ Unique Reseller Code: ${reseller.resellerCode}
-🔑 Security Key: ${reseller.securityKey}
-💼 Wholesale Tier: ${resellerTierFor(reseller).name} (${Math.round(resellerTierFor(reseller).rate * 100)}% Wholesale Discount)
-💰 Available LKR Balance: Rs. ${(reseller.walletBalance || 0).toLocaleString()} LKR
-💵 Available USDT Balance: $${(parseFloat(reseller.walletUsdt !== undefined ? reseller.walletUsdt : 0)).toFixed(2)} USDT
-
-Your Telegram chat is now bound to your Reseller Wallet! You can use /topup for any game on the website.
-          `.trim();
-          return safeReply(ctx, successText);
+          return safeReply(ctx, linkedText(reseller));
         } else {
           rateData.failedAttempts += 1;
           if (rateData.failedAttempts >= 5) {
@@ -766,7 +827,7 @@ Your Telegram chat is now bound to your Reseller Wallet! You can use /topup for 
 
 Wrong Security Key or password, or this is not an approved reseller account. [Attempt ${rateData.failedAttempts}/5]
 
-Usage: /auth MADS-SEC-50048A92 YourPassword
+${AUTH_HOW_TO}
           `.trim();
           return safeReply(ctx, failText);
         }
@@ -871,9 +932,7 @@ ${zone ? `🌐 Zone ID: ${zone}\n` : ''}ℹ️ Status: ID formatting valid. Read
 
 Your Telegram chat is not bound to a verified Reseller Account.
 
-🔑 Please link your reseller wallet first:
-Send: /auth <SecurityKey> <Password>
-(Example: /auth MADS-SEC-50048A92 YourPassword)
+${AUTH_HOW_TO}
           `.trim();
           return safeReply(ctx, unauthMsg);
         }
@@ -984,10 +1043,7 @@ Send: /auth <SecurityKey> <Password>
 
 Your Telegram chat is not bound to a verified MADS TOPUP Reseller Account.
 
-🔑 How to Link Your Reseller Account:
-1️⃣ Get your unique Security Key from your MADS TOPUP Reseller Dashboard.
-2️⃣ Send command: /auth <SecurityKey> <Password>
-   (Example: /auth MADS-SEC-50048A92 YourPassword)
+${AUTH_HOW_TO}
 
 Once authenticated, your Telegram chat will be linked and authorized for instant top-ups!
           `.trim();
@@ -1062,7 +1118,7 @@ Examples:
           const walletRecord = walletKey ? await rtdbGet(`users/${walletKey}`).catch(() => null) : null;
           if (!walletRecord || walletRecord.status === 'BLOCKED' || !walletRecord.isReseller || walletRecord.resellerStatus !== 'APPROVED') {
             boundChatSessions.delete(chatId);
-            return safeReply(ctx, '🔒 Please link your reseller account again: /auth <SecurityKey> <Password>');
+            return safeReply(ctx, `🔒 Please link your reseller account again.\n\n${AUTH_HOW_TO}`);
           }
           const tier = resellerTierFor(walletRecord);
           const tierLabel = `${tier.name} ${Math.round(tier.rate * 100)}% OFF`;
@@ -1306,6 +1362,11 @@ Please check product availability or contact support. No reseller funds were cha
 
         switch (rawCmd) {
           case 'start':
+            // t.me/<bot>?start=LINK-... from the dashboard's "Link Telegram" button
+            if (parts[1] && LINK_CODE_RE.test(parts[1].toUpperCase())) {
+              const chatId = ctx.message?.chat?.id || ctx.chat?.id;
+              if (chatId) return linkWithCode(ctx, chatId, parts[1]);
+            }
             return handleStart(ctx);
           case 'help':
             return handleHelp(ctx);

@@ -5,7 +5,7 @@ import crypto from 'crypto';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { initTelegramBot, getTelegramBotHealthStatus, forceTelegramBotRefresh } from './src/services/telegramBotService.js';
+import { initTelegramBot, getTelegramBotHealthStatus, forceTelegramBotRefresh, createTelegramLinkCode } from './src/services/telegramBotService.js';
 import { lookupFreePlayerIgn } from './src/services/playerLookup.js';
 import { GAMES_DATA } from './src/data/games.js';
 import { RESELLER_MIN_DEPOSIT_LKR, RESELLER_TIERS, resellerTierFor, nextResellerTier, tierById } from './src/data/resellerTiers.js';
@@ -861,6 +861,25 @@ app.post('/api/reseller/status', rateLimiter(60, 60000), async (req, res) => {
     res.json({ approved: false, tiers, depositLkr: key ? await verifiedDepositsLkr(key) : 0, requiredLkr: RESELLER_MIN_DEPOSIT_LKR });
   } catch (e) {
     console.error('[Reseller Status Error]:', e.message);
+    res.status(500).json({ error: SERVER_ERROR });
+  }
+});
+
+// Signed-in approved resellers: a one-time code that links the Telegram bot
+// to their wallet (t.me deep link or "/auth LINK-..."). Needs no password,
+// so Google sign-in accounts can link too.
+app.post('/api/reseller/telegram-link', rateLimiter(10, 60000), async (req, res) => {
+  try {
+    const authUser = await verifyFirebaseIdToken(req.headers.authorization || '');
+    if (!authUser) return res.status(401).json({ error: 'Please log in again.' });
+    if (await rejectIfBlocked(authUser, res)) return;
+    const reseller = await getApprovedReseller(authUser.uid, authUser.email);
+    if (!reseller) return res.status(403).json({ error: 'Only approved resellers can link the Telegram bot.' });
+    const { code, expiresInSec } = createTelegramLinkCode(reseller.key);
+    const bot = getTelegramBotHealthStatus()?.botUsername || 'mads_shell_topup_bot';
+    res.json({ code, expiresInSec, link: `https://t.me/${bot}?start=${code}` });
+  } catch (e) {
+    console.error('[Telegram Link Code Error]:', e.message);
     res.status(500).json({ error: SERVER_ERROR });
   }
 });
