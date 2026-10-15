@@ -1154,8 +1154,10 @@ export const saveCustomGamePricesToFirestore = async (customPricesMap) => {
 export const subscribeCustomGamePricesFromFirestore = (callback) => {
   if (!rtdb) return () => {};
   try {
+    // An empty record means every override was removed: still report it so
+    // prices on screen go back to the defaults without a refresh.
     return rtdbOnValue(dbRef(rtdb, 'settings/customPrices'), (snapshot) => {
-      if (snapshot.exists()) callback(snapshot.val() || {});
+      callback(snapshot.exists() ? (snapshot.val() || {}) : {});
     });
   } catch (e) {
     console.warn('RTDB custom prices listener note:', e);
@@ -1425,6 +1427,35 @@ export const subscribeGameStripConfig = (callback) => {
       const data = normalizeGameStripConfig(snap.val());
       try { localStorage.setItem('mads_game_strip_config', JSON.stringify(data)); } catch (e) {}
       callback(data);
+    });
+  } catch (e) {
+    return () => {};
+  }
+};
+
+/**
+ * Running ticker notice. Admin edits it in the "Ticker Notice" tab; the server
+ * publishes it to siteConfig/ticker and every open page updates live.
+ */
+export const saveTickerNotice = async (text) => {
+  const clean = String(text || '').trim().slice(0, 500);
+  const { ok, data } = await postServerApi('/api/admin/ticker', { text: clean });
+  if (!ok) {
+    console.warn('[Ticker] Publish failed:', data?.error);
+    return false;
+  }
+  try { localStorage.setItem('mads_ticker_notice', clean); } catch (e) {}
+  return true;
+};
+
+export const subscribeTickerNotice = (callback) => {
+  if (typeof callback !== 'function' || !rtdb) return () => {};
+  try {
+    return rtdbOnValue(dbRef(rtdb, 'siteConfig/ticker'), (snap) => {
+      if (!snap.exists()) return;
+      const text = String(snap.val()?.text || '');
+      try { localStorage.setItem('mads_ticker_notice', text); } catch (e) {}
+      callback(text);
     });
   } catch (e) {
     return () => {};

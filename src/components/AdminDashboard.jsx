@@ -419,7 +419,7 @@ export const AdminDashboard = () => {
     isAdminOpen, setIsAdminOpen, orders, updateOrderStatus, moongoldConfig, updateMoongoldConfig,
     r2Config, updateR2Config, formatPrice,
     formatLkr, showToast, userProfile, vouchers, addVoucher, deleteVoucher,
-    tickerNotice, setTickerNotice, usersList, verifyUserAccount, toggleBlockUser, updateUserBalance,
+    tickerNotice, updateTickerNotice, usersList, verifyUserAccount, toggleBlockUser, updateUserBalance,
     setUserExactBalance, manualPayments, approveManualPayment, rejectManualPayment, addManualPayment,
     supportTickets, sendTicketMessage, updateTicketStatus, updateTicketPriority, resellerApplications,
     updateResellerApplicationStatus, gamesCatalog, updateGamePrices, popupAdConfig, updatePopupAdConfig,
@@ -1135,10 +1135,11 @@ export const AdminDashboard = () => {
     setNewVoucherValue('');
   };
 
-  const handleSaveNoticeSubmit = (e) => {
+  const handleSaveNoticeSubmit = async (e) => {
     e.preventDefault();
-    setTickerNotice(tickerNoticeInput);
-    showToast('Ticker notice banner updated live across website!');
+    const ok = await updateTickerNotice(tickerNoticeInput);
+    if (ok) showToast('Ticker notice updated live across the website!');
+    else showToast('Ticker notice was not saved. Please log in to admin again and retry.', 'error');
   };
 
   const handleAddManualPaymentRecord = (e) => {

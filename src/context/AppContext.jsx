@@ -15,6 +15,7 @@ import {
   saveVouchersToFirestore, subscribeVouchersFromFirestore, redeemVoucherInDatabase,
   savePopupAdConfigToFirestore, subscribePopupAdConfigFromFirestore, DEFAULT_POPUP_AD_CONFIG,
   saveGameStripConfig, subscribeGameStripConfig, DEFAULT_GAME_STRIP_CONFIG,
+  saveTickerNotice, subscribeTickerNotice,
   saveSupportTicketToFirestore, updateSupportTicketInFirestore, subscribeSupportTicketsFromFirestore,
   saveReviewToFirestore, subscribeReviewsFromFirestore,
   saveReferralClick, isAccountBlockedAsync, ACCOUNT_BLOCKED_MESSAGE
@@ -271,16 +272,16 @@ export const AppProvider = ({ children }) => {
       const updatedCatalog = GAMES_DATA.map(game => ({
         ...game,
         packages: (game.packages || []).map(pkg => {
-          const override = customPricesMap[pkg.id];
-          if (override !== undefined && override !== null) {
-            const newPrice = Number(override);
-            if (!isNaN(newPrice) && newPrice > 0) {
-              // Also patch GAMES_DATA so getVerifiedPackagePriceLkr stays in sync
-              pkg.priceLkr = newPrice;
-              pkg.priceUsd = Number((newPrice / 340).toFixed(2));
-              return { ...pkg, priceLkr: newPrice, priceUsd: Number((newPrice / 340).toFixed(2)) };
-            }
+          // Remember the built-in price once, so a removed override goes back to it live.
+          if (pkg.basePriceLkr === undefined) {
+            pkg.basePriceLkr = pkg.priceLkr;
+            pkg.basePriceUsd = pkg.priceUsd;
           }
+          const newPrice = Number(customPricesMap[pkg.id]);
+          const hasOverride = customPricesMap[pkg.id] != null && !isNaN(newPrice) && newPrice > 0;
+          // Also patch GAMES_DATA so getVerifiedPackagePriceLkr and the open game page stay in sync
+          pkg.priceLkr = hasOverride ? newPrice : pkg.basePriceLkr;
+          pkg.priceUsd = hasOverride ? Number((newPrice / 340).toFixed(2)) : pkg.basePriceUsd;
           return { ...pkg };
         })
       }));
@@ -984,9 +985,14 @@ export const AppProvider = ({ children }) => {
     return localStorage.getItem('mads_ticker_notice') || '🔥 SPECIAL PROMO: GET 10% EXTRA DIAMONDS ON ALL EZ CASH & BINANCE TOP-UPS! INSTANT DISPATCH ACTIVE 24/7.';
   });
 
-  useEffect(() => {
-    localStorage.setItem('mads_ticker_notice', tickerNotice);
-  }, [tickerNotice]);
+  // Live from siteConfig/ticker, so an admin change reaches every open page.
+  useEffect(() => subscribeTickerNotice((text) => setTickerNotice(text)), []);
+
+  const updateTickerNotice = async (text) => {
+    const ok = await saveTickerNotice(text);
+    if (ok) setTickerNotice(String(text || '').trim().slice(0, 500));
+    return ok;
+  };
 
   const addVoucher = async (newVoucher) => {
     const updated = [newVoucher, ...(vouchers || [])];
@@ -1945,6 +1951,7 @@ export const AppProvider = ({ children }) => {
       redeemVoucher,
       tickerNotice,
       setTickerNotice,
+      updateTickerNotice,
       creditUserWallet,
       usersList,
       verifyUserAccount,
