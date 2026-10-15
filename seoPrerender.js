@@ -50,6 +50,13 @@ const withJsonLd = (html, data) => html.replace(
   `    <script type="application/ld+json">${JSON.stringify(data).replace(/</g, '\\u003c')}</script>\n  </head>`,
 );
 
+const withoutHomeFaq = (html) => swap(
+  html,
+  /\s*<script type="application\/ld\+json">\s*\{\s*"@context": "https:\/\/schema\.org",\s*"@type": "FAQPage"[\s\S]*?<\/script>/,
+  '',
+  'home FAQPage schema',
+);
+
 const gameLinks = (exceptSlug) => GAME_SEO_PAGES
   .filter((p) => p.slug !== exceptSlug)
   .map((p) => `<li><a href="/${p.slug}/">${esc(p.h1)}</a></li>`)
@@ -69,8 +76,27 @@ const howToSteps = (game) => {
   ];
 };
 
+const lkr = (n) => `Rs. ${Math.round(n).toLocaleString('en-US')}`;
+
+// Questions people search before buying; shown on the page and sent to Google as FAQPage data.
+const faqFor = (game) => {
+  const voucher = game.fulfilment === 'voucher';
+  const what = game.currencyName || 'top-up';
+  return [
+    voucher
+      ? { q: `How do I get my ${game.name} PIN?`, a: `Pay from your MADS wallet and the PIN appears on screen and in My Orders right away. Redeem it at ${game.redeemSite || 'the Garena shop'}.` }
+      : { q: `Do you need my ${game.name} password?`, a: `No. We only need your ${game.idLabel || 'player ID'}. Never share your password with anyone.` },
+    { q: `How fast will I get my ${game.name} ${what}?`, a: `Most orders are delivered automatically within seconds, 24 hours a day. If anything is delayed our support team on WhatsApp will help.` },
+    { q: `How can I pay for ${game.name} in Sri Lanka?`, a: 'Pay in Sri Lankan Rupees with eZ Cash, bank transfer or Binance USDT, or use your MADS wallet balance.' },
+    { q: 'Is MADS TOPUP safe and legit?', a: 'Yes. MADS TOPUP is a Sri Lankan game top-up store with automated delivery through official reseller channels and real-time order tracking.' },
+  ];
+};
+
 const gamePageBody = (page, game) => {
-  const packages = (game.packages || []).map((p) => `<li>${esc(p.name)}</li>`).join('');
+  const packages = (game.packages || [])
+    .map((p) => `<li>${esc(p.name)}${p.priceLkr ? ` – ${lkr(p.priceLkr)}` : ''}</li>`)
+    .join('');
+  const faq = faqFor(game).map((f) => `<h3>${esc(f.q)}</h3><p>${esc(f.a)}</p>`).join('');
   return [
     '<p><a href="/">MADS TOPUP</a> › ' + esc(game.name) + '</p>',
     `<h1>${esc(page.h1)}</h1>`,
@@ -78,6 +104,8 @@ const gamePageBody = (page, game) => {
     packages ? `<h2>${esc(game.name)} packages</h2><ul>${packages}</ul>` : '',
     `<h2>How to top up ${esc(game.name)}</h2>`,
     `<ol>${howToSteps(game).map((s) => `<li>${esc(s)}</li>`).join('')}</ol>`,
+    `<h2>${esc(game.name)} top up FAQ</h2>`,
+    faq,
     '<h2>More games</h2>',
     `<ul>${gameLinks(page.slug)}</ul>`,
     '<p>MADS TOPUP is an independent reseller and is not affiliated with any game publisher.</p>',
@@ -92,7 +120,7 @@ const homeBody = () => [
 ].join('');
 
 // Keeps the static fallback readable for the moment before the app loads.
-const STATIC_CSS = '<style>.seo-static{min-height:100vh;background:#f5f8ff;padding:96px max(16px,calc((100% - 960px) / 2)) 48px;color:#334155;font:15px/1.6 system-ui,sans-serif}.seo-static a{color:#1264e6}.seo-static h1{font-size:28px;color:#0f172a}.seo-static h2{font-size:18px;color:#0f172a;margin-top:24px}</style>';
+const STATIC_CSS = '<style>.seo-static{min-height:100vh;background:#f5f8ff;padding:96px max(16px,calc((100% - 960px) / 2)) 48px;color:#334155;font:15px/1.6 system-ui,sans-serif}.seo-static a{color:#1264e6}.seo-static h1{font-size:28px;color:#0f172a}.seo-static h2{font-size:18px;color:#0f172a;margin-top:24px}.seo-static h3{font-size:15px;color:#0f172a;margin:14px 0 2px}</style>';
 
 const sitemap = (date) => {
   const urls = [{ loc: `${SITE_URL}/`, priority: '1.0' }]
@@ -121,18 +149,48 @@ export function seoPrerenderPlugin() {
         const game = GAMES_DATA.find((g) => g.id === page.gameId);
         if (!game) throw new Error(`[seo-prerender] unknown gameId ${page.gameId}`);
         const url = `${SITE_URL}/${page.slug}/`;
-        let html = withHead(template, {
+        // The home page FAQ schema is swapped for this game's own FAQ (Google rejects two FAQPage blocks).
+        let html = withHead(withoutHomeFaq(template), {
           title: page.title,
           description: page.description,
           url,
           image: game.heroBanner ? SITE_URL + game.heroBanner : null,
         });
+        const prices = (game.packages || []).map((p) => p.priceLkr).filter((n) => n > 0);
         html = withJsonLd(html, {
           '@context': 'https://schema.org',
-          '@type': 'BreadcrumbList',
-          itemListElement: [
-            { '@type': 'ListItem', position: 1, name: 'MADS TOPUP', item: `${SITE_URL}/` },
-            { '@type': 'ListItem', position: 2, name: game.name, item: url },
+          '@graph': [
+            {
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                { '@type': 'ListItem', position: 1, name: 'MADS TOPUP', item: `${SITE_URL}/` },
+                { '@type': 'ListItem', position: 2, name: game.name, item: url },
+              ],
+            },
+            {
+              '@type': 'FAQPage',
+              mainEntity: faqFor(game).map((f) => ({
+                '@type': 'Question',
+                name: f.q,
+                acceptedAnswer: { '@type': 'Answer', text: f.a },
+              })),
+            },
+            ...(prices.length ? [{
+              '@type': 'Product',
+              name: page.h1,
+              description: page.description,
+              image: game.heroBanner ? SITE_URL + game.heroBanner : `${SITE_URL}/mads-icon.png`,
+              brand: { '@type': 'Brand', name: 'MADS TOPUP' },
+              offers: {
+                '@type': 'AggregateOffer',
+                priceCurrency: 'LKR',
+                lowPrice: Math.min(...prices),
+                highPrice: Math.max(...prices),
+                offerCount: prices.length,
+                availability: 'https://schema.org/InStock',
+                url,
+              },
+            }] : []),
           ],
         });
         html = withRoot(html, gamePageBody(page, game));
