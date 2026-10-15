@@ -4320,6 +4320,10 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
 .rd-bot { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .rd-bot-step { border-radius: 20px; border: 1px solid #e5ecf6; background: #f8fbff; padding: 18px; }
 .rd-bot-step p { font-size: 13px; color: #64748b; margin: 0 0 10px; }
+.rd-link-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+.rd-bot-step .rd-link-or { margin: 12px 0 8px; font-size: 12.5px; overflow-wrap: anywhere; }
+.rd-link-or code { font-weight: 700; color: #1677ff; }
+.home-dark .rd-link-or code { color: #74b8ff; }
 .rd-cmds { display: flex; flex-direction: column; gap: 8px; }
 .rd-cmd { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; border-radius: 12px; background: #fff; border: 1px solid #e5ecf6; }
 .rd-cmd code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; font-weight: 800; color: #1677ff; overflow-wrap: anywhere; }
