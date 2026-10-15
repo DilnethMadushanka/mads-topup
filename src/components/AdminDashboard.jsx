@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { dispatchMoongoldOrder, checkMoongoldBalance } from '../services/moongoldApi';
 import { uploadToR2Storage } from '../services/storageService';
+import { SupportDesk, SupportDeskStats } from './admin/SupportDesk';
 import {
   X, ShieldCheck, DollarSign, RefreshCw,
   CheckCircle2, Clock, Zap, Save, Eye, EyeOff, Cloud, UploadCloud,
@@ -460,8 +461,6 @@ export const AdminDashboard = () => {
 
   const [supportSearch, setSupportSearch] = useState('');
   const [supportStatusFilter, setSupportStatusFilter] = useState('ALL');
-  const [selectedTicketInspect, setSelectedTicketInspect] = useState(null);
-  const [adminReplyText, setAdminReplyText] = useState('');
 
   const [orderSearch, setOrderSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -876,21 +875,6 @@ export const AdminDashboard = () => {
     return matchesSearch && matchesStatus && matchesMethod;
   });
 
-  const filteredSupportTickets = safeTickets.filter(tck => {
-    if (!tck) return false;
-    const search = (supportSearch || '').toLowerCase();
-    const tckId = String(tck.id || '').toLowerCase();
-    const tckEmail = String(tck.userEmail || tck.email || '').toLowerCase();
-    const tckName = String(tck.userName || tck.name || '').toLowerCase();
-    const tckSubject = String(tck.subject || '').toLowerCase();
-    const tckOrderId = String(tck.orderId || '').toLowerCase();
-    const matchesSearch = tckId.includes(search) || tckEmail.includes(search) || tckName.includes(search) || tckSubject.includes(search) || tckOrderId.includes(search);
-    const matchesStatus = supportStatusFilter === 'ALL' || tck.status === supportStatusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
-  const activeInspectTicket = selectedTicketInspect || filteredSupportTickets[0] || null;
-
   const filteredEzcashLogs = (ezcashLogs || []).filter(item => {
     if (!item) return false;
     const query = (ezcashSearch || '').toLowerCase().trim();
@@ -919,14 +903,6 @@ export const AdminDashboard = () => {
     const q = (voucherSearch || '').toLowerCase();
     return String(v.code || '').toLowerCase().includes(q);
   });
-
-  const handleSendAdminReply = (e) => {
-    e.preventDefault();
-    if (!adminReplyText.trim() || !activeInspectTicket) return;
-    sendTicketMessage(activeInspectTicket.id, adminReplyText.trim(), 'admin');
-    setAdminReplyText('');
-    showToast(`Official support reply sent to ${activeInspectTicket.userName}!`);
-  };
 
   const handleTabSelect = (tab) => {
     setAdminTab(tab);
@@ -1980,117 +1956,20 @@ export const AdminDashboard = () => {
           )}
 
           {adminTab === 'support' && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="rounded-2xl border-2 p-4 space-y-1" style={cardStyle}><span className="text-[10px] font-extrabold uppercase font-mono" style={mutedStyle}>Total Tickets</span><div className="text-2xl font-black font-heading" style={{ color: 'var(--adm-text)' }}>{safeTickets.length}</div></div>
-                <div className="rounded-2xl border-2 p-4 space-y-1" style={cardStyle}><span className="text-[10px] text-amber-400 font-extrabold uppercase font-mono">Open</span><div className="text-2xl font-black text-amber-400 font-heading">{safeTickets.filter(t => t.status === 'OPEN').length}</div></div>
-                <div className="rounded-2xl border-2 p-4 space-y-1" style={cardStyle}><span className="text-[10px] text-blue-400 font-extrabold uppercase font-mono">In Progress</span><div className="text-2xl font-black text-blue-400 font-heading">{safeTickets.filter(t => t.status === 'IN_PROGRESS').length}</div></div>
-                <div className="rounded-2xl border-2 p-4 space-y-1" style={cardStyle}><span className="text-[10px] text-emerald-400 font-extrabold uppercase font-mono">Resolved</span><div className="text-2xl font-black text-emerald-400 font-heading">{safeTickets.filter(t => t.status === 'RESOLVED').length}</div></div>
-              </div>
-
-              <FilterBar>
-                <SearchInput value={supportSearch} onChange={setSupportSearch} placeholder="Search ticket ID, user email, subject..." />
-                <select value={supportStatusFilter} onChange={(e) => setSupportStatusFilter(e.target.value)} className={`${fieldCls} sm:max-w-[200px]`} style={fieldStyle}>
-                  <option value="ALL">All Statuses</option>
-                  <option value="OPEN">Open</option>
-                  <option value="IN_PROGRESS">In Progress</option>
-                  <option value="RESOLVED">Resolved</option>
-                  <option value="CLOSED">Closed</option>
-                </select>
-              </FilterBar>
-
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                <div className="lg:col-span-5 space-y-3">
-                  {filteredSupportTickets.length === 0 ? (
-                    <div className="rounded-2xl border p-8 text-center text-xs" style={{ ...cardStyle, ...mutedStyle }}>No support tickets found matching your query.</div>
-                  ) : filteredSupportTickets.map(tck => {
-                    const isSelected = activeInspectTicket?.id === tck.id;
-                    return (
-                      <div key={tck.id} onClick={() => setSelectedTicketInspect(tck)} className={`p-4 rounded-2xl border transition-all cursor-pointer space-y-2.5 ${isSelected ? 'ring-1 ring-[#1677ff]/50' : ''}`} style={isSelected ? { background: 'var(--adm-surface-hover)', borderColor: '#f4370680' } : cardStyle}>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs font-bold text-red-400">{tck.id}</span>
-                            <span className="text-[10px] border px-2 py-0.5 rounded font-extrabold" style={{ borderColor: 'var(--adm-border)', ...mutedStyle }}>{tck.category}</span>
-                          </div>
-                          <StatusPill status={tck.status} />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-xs line-clamp-1" style={{ color: 'var(--adm-text)' }}>{tck.subject}</h4>
-                          <div className="text-[11px] font-mono mt-0.5 truncate" style={mutedStyle}>{tck.userName} ({tck.userEmail})</div>
-                        </div>
-                        <div className="flex items-center justify-between text-[10px] border-t pt-2 font-mono" style={{ borderColor: 'var(--adm-border)', ...faintStyle }}>
-                          <span>Priority: <strong className={tck.priority === 'HIGH' || tck.priority === 'URGENT' ? 'text-red-400' : ''}>{tck.priority}</strong></span>
-                          <span>{new Date(tck.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="lg:col-span-7 rounded-2xl border-2 p-4 sm:p-6 space-y-4" style={cardStyle}>
-                  {activeInspectTicket ? (
-                    <div className="space-y-4">
-                      <div className="pb-4 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3" style={{ borderColor: 'var(--adm-border)' }}>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-base font-black" style={{ color: 'var(--adm-text)' }}>{activeInspectTicket.subject}</h3>
-                            <span className="font-mono text-xs text-red-400 font-bold">{activeInspectTicket.id}</span>
-                          </div>
-                          <div className="text-xs font-mono mt-1" style={mutedStyle}>Customer: <strong style={{ color: 'var(--adm-text)' }}>{activeInspectTicket.userName}</strong> ({activeInspectTicket.userEmail})</div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <select value={activeInspectTicket.status} onChange={(e) => updateTicketStatus(activeInspectTicket.id, e.target.value)} className="text-xs text-amber-400 font-mono font-bold px-2.5 py-1.5 rounded-xl cursor-pointer border" style={{ background: 'var(--adm-input-bg)', borderColor: 'var(--adm-border)' }}>
-                            <option value="OPEN">OPEN</option>
-                            <option value="IN_PROGRESS">IN PROGRESS</option>
-                            <option value="RESOLVED">RESOLVED</option>
-                            <option value="CLOSED">CLOSED</option>
-                          </select>
-                          <select value={activeInspectTicket.priority} onChange={(e) => updateTicketPriority(activeInspectTicket.id, e.target.value)} className="text-xs text-red-400 font-mono font-bold px-2.5 py-1.5 rounded-xl cursor-pointer border" style={{ background: 'var(--adm-input-bg)', borderColor: 'var(--adm-border)' }}>
-                            <option value="LOW">LOW</option>
-                            <option value="MEDIUM">MEDIUM</option>
-                            <option value="HIGH">HIGH</option>
-                            <option value="URGENT">URGENT</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      {activeInspectTicket.orderId && (
-                        <div className="rounded-xl border p-3 flex items-center justify-between text-xs font-mono" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
-                          <span style={mutedStyle}>Linked Order: <strong className="text-red-400">{activeInspectTicket.orderId}</strong></span>
-                          <button onClick={() => { setAdminTab('orders'); setOrderSearch(activeInspectTicket.orderId); }} className="text-[10px] bg-red-500/15 text-red-400 border border-red-500/30 px-2 py-0.5 rounded font-bold hover:bg-red-600 hover:text-white transition-colors cursor-pointer">View Order ↗</button>
-                        </div>
-                      )}
-
-                      <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
-                        {activeInspectTicket.messages.map(msg => {
-                          const isAdmin = msg.sender === 'admin';
-                          return (
-                            <div key={msg.id} className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}>
-                              <div className="flex items-center gap-1.5 text-[10px] mb-1 font-mono" style={faintStyle}><span>{msg.senderName}</span><span>• {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>
-                              <div className={`max-w-[85%] p-3.5 rounded-2xl text-xs space-y-2 leading-relaxed ${isAdmin ? 'bg-[#1677ff] text-white rounded-tr-xs' : 'border rounded-tl-xs'}`} style={!isAdmin ? { background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)', color: 'var(--adm-text)' } : undefined}>
-                                <p className="whitespace-pre-wrap">{msg.text}</p>
-                                {msg.attachmentUrl && (
-                                  <a href={msg.attachmentUrl} target="_blank" rel="noreferrer" className="block mt-2 rounded-xl overflow-hidden border border-slate-700 hover:opacity-90 transition-opacity">
-                                    <img src={msg.attachmentUrl} alt="Attachment" className="w-full max-h-48 object-cover" />
-                                    <span className="block p-1 text-[9px] bg-black/50 text-white text-center font-mono">Open Full Screenshot ↗</span>
-                                  </a>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      <form onSubmit={handleSendAdminReply} className="pt-3 border-t flex gap-2" style={{ borderColor: 'var(--adm-border)' }}>
-                        <input type="text" placeholder="Type official support reply to customer..." value={adminReplyText} onChange={(e) => setAdminReplyText(e.target.value)} className={fieldCls} style={fieldStyle} />
-                        <button type="submit" disabled={!adminReplyText.trim()} className="px-5 py-2.5 bg-[#1677ff] hover:bg-[#0b5ed7] disabled:opacity-50 text-white font-extrabold text-xs rounded-xl cursor-pointer shrink-0">Send</button>
-                      </form>
-                    </div>
-                  ) : (
-                    <div className="text-center py-20 text-xs" style={faintStyle}>Select a support ticket from the list to inspect & respond.</div>
-                  )}
-                </div>
-              </div>
+            <div className="space-y-4">
+              <SupportDeskStats tickets={safeTickets.filter(Boolean)} />
+              <SupportDesk
+                tickets={safeTickets.filter(Boolean)}
+                search={supportSearch}
+                setSearch={setSupportSearch}
+                statusFilter={supportStatusFilter}
+                setStatusFilter={setSupportStatusFilter}
+                sendTicketMessage={sendTicketMessage}
+                updateTicketStatus={updateTicketStatus}
+                updateTicketPriority={updateTicketPriority}
+                showToast={showToast}
+                onOpenOrder={(orderId) => { setAdminTab('orders'); setOrderSearch(orderId); }}
+              />
             </div>
           )}
 
