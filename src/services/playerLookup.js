@@ -143,31 +143,6 @@ export const lookupFreePlayerIgn = async (gameId = '', playerId = '', zoneId = '
   }
 
 
-  // 3. Free Fire Community & Multi-Gateway API
-  if (gKey.includes('freefire') || gKey.includes('ff')) {
-    const ffEndpoints = [
-      `https://ff-api-cyan.vercel.app/api/info?uid=${cleanId}`,
-      `https://free-fire-api-seven.vercel.app/api/info?uid=${cleanId}`,
-      `https://region-info-freefire.vercel.app/api/info?uid=${cleanId}`,
-      `https://api.vytis.id.vn/ff/info?uid=${cleanId}`
-    ];
-
-    for (const endpoint of ffEndpoints) {
-      try {
-        const res = await fetch(endpoint, { signal: AbortSignal.timeout(2500) });
-        if (res.ok) {
-          const data = await res.json();
-          const realName = data.nickname || data.name || data.username || data.player_name || data.data?.nickname;
-          if (realName && String(realName).trim()) {
-            const finalIgn = String(realName).trim();
-            saveCachedIgn(cleanId, finalIgn);
-            return { success: true, ign: finalIgn, isReal: true, source: 'FF_COMMUNITY_API' };
-          }
-        }
-      } catch (err) {}
-    }
-  }
-
   // 4. RapidAPI Lookup for All Games
   const rapidApiKey = (typeof process !== 'undefined' && process.env?.VITE_RAPIDAPI_KEY) || 
                       (typeof import.meta !== 'undefined' && import.meta.env?.VITE_RAPIDAPI_KEY) ||
