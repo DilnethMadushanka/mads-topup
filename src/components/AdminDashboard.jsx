@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { dispatchMoongoldOrder, checkMoongoldBalance } from '../services/moongoldApi';
 import { uploadToR2Storage } from '../services/storageService';
 import { SupportDesk, SupportDeskStats } from './admin/SupportDesk';
+import { FfAccountsAdmin } from './admin/FfAccountsAdmin';
 import {
   X, ShieldCheck, DollarSign, RefreshCw,
   CheckCircle2, Clock, Zap, Save, Eye, EyeOff, Cloud, UploadCloud,
@@ -388,6 +389,7 @@ const NAV_GROUPS = [
     { id: 'games', label: 'Game Prices', icon: Gamepad2 },
     { id: 'popupAd', label: 'Popup Banner', icon: Sparkles },
     { id: 'gameStrip', label: 'Games Bar', icon: LayoutGrid },
+    { id: 'ffAccounts', label: 'FF Accounts', icon: UserCheck },
     { id: 'announcement', label: 'Ticker Notice', icon: Megaphone }
   ]},
   { label: 'System', items: [
@@ -409,6 +411,7 @@ const TAB_TITLES = {
   games: ['Game Catalog & Live Price Manager', 'Edit retail prices — publish instantly to web & Telegram bot'],
   popupAd: ['Popup Banner Ad Manager', 'Configure the promotional popup shown to visitors'],
   gameStrip: ['Discover Games Bar', 'Choose the game icons shown in the scrolling bar on the home page'],
+  ffAccounts: ['Free Fire Accounts for Sale', 'List, edit and remove the FF accounts shown under Other Services'],
   announcement: ['Ticker Notice Banner', 'Update the marquee text shown across the website header'],
   moongold: ['Moongold Supplier Gateway', 'Configure live API credentials and automated dispatch'],
   r2: ['Cloudflare R2 Object Storage', 'Configure the bucket endpoint used for receipts & assets']
@@ -423,7 +426,7 @@ export const AdminDashboard = () => {
     setUserExactBalance, manualPayments, approveManualPayment, rejectManualPayment, addManualPayment,
     supportTickets, sendTicketMessage, updateTicketStatus, updateTicketPriority, resellerApplications,
     updateResellerApplicationStatus, gamesCatalog, updateGamePrices, popupAdConfig, updatePopupAdConfig,
-    gameStripConfig, updateGameStripConfig,
+    gameStripConfig, updateGameStripConfig, ffAccounts,
     isAdminAuthenticated, setIsAdminAuthenticated, setResellerTier, fetchResellerDeposit
   } = useApp();
 
@@ -1053,6 +1056,15 @@ export const AdminDashboard = () => {
     }
   };
 
+  // FF account screenshots: R2 first, a compressed copy if storage is down.
+  const uploadFfAccountImage = async (file) => {
+    let uploaded = null;
+    try { uploaded = await uploadToR2Storage(file, 'ff_accounts'); } catch { uploaded = null; }
+    if (uploaded?.success && uploaded.url) return uploaded.url;
+    showToast('Storage upload unavailable — applied a compressed copy instead.');
+    return compressImageToDataUrl(file, 1000);
+  };
+
   const handleSaveGameStrip = async () => {
     const items = stripItems.filter(it => String(it.imageUrl || '').trim());
     if (items.length !== stripItems.length) { showToast('Every game in the bar needs an icon image.', 'error'); return; }
@@ -1633,7 +1645,7 @@ export const AdminDashboard = () => {
                     <div className="flex justify-end gap-1.5 flex-wrap">
                       <button onClick={() => setSelectedInspectOrder(o)} className="px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer border" style={{ borderColor: 'var(--adm-border)', ...mutedStyle }}>Inspect</button>
                       {o.status !== 'COMPLETED' && <button onClick={() => updateOrderStatus(o.id, 'COMPLETED')} className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[11px] font-bold cursor-pointer">Approve</button>}
-                      <button onClick={() => handleRetryMoongold(o)} disabled={retryingOrderId === o.id} className="px-2.5 py-1 bg-red-600/15 hover:bg-red-600/25 text-red-400 border border-red-500/30 rounded-lg text-[11px] font-bold cursor-pointer">{retryingOrderId === o.id ? 'Syncing...' : 'Moongold'}</button>
+                      {o.source !== 'ff-account' && <button onClick={() => handleRetryMoongold(o)} disabled={retryingOrderId === o.id} className="px-2.5 py-1 bg-red-600/15 hover:bg-red-600/25 text-red-400 border border-red-500/30 rounded-lg text-[11px] font-bold cursor-pointer">{retryingOrderId === o.id ? 'Syncing...' : 'Moongold'}</button>}
                     </div>
                   )}
                 ]}
@@ -2154,8 +2166,9 @@ export const AdminDashboard = () => {
                         <option value="#referral">Open Referral Page</option>
                         <option value="#reseller">Open Reseller Program</option>
                         <option value="#support">Open Live Support Chat</option>
+                        <option value="#ff-accounts">Open Free Fire Accounts</option>
                         <option value="https://wa.me/94740436276">Open Support WhatsApp</option>
-                        {!['#catalog', '#wallet', '#referral', '#reseller', '#support', 'https://wa.me/94740436276'].includes(adButtonLink) && (
+                        {!['#catalog', '#wallet', '#referral', '#reseller', '#support', '#ff-accounts', 'https://wa.me/94740436276'].includes(adButtonLink) && (
                           <option value={adButtonLink}>{adButtonLink}</option>
                         )}
                       </select>
@@ -2189,6 +2202,10 @@ export const AdminDashboard = () => {
                 </div>
               </div>
             </div>
+          )}
+
+          {adminTab === 'ffAccounts' && (
+            <FfAccountsAdmin listings={ffAccounts} uploadImage={uploadFfAccountImage} showToast={showToast} />
           )}
 
           {adminTab === 'gameStrip' && (

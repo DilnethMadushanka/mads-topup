@@ -135,7 +135,7 @@ function rateLimiter(maxRequests = 30, windowMs = 60000) {
 // the VITE_-prefixed client-bundle equivalents, which would expose the
 // bucket's write credentials to anyone reading the JS bundle).
 const R2_UPLOAD_MAX_BYTES = 5 * 1024 * 1024; // 5MB — matches the client's own limit
-const R2_ALLOWED_FOLDERS = new Set(['receipts', 'support-attachments', 'popup_ads', 'game_strip']);
+const R2_ALLOWED_FOLDERS = new Set(['receipts', 'support-attachments', 'popup_ads', 'game_strip', 'ff_accounts']);
 const R2_ADMIN_FOLDERS = new Set(['popup_ads', 'game_strip']);
 const R2_ALLOWED_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif', 'application/pdf']);
 
@@ -550,6 +550,152 @@ app.post('/api/admin/ticker', requireAdminSession, async (req, res) => {
   } catch (e) {
     console.error('[Admin Ticker Error]:', e.message);
     res.status(500).json({ error: 'Could not publish the ticker notice.' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// Free Fire account sales ("Other Services"). Listings are published to
+// siteConfig/ffAccounts (public read, server write). A purchase is paid from
+// the MADS wallet here; the buyer's details go to the private ffAccountSales
+// node and the login is handed over by the admin on WhatsApp, so no account
+// credentials are ever stored in the database.
+// ─────────────────────────────────────────────────────────────────────────
+const FF_ACCOUNT_STATUSES = ['AVAILABLE', 'RESERVED', 'SOLD'];
+const FF_ACCOUNT_ID = /^ffa-[a-z0-9]{6,32}$/;
+const ffText = (v, max) => String(v ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, max);
+
+function cleanFfAccount(raw, existing = null) {
+  const r = raw && typeof raw === 'object' ? raw : {};
+  const list = (v) => (Array.isArray(v) ? v : (v && typeof v === 'object' ? Object.values(v) : []));
+  const images = list(r.images).map(u => String(u || '').trim()).filter(Boolean).slice(0, 8);
+  for (const u of images) {
+    if (!/^(https:\/\/|\/(?![\/\\])|data:image\/)/i.test(u)) throw new Error('Each image must be an https:// link.');
+  }
+  const priceLkr = Math.round(Number(r.priceLkr));
+  if (!(priceLkr > 0) || priceLkr > 10000000) throw new Error('Enter a price in LKR.');
+  const oldPrice = Math.round(Number(r.oldPriceLkr) || 0);
+  const level = Math.round(Number(r.level) || 0);
+  const title = ffText(r.title, 100);
+  if (!title) throw new Error('Give the account a title.');
+  const status = FF_ACCOUNT_STATUSES.includes(r.status) ? r.status : 'AVAILABLE';
+  const now = new Date().toISOString();
+  return {
+    title,
+    level: level > 0 && level <= 100 ? level : 0,
+    rank: ffText(r.rank, 40),
+    region: ffText(r.region, 30),
+    loginType: ffText(r.loginType, 30),
+    highlights: list(r.highlights).map(h => ffText(h, 60)).filter(Boolean).slice(0, 12),
+    description: ffText(r.description, 1000),
+    images,
+    priceLkr,
+    oldPriceLkr: oldPrice > priceLkr ? oldPrice : 0,
+    status,
+    featured: Boolean(r.featured),
+    createdAt: existing?.createdAt || now,
+    updatedAt: now,
+    ...(status !== 'AVAILABLE' && existing?.saleRef ? { saleRef: existing.saleRef } : {}),
+    ...(status === 'SOLD' ? { soldAt: existing?.soldAt || now } : {}),
+  };
+}
+
+// Admin: add, edit or remove a listing.
+app.post('/api/admin/ff-accounts', requireAdminSession, async (req, res) => {
+  try {
+    const { action } = req.body || {};
+    if (action === 'delete') {
+      const id = String(req.body?.id || '');
+      if (!FF_ACCOUNT_ID.test(id)) return res.status(400).json({ error: 'Invalid listing id.' });
+      await rtdbPut(`siteConfig/ffAccounts/${id}`, null);
+      return res.json({ success: true });
+    }
+    if (action !== 'save') return res.status(400).json({ error: 'action must be save or delete.' });
+    const raw = req.body?.listing || {};
+    const id = raw.id ? String(raw.id) : `ffa-${Date.now().toString(36)}${crypto.randomBytes(3).toString('hex')}`;
+    if (!FF_ACCOUNT_ID.test(id)) return res.status(400).json({ error: 'Invalid listing id.' });
+    const existing = raw.id ? await rtdbGet(`siteConfig/ffAccounts/${id}`).catch(() => null) : null;
+    let clean;
+    try { clean = cleanFfAccount(raw, existing); } catch (e) { return res.status(400).json({ error: e.message }); }
+    if (JSON.stringify(clean).length > 900 * 1024) return res.status(400).json({ error: 'Listing is too large. Upload the pictures so they are stored as links.' });
+    await rtdbPut(`siteConfig/ffAccounts/${id}`, clean);
+    res.json({ success: true, id, listing: { id, ...clean } });
+  } catch (e) {
+    console.error('[Admin FF Accounts Error]:', e.message);
+    res.status(500).json({ error: 'Could not save the listing.' });
+  }
+});
+
+// Customer: buy a listed account with the MADS wallet. The listing is
+// reserved first (compare-and-set), so two buyers can never pay for the same
+// account; if the wallet can't cover it the reservation is released.
+app.post('/api/ff-accounts/buy', rateLimiter(10, 60000), async (req, res) => {
+  try {
+    const user = await verifyFirebaseIdToken(req.headers.authorization || '');
+    if (!user) return res.status(401).json({ error: 'Please log in to buy an account.' });
+    if (await rejectIfBlocked(user, res)) return;
+    const id = String(req.body?.id || '');
+    if (!FF_ACCOUNT_ID.test(id)) return res.status(400).json({ error: 'Invalid listing.' });
+
+    const path = `siteConfig/ffAccounts/${id}`;
+    const saleRef = `FFA-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
+    let listing = null;
+    let reason = 'This account is no longer listed.';
+    const claim = await rtdbTransaction(path, (cur) => {
+      if (!cur || typeof cur !== 'object') return undefined;
+      if (cur.status !== 'AVAILABLE') { reason = 'Sorry, this account has just been sold.'; return undefined; }
+      listing = cur;
+      return { ...cur, status: 'RESERVED', saleRef, reservedAt: new Date().toISOString() };
+    });
+    if (!claim.committed || !listing) return res.status(409).json({ error: reason });
+
+    const priceLkr = Math.round(Number(listing.priceLkr) || 0);
+    const release = () => rtdbTransaction(path, (cur) => (cur && cur.saleRef === saleRef
+      ? { ...cur, status: 'AVAILABLE', saleRef: null, reservedAt: null } : undefined)).catch(() => {});
+    if (!(priceLkr > 0)) { await release(); return res.status(400).json({ error: 'This account has no price yet.' }); }
+
+    const deduct = await deductUserWallet(user.uid, priceLkr, user.email);
+    if (!deduct.success) {
+      await release();
+      return res.status(403).json({ error: deduct.reason || 'Insufficient wallet balance. Please top up your wallet first.' });
+    }
+
+    const now = new Date().toISOString();
+    await rtdbTransaction(path, (cur) => (cur && cur.saleRef === saleRef
+      ? { ...cur, status: 'SOLD', soldAt: now } : undefined)).catch((e) => console.warn('[FF Account Sold Flag Warning]:', e.message));
+
+    const profile = deduct.rtdbKey ? await rtdbGet(`users/${deduct.rtdbKey}`).catch(() => null) : null;
+    const buyerName = String(profile?.name || profile?.displayName || user.displayName || '').slice(0, 80);
+    const buyerEmail = String(user.email || user.displayEmail || profile?.email || '');
+    await rtdbPut(`ffAccountSales/${saleRef}`, {
+      saleRef, listingId: id, title: listing.title || '', priceLkr,
+      userId: user.uid, userKey: deduct.rtdbKey || '', userEmail: buyerEmail, userName: buyerName,
+      userPhone: String(profile?.phone || profile?.whatsapp || '').slice(0, 30),
+      paidWith: deduct.usedCurrency || 'LKR', ip: clientIp(req), createdAt: now,
+    }).catch((e) => console.error('[FF Account Sale Record Error]:', e.message));
+    await rtdbPut(`orders/${saleRef}`, {
+      id: saleRef,
+      source: 'ff-account',
+      partnerOrderId: saleRef,
+      ffAccountId: id,
+      userId: user.uid,
+      userEmail: buyerEmail,
+      userName: buyerName,
+      gameId: 'freefire_sg',
+      gameName: 'Free Fire Account',
+      packageName: String(listing.title || 'Free Fire account').slice(0, 100),
+      playerId: '',
+      ign: 'Login handed over on WhatsApp',
+      paymentMethod: 'MADS Wallet Balance',
+      priceLkr,
+      status: 'PROCESSING',
+      createdAt: now,
+    }).catch((e) => console.error('[FF Account Order Record Error]:', e.message));
+
+    console.log(`[FF Account Sold] ${id} "${listing.title}" to ${user.uid} for Rs. ${priceLkr} (${saleRef})`);
+    res.json({ success: true, orderId: saleRef, newBalanceLkr: deduct.newBalanceLkr, newBalanceUsdt: deduct.newBalanceUsdt });
+  } catch (e) {
+    console.error('[FF Account Buy Error]:', e.message);
+    res.status(500).json({ error: SERVER_ERROR });
   }
 });
 
@@ -2028,6 +2174,7 @@ const ADMIN_DATA_NODES = {
   applications: 'reseller_applications',
   tickets: 'supportTickets',
   vouchers: 'settings/vouchers',
+  ffSales: 'ffAccountSales',
 };
 app.get('/api/admin/data/:name', requireAdminSession, async (req, res) => {
   try {
