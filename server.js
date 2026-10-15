@@ -10,6 +10,7 @@ import { lookupFreePlayerIgn } from './src/services/playerLookup.js';
 import { GAMES_DATA } from './src/data/games.js';
 import { isSessionToken, verifySession, signSession } from './lib/session.js';
 import { sendMail, mailProvidersConfigured } from './lib/mailer.js';
+import { otpEmailHtml } from './lib/otpEmail.js';
 import { verifyPasswordLogin, setPasswordForEmail, publicProfile } from './lib/userAuth.js';
 import { rtdbUrl, rtdbGet, rtdbPut, rtdbPatch, rtdbTransaction, findUserKey, adjustWallet, spendWallet, isUserBlocked } from './lib/rtdbAdmin.js';
 import { fetchVoucherCodes, saveUserVoucher, listUserVouchers, findCatalogPackage, isVoucherGame, redactVoucherCodes } from './lib/moogoldVoucher.js';
@@ -987,7 +988,7 @@ app.post('/api/auth/reset-request', rateLimiter(5, 60000), async (req, res) => {
       const code = String(crypto.randomInt(100000, 1000000));
       passwordResetCodes.set(email, { hash: hashResetCode(code), expires: Date.now() + RESET_CODE_TTL_MS, attempts: 0 });
       const name = email.split('@')[0];
-      const sent = await sendOtpEmail(email, code, name.charAt(0).toUpperCase() + name.slice(1));
+      const sent = await sendOtpEmail(email, code, name.charAt(0).toUpperCase() + name.slice(1), 'reset');
       if (!sent.success) return res.status(503).json({ success: false, message: 'Email service temporarily unavailable. Please try again.' });
     } else {
       console.warn(`[Password Reset] No account with email ${email}; no code sent.`);
@@ -1030,28 +1031,13 @@ app.post('/api/auth/reset-confirm', rateLimiter(10, 60000), async (req, res) => 
 // Direct OTP Email sending API endpoint with rate limiter & sanitization
 // Sends a 6-digit code email (signup verification and password reset).
 // Returns { success, provider?, messageId? }.
-async function sendOtpEmail(email, otp, displayName) {
-    const emailHtml = `
-      <div style="font-family: Arial, sans-serif; background-color: #0f172a; color: #ffffff; padding: 24px; border-radius: 16px; max-width: 500px; margin: 0 auto;">
-        <div style="text-align: center; margin-bottom: 20px;">
-          <h2 style="color: #ef4444; font-size: 24px; font-weight: 900; margin: 0;">MADS TOPUP</h2>
-          <p style="color: #94a3b8; font-size: 12px; margin-top: 4px;">Email Verification Code</p>
-        </div>
-        <p style="font-size: 14px; color: #e2e8f0;">Hello ${displayName},</p>
-        <p style="font-size: 14px; color: #cbd5e1;">Use this 6-digit code to continue (sign up or password reset):</p>
-        <div style="background-color: #1e293b; border: 2px dashed #ef4444; border-radius: 12px; padding: 16px; text-align: center; margin: 20px 0;">
-          <span style="font-size: 32px; font-weight: 900; letter-spacing: 8px; color: #f87171; font-family: monospace;">${otp}</span>
-        </div>
-        <p style="font-size: 12px; color: #64748b; text-align: center;">This code is valid for 15 minutes. Do not share this code with anyone.</p>
-        <hr style="border: 0; border-top: 1px solid #334155; margin: 20px 0;" />
-        <p style="font-size: 10px; color: #475569; text-align: center;">© 2026 MADS TOPUP • All rights reserved</p>
-      </div>
-    `;
+async function sendOtpEmail(email, otp, displayName, purpose = 'signup') {
+    const emailHtml = otpEmailHtml({ otp, displayName, purpose });
 
     return sendMail({
       to: email,
       replyTo: 'support@madstopup.com',
-      subject: `Your MADS TOPUP Verification Code: ${otp}`,
+      subject: purpose === 'reset' ? `${otp} is your MADS TOPUP password reset code` : `${otp} is your MADS TOPUP verification code`,
       text: `Your MADS TOPUP verification code is: ${otp}. Valid for 15 minutes.`,
       html: emailHtml
     });
