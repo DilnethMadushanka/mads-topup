@@ -2715,6 +2715,17 @@ const pickPlayerName = (data) => {
   return typeof name === 'string' ? name.trim() : '';
 };
 
+// RapidAPI id-game-checker path for a game, or '' when it has none.
+const rapidApiGamePath = (gameId, playerId, zoneId) => {
+  const g = gameId.toLowerCase();
+  if (g.includes('freefire')) return `ff-global/${playerId}`;
+  if (g.includes('pubg')) return `pubgm-global/${playerId}`;
+  if (g.includes('mobilelegend') || g.includes('mlbb')) return zoneId ? `mobile-legends/${playerId}/${zoneId}` : '';
+  if (g.includes('blood')) return `blood-strike/${playerId}`;
+  if (g.includes('honor') || g.includes('hok')) return `honor-of-kings/${playerId}`;
+  return '';
+};
+
 app.post('/api/player-name', rateLimiter(30, 60000), async (req, res) => {
   const gameId = String(req.body?.gameId || '').trim();
   const playerId = String(req.body?.playerId || '').trim();
@@ -2735,7 +2746,29 @@ app.post('/api/player-name', rateLimiter(30, 60000), async (req, res) => {
     return res.json({ success: true, ign, source });
   };
 
-  // 1. MooGold validate, with one of this game's products.
+  // 1. RapidAPI id-game-checker (VITE_RAPIDAPI_KEY in .env).
+  const rapidPath = rapidApiGamePath(gameId, playerId, zoneId);
+  const rapidKey = process.env.RAPIDAPI_KEY || process.env.VITE_RAPIDAPI_KEY || '';
+  if (rapidPath && rapidKey) {
+    try {
+      const r = await fetch(`https://id-game-checker.p.rapidapi.com/${rapidPath}`, {
+        headers: { 'x-rapidapi-host': 'id-game-checker.p.rapidapi.com', 'x-rapidapi-key': rapidKey },
+        signal: AbortSignal.timeout(8000)
+      });
+      const text = await r.text();
+      let json = null;
+      try { json = JSON.parse(text); } catch (e) {}
+      const ign = pickPlayerName(json) || pickPlayerName(json?.result);
+      if (ign) return found(ign, 'RAPIDAPI');
+      console.log(`[Player name] RapidAPI ${rapidPath}: HTTP ${r.status} ${text.slice(0, 200)}`);
+    } catch (err) {
+      console.warn(`[Player name] RapidAPI error: ${err.message}`);
+    }
+  } else if (rapidPath) {
+    console.log('[Player name] RapidAPI skipped: VITE_RAPIDAPI_KEY is not set in .env');
+  }
+
+  // 2. MooGold validate, with one of this game's products.
   const productId = (game.packages || []).find(p => p.moongoldProductId)?.moongoldProductId;
   if (productId) {
     try {
@@ -2750,7 +2783,7 @@ app.post('/api/player-name', rateLimiter(30, 60000), async (req, res) => {
     }
   }
 
-  // 2. Free community lookups (they work from the server, not from browsers).
+  // 3. Free community lookups (they work from the server, not from browsers).
   try {
     const result = await lookupFreePlayerIgn(gameId, playerId, zoneId);
     if (result?.ign && !/^Player \d+$/.test(result.ign)) return found(String(result.ign).trim(), result.source || 'COMMUNITY');
