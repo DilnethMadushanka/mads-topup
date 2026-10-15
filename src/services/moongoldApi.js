@@ -169,115 +169,44 @@ export const checkMoongoldBalance = async () => {
 import { lookupFreePlayerIgn, saveCachedIgn } from './playerLookup.js';
 
 /**
- * Player IGN Lookup Verification via Official MooGold API 1.0 & Free Community Lookup
- * Route: POST /product/validate or POST /user/check_id
+ * Player name (IGN) check. The server does the lookup (MooGold validate,
+ * then free community lookups), because MooGold's keys live there and the
+ * community APIs block browsers. Returns { success: true, ign } only when a
+ * real name was found; otherwise { success: false }. It never makes a name up.
  */
-export const checkPlayerIGN = async (gameId = '', playerId = '', zoneId = '', productId = '215570') => {
-  const config = getMoongoldConfig();
-  const partnerId = config.apiKey || '';
-  const secretKey = config.secretKey || '';
-  const baseUrl = config.baseUrl || 'https://moogold.com/wp-json/v1/api';
-  
-  await new Promise(res => setTimeout(res, 300));
-
+export const checkPlayerIGN = async (gameId = '', playerId = '', zoneId = '') => {
   const cleanId = String(playerId).trim();
+  const cleanZone = String(zoneId || '').trim();
   if (!cleanId) {
     return { success: false, message: 'Please enter a valid Player ID' };
   }
 
-  // 1. Try Free Community Lookup & Local/Firebase Memory Cache (100% Free)
-  const freeResult = await lookupFreePlayerIgn(gameId, cleanId, zoneId);
-  if (freeResult && freeResult.ign) {
-    return {
-      success: true,
-      ign: freeResult.ign,
-      isReal: true,
-      status: 'VERIFIED'
-    };
-  }
-
-  // 2. Try Official MooGold product/validate endpoint
-  const validatePath = 'product/validate';
-  const validateBody = {
-    path: validatePath,
-    data: {
-      'product-id': productId,
-      'User ID': cleanId,
-      'Server': zoneId || ''
-    }
-  };
-
   try {
-    const headers = await getMooGoldHeaders(validatePath, validateBody, partnerId, secretKey);
-    const response = await fetch(`${baseUrl}/${validatePath}`, {
+    const res = await fetch('/api/player-name', {
       method: 'POST',
-      headers,
-      body: JSON.stringify(validateBody)
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gameId, playerId: cleanId, zoneId: cleanZone }),
+      signal: AbortSignal.timeout(20000)
     });
-
-    if (response.ok) {
-      const data = await response.json();
-      const realName = data.username || data.character_name || data.account_name || data.ign || data.role_name || data.data?.username;
-      if (realName) {
-        saveCachedIgn(cleanId, realName);
-        return {
-          success: true,
-          ign: realName,
-          isReal: true,
-          status: 'VERIFIED',
-          data
-        };
-      }
+    const data = await res.json().catch(() => null);
+    if (data?.success && data.ign) {
+      saveCachedIgn(cleanId, data.ign);
+      return { success: true, ign: data.ign, isReal: true, status: 'VERIFIED', source: data.source };
     }
+    if (res.status === 429) {
+      return { success: false, message: 'Too many checks. Please wait a minute and try again.' };
+    }
+    return { success: false, message: data?.message || 'Player name not found. Check the ID and try again.' };
   } catch (err) {
-    console.warn('MooGold product/validate call error:', err);
+    console.warn('Player name check error:', err);
   }
 
-  // 3. Try MooGold user/check_id endpoint
-  const checkPath = 'user/check_id';
-  const checkBody = {
-    path: checkPath,
-    data: {
-      game: gameId,
-      user_id: cleanId,
-      zone_id: zoneId || ''
-    }
-  };
-
-  try {
-    const headers = await getMooGoldHeaders(checkPath, checkBody, partnerId, secretKey);
-    const response = await fetch(`${baseUrl}/${checkPath}`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(checkBody)
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      const realName = data.username || data.character_name || data.account_name || data.ign || data.role_name || data.nickname || data.user_name;
-      if (realName) {
-        saveCachedIgn(cleanId, realName);
-        return {
-          success: true,
-          ign: realName,
-          isReal: true,
-          status: 'VERIFIED',
-          data
-        };
-      }
-    }
-  } catch (err) {
-    console.warn('MooGold user/check_id call error:', err);
+  // Server unreachable: try the browser-side lookups (works for cached names).
+  const freeResult = await lookupFreePlayerIgn(gameId, cleanId, cleanZone).catch(() => null);
+  if (freeResult?.ign) {
+    return { success: true, ign: freeResult.ign, isReal: true, status: 'VERIFIED' };
   }
-
-  // 4. Clean Fallback for Player UID verification (No fake generated names)
-  return {
-    success: true,
-    ign: `Player ${cleanId}`,
-    isReal: false,
-    status: 'VERIFIED',
-    message: `Player ID ${cleanId} Verified Successfully!`
-  };
+  return { success: false, message: 'Name check is not available right now. Please try again.' };
 };
 
 /**
