@@ -34,12 +34,13 @@ import { PolicyModal } from './components/PolicyModal';
 import { ToastNotification } from './components/ToastNotification';
 import { BlogPage } from './components/BlogPage';
 import { LeaderboardPage } from './components/LeaderboardPage';
+import { FfAccountsPage } from './components/FfAccountsPage';
 import { ScrollReveal } from './hooks/useScrollReveal';
 import { GAMES_DATA } from './data/games';
 import { GAME_SEO_PAGES } from './data/seoPages';
 
 const MainContent = () => {
-  const { userProfile, setIsAdminOpen, isUserProfileOpen, isWalletModalOpen, openUserProfilePage, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, isReferralPageOpen, isResellerPageOpen, isResellerLoginPageOpen, isResellerDashboardOpen, openResellerPage, openContactPage, openPolicyModal, selectedGame, isBlogPageOpen, openBlogPage, isLeaderboardPageOpen, openTopup } = useApp();
+  const { userProfile, setIsAdminOpen, isUserProfileOpen, isWalletModalOpen, openUserProfilePage, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, isReferralPageOpen, isResellerPageOpen, isResellerLoginPageOpen, isResellerDashboardOpen, openResellerPage, openContactPage, openPolicyModal, selectedGame, isBlogPageOpen, openBlogPage, isLeaderboardPageOpen, isFfAccountsPageOpen, openTopup } = useApp();
 
   // Security: Prevent Right-Click Inspect Element & DevTools Keyboard Shortcuts
   React.useEffect(() => {
@@ -83,7 +84,7 @@ const MainContent = () => {
   const themeCls = isDark ? 'home-dark' : '';
 
   // Re-trigger the page entrance animation whenever the visible page changes
-  const pageKey = [selectedGame?.id || '', isUserProfileOpen, isWalletModalOpen, isResellerDashboardOpen, isResellerLoginPageOpen, isResellerPageOpen, isReferralPageOpen, isContactPageOpen, isReviewsPageOpen, isLeaderboardPageOpen, isGameCatalogOpen, isBlogPageOpen].join('|');
+  const pageKey = [selectedGame?.id || '', isUserProfileOpen, isWalletModalOpen, isResellerDashboardOpen, isResellerLoginPageOpen, isResellerPageOpen, isReferralPageOpen, isContactPageOpen, isReviewsPageOpen, isLeaderboardPageOpen, isFfAccountsPageOpen, isGameCatalogOpen, isBlogPageOpen].join('|');
 
   return (
     <div className={`min-h-screen ${isDark ? 'mads-stage-dark' : 'mads-stage-light'} flex flex-col justify-between pb-0 font-sans text-[#0f172a] overflow-x-hidden`}>
@@ -113,6 +114,8 @@ const MainContent = () => {
           <ReviewsPage />
         ) : isLeaderboardPageOpen ? (
           <LeaderboardPage />
+        ) : isFfAccountsPageOpen ? (
+          <FfAccountsPage />
         ) : isBlogPageOpen ? (
           <BlogPage />
         ) : isGameCatalogOpen ? (
@@ -167,7 +170,7 @@ const MainContent = () => {
       </div>
 
       {/* Footer: Only visible on the main home page, not on sub-pages */}
-      {!selectedGame && !isUserProfileOpen && !isWalletModalOpen && !isResellerDashboardOpen && !isResellerLoginPageOpen && !isResellerPageOpen && !isReferralPageOpen && !isContactPageOpen && !isReviewsPageOpen && !isLeaderboardPageOpen && !isGameCatalogOpen && !isBlogPageOpen && (
+      {!selectedGame && !isUserProfileOpen && !isWalletModalOpen && !isResellerDashboardOpen && !isResellerLoginPageOpen && !isResellerPageOpen && !isReferralPageOpen && !isContactPageOpen && !isReviewsPageOpen && !isLeaderboardPageOpen && !isFfAccountsPageOpen && !isGameCatalogOpen && !isBlogPageOpen && (
       <footer className="relative overflow-hidden text-white border-t border-[#1677ff]/25" style={{ background: 'linear-gradient(180deg,#0b1a45 0%,#08143a 60%,#061030 100%)' }}>
 
         {/* Ambient glows + top accent line */}

@@ -4482,3 +4482,211 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
   .eb-btn { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .1); color: #e9f0ff; }
   .eb-btn-primary { background: linear-gradient(135deg, #5aa8ff, #2b86ff); border-color: transparent; }
 }
+
+/* ── Free Fire accounts for sale (Other Services page) ─────────────────── */
+.ffa-page { padding: 24px 0 72px; }
+.ffa-wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
+@media (min-width: 640px) { .ffa-wrap { padding: 0 24px; } }
+.ffa-topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ffa-back { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 12px; background: #fff; border: 1px solid #e5ecf6; color: #334155; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; transition: color .2s, border-color .2s; }
+.ffa-back svg { width: 16px; height: 16px; }
+.ffa-back:hover { color: #1677ff; border-color: rgba(22, 119, 255, .35); }
+.ffa-live { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: #64748b; }
+.ffa-dot { width: 7px; height: 7px; border-radius: 50%; background: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, .18); flex-shrink: 0; }
+@media (max-width: 420px) { .ffa-live { display: none; } }
+
+.ffa-hero { text-align: center; max-width: 680px; margin: 28px auto 0; }
+.ffa-hero h1 { margin-top: 12px; font-family: var(--font-heading); font-size: 34px; font-weight: 900; letter-spacing: -.02em; line-height: 1.08; color: #0f172a; }
+.ffa-hero h1 span { color: #1677ff; }
+@media (min-width: 640px) { .ffa-hero h1 { font-size: 48px; } }
+.ffa-hero > p { margin-top: 10px; font-size: 14px; line-height: 1.6; color: #64748b; font-weight: 500; }
+.ffa-trust { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 18px; margin-top: 18px; }
+.ffa-trust > span { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700; color: #334155; }
+.ffa-t-ico { --tone: #1677ff; --tone-2: #5aa8ff; width: 28px; height: 28px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; color: #fff; background: linear-gradient(135deg, var(--tone-2), var(--tone)); box-shadow: 0 8px 16px -8px var(--tone); flex-shrink: 0; }
+.ffa-t-ico svg { width: 15px; height: 15px; }
+.ffa-t-ico.is-gold { --tone: #f59e0b; --tone-2: #fbbf24; }
+.ffa-t-ico.is-teal { --tone: #0ea5a4; --tone-2: #2dd4bf; }
+
+.ffa-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 30px 0 16px; flex-wrap: wrap; }
+.ffa-tabs { display: inline-flex; padding: 4px; border-radius: 14px; background: #fff; border: 1px solid #e5ecf6; gap: 2px; }
+.ffa-tabs button { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 10px; font-size: 12.5px; font-weight: 800; color: #64748b; cursor: pointer; transition: background .2s, color .2s; }
+.ffa-tabs button span { min-width: 20px; padding: 1px 6px; border-radius: 99px; background: #eef4ff; color: #1677ff; font-size: 10.5px; }
+.ffa-tabs button.is-on { background: #1677ff; color: #fff; }
+.ffa-tabs button.is-on span { background: rgba(255, 255, 255, .22); color: #fff; }
+.ffa-sort { padding: 9px 12px; border-radius: 12px; background: #fff; border: 1px solid #e5ecf6; color: #0f172a; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+
+.ffa-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (min-width: 768px) { .ffa-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; } }
+@media (min-width: 1100px) { .ffa-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.ffa-card { display: flex; flex-direction: column; text-align: left; border-radius: 20px; overflow: hidden; background: #fff; border: 1px solid #e5ecf6; cursor: pointer; transition: transform .3s, box-shadow .3s, border-color .3s; min-width: 0; }
+.ffa-card:hover { transform: translateY(-3px); border-color: rgba(22, 119, 255, .35); box-shadow: 0 22px 40px -24px rgba(22, 119, 255, .6); }
+.ffa-cover { position: relative; display: block; aspect-ratio: 4 / 3; background: #eef4ff; overflow: hidden; }
+.ffa-cover img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .5s; }
+.ffa-card:hover .ffa-cover img { transform: scale(1.04); }
+.ffa-card.is-sold .ffa-cover img { filter: grayscale(.75) brightness(.85); }
+.ffa-cover-top { position: absolute; top: 8px; left: 8px; right: 8px; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.ffa-count { display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px; border-radius: 99px; background: rgba(15, 23, 42, .6); color: #fff; font-size: 10.5px; font-weight: 800; backdrop-filter: blur(6px); }
+.ffa-count svg { width: 12px; height: 12px; }
+.ffa-featured { position: absolute; left: 8px; bottom: 8px; display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 99px; background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #fff; font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.ffa-featured svg { width: 11px; height: 11px; fill: currentColor; }
+.ffa-status { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 99px; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; background: rgba(255, 255, 255, .92); color: #059669; }
+.ffa-status .ffa-dot { width: 6px; height: 6px; }
+.ffa-status.is-reserved { color: #b45309; }
+.ffa-status.is-sold { background: rgba(15, 23, 42, .78); color: #fff; }
+.ffa-card-body { display: flex; flex-direction: column; gap: 8px; padding: 12px; flex: 1; }
+@media (min-width: 640px) { .ffa-card-body { padding: 14px 16px 16px; } }
+.ffa-stats { display: flex; flex-wrap: wrap; gap: 4px; }
+.ffa-chip { --tone: #1677ff; --tint: rgba(22, 119, 255, .1); display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px; border-radius: 99px; background: var(--tint); color: var(--tone); font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+.ffa-chip svg { width: 11px; height: 11px; }
+.ffa-chip.is-gold { --tone: #d97706; --tint: rgba(245, 158, 11, .14); }
+.ffa-chip.is-teal { --tone: #0e9493; --tint: rgba(14, 165, 164, .12); }
+.ffa-title { font-family: var(--font-heading); font-size: 15px; font-weight: 800; letter-spacing: -.01em; line-height: 1.25; color: #0f172a; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+@media (min-width: 640px) { .ffa-title { font-size: 16.5px; } }
+.ffa-hl { display: flex; flex-wrap: wrap; gap: 4px; }
+.ffa-hl span { padding: 2px 7px; border-radius: 7px; background: #f6f9ff; border: 1px solid #e5ecf6; color: #475569; font-size: 11px; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ffa-hl span.is-more { color: #1677ff; font-weight: 800; }
+@media (max-width: 639px) { .ffa-hl span:nth-child(n+3) { display: none; } .ffa-hl span { font-size: 10.5px; } }
+.ffa-card-foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; margin-top: auto; padding-top: 4px; }
+.ffa-price { display: flex; flex-direction: column; line-height: 1.1; }
+.ffa-price s { font-size: 11px; color: #94a3b8; font-weight: 600; }
+.ffa-price b { font-family: var(--font-heading); font-size: 17px; font-weight: 900; color: #1677ff; letter-spacing: -.01em; }
+@media (min-width: 640px) { .ffa-price b { font-size: 19px; } }
+.ffa-card.is-sold .ffa-price b { color: #94a3b8; }
+.ffa-go { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(22, 119, 255, .1); color: #1677ff; transition: background .3s, color .3s, transform .3s; flex-shrink: 0; }
+.ffa-go svg { width: 16px; height: 16px; }
+.ffa-card:hover .ffa-go { background: #1677ff; color: #fff; transform: translateX(2px); }
+
+.ffa-empty { text-align: center; padding: 48px 20px; border-radius: 24px; background: #fff; border: 1px dashed #cfdcf0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.ffa-empty .ffa-t-ico { width: 48px; height: 48px; border-radius: 14px; }
+.ffa-empty .ffa-t-ico svg { width: 22px; height: 22px; }
+.ffa-empty h3 { margin-top: 6px; font-family: var(--font-heading); font-size: 20px; font-weight: 800; color: #0f172a; }
+.ffa-empty p { font-size: 13.5px; color: #64748b; max-width: 360px; margin-bottom: 8px; }
+
+.ffa-steps { display: grid; gap: 10px; margin-top: 36px; }
+@media (min-width: 768px) { .ffa-steps { grid-template-columns: repeat(3, 1fr); gap: 16px; } }
+.ffa-step { display: flex; gap: 12px; align-items: flex-start; padding: 16px; border-radius: 18px; background: #fff; border: 1px solid #e5ecf6; }
+.ffa-step-n { width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #5aa8ff, #1677ff); color: #fff; font-family: var(--font-heading); font-weight: 900; flex-shrink: 0; }
+.ffa-step b { font-family: var(--font-heading); font-size: 14.5px; font-weight: 800; color: #0f172a; }
+.ffa-step p { font-size: 12.5px; color: #64748b; margin-top: 2px; line-height: 1.5; }
+
+/* Detail popup */
+.ffa-overlay { position: fixed; inset: 0; z-index: 10000; background: rgba(8, 14, 34, .6); backdrop-filter: blur(8px); display: flex; align-items: flex-end; justify-content: center; animation: ffaFade .2s ease; }
+@media (min-width: 768px) { .ffa-overlay { align-items: center; padding: 24px; } }
+.ffa-modal { position: relative; width: 100%; max-width: 980px; max-height: 92vh; overflow-y: auto; background: #fff; border-radius: 24px 24px 0 0; display: grid; grid-template-columns: 1fr; animation: ffaUp .28s ease; }
+@media (min-width: 768px) { .ffa-modal { border-radius: 24px; grid-template-columns: 1.1fr 1fr; max-height: 88vh; } }
+.ffa-close { position: absolute; top: 12px; right: 12px; z-index: 3; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, .55); color: #fff; cursor: pointer; backdrop-filter: blur(6px); }
+.ffa-close svg { width: 18px; height: 18px; }
+.ffa-gallery { padding: 0; background: #0f172a; display: flex; flex-direction: column; }
+@media (min-width: 768px) { .ffa-gallery { padding: 14px; background: #f6f9ff; border-right: 1px solid #e5ecf6; } }
+.ffa-main-img { position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: #0f172a; }
+@media (min-width: 768px) { .ffa-main-img { border-radius: 16px; } }
+.ffa-main-img img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.ffa-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, .88); color: #0f172a; cursor: pointer; }
+.ffa-nav svg { width: 18px; height: 18px; }
+.ffa-nav.is-prev { left: 10px; }
+.ffa-nav.is-next { right: 10px; }
+.ffa-img-n { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); padding: 2px 9px; border-radius: 99px; background: rgba(15, 23, 42, .6); color: #fff; font-size: 11px; font-weight: 800; }
+.ffa-thumbs { display: flex; gap: 8px; padding: 10px 12px; overflow-x: auto; }
+@media (min-width: 768px) { .ffa-thumbs { padding: 12px 0 0; } }
+.ffa-thumbs button { width: 64px; height: 48px; border-radius: 10px; overflow: hidden; border: 2px solid transparent; opacity: .65; flex-shrink: 0; cursor: pointer; transition: opacity .2s, border-color .2s; }
+.ffa-thumbs button.is-on { border-color: #1677ff; opacity: 1; }
+.ffa-thumbs img { width: 100%; height: 100%; object-fit: cover; }
+.ffa-info { padding: 18px 16px 22px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+@media (min-width: 768px) { .ffa-info { padding: 26px 26px 24px; } }
+.ffa-info-top { display: flex; align-items: center; gap: 8px; }
+.ffa-info-top .ffa-status { background: rgba(16, 185, 129, .12); }
+.ffa-info-top .ffa-status.is-reserved { background: rgba(245, 158, 11, .14); }
+.ffa-info-top .ffa-status.is-sold { background: #e2e8f0; color: #475569; }
+.ffa-ref { font-size: 11px; font-weight: 700; color: #94a3b8; font-family: ui-monospace, monospace; }
+.ffa-m-title { font-family: var(--font-heading); font-size: 22px; font-weight: 900; letter-spacing: -.02em; line-height: 1.2; color: #0f172a; padding-right: 36px; }
+@media (min-width: 768px) { .ffa-m-title { font-size: 26px; } }
+.ffa-grid-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+@media (min-width: 480px) { .ffa-grid-stats { grid-template-columns: repeat(4, 1fr); } }
+.ffa-grid-stats div { padding: 10px 12px; border-radius: 14px; background: #f6f9ff; border: 1px solid #e5ecf6; min-width: 0; }
+.ffa-grid-stats span { display: block; font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #94a3b8; }
+.ffa-grid-stats b { display: block; margin-top: 2px; font-family: var(--font-heading); font-size: 15px; font-weight: 800; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ffa-m-block h4 { font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #1677ff; margin-bottom: 8px; }
+.ffa-m-hl { display: grid; gap: 6px; }
+@media (min-width: 480px) { .ffa-m-hl { grid-template-columns: 1fr 1fr; } }
+.ffa-m-hl li { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: #334155; min-width: 0; }
+.ffa-m-hl svg { width: 13px; height: 13px; color: #f59e0b; fill: #f59e0b; flex-shrink: 0; }
+.ffa-m-desc { font-size: 13.5px; line-height: 1.65; color: #475569; white-space: pre-line; }
+.ffa-buybox { margin-top: auto; padding: 16px; border-radius: 18px; background: linear-gradient(135deg, rgba(22, 119, 255, .07), rgba(22, 119, 255, .02)); border: 1px solid rgba(22, 119, 255, .18); display: flex; flex-direction: column; gap: 12px; }
+.ffa-buy-price { display: flex; align-items: center; justify-content: space-between; }
+.ffa-buy-price > span { font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #64748b; }
+.ffa-buy-price div { display: flex; align-items: baseline; gap: 8px; }
+.ffa-buy-price s { font-size: 13px; color: #94a3b8; font-weight: 600; }
+.ffa-buy-price b { font-family: var(--font-heading); font-size: 26px; font-weight: 900; color: #1677ff; letter-spacing: -.02em; }
+.ffa-actions, .ffa-confirm { display: grid; gap: 8px; }
+@media (min-width: 480px) { .ffa-actions { grid-template-columns: 1fr 1fr; } .ffa-actions .ffa-note { grid-column: 1 / -1; } }
+.ffa-confirm p, .ffa-note { font-size: 13px; color: #334155; line-height: 1.5; }
+.ffa-error { color: #dc2626 !important; font-weight: 700; }
+.ffa-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; border-radius: 14px; font-size: 13.5px; font-weight: 800; cursor: pointer; transition: transform .2s, box-shadow .2s, background .2s; text-decoration: none; border: 1px solid transparent; }
+.ffa-btn svg { width: 17px; height: 17px; flex-shrink: 0; }
+.ffa-btn:disabled { opacity: .6; cursor: default; }
+.ffa-btn.is-primary { background: linear-gradient(135deg, #3b8cff, #1677ff); color: #fff; box-shadow: 0 12px 24px -12px rgba(22, 119, 255, .8); }
+.ffa-btn.is-primary:not(:disabled):hover { transform: translateY(-1px); }
+.ffa-btn.is-wa { background: rgba(16, 185, 129, .1); color: #059669; border-color: rgba(16, 185, 129, .3); }
+.ffa-btn.is-wa:hover { background: #10b981; color: #fff; }
+.ffa-btn.is-ghost { background: transparent; color: #64748b; }
+.ffa-fine { display: flex; gap: 6px; align-items: flex-start; font-size: 11.5px; color: #64748b; line-height: 1.5; }
+.ffa-fine svg { width: 14px; height: 14px; color: #10b981; flex-shrink: 0; margin-top: 1px; }
+
+.ffa-done { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 24px 4px; margin: auto 0; }
+.ffa-done-ico { width: 60px; height: 60px; border-radius: 18px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #34d399, #10b981); color: #fff; box-shadow: 0 14px 28px -12px #10b981; }
+.ffa-done-ico svg { width: 30px; height: 30px; }
+.ffa-done h3 { font-family: var(--font-heading); font-size: 22px; font-weight: 900; color: #0f172a; }
+.ffa-done p { font-size: 13.5px; color: #475569; line-height: 1.6; max-width: 340px; margin-bottom: 6px; }
+.ffa-done .ffa-btn { width: 100%; max-width: 320px; }
+@keyframes ffaFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ffaUp { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .ffa-card, .ffa-cover img, .ffa-go, .ffa-btn { transition: none; }
+  .ffa-overlay, .ffa-modal { animation: none; }
+}
+
+.home-dark .ffa-back, .home-dark .ffa-tabs, .home-dark .ffa-sort { background: rgba(255, 255, 255, .05); border-color: rgba(255, 255, 255, .1); color: #e2e8f0; }
+.home-dark .ffa-sort option { background: #171c2f; }
+.home-dark .ffa-live, .home-dark .ffa-hero > p { color: rgba(255, 255, 255, .55); }
+.home-dark .ffa-hero h1 { color: #fff; }
+.home-dark .ffa-hero h1 span { color: #5aa8ff; }
+.home-dark .ffa-trust > span { color: rgba(255, 255, 255, .8); }
+.home-dark .ffa-t-ico.is-blue, .home-dark .ffa-t-ico:not(.is-gold):not(.is-teal) { --tone: #2b86ff; --tone-2: #74b8ff; }
+.home-dark .ffa-tabs button { color: rgba(255, 255, 255, .6); }
+.home-dark .ffa-tabs button span { background: rgba(43, 134, 255, .16); color: #74b8ff; }
+.home-dark .ffa-tabs button.is-on { background: #2b86ff; color: #fff; }
+.home-dark .ffa-tabs button.is-on span { background: rgba(255, 255, 255, .22); color: #fff; }
+.home-dark .ffa-card, .home-dark .ffa-step, .home-dark .ffa-empty { background: rgba(255, 255, 255, .05); border-color: rgba(255, 255, 255, .09); }
+.home-dark .ffa-card:hover { border-color: rgba(90, 168, 255, .4); box-shadow: 0 22px 40px -24px rgba(0, 10, 50, .9); }
+.home-dark .ffa-cover { background: rgba(255, 255, 255, .04); }
+.home-dark .ffa-title, .home-dark .ffa-step b, .home-dark .ffa-empty h3 { color: #fff; }
+.home-dark .ffa-step p, .home-dark .ffa-empty p { color: rgba(255, 255, 255, .55); }
+.home-dark .ffa-chip { --tone: #74b8ff; --tint: rgba(43, 134, 255, .16); }
+.home-dark .ffa-chip.is-gold { --tone: #fbbf24; --tint: rgba(245, 158, 11, .16); }
+.home-dark .ffa-chip.is-teal { --tone: #2dd4bf; --tint: rgba(14, 165, 164, .16); }
+.home-dark .ffa-hl span { background: rgba(255, 255, 255, .05); border-color: rgba(255, 255, 255, .08); color: rgba(255, 255, 255, .7); }
+.home-dark .ffa-hl span.is-more { color: #74b8ff; }
+.home-dark .ffa-price b, .home-dark .ffa-buy-price b { color: #5aa8ff; }
+.home-dark .ffa-card.is-sold .ffa-price b { color: rgba(255, 255, 255, .4); }
+.home-dark .ffa-go { background: rgba(43, 134, 255, .16); color: #74b8ff; }
+.home-dark .ffa-card:hover .ffa-go { background: #2b86ff; color: #fff; }
+.home-dark .ffa-empty { border-color: rgba(255, 255, 255, .14); }
+.home-dark .ffa-modal { background: #171c2f; border: 1px solid rgba(255, 255, 255, .08); }
+.home-dark .ffa-gallery { background: #0e1222; border-color: rgba(255, 255, 255, .08); }
+.home-dark .ffa-main-img { background: #0b0f1d; }
+.home-dark .ffa-m-title, .home-dark .ffa-grid-stats b, .home-dark .ffa-done h3 { color: #fff; }
+.home-dark .ffa-grid-stats div { background: rgba(255, 255, 255, .05); border-color: rgba(255, 255, 255, .08); }
+.home-dark .ffa-grid-stats span { color: rgba(255, 255, 255, .45); }
+.home-dark .ffa-m-block h4 { color: #5aa8ff; }
+.home-dark .ffa-m-hl li, .home-dark .ffa-confirm p, .home-dark .ffa-note { color: rgba(255, 255, 255, .8); }
+.home-dark .ffa-m-desc, .home-dark .ffa-done p { color: rgba(255, 255, 255, .6); }
+.home-dark .ffa-buybox { background: linear-gradient(135deg, rgba(43, 134, 255, .12), rgba(43, 134, 255, .04)); border-color: rgba(90, 168, 255, .2); }
+.home-dark .ffa-buy-price > span, .home-dark .ffa-fine, .home-dark .ffa-btn.is-ghost { color: rgba(255, 255, 255, .55); }
+.home-dark .ffa-btn.is-primary { background: linear-gradient(135deg, #5aa8ff, #2b86ff); }
+.home-dark .ffa-btn.is-wa { background: rgba(16, 185, 129, .12); color: #34d399; border-color: rgba(16, 185, 129, .3); }
+.home-dark .ffa-btn.is-wa:hover { background: #10b981; color: #fff; }
+.home-dark .ffa-info-top .ffa-status.is-sold { background: rgba(255, 255, 255, .1); color: rgba(255, 255, 255, .7); }
+.home-dark .ffa-error { color: #fca5a5 !important; }
+@media (max-width: 639px) {
+  .ffa-chip.is-teal, .ffa-hl span.is-more { display: none; }
+}

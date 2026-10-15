@@ -1,11 +1,12 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { ArrowRight, Gamepad2, Gift, Sparkles } from 'lucide-react';
+import { ArrowRight, Gamepad2, Gift, UserCheck } from 'lucide-react';
 
 // "Our Premium Services": three compact cards with an icon tile in the accent
 // colour. On phones they collapse into short rows.
 export const ServicesSection = () => {
-  const { openCatalog } = useApp();
+  const { openCatalog, openFfAccountsPage, ffAccounts } = useApp();
+  const ffAvailable = (ffAccounts || []).filter(a => a.status === 'AVAILABLE').length;
 
   const services = [
     {
@@ -30,12 +31,13 @@ export const ServicesSection = () => {
     },
     {
       id: 'other',
-      icon: Sparkles,
+      icon: UserCheck,
       tone: 'teal',
-      tag: 'Coming soon',
+      tag: ffAvailable ? `${ffAvailable} FF account${ffAvailable === 1 ? '' : 's'}` : 'FF accounts',
       title: 'Other Services',
-      description: 'More free and premium digital services are on the way.',
-      comingSoon: true
+      description: 'Buy checked Free Fire accounts with rare bundles and high levels, paid from your wallet.',
+      buttonText: 'Browse accounts',
+      action: openFfAccountsPage
     }
   ];
 

@@ -31,6 +31,7 @@ const initialPageName = () => {
   } catch { return null; }
 };
 import { getMoongoldConfig, saveMoongoldConfig } from '../services/moongoldApi';
+import { subscribeFfAccounts } from '../services/ffAccountsService';
 import { getR2Config, saveR2Config } from '../services/storageService';
 import { auth, onAuthStateChanged, logoutGoogle, getRedirectResult } from '../services/firebaseAuth';
 import { postServerApi, clearSessionToken, getUserAuthToken, endExpiredSessionOnlyLogin } from '../services/serverApi';
@@ -115,6 +116,7 @@ export const AppProvider = ({ children }) => {
   const [isLeaderboardPageOpen, setIsLeaderboardPageOpen] = useState(() => {
     return initialPageName() === 'leaderboard';
   });
+  const [isFfAccountsPageOpen, setIsFfAccountsPageOpen] = useState(() => initialPageName() === 'ff-accounts');
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
@@ -146,6 +148,7 @@ export const AppProvider = ({ children }) => {
     setIsResellerPageOpen(false);
     setIsGameCatalogOpen(false);
     setIsBlogPageOpen(false);
+    setIsFfAccountsPageOpen(false);
     setSelectedGame(null);
     _savePage(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -163,6 +166,7 @@ export const AppProvider = ({ children }) => {
     setIsReferralPageOpen(false); setIsResellerPageOpen(false); setIsResellerLoginPageOpen(false);
     setIsResellerDashboardOpen(false); setIsBlogPageOpen(false); setIsUserProfileOpen(false);
     setIsWalletModalOpen(false); setSelectedGame(null); setIsLeaderboardPageOpen(false);
+    setIsFfAccountsPageOpen(false);
   };
 
   const openBlogPage = () => {
@@ -180,6 +184,15 @@ export const AppProvider = ({ children }) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const closeLeaderboardPage = () => { setIsLeaderboardPageOpen(false); _savePage(null); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+
+  // Free Fire accounts for sale ("Other Services")
+  const openFfAccountsPage = () => {
+    _clearAllPages();
+    setIsFfAccountsPageOpen(true);
+    _savePage('ff-accounts');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const closeFfAccountsPage = () => { setIsFfAccountsPageOpen(false); _savePage(null); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
   const openCatalog = () => {
     if (!isLoggedIn && (!auth || !auth.currentUser)) {
@@ -357,6 +370,10 @@ export const AppProvider = ({ children }) => {
 
   useEffect(() => subscribeGameStripConfig((config) => { if (config) setGameStripConfig(config); }), []);
 
+  // Free Fire accounts for sale (admin: FF Accounts tab)
+  const [ffAccounts, setFfAccounts] = useState([]);
+  useEffect(() => subscribeFfAccounts(setFfAccounts), []);
+
   const updateGameStripConfig = async (newConfig) => {
     try {
       const ok = await saveGameStripConfig(newConfig);
@@ -440,6 +457,7 @@ export const AppProvider = ({ children }) => {
     : isContactPageOpen ? 'contact'
     : isReviewsPageOpen ? 'reviews'
     : isLeaderboardPageOpen ? 'leaderboard'
+    : isFfAccountsPageOpen ? 'ff-accounts'
     : isBlogPageOpen ? 'blog'
     : isGameCatalogOpen ? 'catalog'
     : null;
@@ -494,7 +512,7 @@ export const AppProvider = ({ children }) => {
       catalog: setIsGameCatalogOpen, leaderboard: setIsLeaderboardPageOpen, reviews: setIsReviewsPageOpen,
       contact: setIsContactPageOpen, reseller: setIsResellerPageOpen, 'reseller-login': setIsResellerLoginPageOpen,
       'reseller-dashboard': setIsResellerDashboardOpen, referral: setIsReferralPageOpen, blog: setIsBlogPageOpen,
-      profile: setIsUserProfileOpen, wallet: setIsWalletModalOpen,
+      profile: setIsUserProfileOpen, wallet: setIsWalletModalOpen, 'ff-accounts': setIsFfAccountsPageOpen,
     };
     const onPopState = () => {
       const path = window.location.pathname;
@@ -1950,6 +1968,10 @@ export const AppProvider = ({ children }) => {
       setIsLeaderboardPageOpen,
       openLeaderboardPage,
       closeLeaderboardPage,
+      isFfAccountsPageOpen,
+      openFfAccountsPage,
+      closeFfAccountsPage,
+      ffAccounts,
       isResellerLoginPageOpen,
       setIsResellerLoginPageOpen,
       openResellerLoginPage,

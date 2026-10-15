@@ -14,6 +14,7 @@ export const SITE_PAGES = [
   { name: 'reseller-login', path: '/reseller/login', title: 'Reseller Login | MADS TOPUP', description: 'Log in to your MADS TOPUP reseller desk.' },
   { name: 'reseller-dashboard', path: '/reseller/dashboard', title: 'Reseller Dashboard | MADS TOPUP', description: 'Your MADS TOPUP reseller desk.' },
   { name: 'referral', path: '/referral', title: 'Refer & Earn | MADS TOPUP', description: 'Share your link and earn cashback on your friends\' first top-up.', public: true },
+  { name: 'ff-accounts', path: '/free-fire-accounts', title: 'Free Fire Accounts for Sale | MADS TOPUP', description: 'Buy checked Free Fire accounts in Sri Lanka: rare bundles, high levels, paid in LKR from your MADS wallet.', public: true },
   { name: 'blog', path: '/blog', title: 'News & Guides | MADS TOPUP', description: 'Game top-up news and guides from MADS TOPUP.', public: true },
   { name: 'profile', path: '/profile', title: 'My Account | MADS TOPUP', description: 'Your MADS TOPUP account, orders and saved IDs.' },
   { name: 'wallet', path: '/wallet', title: 'My Wallet | MADS TOPUP', description: 'Add money to your MADS TOPUP wallet with eZ Cash, bank or Binance.' },

@@ -9,7 +9,7 @@ import { X, Flame, ArrowRight, Sparkles } from 'lucide-react';
 export const PopupAdModal = () => {
   const {
     popupAdConfig, openCatalog, setIsWalletModalOpen, openReferralPage,
-    openResellerPage, setIsSupportOpen, openTopup
+    openResellerPage, setIsSupportOpen, openTopup, openFfAccountsPage
   } = useApp();
   const [isOpen, setIsOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
@@ -92,6 +92,8 @@ export const PopupAdModal = () => {
       openResellerPage && openResellerPage();
     } else if (link === '#support') {
       setIsSupportOpen && setIsSupportOpen(true);
+    } else if (link === '#ff-accounts') {
+      openFfAccountsPage && openFfAccountsPage();
     } else if (link.startsWith('#game:')) {
       const game = GAMES_DATA.find((g) => g.id === link.slice(6));
       if (game && openTopup) openTopup(game); else if (openCatalog) openCatalog();
