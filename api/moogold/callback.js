@@ -18,10 +18,14 @@ export default async function handler(req, res) {
   const rawStatus = payload?.status || payload?.data?.status;
   const status = String(rawStatus || '').toUpperCase();
 
-  if (partnerOrderId) {
+  if (partnerOrderId && /^[A-Za-z0-9_-]{1,80}$/.test(String(partnerOrderId))) {
     try {
       const getRes = await fetch(rtdbUrl(`moogoldProcessedOrders/${partnerOrderId}`));
       const existing = getRes.ok ? await getRes.json() : null;
+      // Only orders this site placed are updated; a callback can't create one.
+      if (!existing || typeof existing !== 'object') {
+        return res.status(200).json({ success: true, message: 'Unknown order' });
+      }
 
       const isComplete = status.includes('COMPLET') || status === 'SUCCESS';
       const isFailed = status.includes('FAIL') || status.includes('CANCEL') || status.includes('REFUND');

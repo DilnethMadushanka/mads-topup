@@ -76,7 +76,7 @@ export default async function handler(req, res) {
     partnerOrderId = bodyObj?.partnerOrderId || null;
 
     if (!apiPath || !bodyObj) {
-      res.status(400).json({ error: 'Missing path or bodyObj', received: req.body });
+      res.status(400).json({ error: 'Missing path or bodyObj' });
       return;
     }
 
@@ -128,7 +128,7 @@ export default async function handler(req, res) {
     // run without a wallet check. Read-only paths (product lists etc.) still
     // go straight to MooGold.
     const isOrderCreation = apiPath === 'order/create_order';
-    if (isOrderCreation) {
+    if (isOrderCreation || apiPath === 'user/balance') {
       return res.status(503).json({ error: 'Top-up service is temporarily unavailable. Please try again in a moment.' });
     }
 

@@ -10,9 +10,7 @@ export const GENIE_DEFAULT_BASE_URL = 'https://api.geniebiz.lk';
 import { rtdbUrl, rtdbGet, findUserKey, adjustWallet } from '../lib/rtdbAdmin.js';
 
 export function getGenieAppKey() {
-  let appKey = (process.env.GENIE_APP_KEY || process.env.VITE_GENIE_APP_KEY || GENIE_DEFAULT_APP_KEY).replace(/[\r\n\s]/g, '');
-  if (!appKey.includes('699c294bec9aae0002066016')) appKey = GENIE_DEFAULT_APP_KEY;
-  return appKey;
+  return (process.env.GENIE_APP_KEY || process.env.VITE_GENIE_APP_KEY || GENIE_DEFAULT_APP_KEY).replace(/[\r\n\s]/g, '');
 }
 
 export function getGenieBaseUrl() {

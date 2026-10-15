@@ -136,6 +136,8 @@ function rateLimiter(maxRequests = 30, windowMs = 60000) {
 // bucket's write credentials to anyone reading the JS bundle).
 const R2_UPLOAD_MAX_BYTES = 5 * 1024 * 1024; // 5MB — matches the client's own limit
 const R2_ALLOWED_FOLDERS = new Set(['receipts', 'support-attachments', 'popup_ads', 'game_strip']);
+const R2_ADMIN_FOLDERS = new Set(['popup_ads', 'game_strip']);
+const R2_ALLOWED_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif', 'application/pdf']);
 
 let r2Client = null;
 if (process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY && process.env.R2_ENDPOINT) {
@@ -162,6 +164,15 @@ app.post('/api/upload-file', rateLimiter(20, 60000), express.json({ limit: '8mb'
       return res.status(400).json({ success: false, error: 'Missing file data.' });
     }
     const cleanFolder = R2_ALLOWED_FOLDERS.has(folder) ? folder : 'receipts';
+    // Popup and games-bar images are published by the admin only.
+    if (R2_ADMIN_FOLDERS.has(cleanFolder) && !adminTokenExpiry(readCookie(req, ADMIN_COOKIE))) {
+      return res.status(401).json({ success: false, error: 'Admin session required.' });
+    }
+    // Only images (no SVG, which can carry scripts) and PDFs are stored.
+    const cleanType = String(fileType || '').toLowerCase().trim();
+    if (!R2_ALLOWED_TYPES.has(cleanType)) {
+      return res.status(400).json({ success: false, error: 'Please upload a JPG, PNG, WEBP, GIF or PDF file.' });
+    }
 
     const base64Data = fileDataBase64.includes(',') ? fileDataBase64.split(',').pop() : fileDataBase64;
     const buffer = Buffer.from(base64Data, 'base64');
@@ -180,7 +191,7 @@ app.post('/api/upload-file', rateLimiter(20, 60000), express.json({ limit: '8mb'
       Bucket: bucketName,
       Key: key,
       Body: buffer,
-      ContentType: fileType || 'application/octet-stream'
+      ContentType: cleanType
     }));
 
     const bucketUrl = (process.env.VITE_R2_BUCKET_URL || process.env.R2_BUCKET_URL || `${process.env.R2_ENDPOINT}/${bucketName}`).replace(/\/$/, '');
@@ -1053,6 +1064,10 @@ app.post('/api/auth/login', rateLimiter(10, 60000), async (req, res) => {
 const passwordResetCodes = new Map(); // email -> { hash, expires, attempts }
 const RESET_CODE_TTL_MS = 15 * 60 * 1000;
 const hashResetCode = (code) => crypto.createHash('sha256').update(String(code)).digest('hex');
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of passwordResetCodes) if (now > v.expires) passwordResetCodes.delete(k);
+}, 5 * 60 * 1000).unref();
 
 app.post('/api/auth/reset-request', rateLimiter(5, 60000), async (req, res) => {
   try {
@@ -1063,8 +1078,21 @@ app.post('/api/auth/reset-request', rateLimiter(5, 60000), async (req, res) => {
       .some(u => u && String(u.email || '').trim().toLowerCase() === email);
     // Same reply whether or not the email has an account.
     if (exists) {
+      // A new code keeps the wrong-guess count of the last one, and each
+      // email gets at most 3 codes per 15 minutes, so asking again and again
+      // never gives more guesses.
+      const prev = passwordResetCodes.get(email);
+      const live = prev && Date.now() < prev.expires;
+      if (live && (prev.sends || 1) >= 3) {
+        return res.status(429).json({ success: false, message: 'Too many codes asked for this email. Please wait 15 minutes.' });
+      }
       const code = String(crypto.randomInt(100000, 1000000));
-      passwordResetCodes.set(email, { hash: hashResetCode(code), expires: Date.now() + RESET_CODE_TTL_MS, attempts: 0 });
+      passwordResetCodes.set(email, {
+        hash: hashResetCode(code),
+        expires: live ? prev.expires : Date.now() + RESET_CODE_TTL_MS,
+        attempts: live ? prev.attempts : 0,
+        sends: live ? (prev.sends || 1) + 1 : 1
+      });
       const name = email.split('@')[0];
       const sent = await sendOtpEmail(email, code, name.charAt(0).toUpperCase() + name.slice(1), 'reset');
       if (!sent.success) return res.status(503).json({ success: false, message: 'Email service temporarily unavailable. Please try again.' });
@@ -1088,7 +1116,8 @@ app.post('/api/auth/reset-confirm', rateLimiter(10, 60000), async (req, res) => 
     }
     const entry = passwordResetCodes.get(email);
     if (!entry || Date.now() > entry.expires || entry.attempts >= 5) {
-      passwordResetCodes.delete(email);
+      // A used-up entry stays until it expires, so a new code can't reset the count.
+      if (entry && Date.now() > entry.expires) passwordResetCodes.delete(email);
       return res.status(400).json({ success: false, message: 'This code has expired. Please request a new one.' });
     }
     entry.attempts += 1;
@@ -1139,8 +1168,18 @@ app.post('/api/send-otp', rateLimiter(5, 60000), async (req, res) => {
     if (prev && Date.now() - prev.sentAt < 60000) {
       return res.status(429).json({ success: false, error: 'Please wait a minute before asking for another code.' });
     }
+    const live = prev && Date.now() < prev.expires;
+    if (live && (prev.sends || 1) >= 3) {
+      return res.status(429).json({ success: false, error: 'Too many codes asked for this email. Please wait 15 minutes.' });
+    }
     const code = crypto.randomInt(100000, 1000000).toString();
-    signupOtps.set(email, { hash: hashResetCode(code), expires: Date.now() + RESET_CODE_TTL_MS, attempts: 0, sentAt: Date.now() });
+    signupOtps.set(email, {
+      hash: hashResetCode(code),
+      expires: live ? prev.expires : Date.now() + RESET_CODE_TTL_MS,
+      attempts: live ? prev.attempts : 0,
+      sends: live ? (prev.sends || 1) + 1 : 1,
+      sentAt: Date.now()
+    });
     const local = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '').slice(0, 20);
     const displayName = local ? local.charAt(0).toUpperCase() + local.slice(1) : 'Gamer';
 
@@ -1294,10 +1333,14 @@ async function verifyFirebaseIdToken(idToken) {
     if (res.ok) {
       const data = await res.json();
       if (data.users && data.users[0]) {
+        // An unverified email is only a claim, so it is never used to
+        // find a wallet or reseller record (email: '').
+        const u = data.users[0];
         return {
-          uid: data.users[0].localId,
-          email: data.users[0].email,
-          emailVerified: data.users[0].emailVerified
+          uid: u.localId,
+          email: u.emailVerified ? u.email : '',
+          displayEmail: u.email || '',
+          emailVerified: Boolean(u.emailVerified)
         };
       }
     }
@@ -1596,13 +1639,17 @@ const MOOGOLD_PROXY_PATHS = new Set(['order/create_order', 'product/validate', '
 app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
   // Every order gets an id, so a request that leaves it out (a script calling
   // this endpoint directly) still gets a server record and an admin entry.
-  const partnerOrderId = req.body?.bodyObj?.partnerOrderId
+  const rawPartnerOrderId = req.body?.bodyObj?.partnerOrderId;
+  if (rawPartnerOrderId !== undefined && rawPartnerOrderId !== null && !/^[A-Za-z0-9_-]{1,80}$/.test(String(rawPartnerOrderId))) {
+    return res.status(400).json({ error: 'Invalid order id.' });
+  }
+  const partnerOrderId = rawPartnerOrderId
     || (req.body?.path === 'order/create_order' ? `srv-${Date.now()}-${crypto.randomBytes(4).toString('hex')}` : null);
   try {
     const { path: apiPath, bodyObj, priceLkr, paymentId } = req.body || {};
 
     if (!apiPath || !bodyObj) {
-      return res.status(400).json({ error: 'Missing path or bodyObj', received: req.body });
+      return res.status(400).json({ error: 'Missing path or bodyObj' });
     }
 
     // Only the MooGold calls the site itself makes. Anything else (notably
@@ -1633,6 +1680,11 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
     console.log(`[AUTHENTICATED REQUEST] UID: ${authenticatedUser.uid}, Email: ${authenticatedUser.email || authenticatedUser.displayEmail || ''}, Path: ${apiPath}, IP: ${clientIp(req)}`);
 
     if (await rejectIfBlocked(authenticatedUser, res)) return;
+
+    // The store's MooGold balance is for the admin dashboard only.
+    if (apiPath === 'user/balance' && !adminTokenExpiry(readCookie(req, ADMIN_COOKIE))) {
+      return res.status(403).json({ error: 'Admin session required.' });
+    }
 
     // 2. HARDENED WALLET VERIFICATION FOR ORDER CREATION
     const isOrderCreation = apiPath === 'order/create_order';
@@ -2458,10 +2510,7 @@ async function recordGenieManualPaymentToRtdb(transactionId, record) {
 // BEFORE the customer is sent to pay, so the webhook/verify-status can credit
 // the right wallet even if the browser never comes back.
 async function startGenieCheckout({ uid, email, name, amountLkr, localId, returnUrl, extraRecord = {} }) {
-  let appKey = (process.env.GENIE_APP_KEY || process.env.VITE_GENIE_APP_KEY || GENIE_DEFAULT_APP_KEY).replace(/[\r\n\s]/g, '');
-  if (!appKey.includes('699c294bec9aae0002066016')) {
-    appKey = GENIE_DEFAULT_APP_KEY;
-  }
+  const appKey = (process.env.GENIE_APP_KEY || process.env.VITE_GENIE_APP_KEY || GENIE_DEFAULT_APP_KEY).replace(/[\r\n\s]/g, '');
   const baseUrl = (process.env.GENIE_BASE_URL || process.env.VITE_GENIE_BASE_URL || GENIE_DEFAULT_BASE_URL).replace(/[\r\n\s\/]+$/, '');
 
   const cleanEmail = sanitizeString(email || 'customer@madstopup.com', 100);
