@@ -92,3 +92,58 @@ export const getUserAuthToken = async () => {
   notifySessionExpired();
   return null;
 };
+
+// Same as getUserAuthToken, but for background reads: uses the cached ID
+// token and never logs the user out when there is no token.
+export const getQuietAuthToken = async () => {
+  try {
+    const { auth } = await import('./firebaseAuth.js');
+    if (auth && auth.currentUser) return await auth.currentUser.getIdToken();
+  } catch (_) {}
+  return getSessionToken();
+};
+
+// GET one of our own server endpoints (same fallback as postServerApi).
+// The admin session cookie is sent along on same-origin requests.
+export const getServerApi = async (path, token) => {
+  const endpoints = [path, `https://madstopup.com${path}`];
+  let last = { ok: false, status: 0, data: { error: 'Server unreachable. Please try again.' } };
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, {
+        credentials: 'same-origin',
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      if (!(res.headers.get('content-type') || '').includes('application/json')) continue;
+      const data = await res.json().catch(() => ({}));
+      last = { ok: res.ok, status: res.status, data };
+      return last;
+    } catch (_) {
+      // network error — try the next endpoint
+    }
+  }
+  return last;
+};
+
+// Runs load() now and then every intervalMs while the tab is visible (and
+// again as soon as it becomes visible). Replaces the old live database
+// listeners for data that now comes from the server. Returns a stop function.
+export const pollServer = (load, intervalMs = 15000) => {
+  let stopped = false;
+  let running = false;
+  const tick = async () => {
+    if (stopped || running) return;
+    if (typeof document !== 'undefined' && document.hidden) return;
+    running = true;
+    try { await load(); } catch (_) {} finally { running = false; }
+  };
+  tick();
+  const timer = setInterval(tick, intervalMs);
+  const onVisible = () => { if (typeof document !== 'undefined' && !document.hidden) tick(); };
+  if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisible);
+  return () => {
+    stopped = true;
+    clearInterval(timer);
+    if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisible);
+  };
+};

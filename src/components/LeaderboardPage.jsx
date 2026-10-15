@@ -1,81 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { getServerApi } from '../services/serverApi';
 import {
   ArrowLeft, Trophy, Flame, ShoppingBag, Calendar, Infinity, Crown
 } from 'lucide-react';
 
-const RTDB_URL = 'https://mads-topup-76445-default-rtdb.asia-southeast1.firebasedatabase.app';
-
+// Totals come from the server, which reads the private orders list and
+// returns names and amounts only.
 async function fetchAllSpenders(filterMonth = true) {
-  try {
-    const [ordersRes, usersRes] = await Promise.all([
-      fetch(`${RTDB_URL}/orders.json`),
-      fetch(`${RTDB_URL}/users.json`),
-    ]);
-
-    let usersMap = {};
-    if (usersRes.ok) {
-      const uData = await usersRes.json();
-      if (uData) Object.values(uData).forEach(u => {
-        if (!u) return;
-        if (u.uid)   usersMap[u.uid] = u;
-        if (u.email) usersMap[u.email.toLowerCase()] = u;
-      });
-    }
-
-    if (!ordersRes.ok) return [];
-    const data = await ordersRes.json();
-    if (!data) return [];
-
-    const now = new Date();
-    const flatOrders = [];
-    Object.values(data).forEach(entry => {
-      if (!entry) return;
-      if (entry.id || entry.gameId) flatOrders.push(entry);
-      else if (typeof entry === 'object')
-        Object.values(entry).forEach(o => { if (o && (o.id || o.gameId)) flatOrders.push(o); });
-    });
-
-    const spendMap = {}, uidToEmail = {};
-
-    flatOrders.forEach(order => {
-      if (!order || ['FAILED', 'REFUNDED', 'CANCELLED'].includes(order.status)) return;
-      if (filterMonth && order.createdAt) {
-        try {
-          const d = new Date(order.createdAt);
-          if (d.getFullYear() !== now.getFullYear() || d.getMonth() !== now.getMonth()) return;
-        } catch {}
-      }
-      const amount = parseFloat(order.priceLkr || 0);
-      if (!amount || amount <= 0) return;
-
-      const uid   = order.userId || order.userUid || null;
-      const email = (order.userEmail || '').toLowerCase() || null;
-      let key = uid || email;
-      if (!key) return;
-
-      if (uid && email) {
-        if (!uidToEmail[uid]) uidToEmail[uid] = email;
-        if (!spendMap[uid] && spendMap[email]) { spendMap[uid] = spendMap[email]; delete spendMap[email]; }
-        key = uid;
-      }
-
-      const userInfo = usersMap[uid] || usersMap[email] || null;
-      const name = userInfo?.name || order.userName || order.ign || uid || email || '?';
-
-      if (!spendMap[key]) {
-        spendMap[key] = { key, name, avatar: userInfo?.avatar || order.userAvatar || '', totalLkr: 0, orderCount: 0 };
-      }
-      spendMap[key].totalLkr   += amount;
-      spendMap[key].orderCount += 1;
-      if (userInfo?.name)   spendMap[key].name   = userInfo.name;
-      if (userInfo?.avatar) spendMap[key].avatar = userInfo.avatar;
-    });
-
-    return Object.values(spendMap)
-      .filter(u => u.name && u.name.length > 1 && u.totalLkr > 0)
-      .sort((a, b) => b.totalLkr - a.totalLkr);
-  } catch { return []; }
+  const { ok, data } = await getServerApi(`/api/leaderboard?period=${filterMonth ? 'month' : 'all'}`);
+  return ok && Array.isArray(data?.leaders) ? data.leaders : [];
 }
 
 function fmtLkr(val) {

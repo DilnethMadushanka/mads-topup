@@ -14,6 +14,7 @@ import { isSessionToken, verifySession, signSession } from './lib/session.js';
 import { verifyPasswordLogin, setPasswordForEmail, publicProfile } from './lib/userAuth.js';
 import { rtdbUrl, rtdbGet, rtdbPut, rtdbPatch, rtdbTransaction, findUserKey, adjustWallet, spendWallet, isUserBlocked } from './lib/rtdbAdmin.js';
 import { fetchVoucherCodes, saveUserVoucher, listUserVouchers, findCatalogPackage, isVoucherGame, redactVoucherCodes } from './lib/moogoldVoucher.js';
+import { ADMIN_NODES, readAdminNode, ordersForUser, ticketsForUser, resellerApplicationFor, stripUser, buildLeaderboard, isBlockedCached } from './lib/privateData.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -864,12 +865,29 @@ app.post('/api/admin/tickets/update', requireAdminSession, async (req, res) => {
   }
 });
 
+// Promo voucher codes live in promoVouchers, which browsers can't read
+// (they used to sit in settings/vouchers, readable by anyone). The old copy
+// is moved over once when the server starts.
+const VOUCHERS_PATH = 'promoVouchers';
+async function migratePromoVouchers() {
+  try {
+    const legacy = await rtdbGet('settings/vouchers');
+    if (!legacy) return;
+    const current = await rtdbGet(VOUCHERS_PATH);
+    if (!current) await rtdbPut(VOUCHERS_PATH, legacy);
+    await rtdbPut('settings/vouchers', null);
+    console.log('[Vouchers] Moved promo codes from settings/vouchers to promoVouchers');
+  } catch (e) {
+    console.warn('[Vouchers] Could not move promo codes:', e.message);
+  }
+}
+
 // Admin: save the voucher list.
 app.post('/api/admin/vouchers', requireAdminSession, async (req, res) => {
   try {
     const list = req.body?.vouchers;
     if (!Array.isArray(list)) return res.status(400).json({ error: 'vouchers must be an array.' });
-    await rtdbPut('settings/vouchers', list);
+    await rtdbPut(VOUCHERS_PATH, list);
     res.json({ success: true });
   } catch (e) {
     console.error('[Admin Vouchers Error]:', e.message);
@@ -900,7 +918,7 @@ app.post('/api/vouchers/redeem', rateLimiter(10, 60000), async (req, res) => {
     if (!walletKey) return res.status(404).json({ success: false, message: 'User account not found. Please re-login.' });
 
     let outcome = { status: 'invalid' };
-    const tx = await rtdbTransaction('settings/vouchers', (current) => {
+    const tx = await rtdbTransaction(VOUCHERS_PATH, (current) => {
       const list = Array.isArray(current) ? current.slice() : (current && typeof current === 'object' ? Object.values(current) : []);
       const idx = list.findIndex(v => v && v.code && String(v.code).toUpperCase() === cleanCode);
       if (idx === -1) { outcome = { status: 'invalid' }; return undefined; }
@@ -1936,6 +1954,92 @@ app.get('/api/my-vouchers', rateLimiter(30, 60000), async (req, res) => {
   }
 });
 
+// ── Private data, read through the server ─────────────────────────────
+// users, orders, deposits, reseller applications and support tickets are
+// not readable by browsers (database.rules.json). Signed-in customers get
+// their own records here; the admin dashboard gets whole lists.
+
+// Rate limits here are high because many customers on one mobile network
+// share an IP and each open tab polls these every 10-20 seconds.
+const authedCustomer = async (req, res) => {
+  const user = await verifyFirebaseIdToken(req.headers.authorization || '');
+  if (!user) { res.status(401).json({ error: 'Please log in.' }); return null; }
+  res.set('Cache-Control', 'no-store');
+  return user;
+};
+
+// The caller's own account record, whether it is blocked, and their
+// reseller application status.
+app.get('/api/me/profile', rateLimiter(600, 60000), async (req, res) => {
+  try {
+    const user = await authedCustomer(req, res);
+    if (!user) return;
+    const [record, blocked, resellerApplication] = await Promise.all([
+      rtdbGet(`users/${user.uid}`).catch(() => null),
+      isBlockedCached(user.uid, user.email || user.displayEmail).catch(() => false),
+      resellerApplicationFor(user.uid).catch(() => null)
+    ]);
+    res.json({ success: true, profile: stripUser(user.uid, record), blocked: Boolean(blocked), resellerApplication });
+  } catch (e) {
+    console.error(`[API Error] ${req.path}:`, e.message);
+    res.status(500).json({ error: SERVER_ERROR });
+  }
+});
+
+app.get('/api/me/orders', rateLimiter(600, 60000), async (req, res) => {
+  try {
+    const user = await authedCustomer(req, res);
+    if (!user) return;
+    res.json({ success: true, orders: await ordersForUser(user) });
+  } catch (e) {
+    console.error(`[API Error] ${req.path}:`, e.message);
+    res.status(500).json({ error: SERVER_ERROR });
+  }
+});
+
+app.get('/api/me/tickets', rateLimiter(600, 60000), async (req, res) => {
+  try {
+    const user = await authedCustomer(req, res);
+    if (!user) return;
+    res.json({ success: true, tickets: await ticketsForUser(user) });
+  } catch (e) {
+    console.error(`[API Error] ${req.path}:`, e.message);
+    res.status(500).json({ error: SERVER_ERROR });
+  }
+});
+
+// Admin dashboard lists (password hashes are removed from users).
+app.get('/api/admin/data/:node', requireAdminSession, async (req, res) => {
+  try {
+    const node = String(req.params.node || '');
+    if (!ADMIN_NODES.includes(node)) return res.status(404).json({ error: 'Unknown list.' });
+    res.set('Cache-Control', 'no-store');
+    res.json({ success: true, data: await readAdminNode(node) });
+  } catch (e) {
+    console.error(`[API Error] ${req.path}:`, e.message);
+    res.status(500).json({ error: SERVER_ERROR });
+  }
+});
+
+// Public Hall of Fame / top spenders: names and totals only.
+const leaderboardCache = new Map(); // period -> { at, data }
+app.get('/api/leaderboard', rateLimiter(60, 60000), async (req, res) => {
+  try {
+    const period = req.query.period === 'all' ? 'all' : 'month';
+    const hit = leaderboardCache.get(period);
+    if (!hit || Date.now() - hit.at > 60 * 1000) {
+      leaderboardCache.set(period, { at: Date.now(), data: await buildLeaderboard(period) });
+    }
+    res.set('Cache-Control', 'public, max-age=60');
+    res.json({ success: true, period, leaders: leaderboardCache.get(period).data });
+  } catch (e) {
+    const hit = leaderboardCache.get(req.query.period === 'all' ? 'all' : 'month');
+    if (hit) return res.json({ success: true, leaders: hit.data });
+    console.error(`[API Error] ${req.path}:`, e.message);
+    res.status(500).json({ error: SERVER_ERROR });
+  }
+});
+
 // Diagnostic IP Endpoint
 app.get('/api/ip', requireAdminSession, async (req, res) => {
   try {
@@ -2833,6 +2937,7 @@ app.use((req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 Production Server running on port ${PORT}`);
+  migratePromoVouchers();
   try {
     initTelegramBot();
   } catch (e) {
