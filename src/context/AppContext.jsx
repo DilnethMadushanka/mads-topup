@@ -971,14 +971,16 @@ export const AppProvider = ({ children }) => {
   ]);
 
   // Subscribe to real-time vouchers from Database
+  // The voucher list (with its codes) is for the admin only.
   useEffect(() => {
+    if (!isAdminAuthenticated) return undefined;
     const unsub = subscribeVouchersFromFirestore((realtimeVouchers) => {
       if (Array.isArray(realtimeVouchers) && realtimeVouchers.length > 0) {
         setVouchers(realtimeVouchers);
       }
     });
     return () => unsub();
-  }, []);
+  }, [isAdminAuthenticated]);
 
   // Ticker message state
   const [tickerNotice, setTickerNotice] = useState(() => {
@@ -1496,7 +1498,7 @@ export const AppProvider = ({ children }) => {
         });
         return Array.from(map.values());
       });
-    });
+    }, { admin: true });
     return () => {
       if (typeof unsub === 'function') unsub();
     };

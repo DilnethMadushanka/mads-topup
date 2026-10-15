@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import { GAMES_DATA } from '../data/games.js';
 import { resellerTierFor, resellerUnitPrice } from '../data/resellerTiers.js';
 import { lookupFreePlayerIgn } from './playerLookup.js';
-import { getResellerProfileByKey, getResellerProfileByKeyAsync, saveOrderToFirestore } from './firestoreService.js';
+import { saveOrderToFirestore } from './firestoreService.js';
 import { findUserKey, spendWallet, adjustWallet, rtdbGet, rtdbPut, addResellerSales } from '../../lib/rtdbAdmin.js';
 import { verifyPasswordLogin } from '../../lib/userAuth.js';
 import { fetchVoucherCodes, saveUserVoucher, isVoucherGame, redactVoucherCodes } from '../../lib/moogoldVoucher.js';
@@ -19,6 +19,16 @@ const saveBotOrder = async (uid, order) => {
 const TelegramBot = require('node-telegram-bot-api');
 
 let botInstance = null;
+
+// Fresh copy of the account linked with /auth, read with the server's own
+// database access (browsers, and this bot, can't read the users list).
+async function loadLinkedReseller(walletKey) {
+  if (!walletKey) return null;
+  const u = await rtdbGet(`users/${walletKey}`).catch(() => null);
+  if (!u || typeof u !== 'object') return null;
+  const { password, ...rest } = u;
+  return { ...rest, uid: rest.uid || walletKey, walletKey };
+}
 
 // Chat session bindings: chatId -> resellerProfile
 const boundChatSessions = new Map();
@@ -872,7 +882,7 @@ Send: /auth <SecurityKey> <Password>
         const keyToQuery = reseller.securityKey || reseller.resellerCode || reseller.uid;
         if (keyToQuery) {
           try {
-            const freshReseller = await getResellerProfileByKeyAsync(keyToQuery);
+            const freshReseller = await loadLinkedReseller(reseller.walletKey);
             if (freshReseller) {
               reseller = { ...freshReseller, walletKey: reseller.walletKey };
               boundChatSessions.set(chatId, reseller);
@@ -960,7 +970,7 @@ Send: /auth <SecurityKey> <Password>
         if (reseller) {
           const keyToQuery = reseller.securityKey || reseller.resellerCode || reseller.uid;
           if (keyToQuery) {
-            const freshReseller = await getResellerProfileByKeyAsync(keyToQuery);
+            const freshReseller = await loadLinkedReseller(reseller.walletKey);
             if (freshReseller) {
               reseller = { ...freshReseller, walletKey: reseller.walletKey };
               boundChatSessions.set(chatId, reseller);
@@ -1062,7 +1072,7 @@ Examples:
           const keyToQuery = reseller.securityKey || reseller.resellerCode || reseller.uid;
           if (keyToQuery) {
             try {
-              const liveProfile = await getResellerProfileByKeyAsync(keyToQuery);
+              const liveProfile = await loadLinkedReseller(reseller.walletKey);
               if (liveProfile) freshReseller = liveProfile;
             } catch (e) {}
           }
@@ -1139,7 +1149,7 @@ Examples:
             // Bug 6+2 fix: fetch confirmed post-deduction balance from DB
             let confirmedBalance = Math.max(0, currentBalance - wholesalePrice);
             try {
-              const postDeductProfile = await getResellerProfileByKeyAsync(keyToQuery);
+              const postDeductProfile = await loadLinkedReseller(reseller.walletKey);
               if (postDeductProfile && postDeductProfile.walletBalance !== undefined) {
                 confirmedBalance = postDeductProfile.walletBalance;
                 boundChatSessions.set(chatId, { ...postDeductProfile, walletKey: reseller.walletKey });

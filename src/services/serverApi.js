@@ -27,6 +27,31 @@ export const postServerApi = async (path, body, token) => {
   return last;
 };
 
+// GET one of our own server endpoints (same fallback as postServerApi).
+// Sends the admin cookie when there is one. Returns { ok, status, data }.
+export const getServerApi = async (path) => {
+  const endpoints = [path, `https://madstopup.com${path}`];
+  let last = { ok: false, status: 0, data: { error: 'Server unreachable. Please try again.' } };
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, { credentials: 'same-origin' });
+      if (!(res.headers.get('content-type') || '').includes('application/json')) continue;
+      const data = await res.json().catch(() => ({}));
+      last = { ok: res.ok, status: res.status, data };
+      return last;
+    } catch (_) {
+      // network error — try the next endpoint
+    }
+  }
+  return last;
+};
+
+// Top spenders, worked out on the server. [] when unavailable.
+export const fetchLeaderboard = async ({ scope = 'month', completed = false } = {}) => {
+  const { ok, data } = await getServerApi(`/api/leaderboard?scope=${scope === 'all' ? 'all' : 'month'}${completed ? '&completed=1' : ''}`);
+  return ok && Array.isArray(data?.list) ? data.list : [];
+};
+
 // Signed session from /api/auth/login, for username/password and reseller
 // logins (Google logins use their Firebase ID token instead).
 const SESSION_KEY = 'mads_session_token';

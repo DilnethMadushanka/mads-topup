@@ -1934,6 +1934,151 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
   }
 });
 
+// ─────────────────────────────────────────────────────────────────────────
+// Private data, read through the server. Browsers can no longer read users,
+// deposits, reseller applications, support tickets, vouchers or payment
+// records (database.rules.json). Signed-in users read their own profile and
+// tickets here; the admin dashboard reads the full lists with its session.
+// ─────────────────────────────────────────────────────────────────────────
+const withoutPassword = (u) => {
+  if (!u || typeof u !== 'object') return u;
+  const { password, ...rest } = u;
+  return rest;
+};
+
+// The caller's own users record. { checkBlocked: true } also checks every
+// record sharing their uid/email (slower); { reseller: true } adds their
+// approved reseller record, if any.
+app.post('/api/me', rateLimiter(120, 60000), async (req, res) => {
+  try {
+    const authUser = await verifyFirebaseIdToken(req.headers.authorization || '');
+    if (!authUser) return res.status(401).json({ error: 'Please log in again.' });
+    res.set('Cache-Control', 'no-store');
+    const own = await rtdbGet(`users/${authUser.uid}`).catch(() => null);
+    let blocked = Boolean(own && own.status === 'BLOCKED');
+    if (!blocked && req.body?.checkBlocked) {
+      blocked = await isUserBlocked(authUser.uid, authUser.email || authUser.displayEmail).catch(() => false);
+    }
+    let reseller = null;
+    if (req.body?.reseller) {
+      const r = await getApprovedReseller(authUser.uid, authUser.email);
+      if (r) reseller = { ...withoutPassword(r.user), uid: r.key, tier: { id: r.tier.id, name: r.tier.name, rate: r.tier.rate } };
+    }
+    if (!own || typeof own !== 'object') return res.status(404).json({ exists: false, blocked, reseller });
+    res.json({ exists: true, blocked, profile: { ...withoutPassword(own), uid: authUser.uid }, reseller });
+  } catch (e) {
+    console.error('[Me Error]:', e.message);
+    res.status(500).json({ error: SERVER_ERROR });
+  }
+});
+
+// The caller's own support tickets (matched by account, or by a verified email).
+app.post('/api/tickets/mine', rateLimiter(60, 60000), async (req, res) => {
+  try {
+    const authUser = await verifyFirebaseIdToken(req.headers.authorization || '');
+    if (!authUser) return res.status(401).json({ error: 'Please log in again.' });
+    const all = (await rtdbGet('supportTickets')) || {};
+    const email = String(authUser.email || '').toLowerCase();
+    const tickets = Object.values(all).filter(t => t && typeof t === 'object' && (
+      t.userId === authUser.uid || (email && String(t.userEmail || '').toLowerCase() === email)
+    ));
+    res.set('Cache-Control', 'no-store');
+    res.json({ success: true, tickets });
+  } catch (e) {
+    console.error('[My Tickets Error]:', e.message);
+    res.status(500).json({ error: SERVER_ERROR });
+  }
+});
+
+// Admin dashboard lists.
+const ADMIN_DATA_NODES = {
+  users: 'users',
+  payments: 'manual_payments',
+  applications: 'reseller_applications',
+  tickets: 'supportTickets',
+  vouchers: 'settings/vouchers',
+};
+app.get('/api/admin/data/:name', requireAdminSession, async (req, res) => {
+  try {
+    const name = String(req.params.name || '');
+    if (!Object.prototype.hasOwnProperty.call(ADMIN_DATA_NODES, name)) return res.status(404).json({ error: 'Unknown list.' });
+    let data = await rtdbGet(ADMIN_DATA_NODES[name]);
+    if (name === 'users' && data && typeof data === 'object') {
+      data = Object.fromEntries(Object.entries(data).map(([k, u]) => [k, withoutPassword(u)]));
+    }
+    res.set('Cache-Control', 'no-store');
+    res.json({ success: true, data: data ?? null });
+  } catch (e) {
+    console.error('[Admin Data Error]:', e.message);
+    res.status(500).json({ error: SERVER_ERROR });
+  }
+});
+
+// Top spenders for the home page and the leaderboard page. Worked out here
+// because browsers can't read the users list. scope=month|all;
+// completed=1 counts COMPLETED orders only, otherwise everything except
+// failed / refunded / cancelled. Names and avatars only, no account ids.
+const leaderboardCache = new Map(); // variant -> { at, list }
+app.get('/api/leaderboard', rateLimiter(60, 60000), async (req, res) => {
+  try {
+    const monthOnly = req.query.scope !== 'all';
+    const completedOnly = req.query.completed === '1';
+    const variant = `${monthOnly ? 'm' : 'a'}${completedOnly ? 'c' : 'x'}`;
+    const cached = leaderboardCache.get(variant);
+    res.set('Cache-Control', 'public, max-age=120');
+    if (cached && Date.now() - cached.at < 2 * 60 * 1000) return res.json({ success: true, list: cached.list });
+
+    const [orders, users] = await Promise.all([rtdbGet('orders'), rtdbGet('users')]);
+    const usersMap = {};
+    for (const u of Object.values(users || {})) {
+      if (!u || typeof u !== 'object') continue;
+      if (u.uid) usersMap[u.uid] = u;
+      if (u.email) usersMap[String(u.email).toLowerCase()] = u;
+    }
+    const flat = [];
+    for (const entry of Object.values(orders || {})) {
+      if (!entry || typeof entry !== 'object') continue;
+      if (entry.id || entry.gameId) flat.push(entry);
+      else for (const o of Object.values(entry)) if (o && (o.id || o.gameId)) flat.push(o);
+    }
+    const now = new Date();
+    const spend = {};
+    for (const order of flat) {
+      if (completedOnly ? order.status !== 'COMPLETED' : ['FAILED', 'REFUNDED', 'CANCELLED'].includes(order.status)) continue;
+      if (monthOnly && order.createdAt) {
+        const d = new Date(order.createdAt);
+        if (!isNaN(d) && (d.getFullYear() !== now.getFullYear() || d.getMonth() !== now.getMonth())) continue;
+      }
+      const amount = parseFloat(order.priceLkr || 0);
+      if (!(amount > 0)) continue;
+      const uid = order.userId || order.userUid || null;
+      const email = String(order.userEmail || '').toLowerCase() || null;
+      let key = uid || email;
+      if (!key) continue;
+      if (uid && email) {
+        if (!spend[uid] && spend[email]) { spend[uid] = spend[email]; delete spend[email]; }
+        key = uid;
+      }
+      const info = usersMap[uid] || usersMap[email] || null;
+      if (!spend[key]) spend[key] = { name: info?.name || order.userName || order.ign || '?', avatar: info?.avatar || order.userAvatar || '', totalLkr: 0, orderCount: 0 };
+      spend[key].totalLkr += amount;
+      spend[key].orderCount += 1;
+      if (info?.name) spend[key].name = info.name;
+      if (info?.avatar) spend[key].avatar = info.avatar;
+    }
+    const list = Object.entries(spend)
+      .filter(([, u]) => u.name && u.name.length > 1 && u.name !== '?' && u.totalLkr > 0)
+      .sort((a, b) => b[1].totalLkr - a[1].totalLkr)
+      .slice(0, 100)
+      .map(([k, u]) => ({ key: crypto.createHash('sha256').update(String(k)).digest('hex').slice(0, 12), ...u, name: String(u.name).slice(0, 60) }));
+    leaderboardCache.set(variant, { at: Date.now(), list });
+    res.json({ success: true, list });
+  } catch (e) {
+    console.error('[Leaderboard Error]:', e.message);
+    res.status(500).json({ error: SERVER_ERROR });
+  }
+});
+
 // Public homepage stats: number of registered user accounts. Counted on the
 // server with a shallow read (keys only), so browsers never need to read the
 // users list. Cached for 5 minutes to keep database reads low.
