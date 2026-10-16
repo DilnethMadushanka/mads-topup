@@ -287,6 +287,9 @@ export const dispatchMoongoldOrder = async (orderData) => {
 
   if (isVoucher) {
     // nothing to add
+  } else if (orderData.game?.moongoldIdField) {
+    // Games whose MooGold product names its own ID field (Valorant: 'Riot Username').
+    dataPayload[orderData.game.moongoldIdField] = (orderData.playerId || '').trim();
   } else if (gameId.includes('pubg') || idLabel.includes('character')) {
     dataPayload['Character ID'] = orderData.playerId || '';
   } else if (gameId.includes('freefire')) {

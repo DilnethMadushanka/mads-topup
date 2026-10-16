@@ -388,6 +388,9 @@ async function sendMoongoldLiveOrder(game, pkg, playerId, zoneId, orderRef) {
   const gId = (game.id || '').toLowerCase();
   if (isVoucherGame(game)) {
     // eVoucher (Garena Shells): no player fields, MooGold returns a PIN.
+  } else if (game.moongoldIdField) {
+    // Valorant: MooGold takes the Riot ID in a 'Riot Username' field.
+    dataPayload[game.moongoldIdField] = playerId;
   } else if (gId.includes('pubg')) {
     dataPayload['Character ID'] = playerId;
   } else if (gId.includes('freefire') || gId.includes('ff')) {

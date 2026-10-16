@@ -1782,7 +1782,7 @@ async function saveServerOrderRecord(partnerOrderId, { user, bodyObj, priceLkr, 
       gameId: game?.id || '',
       gameName: game?.name || `Product ${productId}`,
       packageName: pkg ? `${pkg.name}${Number(data.quantity) > 1 ? ` x${data.quantity}` : ''}` : productId,
-      playerId: String(data['User ID'] || data['Player ID'] || data['Character ID'] || ''),
+      playerId: String(data['User ID'] || data['Player ID'] || data['Character ID'] || data['Riot Username'] || ''),
       zoneId: String(data['Server'] || data['Server ID'] || ''),
       paymentMethod: bodyObj?.isResellerOrder ? 'Reseller Wallet' : 'MADS Wallet Balance',
       priceLkr,
@@ -1902,6 +1902,14 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
       orderCatalog = findCatalogPackage(GAMES_DATA, requestedProductId);
       if (isVoucherGame(orderCatalog.game)) {
         bodyObj.data = { category: 2, 'product-id': bodyObj.data['product-id'], quantity: bodyObj.data.quantity };
+      } else if (orderCatalog.game?.moongoldIdField) {
+        // Games with their own MooGold ID field (Valorant: 'Riot Username')
+        // get only that field, whatever name the browser sent the ID under.
+        const d = bodyObj.data || {};
+        const field = orderCatalog.game.moongoldIdField;
+        const accountId = sanitizeString(String(d[field] || d['User ID'] || d['Player ID'] || ''), 60);
+        if (!accountId) return res.status(400).json({ error: `Please enter your ${orderCatalog.game.idLabel || 'Player ID'}.` });
+        bodyObj.data = { category: 1, 'product-id': d['product-id'], quantity: d.quantity, [field]: accountId };
       } else {
         bodyObj.data = { ...bodyObj.data, category: 1 };
       }
