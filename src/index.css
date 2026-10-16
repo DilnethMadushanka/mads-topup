@@ -4733,3 +4733,166 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
 .soc-btn.is-tiktok { --c: #25f4ee; }
 .soc-btn.is-tiktok:hover { color: #0f172a; }
 @media (prefers-reduced-motion: reduce) { .soc-btn, .soc-btn:hover { transition: none; transform: none; } }
+
+/* Admin "Popup Banner" tab: one card per banner, image first */
+.mads-admin .pbn-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 16px;
+}
+.mads-admin .pbn-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--adm-border);
+  border-radius: 20px;
+  background: var(--adm-surface-2);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.mads-admin .pbn-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(22, 119, 255, 0.45);
+  box-shadow: 0 14px 30px -16px rgba(22, 119, 255, 0.5);
+}
+.mads-admin .pbn-card.is-off .pbn-media img { opacity: 0.35; filter: grayscale(0.8); }
+.mads-admin .pbn-media {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 4 / 5;
+  cursor: pointer;
+  background:
+    radial-gradient(circle at 50% 35%, rgba(43, 134, 255, 0.35), transparent 65%),
+    linear-gradient(160deg, #1a2046, #10142a);
+}
+.mads-admin .pbn-media img {
+  max-width: 88%;
+  max-height: 88%;
+  object-fit: contain;
+  filter: drop-shadow(0 14px 26px rgba(0, 0, 0, 0.45));
+  transition: opacity 0.2s ease;
+}
+.mads-admin .pbn-change {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translate(-50%, 6px);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.mads-admin .pbn-media:hover .pbn-change { opacity: 1; transform: translate(-50%, 0); }
+@media (hover: none) { .mads-admin .pbn-change { opacity: 1; transform: translate(-50%, 0); } }
+.mads-admin .pbn-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+}
+.mads-admin .pbn-empty-sub { font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.55); }
+.mads-admin .pbn-empty-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: linear-gradient(135deg, #2b86ff, #0b5ed7);
+  box-shadow: 0 10px 22px -8px rgba(22, 119, 255, 0.8);
+}
+.mads-admin .pbn-num {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1677ff;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+}
+.mads-admin .pbn-off-tag {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.75);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.mads-admin .pbn-body { display: flex; flex-direction: column; gap: 12px; padding: 14px; flex: 1; }
+.mads-admin .pbn-more summary {
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--adm-accent);
+  list-style-position: inside;
+}
+.mads-admin .pbn-actions { display: flex; gap: 6px; margin-top: auto; }
+.mads-admin .pbn-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0 10px;
+  border-radius: 11px;
+  border: 1px solid var(--adm-border);
+  color: var(--adm-text-muted);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.mads-admin .pbn-actions button:hover:not(:disabled) { background: var(--adm-accent-soft); color: var(--adm-accent); }
+.mads-admin .pbn-actions button:disabled { opacity: 0.35; cursor: default; }
+.mads-admin .pbn-actions .pbn-del { margin-left: auto; color: #f87171; }
+.mads-admin .pbn-actions .pbn-del:hover { background: rgba(239, 68, 68, 0.12) !important; color: #ef4444 !important; }
+.mads-admin .pbn-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 260px;
+  border: 2px dashed var(--adm-border-strong);
+  border-radius: 20px;
+  color: var(--adm-text);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.mads-admin .pbn-add:hover { border-color: var(--adm-accent); background: var(--adm-accent-soft); }
+@media (max-width: 520px) {
+  .mads-admin .pbn-grid { grid-template-columns: 1fr; }
+  .mads-admin .pbn-media { aspect-ratio: 16 / 11; }
+  .mads-admin .pbn-add { min-height: 140px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mads-admin .pbn-card, .mads-admin .pbn-change { transition: none; }
+  .mads-admin .pbn-card:hover { transform: none; }
+}

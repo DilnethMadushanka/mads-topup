@@ -490,19 +490,37 @@ app.post('/api/admin/wallet', requireAdminSession, async (req, res) => {
 app.post('/api/admin/popup-ad', requireAdminSession, async (req, res) => {
   try {
     const c = req.body?.config || {};
-    const link = String(c.buttonLink || '#catalog').slice(0, 500);
-    const image = String(c.imageUrl || '');
-    if (!/^(#|\/|https:\/\/)/i.test(link)) return res.status(400).json({ error: 'Button link must start with #, / or https://' });
-    if (image && !/^(https:\/\/|data:image\/)/i.test(image)) return res.status(400).json({ error: 'Image must be an https:// link.' });
+    const rawBanners = Array.isArray(c.banners) ? c.banners : [c];
+    if (rawBanners.length > 5) return res.status(400).json({ error: 'Up to 5 banners.' });
+    const banners = [];
+    for (const [i, b] of rawBanners.entries()) {
+      const link = String(b?.buttonLink || '#catalog').slice(0, 500);
+      const image = String(b?.imageUrl || '');
+      if (!/^(#|\/|https:\/\/)/i.test(link)) return res.status(400).json({ error: `Banner ${i + 1}: button link must start with #, / or https://` });
+      if (image && !/^(https:\/\/|data:image\/)/i.test(image)) return res.status(400).json({ error: `Banner ${i + 1}: image must be an https:// link.` });
+      banners.push({
+        id: String(b?.id || `b${i}`).slice(0, 40),
+        enabled: b?.enabled !== false,
+        title: String(b?.title || '').slice(0, 200),
+        description: String(b?.description || '').slice(0, 1000),
+        imageUrl: image,
+        buttonText: String(b?.buttonText || '').slice(0, 60),
+        buttonLink: link,
+        badge: String(b?.badge || '').slice(0, 60),
+      });
+    }
+    // Top-level fields repeat the first live banner for pages still on the one-banner popup.
+    const first = banners.find((b) => b.enabled) || banners[0] || {};
     const clean = {
       enabled: Boolean(c.enabled),
-      title: String(c.title || '').slice(0, 200),
-      description: String(c.description || '').slice(0, 1000),
-      imageUrl: image,
-      buttonText: String(c.buttonText || '').slice(0, 60),
-      buttonLink: link,
-      badge: String(c.badge || '').slice(0, 60),
+      title: first.title || '',
+      description: first.description || '',
+      imageUrl: first.imageUrl || '',
+      buttonText: first.buttonText || '',
+      buttonLink: first.buttonLink || '#catalog',
+      badge: first.badge || '',
       showOncePerSession: Boolean(c.showOncePerSession),
+      banners,
     };
     if (JSON.stringify(clean).length > 900 * 1024) return res.status(400).json({ error: 'Popup is too large. Upload the image so it is stored as a link.' });
     await rtdbPut('siteConfig/popupAd', clean);

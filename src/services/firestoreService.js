@@ -2,6 +2,7 @@ import { db, rtdb } from './firebaseAuth.js';
 import { doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { ref as dbRef, get as rtdbGet, set as rtdbSet, update as rtdbUpdate, onValue as rtdbOnValue } from 'firebase/database';
 import { postServerApi, getServerApi, getUserAuthToken, getSessionToken, setSessionToken } from './serverApi.js';
+import { getAllPopupBanners, MAX_POPUP_BANNERS } from '../utils/popupBanners.js';
 
 // A login token without logging anyone out when there is none.
 const getUserAuthTokenQuiet = async () => {
@@ -1055,15 +1056,29 @@ const POPUP_AD_MAX_BYTES = 900 * 1024;
 export const savePopupAdConfigToFirestore = async (config) => {
   if (!config) return false;
 
+  const banners = getAllPopupBanners(config).slice(0, MAX_POPUP_BANNERS).map((b) => ({
+    id: b.id.slice(0, 40),
+    enabled: b.enabled,
+    title: b.title.slice(0, 200),
+    description: b.description.slice(0, 1000),
+    imageUrl: b.imageUrl,
+    buttonText: b.buttonText.slice(0, 60),
+    buttonLink: b.buttonLink.slice(0, 500),
+    badge: b.badge.slice(0, 60),
+  }));
+  // The top-level fields repeat the first live banner, so a visitor still on the old
+  // one-banner page sees that banner.
+  const first = banners.find((b) => b.enabled) || banners[0] || {};
   const clean = {
     enabled: Boolean(config.enabled),
-    title: String(config.title || '').slice(0, 200),
-    description: String(config.description || '').slice(0, 1000),
-    imageUrl: String(config.imageUrl || ''),
-    buttonText: String(config.buttonText || '').slice(0, 60),
-    buttonLink: String(config.buttonLink || '#catalog').slice(0, 500),
-    badge: String(config.badge || '').slice(0, 60),
+    title: first.title || '',
+    description: first.description || '',
+    imageUrl: first.imageUrl || '',
+    buttonText: first.buttonText || '',
+    buttonLink: first.buttonLink || '#catalog',
+    badge: first.badge || '',
     showOncePerSession: Boolean(config.showOncePerSession),
+    banners,
   };
 
   if (JSON.stringify(clean).length > POPUP_AD_MAX_BYTES) {
