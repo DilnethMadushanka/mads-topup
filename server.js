@@ -1819,6 +1819,19 @@ async function saveMoogoldOrderRecord(partnerOrderId, record) {
   }
 }
 
+// The store's MooGold wallet balance in USD, or null when it can't be read.
+async function getMoogoldStoreBalanceUsd() {
+  try {
+    const { ok, json } = await moogoldRequest('user/balance', { path: 'user/balance' }, 6000);
+    const raw = json?.balance ?? json?.usd ?? json?.amount ?? json?.data?.balance;
+    const balance = parseFloat(String(raw ?? '').replace(/[^0-9.]/g, ''));
+    return ok && Number.isFinite(balance) ? balance : null;
+  } catch (e) {
+    console.warn('[MooGold Balance Check Warning]:', e.message);
+    return null;
+  }
+}
+
 const MOOGOLD_PROXY_PATHS = new Set(['order/create_order', 'product/validate', 'user/check_id', 'user/balance']);
 
 app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
@@ -1943,6 +1956,23 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
       if (numPriceLkr > catalogPriceLkr || numPriceLkr < minPriceLkr) {
         console.warn(`[PRICE TAMPER BLOCKED] ${authenticatedUser.uid} product-id=${requestedProductId} qty=${requestedQty} sent Rs. ${numPriceLkr}, minimum Rs. ${minPriceLkr}`);
         return res.status(400).json({ error: 'Price mismatch detected. Order rejected.' });
+      }
+
+      // MooGold keeps an order it can't pay for as "Pending payment" instead
+      // of rejecting it, and that order can still go through once the store
+      // wallet is recharged, after the customer was already refunded here.
+      // So check the store balance first and never place an order MooGold
+      // can't pay for. The package's site USD price is at or above MooGold's
+      // cost, so it is a safe estimate. If the balance can't be read, the
+      // order goes ahead as before.
+      const unitUsd = Number(orderCatalog.pkg?.priceUsd) || 0;
+      if (unitUsd > 0) {
+        const storeBalanceUsd = await getMoogoldStoreBalanceUsd();
+        const neededUsd = unitUsd * requestedQty;
+        if (storeBalanceUsd !== null && storeBalanceUsd < neededUsd) {
+          console.error(`[MOOGOLD LOW BALANCE] Store balance $${storeBalanceUsd} < ~$${neededUsd.toFixed(2)} needed for product-id=${requestedProductId} qty=${requestedQty}. Order refused before charging ${authenticatedUser.uid}.`);
+          return res.status(503).json({ error: 'This top-up is temporarily unavailable. Your wallet was not charged. Please try again shortly.' });
+        }
       }
 
       // Idempotency check — reject an in-flight duplicate outright, and
