@@ -225,10 +225,8 @@ export const GAMES_DATA = [
     gradient: 'from-rose-500 to-red-700',
     requiresServer: false,
     // MooGold's Valorant (Singapore) products take the Riot ID (Name#TAG) in
-    // a "Riot Username" field instead of a numeric player ID, and there is no
-    // name lookup for it.
+    // a "Riot Username" field instead of a numeric player ID.
     moongoldIdField: 'Riot Username',
-    nameCheck: false,
     idLabel: 'Riot ID',
     idPlaceholder: 'Riot ID (e.g. MadsPlayer#1234)',
     idGuideHint: '💡 Enter your full Riot ID with the tag, e.g. MadsPlayer#1234 (Valorant > Settings > Account). Singapore / Asia-Pacific accounts only.',

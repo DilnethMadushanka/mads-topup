@@ -173,8 +173,8 @@ export const GameTopupPage = () => {
   // eVoucher products (Garena Shells): no player ID, wallet payment only,
   // and the buyer gets PIN codes back.
   const isVoucherGame = selectedGame.fulfilment === 'voucher';
-  // Games with no name lookup (Valorant's Riot ID) skip the Verify button.
-  const hasNameCheck = selectedGame.nameCheck !== false;
+  // Valorant takes a Riot ID (Name#TAG) instead of a numeric player ID.
+  const isRiotId = selectedGame.moongoldIdField === 'Riot Username';
   const idName = selectedGame.idLabel || 'Player ID';
 
   // Handle Paste Player ID
@@ -183,7 +183,7 @@ export const GameTopupPage = () => {
       const text = await navigator.clipboard.readText();
       if (text) {
         setPlayerId(text.trim());
-        showToast(`${hasNameCheck ? 'Player ID' : idName} pasted from clipboard!`);
+        showToast(`${isRiotId ? idName : 'Player ID'} pasted from clipboard!`);
       }
     } catch (err) {
       showToast('Please type your Player ID manually', 'error');
@@ -318,11 +318,11 @@ export const GameTopupPage = () => {
       return;
     }
     if (!isVoucherGame && !playerId.trim()) {
-      showToast(hasNameCheck ? 'Please enter a valid Player ID (UID)!' : `Please enter your ${idName}!`, 'error');
+      showToast(isRiotId ? `Please enter your ${idName}!` : 'Please enter a valid Player ID (UID)!', 'error');
       window.scrollTo({ top: 300, behavior: 'smooth' });
       return;
     }
-    if (!isVoucherGame && selectedGame.moongoldIdField === 'Riot Username' && !/^[^#]{3,16}#[^#\s]{3,5}$/.test(playerId.trim())) {
+    if (!isVoucherGame && isRiotId && !/^[^#]{3,16}#[^#\s]{3,5}$/.test(playerId.trim())) {
       showToast('Enter your full Riot ID with the tag, e.g. MadsPlayer#1234', 'error');
       window.scrollTo({ top: 300, behavior: 'smooth' });
       return;
@@ -752,7 +752,7 @@ export const GameTopupPage = () => {
               </div>
               <div>
                 <h2 className="text-lg font-black text-slate-900 font-heading leading-none">
-                  {hasNameCheck ? 'Verify Your Player ID' : `Enter Your ${idName}`}
+                  {isRiotId ? `Verify Your ${idName}` : 'Verify Your Player ID'}
                 </h2>
                 <div className="w-12 h-1 bg-amber-500 rounded-full mt-1.5"></div>
               </div>
@@ -822,13 +822,12 @@ export const GameTopupPage = () => {
               <button
                 type="button"
                 onClick={handlePastePlayerId}
-                className={`px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${hasNameCheck ? 'w-1/2' : 'w-full'} sm:w-auto`}
+                className={`px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 flex items-center justify-center gap-1.5 transition-colors cursor-pointer w-1/2 sm:w-auto`}
               >
                 <Clipboard className="w-4 h-4 text-slate-500" />
                 <span>Paste</span>
               </button>
 
-              {hasNameCheck && (
               <button
                 type="button"
                 onClick={handleVerifyIgn}
@@ -842,7 +841,6 @@ export const GameTopupPage = () => {
                 )}
                 <span>{isVerifyingIgn ? 'Checking...' : 'Verify'}</span>
               </button>
-              )}
             </div>
 
             {/* Helper Guide Hint Banner ONLY for Mobile Legends */}
@@ -854,7 +852,7 @@ export const GameTopupPage = () => {
             )}
 
 
-            {!hasNameCheck && selectedGame.idGuideHint && (
+            {isRiotId && selectedGame.idGuideHint && (
               <div className="mt-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-950 text-xs font-bold flex items-start gap-2.5 shadow-xs">
                 <HelpCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                 <span className="leading-snug">{selectedGame.idGuideHint.replace(/^💡\s*/, '')}</span>

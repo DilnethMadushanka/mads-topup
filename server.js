@@ -3125,12 +3125,33 @@ const pickPlayerName = (data) => {
   if (!data || typeof data !== 'object') return '';
   const name = data.username || data.user_name || data.nickname || data.character_name || data.account_name || data.role_name || data.ign
     || data.data?.username || data.data?.nickname || data.data?.role_name;
-  return typeof name === 'string' ? name.trim() : '';
+  if (typeof name === 'string' && name.trim()) return name.trim();
+  // Riot accounts (Valorant) answer with name + tag.
+  const riot = data.data && typeof data.data === 'object' ? data.data : data;
+  const riotName = riot.game_name || riot.gameName || riot.name;
+  const riotTag = riot.tag_line || riot.tagLine || riot.tag;
+  return typeof riotName === 'string' && riotName.trim() && riotTag ? `${riotName.trim()}#${riotTag}` : '';
+};
+
+// Riot ID "Name#TAG" split into its parts, or null.
+const RIOT_ID_RE = /^([^#]{3,16})#([^#\s]{3,5})$/;
+const splitRiotId = (id) => {
+  const m = RIOT_ID_RE.exec(String(id || '').trim());
+  return m ? { name: m[1].trim(), tag: m[2] } : null;
 };
 
 // RapidAPI id-game-checker path for a game, or '' when it has none.
+// Valorant's path can be changed with RAPIDAPI_VALORANT_PATH in .env
+// ({name} and {tag} are filled in) if the API names it differently.
 const rapidApiGamePath = (gameId, playerId, zoneId) => {
   const g = gameId.toLowerCase();
+  if (g.includes('valorant')) {
+    const riot = splitRiotId(playerId);
+    if (!riot) return '';
+    return (process.env.RAPIDAPI_VALORANT_PATH || 'valorant/{name}/{tag}')
+      .replace('{name}', encodeURIComponent(riot.name))
+      .replace('{tag}', encodeURIComponent(riot.tag));
+  }
   if (g.includes('freefire')) return `ff-global/${playerId}`;
   if (g.includes('pubg')) return `pubgm-global/${playerId}`;
   if (g.includes('mobilelegend') || g.includes('mlbb')) return zoneId ? `mobile-legends/${playerId}/${zoneId}` : '';
@@ -3144,7 +3165,11 @@ app.post('/api/player-name', rateLimiter(30, 60000), async (req, res) => {
   const playerId = String(req.body?.playerId || '').trim();
   const zoneId = String(req.body?.zoneId || '').trim();
   const game = GAMES_DATA.find(g => g.id === gameId);
-  if (!game || !/^[0-9A-Za-z_-]{3,30}$/.test(playerId) || zoneId.length > 20) {
+  const isRiotId = game?.moongoldIdField === 'Riot Username';
+  if (isRiotId && !splitRiotId(playerId)) {
+    return res.status(400).json({ success: false, message: 'Enter your full Riot ID with the tag, e.g. MadsPlayer#1234' });
+  }
+  if (!game || (!isRiotId && !/^[0-9A-Za-z_-]{3,30}$/.test(playerId)) || zoneId.length > 20) {
     return res.status(400).json({ success: false, message: 'Check the game and Player ID.' });
   }
   if (game.requiresServer && !zoneId) {
@@ -3188,7 +3213,7 @@ app.post('/api/player-name', rateLimiter(30, 60000), async (req, res) => {
   const productId = (game.packages || []).find(p => p.moongoldProductId)?.moongoldProductId;
   if (productId) {
     try {
-      const data = { 'product-id': productId, 'User ID': playerId };
+      const data = { 'product-id': productId, [game.moongoldIdField || 'User ID']: playerId };
       if (zoneId) data.Server = zoneId;
       const result = await moogoldRequest('product/validate', { path: 'product/validate', data }, 8000);
       const ign = pickPlayerName(result.json);
