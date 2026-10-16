@@ -121,6 +121,7 @@ const pageLinks = (exceptPath) => SITE_PAGES
 const homeBody = () => [
   '<h1>Sri Lankan Diamond Store – MADS TOPUP</h1>',
   `<p>${esc(HOME_SEO.description)}</p>`,
+  '<p>MADS TOPUP is run by Gaming MADS, the Sri Lankan Free Fire creator on <a href="https://www.youtube.com/@gamingmads3865">YouTube</a> and <a href="https://www.tiktok.com/@xgamingmads">TikTok</a>.</p>',
   '<h2>Top up games</h2>',
   `<ul>${gameLinks(null)}</ul>`,
   '<h2>More from MADS TOPUP</h2>',
