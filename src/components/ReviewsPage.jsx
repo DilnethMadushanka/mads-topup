@@ -124,7 +124,7 @@ export const ReviewsPage = () => {
             </div>
             <div className="flex text-amber-400 gap-1">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />
+                <Star key={i} className={`w-5 h-5 ${i < Math.round(Number(averageRating)) ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} />
               ))}
             </div>
             <div className="text-xs font-extrabold text-slate-500">

@@ -285,7 +285,9 @@ export const AppProvider = ({ children }) => {
     // The live list replaces the local one, so deleted reviews go away.
     const unsub = subscribeReviewsFromFirestore((liveReviews) => {
       if (!Array.isArray(liveReviews)) return;
-      setUserReviews(liveReviews.filter(r => r && r.id));
+      // Newest first: database keys (rev-<time>) come back oldest first.
+      const reviewTime = (r) => Number(String(r.id).replace(/^rev-/, '')) || new Date(r.date || 0).getTime() || 0;
+      setUserReviews(liveReviews.filter(r => r && r.id).sort((a, b) => reviewTime(b) - reviewTime(a)));
     });
     return () => unsub();
   }, []);
