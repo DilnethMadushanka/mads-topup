@@ -3061,6 +3061,8 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
 .cp-pill:hover { color: #fff; background: var(--c); }
 .cp-pill.is-green { --c: #10b981; --soft: rgba(16, 185, 129, .12); }
 .cp-pill.is-teal { --c: #0ea5a4; --soft: rgba(14, 165, 164, .12); }
+.cp-pill.is-youtube { --c: #ff0033; --soft: rgba(255, 0, 51, .1); }
+.cp-pill.is-tiktok { --c: #0f172a; --soft: rgba(15, 23, 42, .07); }
 .cp-tip { display: flex; gap: 14px; background: linear-gradient(135deg, rgba(22, 119, 255, .08), rgba(22, 119, 255, .02)), #fff; border-color: rgba(22, 119, 255, .2); }
 .cp-tip-ico { flex-shrink: 0; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 13px; background: linear-gradient(135deg, #5aa8ff, #1677ff); box-shadow: 0 10px 20px -10px #1677ff; }
 .cp-tip-ico svg { width: 22px; height: 22px; color: #fff; }
@@ -3114,6 +3116,8 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
 .home-dark .cp-ch.is-teal, .home-dark .cp-pill.is-teal { --c: #2dd4bf; }
 .home-dark .cp-pill { --c: #74b8ff; }
 .home-dark .cp-pill:hover { color: #0f172a; }
+.home-dark .cp-pill.is-youtube { --c: #ff4d6a; }
+.home-dark .cp-pill.is-tiktok { --c: #e2e8f0; --soft: rgba(255, 255, 255, .08); }
 .home-dark .cp-ch-live { color: #34d399; }
 .home-dark .cp-ch-time { color: rgba(255, 255, 255, .75); background: rgba(255, 255, 255, .06); }
 .home-dark .cp-tip { background: linear-gradient(135deg, rgba(43, 134, 255, .16), rgba(43, 134, 255, .04)); border-color: rgba(43, 134, 255, .3); }
@@ -4703,3 +4707,13 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
 @media (max-width: 639px) {
   .ffa-chip.is-teal, .ffa-hl span.is-more { display: none; }
 }
+
+/* Footer social buttons (footer is always navy, so one style for both themes) */
+.soc-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.soc-btn { --c: #1677ff; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; color: #fff; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .12); transition: background .2s ease, border-color .2s ease, transform .2s ease, box-shadow .2s ease; }
+.soc-btn svg { width: 19px; height: 19px; }
+.soc-btn:hover { background: var(--c); border-color: var(--c); transform: translateY(-2px); box-shadow: 0 10px 22px -10px var(--c); }
+.soc-btn.is-youtube { --c: #ff0033; }
+.soc-btn.is-tiktok { --c: #25f4ee; }
+.soc-btn.is-tiktok:hover { color: #0f172a; }
+@media (prefers-reduced-motion: reduce) { .soc-btn, .soc-btn:hover { transition: none; transform: none; } }

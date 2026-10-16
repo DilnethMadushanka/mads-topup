@@ -2,9 +2,10 @@ import React from 'react';
 import {
   ArrowLeft, MessageSquare, Mail, Send, PhoneCall, ArrowRight,
   HelpCircle, ShieldCheck, FileText, Info, Clock, CheckCircle2,
-  MapPin, Gamepad2, Zap, MessageCircle, ExternalLink, Headphones
+  MapPin, Gamepad2, Zap, MessageCircle, Headphones
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { SOCIAL_LINKS, SOCIAL_ICONS } from './SocialIcons';
 
 export const ContactPage = () => {
   const { closeContactPage, setIsSupportOpen, showToast, openPolicyModal } = useApp();
@@ -139,9 +140,14 @@ export const ContactPage = () => {
                 <a href="https://t.me/madstopup" target="_blank" rel="noreferrer" className="cp-pill is-teal">
                   <Send /> Telegram group
                 </a>
-                <button onClick={() => showToast('Facebook page coming soon!')} className="cp-pill is-blue">
-                  <ExternalLink /> Facebook
-                </button>
+                {SOCIAL_LINKS.map(({ key, label, href }) => {
+                  const Icon = SOCIAL_ICONS[key];
+                  return (
+                    <a key={key} href={href} target="_blank" rel="noopener noreferrer" className={`cp-pill is-${key}`}>
+                      <Icon /> {label}
+                    </a>
+                  );
+                })}
               </div>
             </div>
           </div>
