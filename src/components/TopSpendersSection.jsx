@@ -5,7 +5,7 @@ import { fetchLeaderboard } from '../services/serverApi';
 
 // Worked out on the server (/api/leaderboard): browsers can't read the users list.
 async function fetchTopSpenders() {
-  const list = await fetchLeaderboard({ scope: 'month', completed: true });
+  const list = await fetchLeaderboard({ scope: 'month' });
   return list.slice(0, 3);
 }
 
