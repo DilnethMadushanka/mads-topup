@@ -563,7 +563,7 @@ export const ResellerDashboard = () => {
               {stepHead(2, 'Customer')}
               <div className="rp-grid rd-grid-3">
                 <label className="rp-field">
-                  <span>{currentGame.fulfilment === 'voucher' ? 'Customer name / note (optional)' : `${currentGame.nameCheck === false ? currentGame.idLabel || 'Player ID' : 'Player ID'} *`}</span>
+                  <span>{currentGame.fulfilment === 'voucher' ? 'Customer name / note (optional)' : `${currentGame.moongoldIdField === 'Riot Username' ? currentGame.idLabel || 'Player ID' : 'Player ID'} *`}</span>
                   <input
                     type="text"
                     required={currentGame.fulfilment !== 'voucher'}
@@ -579,7 +579,7 @@ export const ResellerDashboard = () => {
                     <input type="text" required placeholder="e.g. 9821" value={customerZoneId} onChange={(e) => { setCustomerZoneId(e.target.value); setIgnVerified(false); }} className="rp-input rd-mono" />
                   </label>
                 )}
-                {currentGame.fulfilment === 'voucher' || currentGame.nameCheck === false ? null : (
+                {currentGame.fulfilment === 'voucher' ? null : (
                   <div className="rp-field">
                     <span>Player name</span>
                     <div className="rd-ign">
