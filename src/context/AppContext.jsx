@@ -942,11 +942,11 @@ export const AppProvider = ({ children }) => {
           return merged;
         });
       }
-    });
+    }, isAdminAuthenticated ? '' : userProfile?.email);
     return () => {
       if (typeof unsubOrders === 'function') unsubOrders();
     };
-  }, [userProfile?.uid, isAdminAuthenticated]);
+  }, [userProfile?.uid, userProfile?.email, isAdminAuthenticated]);
 
   useEffect(() => {
     localStorage.setItem('mads_orders', JSON.stringify(orders));

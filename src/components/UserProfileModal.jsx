@@ -517,7 +517,7 @@ Thank you for using MADS TOPUP Sri Lanka!
                             {ord.gameName} - {ord.packageName}
                           </div>
                           <div className="text-slate-500 font-medium text-[11px]">
-                            ID: <strong className="text-slate-800">{ord.playerId}</strong> ({ord.ign})
+                            ID: <strong className="text-slate-800">{ord.playerId}</strong>{ord.ign ? ` (${ord.ign})` : ''}
                           </div>
                         </div>
 
