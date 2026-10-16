@@ -113,12 +113,37 @@ const gamePageBody = (page, game) => {
   ].join('');
 };
 
+const pageLinks = (exceptPath) => SITE_PAGES
+  .filter((p) => p.public && p.path !== exceptPath)
+  .map((p) => `<li><a href="${p.path}">${esc(p.title.replace(/ \| MADS TOPUP$/, ''))}</a></li>`)
+  .join('');
+
 const homeBody = () => [
   '<h1>Sri Lankan Diamond Store – MADS TOPUP</h1>',
   `<p>${esc(HOME_SEO.description)}</p>`,
   '<h2>Top up games</h2>',
   `<ul>${gameLinks(null)}</ul>`,
+  '<h2>More from MADS TOPUP</h2>',
+  `<ul>${pageLinks(null)}</ul>`,
 ].join('');
+
+const sitePageBody = (page) => [
+  '<p><a href="/">MADS TOPUP</a> › ' + esc(page.title.replace(/ \| MADS TOPUP$/, '')) + '</p>',
+  `<h1>${esc(page.title.replace(/ \| MADS TOPUP$/, ''))}</h1>`,
+  `<p>${esc(page.description)}</p>`,
+  '<h2>Top up games</h2>',
+  `<ul>${gameLinks(null)}</ul>`,
+  '<h2>More from MADS TOPUP</h2>',
+  `<ul>${pageLinks(page.path)}</ul>`,
+].join('');
+
+// Account pages (wallet, profile, reseller desk) are for logged-in users only.
+const withNoindex = (html) => swap(
+  html,
+  /(<meta name="robots" content=")[^"]*(")/,
+  '$1noindex, follow$2',
+  'meta robots',
+);
 
 // Keeps the static fallback readable for the moment before the app loads.
 const STATIC_CSS = '<style>.seo-static{min-height:100vh;background:#f5f8ff;padding:96px max(16px,calc((100% - 960px) / 2)) 48px;color:#334155;font:15px/1.6 system-ui,sans-serif}.seo-static a{color:#1264e6}.seo-static h1{font-size:28px;color:#0f172a}.seo-static h2{font-size:18px;color:#0f172a;margin-top:24px}.seo-static h3{font-size:15px;color:#0f172a;margin:14px 0 2px}</style>';
@@ -198,6 +223,21 @@ export function seoPrerenderPlugin() {
         html = withRoot(html, gamePageBody(page, game));
         fs.mkdirSync(path.join(outDir, page.slug), { recursive: true });
         fs.writeFileSync(path.join(outDir, page.slug, 'index.html'), html);
+      }
+
+      // Site pages (/games, /reviews, /blog …) get their own HTML too. Without it the server
+      // answered them with the home page's canonical, so Google treated them as copies of "/".
+      // server.js serves dist/pages/<name>.html for the matching path.
+      fs.mkdirSync(path.join(outDir, 'pages'), { recursive: true });
+      for (const page of SITE_PAGES) {
+        let html = withHead(withoutHomeFaq(template), {
+          title: page.title,
+          description: page.description,
+          url: `${SITE_URL}${page.path}`,
+        });
+        if (!page.public) html = withNoindex(html);
+        html = withRoot(html, sitePageBody(page));
+        fs.writeFileSync(path.join(outDir, 'pages', `${page.name}.html`), html);
       }
 
       fs.writeFileSync(path.join(outDir, 'sitemap.xml'), sitemap(new Date().toISOString().slice(0, 10)));

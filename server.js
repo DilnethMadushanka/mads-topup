@@ -8,6 +8,7 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { initTelegramBot, getTelegramBotHealthStatus, forceTelegramBotRefresh, createTelegramLinkCode } from './src/services/telegramBotService.js';
 import { lookupFreePlayerIgn } from './src/services/playerLookup.js';
 import { GAMES_DATA } from './src/data/games.js';
+import { pageForPath, gameForPath, gamePathFor } from './src/data/sitePages.js';
 import { ffAccountSalePrice } from './src/data/ffAccountPromo.js';
 import { RESELLER_MIN_DEPOSIT_LKR, RESELLER_TIERS, resellerTierFor, nextResellerTier, tierById } from './src/data/resellerTiers.js';
 import { isSessionToken, verifySession, signSession } from './lib/session.js';
@@ -3476,9 +3477,27 @@ app.use(express.static(path.join(__dirname, 'dist'), {
 }));
 
 // SPA Fallback Routing for React Router
+// Site pages get their prerendered HTML (own title + canonical, see seoPrerender.js).
+// Paths the app doesn't know still load the app, but with a 404 status so Google
+// doesn't index them as copies of the home page.
+const isAppPath = (p) => p === '/' || Boolean(gameForPath(p))
+  || /^\/admin(\/|$)/i.test(p) || /^\/ref\//i.test(p);
 app.use((req, res) => {
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   res.setHeader('Content-Security-Policy', "default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https: blob:; connect-src 'self' https: wss:; frame-src 'self' https:;");
+  // Old /game/<id> links go to the game's own landing page, so Google sees one URL per game.
+  const game = /^\/game\//i.test(req.path) ? gameForPath(req.path) : null;
+  const gameUrl = game ? gamePathFor(game.id) : null;
+  if (gameUrl && !/^\/game\//i.test(gameUrl)) {
+    const qs = req.originalUrl.indexOf('?');
+    return res.redirect(301, gameUrl + (qs >= 0 ? req.originalUrl.slice(qs) : ''));
+  }
+  const sitePage = pageForPath(req.path);
+  if (sitePage) {
+    const file = path.join(__dirname, 'dist', 'pages', `${sitePage.name}.html`);
+    if (fs.existsSync(file)) return res.sendFile(file);
+  }
+  if (!sitePage && !isAppPath(req.path)) res.status(404);
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
