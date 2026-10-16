@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useApp } from '../context/AppContext';
 import { PAYMENT_METHODS, getVerifiedPackagePriceLkr } from '../data/games';
 import { checkPlayerIGN, dispatchMoongoldOrder } from '../services/moongoldApi';
+import { splitMlbbId } from '../services/playerLookup';
 import { uploadToR2Storage } from '../services/storageService';
 import confetti from 'canvas-confetti';
 import { auth } from '../services/firebaseAuth';
@@ -192,6 +193,10 @@ export const GameTopupPage = () => {
       showToast('Please enter your Player ID first!', 'error');
       return;
     }
+    if (selectedGame.requiresServer && !zoneId.trim()) {
+      showToast('Please enter your Zone ID too.', 'error');
+      return;
+    }
     setIsVerifyingIgn(true);
     const result = await checkPlayerIGN(selectedGame.id, playerId, zoneId);
     setIsVerifyingIgn(false);
@@ -207,7 +212,7 @@ export const GameTopupPage = () => {
       });
       showToast(`Verified IGN: ${result.ign}`);
     } else {
-      showToast('Could not verify Player ID. Please double check.', 'error');
+      showToast(result.message || 'Could not verify Player ID. Please double check.', 'error');
     }
   };
 
@@ -759,7 +764,10 @@ export const GameTopupPage = () => {
                     placeholder={selectedGame.idPlaceholder || "e.g. 84218845"}
                     value={playerId}
                     onChange={(e) => {
-                      setPlayerId(e.target.value);
+                      // "84218845 (2168)" pasted from the profile fills both boxes.
+                      const both = splitMlbbId(e.target.value);
+                      setPlayerId(both ? both.id : e.target.value);
+                      if (both) setZoneId(both.zone);
                       setIgnVerified(false);
                     }}
                     className="w-full px-4 pb-3 pt-1 bg-transparent text-sm text-slate-900 font-semibold focus:outline-none placeholder:text-slate-400"
@@ -775,7 +783,10 @@ export const GameTopupPage = () => {
                     type="text"
                     placeholder={selectedGame.serverPlaceholder || "e.g. 2168"}
                     value={zoneId}
-                    onChange={(e) => setZoneId(e.target.value)}
+                    onChange={(e) => {
+                      setZoneId(e.target.value);
+                      setIgnVerified(false);
+                    }}
                     className="w-full px-4 pb-3 pt-1 bg-transparent text-sm text-slate-900 font-semibold focus:outline-none placeholder:text-slate-400"
                   />
                 </div>
@@ -840,10 +851,10 @@ export const GameTopupPage = () => {
                 {(userProfile?.savedIds || []).filter(s => s.gameId === selectedGame.id).map(s => (
                   <button
                     key={s.id}
-                    onClick={() => { setPlayerId(s.playerId); setIgn(s.nickName); setIgnVerified(true); }}
+                    onClick={() => { setPlayerId(s.playerId); setZoneId(s.zoneId || ''); setIgn(s.nickName); setIgnVerified(true); }}
                     className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-3 py-1 rounded-lg border border-slate-200 cursor-pointer"
                   >
-                    ⚡ {s.nickName} ({s.playerId})
+                    ⚡ {s.nickName} ({s.playerId}{s.zoneId ? ` · ${s.zoneId}` : ''})
                   </button>
                 ))}
               </div>
@@ -868,7 +879,7 @@ export const GameTopupPage = () => {
                   <span className="text-[11px] text-emerald-700 font-medium hidden sm:inline">(Click to edit name)</span>
                 </div>
                 <button 
-                  onClick={() => savePlayerId(selectedGame.id, selectedGame.name, playerId, ign)}
+                  onClick={() => savePlayerId(selectedGame.id, selectedGame.name, playerId, ign, zoneId)}
                   className="text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm shrink-0"
                 >
                   <BookmarkPlus className="w-3.5 h-3.5" />

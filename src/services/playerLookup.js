@@ -3,26 +3,40 @@
 
 const IGN_CACHE_KEY = 'mads_verified_ign_cache';
 
-export const getCachedIgn = (playerId) => {
+// One name per game + ID + zone, so a Free Fire name never shows for an
+// MLBB ID and a wrong zone never reuses the right zone's name.
+const ignCacheKey = (gameId, playerId, zoneId) =>
+  `${String(gameId || '').trim()}|${String(playerId || '').trim()}|${String(zoneId || '').trim()}`;
+
+export const getCachedIgn = (gameId, playerId, zoneId = '') => {
   if (!playerId || typeof localStorage === 'undefined') return null;
   try {
     const raw = localStorage.getItem(IGN_CACHE_KEY);
     if (raw) {
       const cache = JSON.parse(raw);
-      return cache[playerId.trim()] || null;
+      return cache[ignCacheKey(gameId, playerId, zoneId)] || null;
     }
   } catch (e) {}
   return null;
 };
 
-export const saveCachedIgn = (playerId, ignName) => {
+export const saveCachedIgn = (gameId, playerId, zoneId, ignName) => {
   if (!playerId || !ignName || typeof localStorage === 'undefined') return;
   try {
     const raw = localStorage.getItem(IGN_CACHE_KEY);
     const cache = raw ? JSON.parse(raw) : {};
-    cache[playerId.trim()] = ignName.trim();
+    cache[ignCacheKey(gameId, playerId, zoneId)] = String(ignName).trim();
     localStorage.setItem(IGN_CACHE_KEY, JSON.stringify(cache));
   } catch (e) {}
+};
+
+/**
+ * MLBB IDs are often copied as "84218845 (2168)" or "84218845 2168" from the
+ * game profile. Returns { id, zone } when the text has both, else null.
+ */
+export const splitMlbbId = (text = '') => {
+  const m = String(text).trim().match(/^(\d{5,12})\s*[(\[\s:/|-]\s*(\d{3,6})\s*[)\]]?$/);
+  return m ? { id: m[1], zone: m[2] } : null;
 };
 
 /**
@@ -34,7 +48,7 @@ export const lookupFreePlayerIgn = async (gameId = '', playerId = '', zoneId = '
   if (!cleanId) return null;
 
   // 1. Check local & memory cache first (100% Free)
-  const cached = getCachedIgn(cleanId);
+  const cached = getCachedIgn(gameId, cleanId, cleanZone);
   if (cached) {
     return { success: true, ign: cached, isReal: true, source: 'CACHE' };
   }
@@ -43,31 +57,6 @@ export const lookupFreePlayerIgn = async (gameId = '', playerId = '', zoneId = '
 
   // 2. Mobile Legends (MLBB) Real Username Lookup via SmileOne API Engine
   if (gKey.includes('mobilelegend') || gKey.includes('mlbb') || gKey.includes('ml')) {
-
-    // Primary: Server-side proxy (avoids CORS) → /api/mlbb-ign
-    try {
-      const proxyRes = await fetch('/api/mlbb-ign', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: cleanId, zone_id: cleanZone }),
-        signal: AbortSignal.timeout(8000)
-      });
-
-      if (proxyRes.ok) {
-        const data = await proxyRes.json();
-        if (data.success && data.ign && String(data.ign).trim()) {
-          const finalIgn = String(data.ign).trim();
-          saveCachedIgn(cleanId, finalIgn);
-          return { success: true, ign: finalIgn, isReal: true, source: data.source || 'MLBB_PROXY' };
-        }
-        // If proxy returned a clear failure (bad ID/zone), stop here
-        if (!data.success && data.error) {
-          return null;
-        }
-      }
-    } catch (e) {
-      console.warn('MLBB IGN proxy note:', e.message);
-    }
 
     // Fallback: Direct SmileOne Gateway (may be blocked by browser CORS)
     try {
@@ -96,7 +85,7 @@ export const lookupFreePlayerIgn = async (gameId = '', playerId = '', zoneId = '
           try { realName = decodeURIComponent(rawName); } catch(e) {}
           if (realName && String(realName).trim()) {
             const finalIgn = String(realName).trim();
-            saveCachedIgn(cleanId, finalIgn);
+            saveCachedIgn(gameId, cleanId, cleanZone, finalIgn);
             return { success: true, ign: finalIgn, isReal: true, source: 'SMILEONE_API', data };
           }
         }
@@ -132,7 +121,7 @@ export const lookupFreePlayerIgn = async (gameId = '', playerId = '', zoneId = '
           try { realName = decodeURIComponent(rawName); } catch(e) {}
           if (realName && String(realName).trim()) {
             const finalIgn = String(realName).trim();
-            saveCachedIgn(cleanId, finalIgn);
+            saveCachedIgn(gameId, cleanId, cleanZone, finalIgn);
             return { success: true, ign: finalIgn, isReal: true, source: 'SMILEONE_BR_API', data };
           }
         }
@@ -176,7 +165,7 @@ export const lookupFreePlayerIgn = async (gameId = '', playerId = '', zoneId = '
         const data = await res.json();
         const realName = data.data?.username || data.username || data.nickname || data.name || data.result?.username;
         if (realName) {
-          saveCachedIgn(cleanId, realName);
+          saveCachedIgn(gameId, cleanId, cleanZone, realName);
           return { success: true, ign: realName, isReal: true, source: 'RAPID_API', data };
         }
       }

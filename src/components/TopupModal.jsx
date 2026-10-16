@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { PAYMENT_METHODS } from '../data/games';
 import { checkPlayerIGN, dispatchMoongoldOrder } from '../services/moongoldApi';
+import { splitMlbbId } from '../services/playerLookup';
 import { uploadToR2Storage } from '../services/storageService';
 import { auth } from '../services/firebaseAuth';
 import confetti from 'canvas-confetti';
@@ -114,6 +115,10 @@ export const TopupModal = () => {
       showToast('Please enter your Player ID first!', 'error');
       return;
     }
+    if (selectedGame.requiresServer && !zoneId.trim()) {
+      showToast('Please enter your Zone ID too.', 'error');
+      return;
+    }
     setIsVerifyingIgn(true);
     const result = await checkPlayerIGN(selectedGame.id, playerId, zoneId);
     setIsVerifyingIgn(false);
@@ -123,16 +128,18 @@ export const TopupModal = () => {
       setIgnVerified(true);
       setVerifyModalData({
         ign: result.ign || 'Verified Gamer',
-        playerId: playerId
+        playerId: playerId,
+        zoneId: zoneId
       });
       showToast(`Verified IGN: ${result.ign}`);
     } else {
-      showToast('Could not verify Player ID. Please double check.', 'error');
+      showToast(result.message || 'Could not verify Player ID. Please double check.', 'error');
     }
   };
 
   const handleSelectSavedId = (saved) => {
     setPlayerId(saved.playerId);
+    setZoneId(saved.zoneId || '');
     setSavedSelection(saved.id);
     if (saved.nickName) {
       setIgn(saved.nickName);
@@ -378,7 +385,7 @@ export const TopupModal = () => {
                               : 'bg-slate-900 text-slate-300 border-slate-700 hover:border-slate-500'
                           }`}
                         >
-                          ⚡ {saved.nickName} ({saved.playerId})
+                          ⚡ {saved.nickName} ({saved.playerId}{saved.zoneId ? ` · ${saved.zoneId}` : ''})
                         </button>
                       ))}
                     </div>
@@ -399,7 +406,10 @@ export const TopupModal = () => {
                             placeholder={selectedGame.idPlaceholder || "e.g. 84218845"}
                             value={playerId}
                             onChange={(e) => {
-                              setPlayerId(e.target.value);
+                              // "84218845 (2168)" pasted from the profile fills both boxes.
+                      const both = splitMlbbId(e.target.value);
+                      setPlayerId(both ? both.id : e.target.value);
+                      if (both) setZoneId(both.zone);
                               setIgnVerified(false);
                             }}
                             className="w-full px-4 pb-2.5 pt-0.5 bg-transparent text-sm text-slate-900 font-semibold focus:outline-none placeholder:text-slate-400"
@@ -415,7 +425,10 @@ export const TopupModal = () => {
                             type="text"
                             placeholder={selectedGame.serverPlaceholder || "e.g. 2168"}
                             value={zoneId}
-                            onChange={(e) => setZoneId(e.target.value)}
+                            onChange={(e) => {
+                      setZoneId(e.target.value);
+                      setIgnVerified(false);
+                    }}
                             className="w-full px-4 pb-2.5 pt-0.5 bg-transparent text-sm text-slate-900 font-semibold focus:outline-none placeholder:text-slate-400"
                           />
                         </div>
@@ -480,7 +493,7 @@ export const TopupModal = () => {
                       </div>
                     </div>
                     <button 
-                      onClick={() => savePlayerId(selectedGame.id, selectedGame.name, playerId, ign)}
+                      onClick={() => savePlayerId(selectedGame.id, selectedGame.name, playerId, ign, zoneId)}
                       className="text-[11px] bg-emerald-600 text-white px-2.5 py-1 rounded font-bold hover:bg-emerald-700 transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
                     >
                       <BookmarkPlus className="w-3 h-3" />
