@@ -38,6 +38,7 @@ import { FfAccountsPage } from './components/FfAccountsPage';
 import { ScrollReveal } from './hooks/useScrollReveal';
 import { GAMES_DATA } from './data/games';
 import { GAME_SEO_PAGES } from './data/seoPages';
+import { SocialIconRow } from './components/SocialIcons';
 
 const MainContent = () => {
   const { userProfile, setIsAdminOpen, isUserProfileOpen, isWalletModalOpen, openUserProfilePage, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, isReferralPageOpen, isResellerPageOpen, isResellerLoginPageOpen, isResellerDashboardOpen, openResellerPage, openContactPage, openPolicyModal, selectedGame, isBlogPageOpen, openBlogPage, isLeaderboardPageOpen, isFfAccountsPageOpen, openTopup } = useApp();
@@ -217,6 +218,11 @@ const MainContent = () => {
                   </span>
                   24 / 7 Automated
                 </span>
+              </div>
+
+              <div className="mt-6">
+                <h4 className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#1677ff]">Follow Us</h4>
+                <SocialIconRow className="mt-3" />
               </div>
             </div>
 
