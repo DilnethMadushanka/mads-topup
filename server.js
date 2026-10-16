@@ -14,7 +14,7 @@ import { isSessionToken, verifySession, signSession } from './lib/session.js';
 import { sendMail, mailProvidersConfigured } from './lib/mailer.js';
 import { otpEmailHtml } from './lib/otpEmail.js';
 import { verifyPasswordLogin, setPasswordForEmail, publicProfile } from './lib/userAuth.js';
-import { rtdbUrl, rtdbGet, rtdbPut, rtdbPatch, rtdbTransaction, findUserKey, adjustWallet, spendWallet, isUserBlocked, addResellerSales } from './lib/rtdbAdmin.js';
+import { rtdbUrl, rtdbGet, rtdbPut, rtdbPatch, rtdbTransaction, findUserKey, findUserKeysByEmail, adjustWallet, spendWallet, isUserBlocked, addResellerSales } from './lib/rtdbAdmin.js';
 import { moogoldRequest, fetchVoucherCodes, saveUserVoucher, listUserVouchers, findCatalogPackage, isVoucherGame, redactVoucherCodes } from './lib/moogoldVoucher.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -1349,6 +1349,12 @@ app.post('/api/send-otp', rateLimiter(5, 60000), async (req, res) => {
   try {
     const email = sanitizeString(String(req.body?.email || ''), 100).toLowerCase();
     if (!EMAIL_RE.test(email)) return res.status(400).json({ success: false, error: 'Please enter a valid email address.' });
+    // One account per email: a second signup (or a Google login next to an
+    // email signup) used to make a second, separate account with its own wallet.
+    const taken = await findUserKeysByEmail(email).catch(() => []);
+    if (taken.length) {
+      return res.status(409).json({ success: false, exists: true, error: 'This email already has an account. Please log in (or use Continue with Google / Forgot password).' });
+    }
     const prev = signupOtps.get(email);
     if (prev && Date.now() - prev.sentAt < 60000) {
       return res.status(429).json({ success: false, error: 'Please wait a minute before asking for another code.' });
@@ -1479,6 +1485,50 @@ app.post('/api/send-reseller-approval', rateLimiter(10, 60000), requireAdminSess
   }
 });
 
+// Google logins joined to an existing account with the same email:
+// userLinks/<firebase uid> = { key, email, linkedAt }. Only the server reads
+// and writes this node. Links are never removed by the app, so found ones
+// are cached.
+const googleLinkCache = new Map(); // firebase uid -> users key
+async function linkedAccountKey(firebaseUid) {
+  if (!firebaseUid) return null;
+  if (googleLinkCache.has(firebaseUid)) return googleLinkCache.get(firebaseUid);
+  try {
+    const link = await rtdbGet(`userLinks/${firebaseUid}`);
+    if (link && typeof link === 'object' && link.key) {
+      googleLinkCache.set(firebaseUid, link.key);
+      return link.key;
+    }
+  } catch (e) {
+    console.warn('[Google Link Read Warning]:', e.message);
+  }
+  return null;
+}
+
+// First Google login with an email that already has an account (made with
+// email + password): join the Google login to that account instead of
+// making a second one. Only Google-verified emails, and only accounts whose
+// email was itself verified at signup (OTP), are joined. Returns the key.
+async function linkGoogleToExistingAccount(authUser) {
+  if (!authUser?.firebaseUid || !authUser.emailVerified || !authUser.email) return null;
+  const all = (await rtdbGet('users')) || {};
+  const email = String(authUser.email).toLowerCase();
+  let best = null;
+  for (const [key, u] of Object.entries(all)) {
+    if (key === authUser.firebaseUid || !u || typeof u !== 'object') continue;
+    if (String(u.email || '').toLowerCase() !== email || u.isVerified !== true) continue;
+    const bal = (parseFloat(u.walletBalance) || 0) + (parseFloat(u.walletUsdt) || 0);
+    const at = new Date(u.createdAt || 0).getTime() || 0;
+    // The record with money first, then the oldest.
+    if (!best || bal > best.bal || (bal === best.bal && at < best.at)) best = { key, bal, at };
+  }
+  if (!best) return null;
+  await rtdbPut(`userLinks/${authUser.firebaseUid}`, { key: best.key, email, linkedAt: new Date().toISOString() });
+  googleLinkCache.set(authUser.firebaseUid, best.key);
+  console.log(`[Google Link] ${authUser.firebaseUid} joined to existing account ${best.key} (${email})`);
+  return best.key;
+}
+
 // Firebase ID Token Authentication Helper
 async function verifyFirebaseIdToken(idToken) {
   if (!idToken || typeof idToken !== 'string') return null;
@@ -1521,8 +1571,13 @@ async function verifyFirebaseIdToken(idToken) {
         // An unverified email is only a claim, so it is never used to
         // find a wallet or reseller record (email: '').
         const u = data.users[0];
+        // A Google login joined to an earlier email-signup account acts as
+        // that account (see linkGoogleToExistingAccount).
+        const linkedKey = await linkedAccountKey(u.localId);
         return {
-          uid: u.localId,
+          uid: linkedKey || u.localId,
+          firebaseUid: u.localId,
+          linked: Boolean(linkedKey),
           email: u.emailVerified ? u.email : '',
           displayEmail: u.email || '',
           emailVerified: Boolean(u.emailVerified)
@@ -2174,10 +2229,22 @@ const withoutPassword = (u) => {
 // approved reseller record, if any.
 app.post('/api/me', rateLimiter(120, 60000), async (req, res) => {
   try {
-    const authUser = await verifyFirebaseIdToken(req.headers.authorization || '');
+    let authUser = await verifyFirebaseIdToken(req.headers.authorization || '');
     if (!authUser) return res.status(401).json({ error: 'Please log in again.' });
     res.set('Cache-Control', 'no-store');
-    const own = await rtdbGet(`users/${authUser.uid}`).catch(() => null);
+    let own = await rtdbGet(`users/${authUser.uid}`).catch(() => null);
+    // A Google login with no account yet, but the same email already has
+    // one: use that account rather than letting the browser make a new one.
+    if ((!own || typeof own !== 'object') && authUser.firebaseUid && !authUser.linked) {
+      const key = await linkGoogleToExistingAccount(authUser).catch((e) => {
+        console.warn('[Google Link Warning]:', e.message);
+        return null;
+      });
+      if (key) {
+        authUser = { ...authUser, uid: key, linked: true };
+        own = await rtdbGet(`users/${key}`).catch(() => null);
+      }
+    }
     let blocked = Boolean(own && own.status === 'BLOCKED');
     if (!blocked && req.body?.checkBlocked) {
       blocked = await isUserBlocked(authUser.uid, authUser.email || authUser.displayEmail).catch(() => false);
@@ -2188,7 +2255,7 @@ app.post('/api/me', rateLimiter(120, 60000), async (req, res) => {
       if (r) reseller = { ...withoutPassword(r.user), uid: r.key, tier: { id: r.tier.id, name: r.tier.name, rate: r.tier.rate } };
     }
     if (!own || typeof own !== 'object') return res.status(404).json({ exists: false, blocked, reseller });
-    res.json({ exists: true, blocked, profile: { ...withoutPassword(own), uid: authUser.uid }, reseller });
+    res.json({ exists: true, blocked, linked: Boolean(authUser.linked), profile: { ...withoutPassword(own), uid: authUser.uid }, reseller });
   } catch (e) {
     console.error('[Me Error]:', e.message);
     res.status(500).json({ error: SERVER_ERROR });

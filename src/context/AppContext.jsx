@@ -608,6 +608,7 @@ export const AppProvider = ({ children }) => {
         const lastSync = lastSyncedUidRef.current;
         const alreadySynced = lastSync && lastSync.uid === firebaseUser.uid && (Date.now() - lastSync.ts < 8000);
 
+        let profileUid = alreadySynced ? (lastSync.profileUid || firebaseUser.uid) : firebaseUser.uid;
         if (!alreadySynced) {
           const profile = await syncUserProfileToFirestore({
             uid: firebaseUser.uid,
@@ -617,12 +618,14 @@ export const AppProvider = ({ children }) => {
           });
           if (profile) {
             setUserProfileState(profile);
+            // A Google login joined to an earlier account uses that account's uid.
+            if (profile.uid) profileUid = profile.uid;
           }
-          lastSyncedUidRef.current = { uid: firebaseUser.uid, ts: Date.now() };
+          lastSyncedUidRef.current = { uid: firebaseUser.uid, profileUid, ts: Date.now() };
         }
 
         // Always subscribe to live Firestore updates
-        const unsubFirestore = subscribeUserProfile(firebaseUser.uid, (liveData) => {
+        const unsubFirestore = subscribeUserProfile(profileUid, (liveData) => {
           if (liveData) {
             const cleanData = { ...liveData };
             if (cleanData.walletUsdt === 49.64 || (cleanData.walletUsdt > 49.6 && cleanData.walletUsdt < 49.7)) cleanData.walletUsdt = 0;
