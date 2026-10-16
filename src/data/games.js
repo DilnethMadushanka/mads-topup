@@ -210,6 +210,42 @@ export const GAMES_DATA = [
     ]
   },
   {
+    id: 'valorant',
+    tag: { text: 'New', tone: 'red', icon: 'star' },
+    name: 'Valorant (SG)',
+    category: 'FPS',
+    publisher: 'Riot Games',
+    currencyName: 'VP',
+    currencyIcon: '🔺',
+    badge: 'ACTIVE',
+    flag: '🇸🇬',
+    banner: '/game_logos/valorant.webp',
+    logo: '/game_logos/valorant.webp',
+    heroBanner: '/game_banners/valorant.jpg',
+    gradient: 'from-rose-500 to-red-700',
+    requiresServer: false,
+    // MooGold's Valorant (Singapore) products take the Riot ID (Name#TAG) in
+    // a "Riot Username" field instead of a numeric player ID, and there is no
+    // name lookup for it.
+    moongoldIdField: 'Riot Username',
+    nameCheck: false,
+    idLabel: 'Riot ID',
+    idPlaceholder: 'Riot ID (e.g. MadsPlayer#1234)',
+    idGuideHint: '💡 Enter your full Riot ID with the tag, e.g. MadsPlayer#1234 (Valorant > Settings > Account). Singapore / Asia-Pacific accounts only.',
+    popular: true,
+    moongoldCode: 'VALORANT_SG',
+    // Cost is MooGold's USD price x 340; retail keeps the same 10-12% margin
+    // as the other games (higher % on small packs).
+    packages: [
+      { id: 'val-475', name: '475 VP', amount: 475, bonus: '', priceLkr: 1970, moongoldCost: 1758, priceUsd: 5.17, moongoldProductId: '24212595', image: '/product_images/prod_475_VP_1776444960_valorant-topup.png', isPopular: false },
+      { id: 'val-1000', name: '1000 VP', amount: 1000, bonus: '', priceLkr: 3950, moongoldCost: 3522, priceUsd: 10.36, moongoldProductId: '24212596', image: '/product_images/prod_1000_VP_1776444995_valorant-topup.png', isPopular: true },
+      { id: 'val-2050', name: '2050 VP', amount: 2050, bonus: '', priceLkr: 7550, moongoldCost: 6797, priceUsd: 19.99, moongoldProductId: '24212597', image: '/product_images/prod_2050_VP_1776445046_valorant-topup.png', isPopular: false },
+      { id: 'val-3650', name: '3650 VP', amount: 3650, bonus: '', priceLkr: 13080, moongoldCost: 11835, priceUsd: 34.81, moongoldProductId: '24212598', image: '/product_images/prod_3650_VP_1776445080_valorant-topup.png', isPopular: false },
+      { id: 'val-5350', name: '5350 VP', amount: 5350, bonus: '', priceLkr: 18560, moongoldCost: 16874, priceUsd: 49.63, moongoldProductId: '24212603', image: '/product_images/prod_3650_VP_1776445080_valorant-topup.png', isPopular: false },
+      { id: 'val-11000', name: '11000 VP', amount: 11000, bonus: '', priceLkr: 37400, moongoldCost: 34003, priceUsd: 100.01, moongoldProductId: '24212604', image: '/product_images/prod_3650_VP_1776445080_valorant-topup.png', isPopular: false }
+    ]
+  },
+  {
     id: 'garenashells',
     tag: { text: 'Instant PIN', tone: 'blue', icon: 'zap' },
     name: 'Garena Shells (SG)',

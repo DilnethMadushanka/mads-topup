@@ -61,6 +61,14 @@ export const GAME_SEO_PAGES = [
     intro: 'For Free Fire accounts on the Indonesia server. Buy diamonds and memberships with your Player ID and pay in LKR.',
   },
   {
+    gameId: 'valorant',
+    slug: 'valorant-points-sri-lanka',
+    title: 'Valorant Points (VP) Top Up Sri Lanka – MADS TOPUP',
+    description: 'Buy Valorant Points in Sri Lanka with just your Riot ID. 475 VP to 11000 VP for Singapore / Asia-Pacific accounts, paid in LKR. Fast, safe delivery.',
+    h1: 'Valorant Points Top Up in Sri Lanka',
+    intro: 'Top up Valorant Points (VP) on Singapore / Asia-Pacific accounts with your Riot ID (Name#TAG). No password needed, paid in Sri Lankan Rupees.',
+  },
+  {
     gameId: 'garenashells',
     slug: 'garena-shells-sg',
     title: 'Garena Shells SG Sri Lanka | Instant PIN – MADS TOPUP',
