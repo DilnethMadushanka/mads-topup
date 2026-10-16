@@ -2251,15 +2251,14 @@ app.get('/api/admin/data/:name', requireAdminSession, async (req, res) => {
 });
 
 // Top spenders for the home page and the leaderboard page. Worked out here
-// because browsers can't read the users list. scope=month|all;
-// completed=1 counts COMPLETED orders only, otherwise everything except
-// failed / refunded / cancelled. Names and avatars only, no account ids.
+// because browsers can't read the users list. scope=month|all. Only
+// COMPLETED orders count, so failed / refunded / cancelled / pending ones
+// never add to anyone's total. Names and avatars only, no account ids.
 const leaderboardCache = new Map(); // variant -> { at, list }
 app.get('/api/leaderboard', rateLimiter(60, 60000), async (req, res) => {
   try {
     const monthOnly = req.query.scope !== 'all';
-    const completedOnly = req.query.completed === '1';
-    const variant = `${monthOnly ? 'm' : 'a'}${completedOnly ? 'c' : 'x'}`;
+    const variant = monthOnly ? 'm' : 'a';
     const cached = leaderboardCache.get(variant);
     res.set('Cache-Control', 'public, max-age=120');
     if (cached && Date.now() - cached.at < 2 * 60 * 1000) return res.json({ success: true, list: cached.list });
@@ -2277,10 +2276,18 @@ app.get('/api/leaderboard', rateLimiter(60, 60000), async (req, res) => {
       if (entry.id || entry.gameId) flat.push(entry);
       else for (const o of Object.values(entry)) if (o && (o.id || o.gameId)) flat.push(o);
     }
+    // The server keeps its own copy of every order (source: 'server') next to
+    // the browser's. Count the server copy only when the browser never saved
+    // one, as the order lists do; otherwise an order the admin cancelled or
+    // refunded still counts through its untouched server copy, and every
+    // order counts twice.
+    const clientIds = new Set(flat.filter(o => o.source !== 'server')
+      .flatMap(o => [o.partnerOrderId, ...(Array.isArray(o.partnerOrderIds) ? o.partnerOrderIds : [])]).filter(Boolean));
     const now = new Date();
     const spend = {};
     for (const order of flat) {
-      if (completedOnly ? order.status !== 'COMPLETED' : ['FAILED', 'REFUNDED', 'CANCELLED'].includes(order.status)) continue;
+      if (order.source === 'server' && clientIds.has(order.partnerOrderId)) continue;
+      if (order.status !== 'COMPLETED') continue;
       if (monthOnly && order.createdAt) {
         const d = new Date(order.createdAt);
         if (!isNaN(d) && (d.getFullYear() !== now.getFullYear() || d.getMonth() !== now.getMonth())) continue;

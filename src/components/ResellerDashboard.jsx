@@ -132,7 +132,7 @@ export const ResellerDashboard = () => {
   }));
 
   const completedResellerOrders = resellerOrders.filter(o => o.status === 'COMPLETED' || o.status === 'DELIVERED');
-  const totalWholesaleTurnover = resellerOrders.reduce((sum, o) => sum + (o.priceLkr || 0), 0);
+  const totalWholesaleTurnover = completedResellerOrders.reduce((sum, o) => sum + (o.priceLkr || 0), 0);
   // True saving is originalPrice - wholesalePrice (the tier % of the ORIGINAL
   // catalog price), not a % of the already-discounted wholesale price.
   // originalPriceLkr is set at dispatch time (below); orders that predate

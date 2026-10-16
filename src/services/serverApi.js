@@ -46,9 +46,9 @@ export const getServerApi = async (path) => {
   return last;
 };
 
-// Top spenders, worked out on the server. [] when unavailable.
-export const fetchLeaderboard = async ({ scope = 'month', completed = false } = {}) => {
-  const { ok, data } = await getServerApi(`/api/leaderboard?scope=${scope === 'all' ? 'all' : 'month'}${completed ? '&completed=1' : ''}`);
+// Top spenders (completed orders only), worked out on the server. [] when unavailable.
+export const fetchLeaderboard = async ({ scope = 'month' } = {}) => {
+  const { ok, data } = await getServerApi(`/api/leaderboard?scope=${scope === 'all' ? 'all' : 'month'}`);
   return ok && Array.isArray(data?.list) ? data.list : [];
 };
 
