@@ -4,7 +4,7 @@ import { GAMES_DATA, getVerifiedPackagePriceLkr } from '../data/games';
 import { generateUniqueSecurityKey, ensureResellerCredentials, getResellerProfileByKeyAsync, updateUserProfileInFirestore } from '../services/firestoreService';
 import { dispatchMoongoldOrder, checkPlayerIGN } from '../services/moongoldApi';
 import { ResellerReceipt } from './ResellerReceipt';
-import { orderBelongsToUser } from '../utils/ownership';
+import { orderBelongsToUser, sortOrdersNewestFirst } from '../utils/ownership';
 import { useResellerStatus, resellerRateOf } from '../hooks/useResellerStatus';
 import { resellerUnitPrice } from '../data/resellerTiers';
 import { postServerApi, getUserAuthToken } from '../services/serverApi';
@@ -123,13 +123,13 @@ export const ResellerDashboard = () => {
   const currentSavings = untamperedPackagePrice ? (untamperedPackagePrice - currentWholesalePrice) : 0;
 
   // Filter orders fulfilled by this reseller
-  const resellerOrders = (orders || []).filter(o => {
+  const resellerOrders = sortOrdersNewestFirst((orders || []).filter(o => {
     if (!userProfile) return false;
     const matchIdentity = orderBelongsToUser(o, userProfile);
     const matchCode = userProfile.resellerCode && (o.resellerCode === userProfile.resellerCode || o.paymentMethod?.includes(userProfile.resellerCode));
     const matchReseller = o.isResellerOrder || o.paymentMethod?.toLowerCase().includes('reseller');
     return (matchIdentity || matchCode) && matchReseller;
-  });
+  }));
 
   const completedResellerOrders = resellerOrders.filter(o => o.status === 'COMPLETED' || o.status === 'DELIVERED');
   const totalWholesaleTurnover = resellerOrders.reduce((sum, o) => sum + (o.priceLkr || 0), 0);

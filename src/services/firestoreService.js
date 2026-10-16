@@ -526,9 +526,14 @@ export const saveOrderToFirestore = async (uid, order) => {
 /**
  * Subscribe to real-time order updates for user or admin
  */
-export const subscribeOrdersFromFirestore = (uid, callback) => {
+export const subscribeOrdersFromFirestore = (uid, callback, email = '') => {
   let unsubRtdb = null;
   let unsubFirestore = null;
+  // A customer's own orders: saved under their uid, or (server records and
+  // older orders) only under their email.
+  const lowerEmail = String(email || '').toLowerCase();
+  const isMine = (o) => o.userId === uid || o.userEmail === uid ||
+    (Boolean(lowerEmail) && String(o.userEmail || '').toLowerCase() === lowerEmail);
 
   if (rtdb) {
     try {
@@ -542,7 +547,7 @@ export const subscribeOrdersFromFirestore = (uid, callback) => {
           const clientIds = new Set(all.filter(o => o.source !== 'server')
             .flatMap(o => [o.partnerOrderId, ...(Array.isArray(o.partnerOrderIds) ? o.partnerOrderIds : [])]).filter(Boolean));
           const list = all.filter(o => o.source !== 'server' || !clientIds.has(o.partnerOrderId));
-          const filtered = uid ? list.filter(o => o.userId === uid || o.userEmail === uid) : list;
+          const filtered = uid ? list.filter(isMine) : list;
           if (filtered.length > 0) callback(filtered);
         }
       });
@@ -556,7 +561,7 @@ export const subscribeOrdersFromFirestore = (uid, callback) => {
       const ordersCol = collection(db, 'orders');
       unsubFirestore = onSnapshot(ordersCol, (snapshot) => {
         const list = snapshot.docs.map(docSnap => ({ firestoreId: docSnap.id, ...docSnap.data() }));
-        const filtered = uid ? list.filter(o => o.userId === uid || o.userEmail === uid) : list;
+        const filtered = uid ? list.filter(isMine) : list;
         if (filtered.length > 0) callback(filtered);
       }, (err) => {
         // Gracefully handle permission denials without unhandled console errors

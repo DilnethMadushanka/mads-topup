@@ -13,7 +13,17 @@ export function orderBelongsToUser(order, userProfile) {
   return matchUid || matchEmail || matchPhone;
 }
 
+// Newest first. Orders arrive in database key order (random ids), so without
+// this a fresh order could land anywhere in the history list.
+const orderTime = (o) => {
+  const t = new Date(o?.createdAt || o?.timestamp || 0).getTime();
+  return Number.isNaN(t) ? 0 : t;
+};
+export function sortOrdersNewestFirst(orders) {
+  return [...(orders || [])].sort((a, b) => orderTime(b) - orderTime(a));
+}
+
 export function filterUserOrders(orders, userProfile) {
   if (!userProfile || (!userProfile.uid && !userProfile.email && !userProfile.phone)) return [];
-  return (orders || []).filter(o => orderBelongsToUser(o, userProfile));
+  return sortOrdersNewestFirst((orders || []).filter(o => orderBelongsToUser(o, userProfile)));
 }
