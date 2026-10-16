@@ -872,6 +872,23 @@ app.post('/api/admin/order-status', requireAdminSession, async (req, res) => {
   }
 });
 
+// Admin: delete a customer review. Browsers can only add reviews
+// (database.rules.json), so removing one goes through the server.
+app.post('/api/admin/delete-review', requireAdminSession, async (req, res) => {
+  try {
+    const id = String(req.body?.id || '');
+    if (!/^[A-Za-z0-9_-]{1,120}$/.test(id)) {
+      return res.status(400).json({ error: 'A valid review id is required.' });
+    }
+    const del = await fetch(rtdbUrl(`reviews/${id}`), { method: 'DELETE' });
+    if (!del.ok) throw new Error(`RTDB delete failed: HTTP ${del.status}`);
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[Admin Delete Review Error]:', e.message);
+    res.status(500).json({ error: SERVER_ERROR });
+  }
+});
+
 // Admin: verify badge and block/unblock.
 app.post('/api/admin/user-fields', requireAdminSession, async (req, res) => {
   try {

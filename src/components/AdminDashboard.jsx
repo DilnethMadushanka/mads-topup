@@ -14,7 +14,7 @@ import {
   Smartphone, Copy, Crown, Mail, Building2, Sparkles, ArrowRight, Loader2,
   LayoutDashboard, PanelLeftClose, PanelLeftOpen, Moon, Sun, Bell, LogOut,
   ArrowUp, ArrowDown, ChevronsUpDown, ShoppingCart,
-  Gamepad2, Command, Inbox, LayoutGrid
+  Gamepad2, Command, Inbox, LayoutGrid, Star
 } from 'lucide-react';
 
 /* ============================================================
@@ -384,7 +384,8 @@ const NAV_GROUPS = [
     { id: 'users', label: 'User Accounts', icon: Users },
     { id: 'credit', label: 'Wallet Credit', icon: DollarSign },
     { id: 'resellers', label: 'Reseller Network', icon: Crown, badgeKey: 'resellers' },
-    { id: 'support', label: 'Support Desk', icon: Headset, badgeKey: 'tickets' }
+    { id: 'support', label: 'Support Desk', icon: Headset, badgeKey: 'tickets' },
+    { id: 'reviews', label: 'Reviews', icon: Star }
   ]},
   { label: 'Catalog & Marketing', items: [
     { id: 'games', label: 'Game Prices', icon: Gamepad2 },
@@ -409,6 +410,7 @@ const TAB_TITLES = {
   credit: ['Direct User Wallet Top-Up Tool', "Manually credit or deduct a user's LKR or USDT balance"],
   resellers: ['Reseller Partner Network', 'Review, approve, or reject reseller partner applications'],
   support: ['Support Desk', 'Live customer support tickets & chat'],
+  reviews: ['Customer Reviews', 'Read and delete the feedback shown on the Reviews page'],
   games: ['Game Catalog & Live Price Manager', 'Edit retail prices — publish instantly to web & Telegram bot'],
   popupAd: ['Popup Banner Ad Manager', 'Configure the promotional popup shown to visitors'],
   gameStrip: ['Discover Games Bar', 'Choose the game icons shown in the scrolling bar on the home page'],
@@ -427,7 +429,7 @@ export const AdminDashboard = () => {
     setUserExactBalance, manualPayments, approveManualPayment, rejectManualPayment, addManualPayment,
     supportTickets, sendTicketMessage, updateTicketStatus, updateTicketPriority, resellerApplications,
     updateResellerApplicationStatus, gamesCatalog, updateGamePrices, popupAdConfig, updatePopupAdConfig,
-    gameStripConfig, updateGameStripConfig, ffAccounts,
+    gameStripConfig, updateGameStripConfig, ffAccounts, userReviews, deleteReview,
     isAdminAuthenticated, setIsAdminAuthenticated, setResellerTier, fetchResellerDeposit
   } = useApp();
 
@@ -539,6 +541,8 @@ export const AdminDashboard = () => {
   const [newVoucherCurrency, setNewVoucherCurrency] = useState('LKR');
   const [newVoucherMaxUses, setNewVoucherMaxUses] = useState(100);
   const [voucherSearch, setVoucherSearch] = useState('');
+  const [reviewSearch, setReviewSearch] = useState('');
+  const [deletingReviewId, setDeletingReviewId] = useState(null);
 
   const [tickerNoticeInput, setTickerNoticeInput] = useState(tickerNotice);
 
@@ -1842,6 +1846,43 @@ export const AdminDashboard = () => {
               </div>
             </div>
           )}
+
+          {adminTab === 'reviews' && (() => {
+            const reviewTime = (r) => Number(String(r.id || '').replace(/^rev-/, '')) || new Date(r.date || 0).getTime() || 0;
+            const q = reviewSearch.trim().toLowerCase();
+            const rows = (Array.isArray(userReviews) ? userReviews : [])
+              .filter(r => r && r.id)
+              .filter(r => !q || [r.name, r.text, r.location].some(v => String(v || '').toLowerCase().includes(q)))
+              .sort((a, b) => reviewTime(b) - reviewTime(a));
+            const onDelete = async (r) => {
+              if (!window.confirm(`Delete the review by "${r.name || 'Unknown'}"? This can't be undone.`)) return;
+              setDeletingReviewId(r.id);
+              await deleteReview(r);
+              setDeletingReviewId(null);
+            };
+            return (
+              <div className="space-y-4">
+                <SearchInput value={reviewSearch} onChange={setReviewSearch} placeholder="Search name or review text..." />
+                <DataTable
+                  emptyMessage="No customer reviews yet."
+                  columns={[
+                    { key: 'name', label: 'Customer', sortable: true, sortValue: r => r.name || '', render: r => (
+                      <div>
+                        <div className="font-bold" style={{ color: 'var(--adm-text)' }}>{r.flag ? `${r.flag} ` : ''}{r.name || 'Unknown'}</div>
+                        <div className="text-[10px] font-mono" style={mutedStyle}>{r.location || ''}{r.date ? ` · ${r.date}` : ''}</div>
+                      </div>
+                    )},
+                    { key: 'rating', label: 'Rating', sortable: true, sortValue: r => Number(r.rating) || 0, render: r => <span className="font-black text-amber-400 whitespace-nowrap">{'★'.repeat(Math.max(0, Math.min(5, Number(r.rating) || 0)))}</span> },
+                    { key: 'text', label: 'Review', render: r => <span className="text-xs break-words" style={{ color: 'var(--adm-text)' }}>{r.text}</span> },
+                    { key: 'actions', label: 'Actions', align: 'right', render: r => (
+                      <button onClick={() => onDelete(r)} disabled={deletingReviewId === r.id} className="px-2.5 py-1 bg-red-600/15 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 rounded-lg text-[11px] font-bold cursor-pointer inline-flex items-center gap-1 disabled:opacity-60"><Trash2 className="w-3 h-3" /><span>{deletingReviewId === r.id ? 'Deleting...' : 'Delete'}</span></button>
+                    )}
+                  ]}
+                  rows={rows}
+                />
+              </div>
+            );
+          })()}
 
           {adminTab === 'users' && (
             <div className="space-y-4">
