@@ -46,7 +46,7 @@ import {
   saveGameStripConfig, subscribeGameStripConfig, DEFAULT_GAME_STRIP_CONFIG,
   saveTickerNotice, subscribeTickerNotice,
   saveSupportTicketToFirestore, updateSupportTicketInFirestore, subscribeSupportTicketsFromFirestore,
-  saveReviewToFirestore, subscribeReviewsFromFirestore,
+  saveReviewToFirestore, subscribeReviewsFromFirestore, deleteReviewInDatabase,
   saveReferralClick, isAccountBlockedAsync, ACCOUNT_BLOCKED_MESSAGE
 } from '../services/firestoreService';
 
@@ -282,14 +282,10 @@ export const AppProvider = ({ children }) => {
 
   // Bug 5: real-time Firestore subscription so all browsers see new reviews
   useEffect(() => {
+    // The live list replaces the local one, so deleted reviews go away.
     const unsub = subscribeReviewsFromFirestore((liveReviews) => {
-      if (!Array.isArray(liveReviews) || liveReviews.length === 0) return;
-      setUserReviews(prev => {
-        const map = new Map();
-        (prev || []).forEach(r => { if (r?.id) map.set(r.id, r); });
-        liveReviews.forEach(r => { if (r?.id) map.set(r.id, r); });
-        return Array.from(map.values());
-      });
+      if (!Array.isArray(liveReviews)) return;
+      setUserReviews(liveReviews.filter(r => r && r.id));
     });
     return () => unsub();
   }, []);
@@ -301,6 +297,17 @@ export const AppProvider = ({ children }) => {
     if (showToast) showToast('Thank you! Your review has been published successfully.');
   };
   
+  const deleteReview = async (review) => {
+    const { ok, error } = await deleteReviewInDatabase(review);
+    if (ok) {
+      setUserReviews(prev => prev.filter(r => r.id !== review.id));
+      showToast('Review deleted.');
+    } else {
+      showToast(error || 'Could not delete the review.', 'error');
+    }
+    return ok;
+  };
+
   // Dynamic Games Catalog State & Realtime Custom Prices Sync
   const [gamesCatalog, setGamesCatalog] = useState(GAMES_DATA);
 
@@ -2028,6 +2035,7 @@ export const AppProvider = ({ children }) => {
       vouchers,
       addVoucher,
       deleteVoucher,
+      deleteReview,
       redeemVoucher,
       tickerNotice,
       setTickerNotice,

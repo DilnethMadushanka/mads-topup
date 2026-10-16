@@ -1,5 +1,5 @@
 import { db, rtdb } from './firebaseAuth.js';
-import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { ref as dbRef, get as rtdbGet, set as rtdbSet, update as rtdbUpdate, onValue as rtdbOnValue } from 'firebase/database';
 import { postServerApi, getServerApi, getUserAuthToken, getSessionToken, setSessionToken } from './serverApi.js';
 
@@ -1390,7 +1390,10 @@ export const saveReviewToFirestore = async (review) => {
 
 /**
  * Real-time subscription to all community reviews.
- * Fires callback(reviewsArray) immediately from localStorage, then from live DB.
+ * Fires callback(reviewsArray) immediately from localStorage, then with the
+ * full live list from RTDB every time it changes (an empty list once the
+ * last review is deleted). RTDB is the one source, so a review the admin
+ * deletes disappears everywhere.
  */
 export const subscribeReviewsFromFirestore = (callback) => {
   if (typeof callback !== 'function') return () => {};
@@ -1405,41 +1408,38 @@ export const subscribeReviewsFromFirestore = (callback) => {
   } catch (e) {}
 
   let unsubRtdb = null;
-  let unsubDb = null;
 
   if (rtdb) {
     try {
       const rRef = dbRef(rtdb, 'reviews');
       unsubRtdb = rtdbOnValue(rRef, (snap) => {
-        if (snap.exists()) {
-          const val = snap.val();
-          const reviews = Object.values(val || {}).filter(Boolean);
-          if (reviews.length > 0) {
-            try { localStorage.setItem('mads_user_reviews', JSON.stringify(reviews)); } catch (e) {}
-            callback(reviews);
-          }
-        }
-      });
-    } catch (e) {}
-  }
-
-  if (db) {
-    try {
-      const rCol = collection(db, 'reviews');
-      unsubDb = onSnapshot(rCol, (snapshot) => {
-        const reviews = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).filter(Boolean);
-        if (reviews.length > 0) {
-          try { localStorage.setItem('mads_user_reviews', JSON.stringify(reviews)); } catch (e) {}
-          callback(reviews);
-        }
+        const val = snap.exists() ? snap.val() : {};
+        const reviews = Object.entries(val || {})
+          .filter(([, r]) => r && typeof r === 'object')
+          .map(([key, r]) => ({ ...r, id: r.id || key, dbKey: key }));
+        try { localStorage.setItem('mads_user_reviews', JSON.stringify(reviews)); } catch (e) {}
+        callback(reviews);
       });
     } catch (e) {}
   }
 
   return () => {
     if (typeof unsubRtdb === 'function') unsubRtdb();
-    if (typeof unsubDb === 'function') unsubDb();
   };
+};
+
+/**
+ * Admin: delete a review (server removes the RTDB copy; the Firestore copy
+ * is removed too when the rules allow it).
+ */
+export const deleteReviewInDatabase = async (review) => {
+  const key = String(review?.dbKey || review?.id || '').replace(/[.#$[\]]/g, '_');
+  if (!key) return { ok: false, error: 'Missing review id.' };
+  const { ok, data } = await postServerApi('/api/admin/delete-review', { id: key });
+  if (ok && db) {
+    try { await deleteDoc(doc(db, 'reviews', key)); } catch (e) {}
+  }
+  return { ok, error: data?.error };
 };
 
 /* ================================================================
