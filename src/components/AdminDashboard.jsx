@@ -6,6 +6,7 @@ import { SupportDesk, SupportDeskStats } from './admin/SupportDesk';
 import { FfAccountsAdmin } from './admin/FfAccountsAdmin';
 import { ProfitReport } from './admin/ProfitReport';
 import { sortOrdersNewestFirst } from '../utils/ownership';
+import { getAllPopupBanners, emptyPopupBanner, MAX_POPUP_BANNERS } from '../utils/popupBanners';
 import {
   X, ShieldCheck, DollarSign, RefreshCw,
   CheckCircle2, Clock, Zap, Save, Eye, EyeOff, Cloud, UploadCloud,
@@ -472,15 +473,13 @@ export const AdminDashboard = () => {
   const [isSavingPrices, setIsSavingPrices] = useState(false);
 
   const [adEnabled, setAdEnabled] = useState(popupAdConfig?.enabled ?? true);
-  const [adTitle, setAdTitle] = useState(popupAdConfig?.title || '');
-  const [adDescription, setAdDescription] = useState(popupAdConfig?.description || '');
-  const [adImageUrl, setAdImageUrl] = useState(popupAdConfig?.imageUrl || '');
-  const [adButtonText, setAdButtonText] = useState(popupAdConfig?.buttonText || '');
-  const [adButtonLink, setAdButtonLink] = useState(popupAdConfig?.buttonLink || '#catalog');
-  const [adBadge, setAdBadge] = useState(popupAdConfig?.badge ?? 'LIMITED TIME DEAL');
+  const [adBanners, setAdBanners] = useState(() => {
+    const list = getAllPopupBanners(popupAdConfig);
+    return list.length ? list : [{ ...emptyPopupBanner(), badge: 'LIMITED TIME DEAL' }];
+  });
   const [adShowOncePerSession, setAdShowOncePerSession] = useState(popupAdConfig?.showOncePerSession ?? false);
   const [isSavingAd, setIsSavingAd] = useState(false);
-  const [isUploadingAdImg, setIsUploadingAdImg] = useState(false);
+  const [uploadingAdIdx, setUploadingAdIdx] = useState(null);
 
   const [stripEnabled, setStripEnabled] = useState(gameStripConfig?.enabled ?? true);
   const [stripTitle, setStripTitle] = useState(gameStripConfig?.title || 'Discover More Games');
@@ -600,12 +599,8 @@ export const AdminDashboard = () => {
   useEffect(() => {
     if (popupAdConfig) {
       setAdEnabled(popupAdConfig.enabled ?? true);
-      setAdTitle(popupAdConfig.title || '');
-      setAdDescription(popupAdConfig.description || '');
-      setAdImageUrl(popupAdConfig.imageUrl || '');
-      setAdButtonText(popupAdConfig.buttonText || '');
-      setAdButtonLink(popupAdConfig.buttonLink || '#catalog');
-      setAdBadge(popupAdConfig.badge ?? 'LIMITED TIME DEAL');
+      const list = getAllPopupBanners(popupAdConfig);
+      setAdBanners(list.length ? list : [{ ...emptyPopupBanner(), badge: 'LIMITED TIME DEAL' }]);
       setAdShowOncePerSession(popupAdConfig.showOncePerSession ?? false);
     }
   }, [popupAdConfig]);
@@ -977,28 +972,44 @@ export const AdminDashboard = () => {
     }
   };
 
-  const handleAdImageFileUpload = async (e) => {
+  const updateAdBanner = (idx, patch) => setAdBanners(prev => prev.map((b, i) => (i === idx ? { ...b, ...patch } : b)));
+  const moveAdBanner = (idx, dir) => {
+    setAdBanners(prev => {
+      const to = idx + dir;
+      if (to < 0 || to >= prev.length) return prev;
+      const next = [...prev];
+      [next[idx], next[to]] = [next[to], next[idx]];
+      return next;
+    });
+  };
+  const removeAdBanner = (idx) => setAdBanners(prev => prev.filter((_, i) => i !== idx));
+  const addAdBanner = () => {
+    if (adBanners.length >= MAX_POPUP_BANNERS) return;
+    setAdBanners(prev => [...prev, emptyPopupBanner()]);
+  };
+
+  const handleAdImageFileUpload = async (idx, e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       showToast('Please select a valid image file (PNG, JPG, WEBP)!', 'error');
       return;
     }
-    setIsUploadingAdImg(true);
+    setUploadingAdIdx(idx);
     try {
       // Store the picture in R2 and keep only its URL in the popup config — never the raw file.
       let uploaded = null;
       try { uploaded = await uploadToR2Storage(file, 'popup_ads'); } catch (r2Err) { uploaded = null; }
 
       if (uploaded?.success && uploaded.url) {
-        setAdImageUrl(uploaded.url);
+        updateAdBanner(idx, { imageUrl: uploaded.url });
         showToast('Image uploaded to storage & applied! ☁️');
       } else {
         // R2 unreachable: embed a compressed copy so the popup still works, but say so.
         try {
           const dataUrl = await compressImageToDataUrl(file);
           if (dataUrl.length > 700000) throw new Error('too large');
-          setAdImageUrl(dataUrl);
+          updateAdBanner(idx, { imageUrl: dataUrl });
           showToast('Storage upload unavailable — applied a compressed copy instead. Re-upload later for best results.');
         } catch (cErr) {
           showToast(uploaded?.error || 'Image upload failed. Try a smaller image or paste a direct URL.', 'error');
@@ -1008,25 +1019,32 @@ export const AdminDashboard = () => {
       console.error('Image upload error:', err);
       showToast('Failed to upload image file.', 'error');
     } finally {
-      setIsUploadingAdImg(false);
+      setUploadingAdIdx(null);
       if (e.target) e.target.value = '';
     }
   };
 
   const handleSavePopupAd = async (e) => {
     if (e) e.preventDefault();
-    if (adEnabled && !adImageUrl.trim() && !adTitle.trim() && !adDescription.trim()) {
-      showToast('Add an image, title or description before publishing the popup.', 'error');
+    const filled = (b) => b.imageUrl.trim() || b.title.trim() || b.description.trim();
+    const emptyIdx = adBanners.findIndex(b => b.enabled && !filled(b));
+    if (emptyIdx !== -1) {
+      showToast(`Banner ${emptyIdx + 1}: upload an image (or hide the banner).`, 'error');
       return;
     }
-    if (adImageUrl.startsWith('data:') && adImageUrl.length > 700000) {
-      showToast('Image is too large to publish. Upload it again (it is stored as a URL) or use a smaller file.', 'error');
+    if (adEnabled && !adBanners.some(b => b.enabled)) {
+      showToast('Switch on at least one banner before publishing the popup.', 'error');
+      return;
+    }
+    const bigIdx = adBanners.findIndex(b => b.imageUrl.startsWith('data:') && b.imageUrl.length > 700000);
+    if (bigIdx !== -1) {
+      showToast(`Banner ${bigIdx + 1}: image is too large to publish. Upload it again (it is stored as a URL) or use a smaller file.`, 'error');
       return;
     }
     setIsSavingAd(true);
     const success = await updatePopupAdConfig({
-      enabled: adEnabled, title: adTitle, description: adDescription, imageUrl: adImageUrl,
-      buttonText: adButtonText, buttonLink: adButtonLink, badge: adBadge, showOncePerSession: adShowOncePerSession
+      enabled: adEnabled, showOncePerSession: adShowOncePerSession,
+      banners: adBanners.map(b => ({ ...b, imageUrl: b.imageUrl.trim() })),
     });
     setIsSavingAd(false);
     if (success) showToast('🎉 POPUP BANNER AD UPDATED & PUBLISHED LIVE TO WEBSITE!');
@@ -2195,73 +2213,97 @@ export const AdminDashboard = () => {
 
           {adminTab === 'popupAd' && (
             <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-3xl border-2 p-6" style={cardStyle}>
-                <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-3xl border-2 p-5 sm:p-6" style={cardStyle}>
+                <div className="flex flex-wrap items-center gap-2">
                   <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black font-mono border ${adEnabled ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'border'}`} style={!adEnabled ? { borderColor: 'var(--adm-border)', ...mutedStyle } : undefined}>{adEnabled ? 'LIVE ON WEB' : 'DISABLED'}</span>
+                  <span className="text-xs" style={mutedStyle}>{adBanners.filter(b => b.enabled).length} of {adBanners.length} banner{adBanners.length === 1 ? '' : 's'} on{adBanners.filter(b => b.enabled).length > 1 ? ' · shown as a slider' : ''}</span>
                 </div>
-                <button onClick={handleSavePopupAd} disabled={isSavingAd} className="px-6 py-3 bg-[#1677ff] hover:bg-[#0b5ed7] disabled:opacity-60 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-blue-600/30 cursor-pointer flex items-center gap-2 shrink-0">
+                <button onClick={handleSavePopupAd} disabled={isSavingAd} className="px-6 py-3 bg-[#1677ff] hover:bg-[#0b5ed7] disabled:opacity-60 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-blue-600/30 cursor-pointer flex items-center justify-center gap-2 shrink-0">
                   {isSavingAd ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}<span>Save & Publish Live</span>
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <form onSubmit={handleSavePopupAd} className="lg:col-span-7 rounded-3xl border-2 p-6 space-y-5" style={cardStyle}>
-                  <ToggleSwitch checked={adEnabled} onChange={setAdEnabled} label="Enable Popup Banner Ad" description="Show this advertisement popup when users load the web app" />
-                  <ToggleSwitch checked={adShowOncePerSession} onChange={setAdShowOncePerSession} label="Show Once Per Session" description="Popup won't re-appear on refresh after being closed" />
-                  <div><label className="text-xs font-bold block mb-1" style={mutedStyle}>Badge Text</label><input type="text" placeholder="e.g. LIMITED TIME DEAL (leave empty to hide)" value={adBadge} onChange={(e) => setAdBadge(e.target.value)} className={fieldCls} style={fieldStyle} /></div>
-                  <div><label className="text-xs font-bold block mb-1" style={mutedStyle}>Popup Title / Headline</label><input type="text" placeholder="e.g. SPECIAL PROMO OFFER!" value={adTitle} onChange={(e) => setAdTitle(e.target.value)} className={fieldCls} style={fieldStyle} /></div>
-                  <div><label className="text-xs font-bold block mb-1" style={mutedStyle}>Description / Offer Details</label><textarea rows={3} value={adDescription} onChange={(e) => setAdDescription(e.target.value)} className={`${fieldCls} resize-none`} style={fieldStyle} /></div>
-                  <div>
-                    <label className="text-xs font-bold block mb-1.5" style={mutedStyle}>Banner Image <span style={faintStyle}>— a PNG with a transparent background floats on the page with no box behind it (recommended ~900×1100)</span></label>
-                    <label className="w-full border-2 border-dashed border-[#1677ff]/40 hover:border-[#1677ff] p-3.5 rounded-2xl flex items-center justify-center gap-2.5 cursor-pointer transition-colors text-xs mb-2" style={mutedStyle}>
-                      {isUploadingAdImg ? (<><Loader2 className="w-5 h-5 text-red-500 animate-spin" /><span className="font-extrabold text-red-400">Uploading...</span></>) : (<><UploadCloud className="w-5 h-5 text-red-500" /><span className="font-extrabold" style={{ color: 'var(--adm-text)' }}>Upload Image File</span></>)}
-                      <input type="file" accept="image/*" disabled={isUploadingAdImg} onChange={handleAdImageFileUpload} className="hidden" />
-                    </label>
-                    <input type="text" placeholder="Or paste direct image URL (https://...)" value={adImageUrl} onChange={(e) => setAdImageUrl(e.target.value)} className={`${fieldCls} font-mono`} style={fieldStyle} />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div><label className="text-xs font-bold block mb-1" style={mutedStyle}>Button Action Text</label><input type="text" placeholder="e.g. Top Up Now (leave empty: image is the button)" value={adButtonText} onChange={(e) => setAdButtonText(e.target.value)} className={fieldCls} style={fieldStyle} /></div>
-                    <div>
-                      <label className="text-xs font-bold block mb-1" style={mutedStyle}>Target Action Link</label>
-                      <select value={adButtonLink} onChange={(e) => setAdButtonLink(e.target.value)} className={fieldCls} style={fieldStyle}>
-                        <option value="#catalog">Open Game Catalog</option>
-                        <option value="#wallet">Open Deposit Wallet</option>
-                        <option value="#referral">Open Referral Page</option>
-                        <option value="#reseller">Open Reseller Program</option>
-                        <option value="#support">Open Live Support Chat</option>
-                        <option value="#ff-accounts">Open Free Fire Accounts</option>
-                        <option value="https://wa.me/94740436276">Open Support WhatsApp</option>
-                        {!['#catalog', '#wallet', '#referral', '#reseller', '#support', '#ff-accounts', 'https://wa.me/94740436276'].includes(adButtonLink) && (
-                          <option value={adButtonLink}>{adButtonLink}</option>
-                        )}
-                      </select>
-                    </div>
-                  </div>
-                  <button type="submit" disabled={isSavingAd} className="w-full py-3 bg-[#1677ff] hover:bg-[#0b5ed7] text-white font-extrabold text-xs rounded-xl shadow-lg cursor-pointer flex items-center justify-center gap-2">{isSavingAd ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}<span>Save & Publish Live</span></button>
-                </form>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ToggleSwitch checked={adEnabled} onChange={setAdEnabled} label="Show Popup" description="Pop up the banners when visitors open the site" />
+                <ToggleSwitch checked={adShowOncePerSession} onChange={setAdShowOncePerSession} label="Show Once Per Session" description="Don't show again on refresh after it is closed" />
+              </div>
 
-                <div className="lg:col-span-5">
-                  <div className="rounded-3xl border-2 p-5" style={cardStyle}>
-                    <h4 className="text-xs font-black uppercase tracking-wider mb-4 flex items-center justify-between" style={mutedStyle}><span>Live Preview</span><span className="text-emerald-400 font-mono">Real-time</span></h4>
-                    <div className="flex flex-col items-center w-full">
-                      <div className="relative w-full rounded-2xl overflow-hidden flex flex-col items-center px-4 py-6 gap-3" style={{ background: 'repeating-conic-gradient(#1a1a22 0% 25%, #101016 0% 50%) 50% / 18px 18px' }}>
-                        {adImageUrl ? (
-                          <div className="relative w-full flex justify-center">
-                            {adBadge && <span className="absolute top-0 left-0 z-10 px-2.5 py-0.5 rounded-full bg-[#1677ff] text-white font-black text-[9px] uppercase">{adBadge}</span>}
-                            <img src={adImageUrl} alt="Preview" className="max-h-52 w-auto max-w-full object-contain" style={{ filter: 'drop-shadow(0 14px 30px rgba(225,29,40,0.45))' }} />
-                          </div>
+              <div className="rounded-3xl border-2 p-5 sm:p-6 space-y-5" style={cardStyle}>
+                <div>
+                  <h3 className="text-sm font-black" style={{ color: 'var(--adm-text)' }}>Banners <span className="font-mono text-xs" style={faintStyle}>{adBanners.length}/{MAX_POPUP_BANNERS}</span></h3>
+                  <p className="text-[11px] mt-0.5" style={mutedStyle}>Upload an image for each banner. A transparent PNG (about 900×1100) looks best. Use the arrows to change the order.</p>
+                </div>
+
+                <div className="pbn-grid">
+                  {adBanners.map((b, idx) => (
+                    <div key={b.id} className={`pbn-card ${b.enabled ? '' : 'is-off'}`}>
+                      <label className="pbn-media" title={b.imageUrl ? 'Change image' : 'Upload image'}>
+                        {uploadingAdIdx === idx ? (
+                          <span className="pbn-empty"><Loader2 className="w-7 h-7 animate-spin" /><span>Uploading…</span></span>
+                        ) : b.imageUrl ? (
+                          <>
+                            <img src={b.imageUrl} alt={`Banner ${idx + 1}`} />
+                            <span className="pbn-change"><UploadCloud className="w-4 h-4" />Change image</span>
+                          </>
                         ) : (
-                          <div className="w-full rounded-2xl border border-white/20 bg-white/10 py-8 text-center text-[11px] text-white/60">No image — a glass card is shown instead</div>
+                          <span className="pbn-empty"><span className="pbn-empty-icon"><UploadCloud className="w-6 h-6" /></span><span>Upload image</span><span className="pbn-empty-sub">PNG, JPG or WEBP</span></span>
                         )}
-                        <div className="text-center space-y-2 w-full">
-                          {(adTitle || !adImageUrl) && <h5 className="text-base font-black text-white" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>{adTitle || 'Popup Title Here'}</h5>}
-                          {(adDescription || !adImageUrl) && <p className="text-[11px] text-white/85 leading-relaxed" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>{adDescription || 'Your ad description will appear here...'}</p>}
-                          {(adButtonText || !adImageUrl) && <div className="pt-1 flex justify-center"><div className="px-8 py-2.5 bg-gradient-to-r from-[#3b8cff] to-[#0b5ed7] text-white font-black text-xs uppercase tracking-wider rounded-full shadow-lg flex items-center gap-1.5"><span>{adButtonText || 'GO'}</span><ArrowRight className="w-3.5 h-3.5" /></div></div>}
+                        <input type="file" accept="image/*" disabled={uploadingAdIdx !== null} onChange={(e) => handleAdImageFileUpload(idx, e)} className="hidden" />
+                        <span className="pbn-num">{idx + 1}</span>
+                        {!b.enabled && <span className="pbn-off-tag">Hidden</span>}
+                      </label>
+
+                      <div className="pbn-body">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-black" style={{ color: 'var(--adm-text)' }}>{b.enabled ? 'Showing' : 'Hidden'}</span>
+                          <button type="button" onClick={() => updateAdBanner(idx, { enabled: !b.enabled })} aria-label={b.enabled ? 'Hide banner' : 'Show banner'} className={`w-11 h-6 rounded-full transition-colors relative p-1 cursor-pointer shrink-0 ${b.enabled ? 'bg-[#1677ff]' : 'bg-slate-400/40'}`}><div className={`w-4 h-4 rounded-full bg-white transition-transform ${b.enabled ? 'translate-x-5' : 'translate-x-0'}`} /></button>
                         </div>
-                        <div className="w-8 h-8 rounded-full bg-white/10 border border-white/25 flex items-center justify-center text-white mt-1"><X className="w-4 h-4" /></div>
+
+                        <div>
+                          <label className="text-[11px] font-bold block mb-1" style={mutedStyle}>Tap opens</label>
+                          <select value={b.buttonLink} onChange={(e) => updateAdBanner(idx, { buttonLink: e.target.value })} className={fieldCls} style={fieldStyle}>
+                            <option value="#catalog">Game Catalog</option>
+                            <option value="#wallet">Deposit Wallet</option>
+                            <option value="#referral">Referral Page</option>
+                            <option value="#reseller">Reseller Program</option>
+                            <option value="#support">Live Support Chat</option>
+                            <option value="#ff-accounts">Free Fire Accounts</option>
+                            <option value="https://wa.me/94740436276">Support WhatsApp</option>
+                            {(gamesCatalog || []).map(g => <option key={g.id} value={`#game:${g.id}`}>Top up: {g.name}</option>)}
+                            {!['#catalog', '#wallet', '#referral', '#reseller', '#support', '#ff-accounts', 'https://wa.me/94740436276'].includes(b.buttonLink) && !(gamesCatalog || []).some(g => `#game:${g.id}` === b.buttonLink) && (
+                              <option value={b.buttonLink}>{b.buttonLink}</option>
+                            )}
+                          </select>
+                        </div>
+
+                        <details className="pbn-more">
+                          <summary>Text & button <span style={faintStyle}>(optional)</span></summary>
+                          <div className="space-y-2.5 pt-2.5">
+                            <input type="text" maxLength={200} placeholder="Title" value={b.title} onChange={(e) => updateAdBanner(idx, { title: e.target.value })} className={fieldCls} style={fieldStyle} />
+                            <textarea rows={2} maxLength={1000} placeholder="Description" value={b.description} onChange={(e) => updateAdBanner(idx, { description: e.target.value })} className={`${fieldCls} resize-none`} style={fieldStyle} />
+                            <div className="grid grid-cols-2 gap-2">
+                              <input type="text" maxLength={60} placeholder="Button text" value={b.buttonText} onChange={(e) => updateAdBanner(idx, { buttonText: e.target.value })} className={fieldCls} style={fieldStyle} />
+                              <input type="text" maxLength={60} placeholder="Badge" value={b.badge} onChange={(e) => updateAdBanner(idx, { badge: e.target.value })} className={fieldCls} style={fieldStyle} />
+                            </div>
+                          </div>
+                        </details>
+
+                        <div className="pbn-actions">
+                          <button type="button" onClick={() => moveAdBanner(idx, -1)} disabled={idx === 0} aria-label="Move earlier"><ArrowUp className="w-4 h-4 -rotate-90" /></button>
+                          <button type="button" onClick={() => moveAdBanner(idx, 1)} disabled={idx === adBanners.length - 1} aria-label="Move later"><ArrowDown className="w-4 h-4 -rotate-90" /></button>
+                          <button type="button" onClick={() => removeAdBanner(idx)} className="pbn-del" aria-label="Delete banner"><Trash2 className="w-4 h-4" /><span>Delete</span></button>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  ))}
+
+                  {adBanners.length < MAX_POPUP_BANNERS && (
+                    <button type="button" onClick={addAdBanner} className="pbn-add">
+                      <span className="pbn-empty-icon"><Plus className="w-6 h-6" /></span>
+                      <span className="text-sm font-black">Add banner</span>
+                      <span className="text-[11px]" style={mutedStyle}>Up to {MAX_POPUP_BANNERS} banners</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
