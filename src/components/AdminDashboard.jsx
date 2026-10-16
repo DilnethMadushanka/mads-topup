@@ -4,6 +4,7 @@ import { dispatchMoongoldOrder, checkMoongoldBalance } from '../services/moongol
 import { uploadToR2Storage } from '../services/storageService';
 import { SupportDesk, SupportDeskStats } from './admin/SupportDesk';
 import { FfAccountsAdmin } from './admin/FfAccountsAdmin';
+import { sortOrdersNewestFirst } from '../utils/ownership';
 import {
   X, ShieldCheck, DollarSign, RefreshCw,
   CheckCircle2, Clock, Zap, Save, Eye, EyeOff, Cloud, UploadCloud,
@@ -821,7 +822,8 @@ export const AdminDashboard = () => {
 
   // Lists can hold stray null / non-object entries from the database; skip them.
   const objList = (v) => (Array.isArray(v) ? v.filter(x => x && typeof x === 'object') : []);
-  const safeOrders = objList(orders);
+  // Newest first: order ids are random, so database order buries new orders.
+  const safeOrders = sortOrdersNewestFirst(objList(orders));
   const safeUsers = objList(usersList);
   const safePayments = objList(manualPayments);
   const safeTickets = objList(supportTickets);
