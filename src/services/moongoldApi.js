@@ -190,7 +190,7 @@ export const checkPlayerIGN = async (gameId = '', playerId = '', zoneId = '') =>
     });
     const data = await res.json().catch(() => null);
     if (data?.success && data.ign) {
-      saveCachedIgn(cleanId, data.ign);
+      saveCachedIgn(gameId, cleanId, cleanZone, data.ign);
       return { success: true, ign: data.ign, isReal: true, status: 'VERIFIED', source: data.source };
     }
     if (res.status === 429) {

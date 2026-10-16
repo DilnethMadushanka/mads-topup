@@ -1025,11 +1025,12 @@ export const AppProvider = ({ children }) => {
     return `Rs. ${Number(priceLkr).toLocaleString('en-US')}`;
   };
 
-  const savePlayerId = (gameId, gameName, playerId, nickName) => {
+  const savePlayerId = (gameId, gameName, playerId, nickName, zoneId = '') => {
     setUserProfile(prev => {
-      const exists = prev.savedIds.some(s => s.gameId === gameId && s.playerId === playerId);
+      const zone = String(zoneId || '').trim();
+      const exists = prev.savedIds.some(s => s.gameId === gameId && s.playerId === playerId && (s.zoneId || '') === zone);
       if (exists) return prev;
-      const newEntry = { id: Date.now(), gameId, gameName, playerId, nickName: nickName || 'My ID' };
+      const newEntry = { id: Date.now(), gameId, gameName, playerId, nickName: nickName || 'My ID', ...(zone ? { zoneId: zone } : {}) };
       const updated = [
         ...prev.savedIds,
         newEntry

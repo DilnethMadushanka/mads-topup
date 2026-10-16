@@ -3139,6 +3139,9 @@ app.post('/api/player-name', rateLimiter(30, 60000), async (req, res) => {
   if (!game || !/^[0-9A-Za-z_-]{3,30}$/.test(playerId) || zoneId.length > 20) {
     return res.status(400).json({ success: false, message: 'Check the game and Player ID.' });
   }
+  if (game.requiresServer && !zoneId) {
+    return res.status(400).json({ success: false, message: 'Please enter your Zone ID too.' });
+  }
 
   const cacheKey = `${gameId}|${playerId}|${zoneId}`;
   const cached = playerNameCache.get(cacheKey);
