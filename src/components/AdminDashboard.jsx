@@ -870,6 +870,15 @@ export const AdminDashboard = () => {
     return matchesSearch && matchesStatus && matchesPayment;
   });
 
+  // How many customer records share each email. Before Google logins were
+  // joined to email signups, one person could end up with two records.
+  const emailCounts = safeUsers.reduce((m, u) => {
+    const e = String(u?.email || '').trim().toLowerCase();
+    if (e) m[e] = (m[e] || 0) + 1;
+    return m;
+  }, {});
+  const sharesEmail = (u) => (emailCounts[String(u?.email || '').trim().toLowerCase()] || 0) > 1;
+
   const filteredUsers = safeUsers.filter(usr => {
     if (!usr) return false;
     const search = (userSearch || '').toLowerCase();
@@ -881,7 +890,8 @@ export const AdminDashboard = () => {
     const matchesStatus = userStatusFilter === 'ALL' ||
       (userStatusFilter === 'VERIFIED' && usr.isVerified) ||
       (userStatusFilter === 'UNVERIFIED' && !usr.isVerified) ||
-      (userStatusFilter === 'BLOCKED' && usr.status === 'BLOCKED');
+      (userStatusFilter === 'BLOCKED' && usr.status === 'BLOCKED') ||
+      (userStatusFilter === 'DUPLICATE' && sharesEmail(usr));
     return matchesSearch && matchesStatus;
   }).sort((a, b) => {
     const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -1893,6 +1903,7 @@ export const AdminDashboard = () => {
                   <option value="VERIFIED">Verified Accounts Only</option>
                   <option value="UNVERIFIED">Unverified Accounts</option>
                   <option value="BLOCKED">Blocked Accounts</option>
+                  <option value="DUPLICATE">Same Email (2+ accounts)</option>
                 </select>
                 <select value={userSortOrder} onChange={(e) => setUserSortOrder(e.target.value)} className={`${fieldCls} sm:max-w-[200px]`} style={fieldStyle}>
                   <option value="newest">⬇ Newest First</option>
@@ -1911,6 +1922,10 @@ export const AdminDashboard = () => {
                         {u.isVerified && <BadgeCheck className="w-4 h-4 text-emerald-400" />}
                       </div>
                       <div className="text-[10px] font-mono" style={mutedStyle}>{u.email}</div>
+                      <div className="flex flex-wrap justify-end md:justify-start gap-1 mt-1">
+                        <span className="adm-acct-tag">{String(u.uid || '').startsWith('usr_') ? 'Email login' : 'Google login'}</span>
+                        {sharesEmail(u) && <span className="adm-acct-tag adm-acct-tag--dup" title="Another customer record has this same email">Same email ×{emailCounts[String(u.email).trim().toLowerCase()]}</span>}
+                      </div>
                     </div>
                   )},
                   { key: 'phone', label: 'WhatsApp', render: u => (

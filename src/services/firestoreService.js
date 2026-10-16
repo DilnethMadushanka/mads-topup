@@ -226,7 +226,9 @@ export const syncUserProfileToFirestore = async (user) => {
     try {
       const userRtdbRef = dbRef(rtdb, `users/${user.uid}`);
       const me = await fetchMyAccount();
-      const mine = me?.profile && me.profile.uid === user.uid ? me.profile : null;
+      // linked: a Google login joined to the earlier account with the same
+      // email; that account (its own uid) is the profile from now on.
+      const mine = me?.profile && (me.profile.uid === user.uid || me.linked) ? me.profile : null;
       // Create only when the server says there is no record, or at signup
       // (no session yet); the database rules refuse overwriting one.
       const canCreate = me?.status === 404 || (!me && Boolean(user.password));
@@ -236,7 +238,7 @@ export const syncUserProfileToFirestore = async (user) => {
         if (!profileData.securityKey || !profileData.resellerCode) {
           const creds = ensureResellerCredentials(profileData);
           profileData = { ...profileData, ...creds };
-          await updateUserProfileInFirestore(user.uid, {
+          await updateUserProfileInFirestore(profileData.uid, {
             securityKey: creds.securityKey,
             resellerCode: creds.resellerCode
           });
@@ -270,7 +272,7 @@ export const syncUserProfileToFirestore = async (user) => {
   // 2. Try Firestore (ALWAYS sync to Firestore as well, so both databases stay in sync)
   if (db) {
     try {
-      const userRef = doc(db, 'users', user.uid);
+      const userRef = doc(db, 'users', profileData?.uid || user.uid);
       const docSnap = await getDoc(userRef);
 
       if (docSnap.exists()) {
@@ -285,7 +287,7 @@ export const syncUserProfileToFirestore = async (user) => {
       } else {
         const creds = ensureResellerCredentials(profileData || user);
         const newUserProfile = {
-          uid: user.uid,
+          uid: profileData?.uid || user.uid,
           name: profileData?.name || user.name || 'Verified Gamer',
           email: profileData?.email || user.email || '',
           phone: profileData?.phone || user.phone || '',

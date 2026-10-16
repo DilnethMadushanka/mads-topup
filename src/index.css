@@ -568,6 +568,22 @@
   color-scheme: light;
 }
 
+/* Customers list: login type + "same email" tags */
+.mads-admin .adm-acct-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--adm-accent);
+  background: var(--adm-accent-soft);
+}
+.mads-admin .adm-acct-tag--dup { color: #fbbf24; background: rgba(245, 158, 11, 0.16); }
+.mads-admin.theme-light .adm-acct-tag--dup { color: #b45309; background: rgba(245, 158, 11, 0.14); }
+
 /* Inputs: accent focus ring everywhere in the admin */
 .mads-admin input:focus,
 .mads-admin select:focus,
