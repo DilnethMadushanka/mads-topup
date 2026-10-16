@@ -15,6 +15,7 @@ import { sendMail, mailProvidersConfigured } from './lib/mailer.js';
 import { otpEmailHtml } from './lib/otpEmail.js';
 import { verifyPasswordLogin, setPasswordForEmail, publicProfile } from './lib/userAuth.js';
 import { rtdbUrl, rtdbGet, rtdbPut, rtdbPatch, rtdbTransaction, findUserKey, findUserKeysByEmail, adjustWallet, spendWallet, isUserBlocked, addResellerSales } from './lib/rtdbAdmin.js';
+import { buildProfitReport, fetchMoogoldHistory, slDate } from './lib/profitReport.js';
 import { moogoldRequest, fetchVoucherCodes, saveUserVoucher, listUserVouchers, findCatalogPackage, isVoucherGame, redactVoucherCodes } from './lib/moogoldVoucher.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -2313,6 +2314,48 @@ app.get('/api/admin/data/:name', requireAdminSession, async (req, res) => {
     res.json({ success: true, data: data ?? null });
   } catch (e) {
     console.error('[Admin Data Error]:', e.message);
+    res.status(500).json({ error: SERVER_ERROR });
+  }
+});
+
+// Daily profit for the admin panel: completed top-ups only, sale price
+// against MooGold's cost. days=1..90 (Sri Lanka dates, today included),
+// rate = LKR per USD used to turn MooGold's USD cost into rupees.
+const moogoldHistoryCache = new Map(); // "start|end" -> { at, map }
+app.get('/api/admin/profit', requireAdminSession, async (req, res) => {
+  try {
+    const days = Math.min(90, Math.max(1, parseInt(req.query.days, 10) || 30));
+    const rate = Math.min(1000, Math.max(100, Number(req.query.rate) || 340));
+    const toDate = slDate(Date.now());
+    const fromDate = slDate(Date.now() - (days - 1) * 86400000);
+
+    // MooGold dates are Malaysia time (2.5h ahead), so ask for one day either
+    // side and match orders by MooGold order id.
+    const histStart = slDate(Date.now() - days * 86400000);
+    const histEnd = slDate(Date.now() + 86400000);
+    const cacheKey = `${histStart}|${histEnd}`;
+    let history = null;
+    let historyError = '';
+    const cached = moogoldHistoryCache.get(cacheKey);
+    if (cached && Date.now() - cached.at < 3 * 60 * 1000) {
+      history = cached.map;
+    } else {
+      try {
+        history = await fetchMoogoldHistory(moogoldRequest, histStart, histEnd);
+        moogoldHistoryCache.clear();
+        moogoldHistoryCache.set(cacheKey, { at: Date.now(), map: history });
+      } catch (e) {
+        historyError = e.message;
+        console.warn('[Profit Report] MooGold history unavailable:', e.message);
+      }
+    }
+
+    const orders = await rtdbGet('orders');
+    const report = buildProfitReport({ orders, games: GAMES_DATA, history, rate, fromDate, toDate });
+    res.set('Cache-Control', 'no-store');
+    res.json({ success: true, fromDate, toDate, rate, moogoldHistory: Boolean(history), historyError: historyError ? 'MooGold order history could not be read.' : '', ...report });
+  } catch (e) {
+    console.error('[Profit Report Error]:', e.message);
     res.status(500).json({ error: SERVER_ERROR });
   }
 });

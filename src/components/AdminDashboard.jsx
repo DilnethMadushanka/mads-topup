@@ -4,6 +4,7 @@ import { dispatchMoongoldOrder, checkMoongoldBalance } from '../services/moongol
 import { uploadToR2Storage } from '../services/storageService';
 import { SupportDesk, SupportDeskStats } from './admin/SupportDesk';
 import { FfAccountsAdmin } from './admin/FfAccountsAdmin';
+import { ProfitReport } from './admin/ProfitReport';
 import { sortOrdersNewestFirst } from '../utils/ownership';
 import {
   X, ShieldCheck, DollarSign, RefreshCw,
@@ -14,7 +15,7 @@ import {
   Smartphone, Copy, Crown, Mail, Building2, Sparkles, ArrowRight, Loader2,
   LayoutDashboard, PanelLeftClose, PanelLeftOpen, Moon, Sun, Bell, LogOut,
   ArrowUp, ArrowDown, ChevronsUpDown, ShoppingCart,
-  Gamepad2, Command, Inbox, LayoutGrid, Star
+  Gamepad2, Command, Inbox, LayoutGrid, Star, TrendingUp
 } from 'lucide-react';
 
 /* ============================================================
@@ -376,6 +377,7 @@ const NAV_GROUPS = [
   { label: 'Overview', items: [{ id: 'overview', label: 'Dashboard', icon: LayoutDashboard }] },
   { label: 'Sales & Payments', items: [
     { id: 'orders', label: 'Orders', icon: ShoppingCart, badgeKey: 'pending' },
+    { id: 'profit', label: 'Daily Profit', icon: TrendingUp },
     { id: 'deposits', label: 'Deposit Verifier', icon: FileCheck, badgeKey: 'payments' },
     { id: 'ezcash', label: 'EZ Cash Logs', icon: Smartphone, badgeKey: 'ezcash' },
     { id: 'vouchers', label: 'Promo Vouchers', icon: Ticket }
@@ -403,6 +405,7 @@ const NAV_GROUPS = [
 const TAB_TITLES = {
   overview: ['System Analytics & Revenue', 'Real-time overview of sales, active dispatches & supplier gateways'],
   orders: ['Orders Dispatch', 'Track, inspect and fulfil every top-up order'],
+  profit: ['Daily Profit', 'Completed top-ups each day: sale price against MooGold cost'],
   deposits: ['Manual Payment Verification Queue', 'Review, verify, and approve EZ Cash, Binance & Bank deposits'],
   ezcash: ['Dialog EZ Cash Webhook Logs', 'Live SMS records received from the phone forwarder gateway'],
   vouchers: ['Promo Voucher Codes', 'Create and manage redeemable voucher codes'],
@@ -1669,6 +1672,8 @@ export const AdminDashboard = () => {
               />
             </div>
           )}
+
+          {adminTab === 'profit' && <ProfitReport />}
 
           {adminTab === 'deposits' && (
             <div className="space-y-4">
