@@ -9,6 +9,7 @@ import confetti from 'canvas-confetti';
 import { auth } from '../services/firebaseAuth';
 import { getUserAuthToken } from '../services/serverApi';
 import { gamePathFor } from '../data/sitePages';
+import { trackEvent } from '../services/analytics';
 import { useResellerStatus, resellerRateOf } from '../hooks/useResellerStatus';
 import { resellerUnitPrice } from '../data/resellerTiers';
 import { 
@@ -537,6 +538,13 @@ export const GameTopupPage = () => {
     // PIN codes stay out of the saved order (the order list is public); they
     // are only shown here and in the profile's PIN list.
     addOrder(newOrder);
+    trackEvent('purchase', {
+      transaction_id: newOrder.partnerOrderId || newOrder.id,
+      value: totalLkr,
+      currency: 'LKR',
+      payment_type: newOrder.paymentMethod,
+      items: selectedItems.map(i => ({ item_id: String(i.id), item_name: i.name, item_category: selectedGame.name, quantity: cartQuantities[i.id] || 1 }))
+    });
     setCompletedOrder(isVoucherGame ? { ...newOrder, voucherCodes: moongoldResult.voucherCodes || [] } : newOrder);
 
     // Confetti celebration

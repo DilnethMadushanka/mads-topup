@@ -205,7 +205,8 @@ export const PolicyModal = () => {
                 <p className="pl-8 text-xs sm:text-sm text-slate-600 font-medium">
                   • <strong>No Data Sharing:</strong> MADS TOPUP never sells, rents, or distributes personal data to any third-party advertisers or external organizations.<br />
                   • <strong>Secure Cloud Storage:</strong> Data is encrypted and stored using Google Firebase Firestore and Cloudflare R2 bucket infrastructure.<br />
-                  • <strong>Automated Verification:</strong> Player IDs are verified in real-time solely to prevent misdirected top-up credits.
+                  • <strong>Automated Verification:</strong> Player IDs are verified in real-time solely to prevent misdirected top-up credits.<br />
+                  • <strong>Visit Statistics:</strong> If you choose "Accept all" in the cookie banner, Google Analytics counts page visits and orders (no ads, no ad personalisation). Choose "Essential only" to turn it off.
                 </p>
               </div>
 

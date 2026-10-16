@@ -17,6 +17,10 @@ import { otpEmailHtml } from './lib/otpEmail.js';
 import { verifyPasswordLogin, setPasswordForEmail, publicProfile } from './lib/userAuth.js';
 import { rtdbUrl, rtdbGet, rtdbPut, rtdbPatch, rtdbTransaction, findUserKey, findUserKeysByEmail, adjustWallet, spendWallet, isUserBlocked, addResellerSales } from './lib/rtdbAdmin.js';
 import { buildProfitReport, fetchMoogoldHistory, slDate } from './lib/profitReport.js';
+import { scheduleDailyBackup } from './lib/dbBackup.js';
+import { sendOrderCompleteEmail } from './lib/orderEmail.js';
+import { phoneTail, phonesInSms as phonesInSmsFrom, paymentRefKey } from './lib/paymentRefs.js';
+import { orderPriceRange } from './lib/orderPrice.js';
 import { moogoldRequest, fetchVoucherCodes, saveUserVoucher, listUserVouchers, findCatalogPackage, isVoucherGame, redactVoucherCodes } from './lib/moogoldVoucher.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -885,6 +889,9 @@ app.post('/api/admin/order-status', requireAdminSession, async (req, res) => {
       updatedAt: new Date().toISOString(),
       updatedBy: 'admin'
     });
+    if (status === 'COMPLETED' && existing.status !== 'COMPLETED') {
+      sendOrderCompleteEmail({ ...existing, id: existing.id || orderId, email: existing.userEmail || existing.email, displayName: existing.userName === 'Registered Gamer' ? '' : (existing.userName || '') });
+    }
     res.json({ success: true });
   } catch (e) {
     console.error('[Admin Order Status Error]:', e.message);
@@ -1848,7 +1855,7 @@ async function saveServerOrderRecord(partnerOrderId, { user, bodyObj, priceLkr, 
       if (found) { game = g; pkg = found; break; }
     }
     const id = 'SRV-' + String(partnerOrderId).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 70);
-    await rtdbPut(`orders/${id}`, {
+    const record = {
       id,
       source: 'server',
       partnerOrderId,
@@ -1866,9 +1873,12 @@ async function saveServerOrderRecord(partnerOrderId, { user, bodyObj, priceLkr, 
       failureReason: reason || null,
       ip: ip || '',
       createdAt: new Date().toISOString()
-    });
+    };
+    await rtdbPut(`orders/${id}`, record);
+    return record;
   } catch (e) {
     console.warn('[Server Order Record Warning]:', e.message);
+    return null;
   }
 }
 
@@ -2009,7 +2019,6 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
       if (!Number.isInteger(requestedQty) || requestedQty < 1 || requestedQty > MAX_ORDER_QUANTITY) {
         return res.status(400).json({ error: 'Invalid order quantity.' });
       }
-      const catalogPriceLkr = unitCatalogPriceLkr * requestedQty;
       // The only discount the site offers is the approved reseller's tier
       // discount (3/5/8%, src/data/resellerTiers.js; rounded per unit by the
       // site, or on the total by the reseller panel). Anything cheaper is a
@@ -2023,12 +2032,8 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
         console.warn(`[NON-RESELLER BLOCKED] ${authenticatedUser.uid} (${authenticatedUser.email}) attempted a reseller order`);
         return res.status(403).json({ error: 'Reseller orders are only available to approved reseller accounts.' });
       }
-      const resellerRate = verifiedReseller?.tier.rate || 0;
-      const minPriceLkr = verifiedReseller
-        ? Math.min(Math.round(unitCatalogPriceLkr * (1 - resellerRate)) * requestedQty,
-                   Math.round(catalogPriceLkr * (1 - resellerRate)))
-        : catalogPriceLkr;
-      if (numPriceLkr > catalogPriceLkr || numPriceLkr < minPriceLkr) {
+      const { min: minPriceLkr, max: maxPriceLkr } = orderPriceRange(unitCatalogPriceLkr, requestedQty, verifiedReseller?.tier.rate || 0);
+      if (numPriceLkr > maxPriceLkr || numPriceLkr < minPriceLkr) {
         console.warn(`[PRICE TAMPER BLOCKED] ${authenticatedUser.uid} product-id=${requestedProductId} qty=${requestedQty} sent Rs. ${numPriceLkr}, minimum Rs. ${minPriceLkr}`);
         return res.status(400).json({ error: 'Price mismatch detected. Order rejected.' });
       }
@@ -2142,8 +2147,9 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
       console.error(`[MOOGOLD ORDER REJECTED] product-id=${moongoldPayload.data?.['product-id']} category=${moongoldPayload.data?.category} reason="${jsonResult?.message || jsonResult?.error || text}"`);
     }
 
+    let serverOrder = null;
     if (isOrderCreation && deductResult?.success && partnerOrderId) {
-      await saveServerOrderRecord(partnerOrderId, {
+      serverOrder = await saveServerOrderRecord(partnerOrderId, {
         user: authenticatedUser, bodyObj, priceLkr: numPriceLkr,
         status: isSuccess ? 'COMPLETED' : 'FAILED',
         moongoldRef: jsonResult?.order_id ? String(jsonResult.order_id) : '',
@@ -2156,6 +2162,15 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
     if (isOrderCreation && !isSuccess) {
       console.warn(`[MOOGOLD ORDER FAILED] Reverting & Refund Rs. ${numPriceLkr} to UID ${authenticatedUser.uid} via ${deductResult.usedCurrency || 'LKR'}`);
       await refundUserWallet(authenticatedUser.uid, numPriceLkr, deductResult.usedCurrency || 'LKR', authenticatedUser.email, deductResult.rtdbKey);
+    }
+
+    if (isOrderCreation && isSuccess && serverOrder) {
+      sendOrderCompleteEmail({
+        ...serverOrder,
+        email: serverOrder.userEmail,
+        displayName: authenticatedUser.name || '',
+        isVoucher: isVoucherGame(orderCatalog.game)
+      });
     }
 
     // A reseller's completed orders count towards their next tier.
@@ -2638,26 +2653,8 @@ app.post('/api/binance/webhook', (req, res) => {
 // Payment reference helpers. A deposit reference (EZ Cash RN, Binance
 // order/pay id) can be credited only once: usedPaymentRefs/{key} records which
 // deposit used it, and older approved deposits are checked as well.
-const phoneTail = (v) => { const d = String(v || '').replace(/\D/g, ''); return d.length >= 9 ? d.slice(-9) : ''; };
 const EZCASH_MERCHANT_TAIL = phoneTail(process.env.EZCASH_MERCHANT_NUMBER || '0740436276');
-function phonesInSms(text) {
-  const found = [...String(text || '').matchAll(/(?<!\d)(?:\+?94|0)7\d{8}(?!\d)/g)].map(m => phoneTail(m[0]));
-  return [...new Set(found)].filter(p => p && p !== EZCASH_MERCHANT_TAIL);
-}
-function paymentRefKey(method, ref) {
-  const m = String(method || '').toLowerCase();
-  if (m.includes('ez')) {
-    const rn = String(ref || '').replace(/\D/g, '');
-    return rn.length >= 10 ? `ezcash_${rn.slice(0, 20)}` : null;
-  }
-  if (m.includes('binance')) {
-    // "Order: <id> | PayID: <id>" — only the Binance order id identifies the payment.
-    const order = String(ref || '').match(/order[:\s]*([a-z0-9]+)/i);
-    const clean = String(order ? order[1] : ref || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-    return clean.length >= 8 ? `binance_${clean.slice(0, 120)}` : null;
-  }
-  return null;
-}
+const phonesInSms = (text) => phonesInSmsFrom(text, EZCASH_MERCHANT_TAIL);
 // Returns the id of another deposit that already credited this reference.
 async function findCreditedPaymentRef(refKey, exceptPayId) {
   if (!refKey) return null;
@@ -3529,6 +3526,8 @@ app.listen(PORT, () => {
   } catch (e) {
     console.warn('[Telegram Bot Init Note]:', e.message);
   }
+
+  scheduleDailyBackup(__dirname);
 
   // Periodic background check (every 60s) for recent PENDING Genie transactions
   setInterval(async () => {

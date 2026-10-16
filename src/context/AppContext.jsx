@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { GAMES_DATA } from '../data/games';
 import { HOME_SEO, SITE_URL, seoPageForPath } from '../data/seoPages';
 import { pageForPath, pagePathFor, gamePathFor, gameForPath } from '../data/sitePages';
+import { initAnalytics, trackPageView } from '../services/analytics';
 
 // A date as an ISO string, or null. Accepts ISO strings, ms numbers and
 // Firestore Timestamps; never throws (an invalid date used to crash the page).
@@ -517,6 +518,8 @@ export const AppProvider = ({ children }) => {
     setAttr('meta[name="twitter:url"]', 'content', canonical);
     setAttr('meta[name="twitter:title"]', 'content', title);
     setAttr('meta[name="twitter:description"]', 'content', description);
+    if (firstRun) initAnalytics();
+    else trackPageView();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedGame?.id, currentPage]);
 
