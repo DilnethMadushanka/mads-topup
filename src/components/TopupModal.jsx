@@ -286,7 +286,7 @@ export const TopupModal = () => {
       paymentMethod: selectedPayment.name,
       priceLkr: priceToPay,
       status: finalStatus,
-      moongoldRef: moongoldResult.moongoldRef || (selectedPayment.id === 'wallet' ? ('MG-' + Math.floor(10000000 + Math.random() * 90000000)) : 'PENDING_ADMIN_VERIFICATION'),
+      moongoldRef: moongoldResult.moongoldRef || (selectedPayment.id === 'wallet' ? '' : 'PENDING_ADMIN_VERIFICATION'),
       receiptUrl: receiptR2Url || null,
       partnerOrderId: moongoldResult.partnerOrderId || null,
       createdAt: new Date().toISOString()

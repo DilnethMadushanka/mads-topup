@@ -53,6 +53,11 @@ import {
 
 const INITIAL_REVIEWS = [];
 
+// Sample orders and tickets that older builds put in every new browser.
+// They never existed in the database; drop them from saved copies.
+const DEMO_ORDER_IDS = new Set(['ORD-98215', 'ORD-98210', 'ORD-98205']);
+const DEMO_TICKET_IDS = new Set(['TCK-8921', 'TCK-8915']);
+
 const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
@@ -730,59 +735,15 @@ export const AppProvider = ({ children }) => {
     return () => window.removeEventListener('mads:account-blocked', onBlocked);
   }, []);
 
-  // Orders
+  // Orders. Older builds seeded made-up sample orders into a fresh browser,
+  // and the admin list then showed them as real orders with no account.
   const [orders, setOrders] = useState(() => {
-    const saved = localStorage.getItem('mads_orders');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
+    try {
+      const saved = JSON.parse(localStorage.getItem('mads_orders') || '[]');
+      return Array.isArray(saved) ? saved.filter(o => !DEMO_ORDER_IDS.has(o?.id)) : [];
+    } catch (e) {
+      return [];
     }
-    return [
-      {
-        id: 'ORD-98215',
-        gameId: 'pubg',
-        gameName: 'PUBG Mobile',
-        packageName: '60 UC',
-        amount: 60,
-        playerId: '52247852395',
-        zoneId: '',
-        ign: 'Hr199jdjekek',
-        paymentMethod: 'MADS Wallet Balance',
-        priceLkr: 360,
-        status: 'COMPLETED',
-        moongoldRef: 'MG-88219472',
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: 'ORD-98210',
-        gameId: 'freefire',
-        gameName: 'Free Fire',
-        packageName: '530 Diamonds',
-        amount: 530,
-        playerId: '248901234',
-        zoneId: '',
-        ign: '🔥 S L _ S L A Y E R 🔥',
-        paymentMethod: 'Bank Transfer',
-        priceLkr: 1580,
-        status: 'COMPLETED',
-        moongoldRef: 'MG-88910245',
-        createdAt: new Date(Date.now() - 3600000 * 2).toISOString()
-      },
-      {
-        id: 'ORD-98205',
-        gameId: 'pubg',
-        gameName: 'PUBG Mobile',
-        packageName: '325 UC',
-        amount: 325,
-        playerId: '5123984712',
-        zoneId: '',
-        ign: 'MADS〆NOOB',
-        paymentMethod: 'eZ Cash',
-        priceLkr: 1850,
-        status: 'PROCESSING',
-        moongoldRef: 'MG-88910112',
-        createdAt: new Date(Date.now() - 3600000 * 12).toISOString()
-      }
-    ];
   });
 
   // Toasts: up to 3 on screen, newest on top. Each closes itself (the
@@ -1505,64 +1466,12 @@ export const AppProvider = ({ children }) => {
   const [activeTicketId, setActiveTicketId] = useState(null);
 
   const [supportTickets, setSupportTickets] = useState(() => {
-    const saved = localStorage.getItem('mads_support_tickets');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
+    try {
+      const saved = JSON.parse(localStorage.getItem('mads_support_tickets') || '[]');
+      return Array.isArray(saved) ? saved.filter(t => !DEMO_TICKET_IDS.has(t?.id)) : [];
+    } catch (e) {
+      return [];
     }
-    return [
-      {
-        id: 'TCK-8921',
-        userId: 'USR-98210',
-        userEmail: 'madsruzza@gmail.com',
-        userName: 'Dilneth Madushanka',
-        subject: 'Diamond topup delay check for ORD-31699',
-        category: 'Order Issue',
-        orderId: 'ORD-31699',
-        status: 'OPEN',
-        priority: 'HIGH',
-        createdAt: new Date(Date.now() - 3600000).toISOString(),
-        updatedAt: new Date(Date.now() - 1800000).toISOString(),
-        messages: [
-          {
-            id: 'MSG-1',
-            sender: 'user',
-            senderName: 'Dilneth Madushanka',
-            text: 'Hi support team, I placed an order for 25 Diamonds. Can you verify status?',
-            timestamp: new Date(Date.now() - 3600000).toISOString()
-          },
-          {
-            id: 'MSG-2',
-            sender: 'admin',
-            senderName: 'MADS Support Team',
-            text: 'Hello Dilneth! We checked your order ORD-31699. Reference 46388090 is verified & active!',
-            timestamp: new Date(Date.now() - 1800000).toISOString()
-          }
-        ]
-      },
-      {
-        id: 'TCK-8915',
-        userId: 'USR-98205',
-        userEmail: 'kasun.gamer@gmail.com',
-        userName: 'Kasun SLAyer',
-        subject: 'eZ Cash Topup verification slip',
-        category: 'Wallet Deposit',
-        orderId: 'ORD-29104',
-        status: 'IN_PROGRESS',
-        priority: 'MEDIUM',
-        createdAt: new Date(Date.now() - 86400000).toISOString(),
-        updatedAt: new Date(Date.now() - 7200000).toISOString(),
-        messages: [
-          {
-            id: 'MSG-101',
-            sender: 'user',
-            senderName: 'Kasun SLAyer',
-            text: 'Uploaded my eZ Cash receipt screenshot. TRX ID: EZ-991823. Please verify my wallet credit.',
-            attachmentUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=400',
-            timestamp: new Date(Date.now() - 86400000).toISOString()
-          }
-        ]
-      }
-    ];
   });
 
   useEffect(() => {
