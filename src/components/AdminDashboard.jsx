@@ -11,6 +11,7 @@ import { UsersDesk, UserDetail, WalletCreditPage } from './admin/UsersDesk';
 import { VouchersDesk, VoucherDetail } from './admin/VouchersDesk';
 import { ResellersDesk, ResellerDetail } from './admin/ResellersDesk';
 import { SystemStatusPage, SystemStatusMini } from './admin/SystemStatus';
+import { PricesDesk } from './admin/PricesDesk';
 import { sortOrdersNewestFirst } from '../utils/ownership';
 import { newUsersToday, sriLankaTime, signupTime } from '../utils/newUsersToday';
 import { getAllPopupBanners, emptyPopupBanner, MAX_POPUP_BANNERS } from '../utils/popupBanners';
@@ -400,7 +401,7 @@ const TAB_TITLES = {
   resellers: ['Reseller Network', 'Check the joining deposit, then approve, reject or suspend resellers'],
   support: ['Support Desk', 'Live customer support tickets & chat'],
   reviews: ['Customer Reviews', 'Read and delete the feedback shown on the Reviews page'],
-  games: ['Game Catalog & Live Price Manager', 'Edit retail prices — publish instantly to web & Telegram bot'],
+  games: ['Game Prices', 'Set package prices against MooGold cost; saving updates the site and the Telegram bot'],
   popupAd: ['Popup Banner Ad Manager', 'Configure the promotional popup shown to visitors'],
   gameStrip: ['Discover Games Bar', 'Choose the game icons shown in the scrolling bar on the home page'],
   ffAccounts: ['Free Fire Accounts for Sale', 'List, edit and remove the FF accounts shown under Other Services'],
@@ -415,7 +416,7 @@ export const AdminDashboard = () => {
     tickerNotice, updateTickerNotice, usersList, verifyUserAccount, toggleBlockUser, adjustUserWallet,
     fetchAdminWalletLog, manualPayments, approveManualPayment, rejectManualPayment, recordOfflinePayment,
     supportTickets, sendTicketMessage, updateTicketStatus, updateTicketPriority, resellerApplications,
-    updateResellerApplicationStatus, resendResellerEmail, gamesCatalog, updateGamePrices, popupAdConfig, updatePopupAdConfig,
+    updateResellerApplicationStatus, resendResellerEmail, gamesCatalog, customPrices, updateGamePrices, popupAdConfig, updatePopupAdConfig,
     gameStripConfig, updateGameStripConfig, ffAccounts, userReviews, deleteReview,
     isAdminAuthenticated, setIsAdminAuthenticated, setResellerTier, fetchResellerDeposit
   } = useApp();
@@ -449,10 +450,6 @@ export const AdminDashboard = () => {
 
   const [selectedReceiptPay, setSelectedReceiptPay] = useState(null);
 
-  const [editedPricesMap, setEditedPricesMap] = useState({});
-  const [selectedGameCatalogId, setSelectedGameCatalogId] = useState('ALL');
-  const [catalogSearch, setCatalogSearch] = useState('');
-  const [isSavingPrices, setIsSavingPrices] = useState(false);
 
   const [adEnabled, setAdEnabled] = useState(popupAdConfig?.enabled ?? true);
   const [adBanners, setAdBanners] = useState(() => {
@@ -814,29 +811,6 @@ export const AdminDashboard = () => {
   const handleTabSelect = (tab) => {
     setAdminTab(tab);
     setIsMobileSidebarOpen(false);
-  };
-
-  const handlePriceInputChange = (pkgId, val) => {
-    const num = parseFloat(val);
-    setEditedPricesMap(prev => ({ ...prev, [pkgId]: isNaN(num) ? 0 : num }));
-  };
-
-  const handleSaveAllPrices = async () => {
-    setIsSavingPrices(true);
-    const fullPriceMap = {};
-    (gamesCatalog || []).forEach(game => {
-      (game.packages || []).forEach(pkg => {
-        fullPriceMap[pkg.id] = editedPricesMap[pkg.id] !== undefined ? editedPricesMap[pkg.id] : pkg.priceLkr;
-      });
-    });
-    const success = await updateGamePrices(fullPriceMap);
-    setIsSavingPrices(false);
-    if (success) {
-      setEditedPricesMap({}); // Clear edited state after successful publish
-      showToast('⚡ ALL PACKAGE PRICES SAVED & PUBLISHED LIVE TO DATABASE!');
-    } else {
-      showToast('❌ Failed to save prices. Check connection and try again.', 'error');
-    }
   };
 
   const updateAdBanner = (idx, patch) => setAdBanners(prev => prev.map((b, i) => (i === idx ? { ...b, ...patch } : b)));
@@ -1559,125 +1533,7 @@ export const AdminDashboard = () => {
           )}
 
           {adminTab === 'games' && (
-            <div className="space-y-6">
-              <div className="rounded-3xl border-2 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4" style={cardStyle}>
-                <p className="text-xs" style={mutedStyle}>Edit retail prices for any package. Click Save & Publish to instantly update prices on the Website & Telegram Bot in real-time.</p>
-                <button onClick={handleSaveAllPrices} disabled={isSavingPrices} className="px-6 py-3 bg-[#1677ff] hover:bg-[#0b5ed7] disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider rounded-2xl flex items-center gap-2 shadow-lg shadow-blue-600/30 cursor-pointer shrink-0">
-                  <Save className={`w-4 h-4 ${isSavingPrices ? 'animate-spin' : ''}`} /><span>{isSavingPrices ? 'Saving...' : 'Save & Publish All Prices'}</span>
-                </button>
-              </div>
-
-              <FilterBar>
-                <SearchInput value={catalogSearch} onChange={setCatalogSearch} placeholder="Search package name, diamond amount, or game title..." />
-                <select value={selectedGameCatalogId} onChange={(e) => setSelectedGameCatalogId(e.target.value)} className={`${fieldCls} font-mono sm:max-w-[240px]`} style={fieldStyle}>
-                  <option value="ALL">ALL GAMES ({(gamesCatalog || []).length})</option>
-                  {(gamesCatalog || []).map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-                </select>
-              </FilterBar>
-
-              <div className="space-y-6">
-                {(gamesCatalog || []).filter(g => selectedGameCatalogId === 'ALL' || g.id === selectedGameCatalogId).map(game => {
-                  const matchingPackages = (game.packages || []).filter(pkg => {
-                    if (!pkg) return false;
-                    const q = (catalogSearch || '').toLowerCase();
-                    return !q || String(pkg.name || '').toLowerCase().includes(q) || String(game.name || '').toLowerCase().includes(q);
-                  });
-                  if (matchingPackages.length === 0) return null;
-                  return (
-                    <div key={game.id} className="rounded-3xl border-2 overflow-hidden" style={cardStyle}>
-                      <div className="p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3 border-b" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
-                        <div className="flex items-center gap-3 min-w-0">
-                          <span className="text-3xl">{game.currencyIcon || '🎮'}</span>
-                          <div>
-                            <h4 className="font-black text-lg" style={{ color: 'var(--adm-text)' }}>{game.name}</h4>
-                            <span className="text-xs font-mono uppercase" style={mutedStyle}>{game.publisher} • {game.category} • {game.packages?.length || 0} Packages</span>
-                          </div>
-                        </div>
-                        <button onClick={handleSaveAllPrices} disabled={isSavingPrices} className="px-4 py-2 bg-emerald-500/15 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 text-xs font-extrabold rounded-xl cursor-pointer shrink-0">Save Prices</button>
-                      </div>
-                      <div className="md:hidden p-3 space-y-3">
-                        {matchingPackages.map(pkg => {
-                          const currentPrice = editedPricesMap[pkg.id] !== undefined ? editedPricesMap[pkg.id] : pkg.priceLkr;
-                          const isChanged = editedPricesMap[pkg.id] !== undefined && editedPricesMap[pkg.id] !== pkg.priceLkr;
-                          const wholesalePrice = Math.round(currentPrice * (1 - 0.05));
-                          const usdPrice = (currentPrice / 340).toFixed(2);
-                          return (
-                            <div key={pkg.id} className={`rounded-2xl border-2 p-3.5 space-y-3 ${isChanged ? 'border-amber-500/50' : ''}`} style={isChanged ? { background: 'var(--adm-surface-2)' } : { background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
-                              <div className="flex items-center gap-2 flex-wrap">
-                                {pkg.image && <img src={pkg.image} alt="" className="w-7 h-7 object-contain" />}
-                                <span className="text-sm font-black" style={{ color: 'var(--adm-text)' }}>{pkg.name}</span>
-                                {pkg.bonus && <span className="text-[9px] bg-blue-500/15 text-blue-400 border border-blue-500/30 px-1.5 py-0.5 rounded font-mono">{pkg.bonus}</span>}
-                                {isChanged && <span className="text-[9px] bg-amber-500/15 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded font-mono">EDITED</span>}
-                              </div>
-                              <div className="relative">
-                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-xs" style={faintStyle}>Rs.</span>
-                                <input type="number" value={currentPrice} onChange={(e) => handlePriceInputChange(pkg.id, e.target.value)} className={`w-full pl-10 pr-3 py-2.5 rounded-xl font-mono font-black text-sm focus:outline-none border-2 ${isChanged ? 'text-amber-400 border-amber-500/50' : ''}`} style={!isChanged ? { ...fieldStyle } : { background: 'var(--adm-input-bg)' }} />
-                              </div>
-                              <div className="grid grid-cols-3 gap-2 text-center">
-                                <div className="rounded-xl border px-2 py-2" style={{ borderColor: 'var(--adm-border)' }}>
-                                  <div className="text-[9px] font-black uppercase tracking-wider font-mono" style={faintStyle}>Wholesale</div>
-                                  <div className="text-xs font-mono font-bold text-emerald-400 mt-0.5">Rs. {wholesalePrice.toLocaleString()}</div>
-                                </div>
-                                <div className="rounded-xl border px-2 py-2" style={{ borderColor: 'var(--adm-border)' }}>
-                                  <div className="text-[9px] font-black uppercase tracking-wider font-mono" style={faintStyle}>USD</div>
-                                  <div className="text-xs font-mono font-bold mt-0.5" style={mutedStyle}>${usdPrice}</div>
-                                </div>
-                                <div className="rounded-xl border px-2 py-2 min-w-0" style={{ borderColor: 'var(--adm-border)' }}>
-                                  <div className="text-[9px] font-black uppercase tracking-wider font-mono" style={faintStyle}>Code</div>
-                                  <div className="text-[10px] font-mono font-bold mt-0.5 truncate" style={mutedStyle}>{pkg.id}</div>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <div className="hidden md:block p-4 sm:p-6 overflow-x-auto">
-                        <table className="w-full text-left text-xs">
-                          <thead className="font-mono text-[10px] uppercase border-b" style={{ borderColor: 'var(--adm-border)', ...mutedStyle }}>
-                            <tr><th className="p-3">Package</th><th className="p-3">Retail (LKR)</th><th className="p-3">Silver (5% Off)</th><th className="p-3">USD</th><th className="p-3 text-right">Code</th></tr>
-                          </thead>
-                          <tbody className="divide-y font-medium" style={{ borderColor: 'var(--adm-border)' }}>
-                            {matchingPackages.map(pkg => {
-                              const currentPrice = editedPricesMap[pkg.id] !== undefined ? editedPricesMap[pkg.id] : pkg.priceLkr;
-                              const isChanged = editedPricesMap[pkg.id] !== undefined && editedPricesMap[pkg.id] !== pkg.priceLkr;
-                              const wholesalePrice = Math.round(currentPrice * (1 - 0.05));
-                              const usdPrice = (currentPrice / 340).toFixed(2);
-                              return (
-                                <tr key={pkg.id} className="hover:bg-[var(--adm-surface-hover)] transition-colors">
-                                  <td className="p-3 font-bold" style={{ color: 'var(--adm-text)' }}>
-                                    <div className="flex items-center gap-2">
-                                      {pkg.image && <img src={pkg.image} alt="" className="w-6 h-6 object-contain" />}
-                                      <span>{pkg.name}</span>
-                                      {pkg.bonus && <span className="text-[9px] bg-blue-500/15 text-blue-400 border border-blue-500/30 px-1.5 py-0.5 rounded font-mono">{pkg.bonus}</span>}
-                                      {isChanged && <span className="text-[9px] bg-amber-500/15 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded font-mono">EDITED</span>}
-                                    </div>
-                                  </td>
-                                  <td className="p-3">
-                                    <div className="relative w-36">
-                                      <span className="absolute left-3 top-2 font-mono text-xs" style={faintStyle}>Rs.</span>
-                                      <input type="number" value={currentPrice} onChange={(e) => handlePriceInputChange(pkg.id, e.target.value)} className={`w-full pl-9 pr-3 py-1.5 rounded-xl font-mono font-black text-xs focus:outline-none border ${isChanged ? 'text-amber-400 border-amber-500/50' : ''}`} style={!isChanged ? { ...fieldStyle } : { background: 'var(--adm-input-bg)' }} />
-                                    </div>
-                                  </td>
-                                  <td className="p-3 font-mono font-bold text-emerald-400">Rs. {wholesalePrice.toLocaleString()}</td>
-                                  <td className="p-3 font-mono" style={mutedStyle}>${usdPrice}</td>
-                                  <td className="p-3 text-right"><span className="text-[10px] font-mono font-bold px-2 py-1 rounded-lg border" style={{ borderColor: 'var(--adm-border)', ...mutedStyle }}>{pkg.id}</span></td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="pt-2 flex justify-end">
-                <button onClick={handleSaveAllPrices} disabled={isSavingPrices} className="px-8 py-3.5 bg-[#1677ff] hover:bg-[#0b5ed7] disabled:opacity-50 text-white font-black text-sm uppercase tracking-wider rounded-2xl flex items-center gap-2 shadow-xl shadow-blue-600/30 cursor-pointer">
-                  <Save className={`w-5 h-5 ${isSavingPrices ? 'animate-spin' : ''}`} /><span>{isSavingPrices ? 'Saving...' : 'Save & Publish All Prices Live'}</span>
-                </button>
-              </div>
-            </div>
+            <PricesDesk games={gamesCatalog || []} customPrices={customPrices || {}} onSave={updateGamePrices} showToast={showToast} />
           )}
 
           {adminTab === 'popupAd' && (

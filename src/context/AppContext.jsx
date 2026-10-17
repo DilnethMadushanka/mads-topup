@@ -324,10 +324,13 @@ export const AppProvider = ({ children }) => {
 
   // Dynamic Games Catalog State & Realtime Custom Prices Sync
   const [gamesCatalog, setGamesCatalog] = useState(GAMES_DATA);
+  // Admin price overrides ({ packageId: priceLkr }), live from the database.
+  const [customPrices, setCustomPrices] = useState({});
 
   useEffect(() => {
     const unsub = subscribeCustomGamePricesFromFirestore((customPricesMap) => {
       if (!customPricesMap || typeof customPricesMap !== 'object') return;
+      setCustomPrices(customPricesMap);
 
       // Build updated catalog immutably — do not rely on GAMES_DATA mutation for React state
       const updatedCatalog = GAMES_DATA.map(game => ({
@@ -353,15 +356,13 @@ export const AppProvider = ({ children }) => {
     return () => unsub();
   }, []);
 
-  const updateGamePrices = async (customPricesMap) => {
-    try {
-      await saveCustomGamePricesToFirestore(customPricesMap);
-      return true;
-    } catch (err) {
-      console.error('[AppContext] Save Prices Error:', err);
-      return false;
-    }
+  // Admin: save only the changed package prices. Returns the server's answer.
+  const updateGamePrices = async (changes, opts = {}) => {
+    const result = await saveCustomGamePricesToFirestore(changes, opts);
+    if (result.ok) setCustomPrices(result.prices);
+    return result;
   };
+
 
   // Popup Ad State & Subscription
   const [popupAdConfig, setPopupAdConfig] = useState({ ...DEFAULT_POPUP_AD_CONFIG, enabled: false });
@@ -1633,6 +1634,7 @@ export const AppProvider = ({ children }) => {
       addOrder,
       updateOrderStatus,
       gamesCatalog,
+      customPrices,
       updateGamePrices,
       moongoldConfig,
 
