@@ -8,6 +8,8 @@ import { initAnalytics, trackPageView } from '../services/analytics';
 
 // Demo deposits older versions seeded into every browser's saved list.
 const DEMO_PAYMENT_IDS = new Set(['PAY-1001', 'PAY-1002', 'PAY-1003']);
+// Demo accounts older versions seeded into every browser's saved user list.
+const DEMO_USER_IDS = new Set(['USR-98210', 'USR-98205', 'USR-98201']);
 
 // A date as an ISO string, or null. Accepts ISO strings, ms numbers and
 // Firestore Timestamps; never throws (an invalid date used to crash the page).
@@ -848,8 +850,11 @@ export const AppProvider = ({ children }) => {
           const merged = [];
           remoteUsersList.forEach(ru => {
             const cached = prev.find(u => u && ((ru.uid && u.uid === ru.uid) || (ru.email && u.email && lc(u.email) === lc(ru.email))));
+            // The sign-up date always comes from the database record, never
+            // from this browser's copy (which may hold a made-up "now").
+            const createdAt = safeIso(ru.createdAt) || safeIso(ru.joinedAt);
             if (cached) {
-              merged.push({ ...cached, ...ru });
+              merged.push({ ...cached, ...ru, createdAt });
             } else {
               merged.push({
                 uid: ru.uid || `USR-${Math.floor(10000 + Math.random() * 90000)}`,
@@ -1121,57 +1126,15 @@ export const AppProvider = ({ children }) => {
     if (saved) {
       try { 
         const parsed = JSON.parse(saved); 
-        // Filter out old fake test balances
-        return parsed.map(u => ({
+        // Drop the demo accounts older versions seeded into every browser
+        // and old fake test balances.
+        return (Array.isArray(parsed) ? parsed : []).filter(u => u && !DEMO_USER_IDS.has(u.uid)).map(u => ({
           ...u,
           walletUsdt: (u.walletUsdt === 49.64 || (u.walletUsdt > 49.6 && u.walletUsdt < 49.7)) ? 0 : (u.walletUsdt || 0)
         }));
       } catch (e) {}
     }
-    return [
-      {
-        uid: 'USR-98210',
-        name: 'Dilneth Madushanka',
-        email: 'madsruzza@gmail.com',
-        phone: '+94 77 123 4567',
-        walletBalance: 0,
-        walletUsdt: 0.00,
-        isVerified: true,
-        status: 'ACTIVE',
-        createdAt: '2026-09-01T00:00:00.000Z',
-        joinedAt: '2026-09-01',
-        totalOrders: 12,
-        lifetimeSpendLkr: 18500
-      },
-      {
-        uid: 'USR-98205',
-        name: 'Kasun SLAyer',
-        email: 'kasun.gamer@gmail.com',
-        phone: '+94 71 889 0123',
-        walletBalance: 0,
-        walletUsdt: 0.00,
-        isVerified: false,
-        status: 'ACTIVE',
-        createdAt: '2026-09-05T00:00:00.000Z',
-        joinedAt: '2026-09-05',
-        totalOrders: 4,
-        lifetimeSpendLkr: 4800
-      },
-      {
-        uid: 'USR-98201',
-        name: 'Nuwan Perera',
-        email: 'nuwan.ff@yahoo.com',
-        phone: '+94 78 445 9901',
-        walletBalance: 0,
-        walletUsdt: 0.00,
-        isVerified: false,
-        status: 'BLOCKED',
-        createdAt: '2026-09-08T00:00:00.000Z',
-        joinedAt: '2026-09-08',
-        totalOrders: 1,
-        lifetimeSpendLkr: 1580
-      }
-    ];
+    return [];
   });
 
   // Deposit records. Customers keep their own submissions here (their wallet
