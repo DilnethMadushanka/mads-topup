@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp } from '../context/AppContext';
 import { PAYMENT_METHODS, getVerifiedPackagePriceLkr } from '../data/games';
-import { checkPlayerIGN, dispatchMoongoldOrder } from '../services/moongoldApi';
+import { checkPlayerIGN, dispatchMoongoldOrder, fetchMyVouchers } from '../services/moongoldApi';
 import { splitMlbbId } from '../services/playerLookup';
 import { uploadToR2Storage } from '../services/storageService';
 import confetti from 'canvas-confetti';
@@ -94,9 +94,13 @@ export const GameTopupPage = () => {
   }, [selectedGame]);
 
   // ── Back from the card checkout ──
-  // Verify the payment with the server (which credits the paid amount to the
-  // wallet), then restore the cart and place the order from the wallet.
+  // Verify the payment with the server. The server credits the paid amount
+  // to the wallet and places the order itself (even if this page is never
+  // opened again); here we only show what it did. Card payments made before
+  // the server placed orders come back without `order`, and their order is
+  // still placed from this page.
   const [cardOrderReady, setCardOrderReady] = useState(false);
+  const [serverCardOrder, setServerCardOrder] = useState(null);
   const handleCompleteOrderRef = React.useRef(null);
   const paidByCardRef = React.useRef(false);
   useEffect(() => {
@@ -121,13 +125,25 @@ export const GameTopupPage = () => {
     }
 
     showToast('Verifying your card payment...');
-    fetch('/api/genie/verify-status', {
+    const body = JSON.stringify({ transactionId: pending?.transactionId || '', orderRef: orderRef || pending?.orderRef || '' });
+    const check = (tries = 0) => fetch('/api/genie/verify-status', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ transactionId: pending?.transactionId || '', orderRef: orderRef || pending?.orderRef || '' })
+      body
     })
       .then(r => r.json())
       .then(data => {
+        if (data.success && data.isPaid && (data.order || data.pending)) {
+          // The server places the order. Wait while it is still working.
+          if (data.pending || data.order.status === 'PLACING') {
+            if (tries === 0) showToast(`✅ Card payment confirmed. Placing your order...`);
+            if (tries < 20) setTimeout(() => check(tries + 1), 3000);
+            else showToast('Your order is still being placed. It will show in My Orders in a few minutes.');
+            return;
+          }
+          setServerCardOrder({ ...data.order, playerId: pending?.playerId || '', zoneId: pending?.zoneId || '', ign: pending?.ign || '' });
+          return;
+        }
         if (data.success && data.isPaid) {
           if (data.newBalanceLkr !== undefined) {
             setUserProfile(prev => (prev ? {
@@ -148,6 +164,7 @@ export const GameTopupPage = () => {
       .catch(() => {
         showToast('Could not confirm the card payment right now. If you were charged, the amount is added to your wallet automatically.', 'error');
       });
+    check();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedGame?.id]);
 
@@ -168,6 +185,71 @@ export const GameTopupPage = () => {
     Promise.resolve(handleCompleteOrderRef.current?.()).finally(() => { paidByCardRef.current = false; });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cardOrderReady, isLoggedIn, userProfile?.uid, cartQuantities]);
+
+  // Show the order the server placed for a card payment, once the login has
+  // loaded (the order is saved to the signed-in user's list).
+  useEffect(() => {
+    if (!serverCardOrder || !isLoggedIn || !userProfile?.uid || !selectedGame) return;
+    const result = serverCardOrder;
+    setServerCardOrder(null);
+    const okLines = (result.results || []).filter(r => r.ok);
+    const failed = (result.results || []).filter(r => !r.ok);
+    if (!okLines.length) {
+      showToast(`❌ ${failed[0]?.error || 'Your order could not be placed. The money is in your wallet.'}`, 'error');
+      return;
+    }
+    try { localStorage.setItem('mads_ref_used', '1'); localStorage.removeItem('mads_pending_ref'); } catch { /* storage blocked */ }
+    const isVoucher = selectedGame.fulfilment === 'voucher';
+    const pkgOf = (id) => (selectedGame.packages || []).find(p => p.id === id);
+    const priceLkr = okLines.reduce((sum, r) => sum + (Number(r.priceLkr) || 0), 0);
+    const last = okLines[okLines.length - 1];
+    const newOrder = {
+      id: 'ORD-' + Math.floor(10000 + Math.random() * 90000),
+      userId: userProfile.uid,
+      userEmail: userProfile.email || auth?.currentUser?.email || '',
+      userName: userProfile.name || auth?.currentUser?.displayName || 'Registered Gamer',
+      gameId: selectedGame.id,
+      gameName: selectedGame.name,
+      packageName: okLines.map(r => `${r.name}${r.quantity > 1 ? ` x${r.quantity}` : ''}`).join(', '),
+      amount: okLines.reduce((sum, r) => sum + (Number(pkgOf(r.packageId)?.amount) || 0) * (r.quantity || 1), 0),
+      playerId: isVoucher ? 'PIN' : result.playerId,
+      zoneId: isVoucher ? '' : result.zoneId,
+      ign: isVoucher ? `${selectedGame.name} PIN` : (result.ign || `Player ${result.playerId}`),
+      paymentMethod: 'Card (Dialog Genie)',
+      priceLkr,
+      status: 'COMPLETED',
+      moongoldRef: last.moogoldOrderId || '',
+      receiptUrl: null,
+      partnerOrderId: last.partnerOrderId,
+      partnerOrderIds: okLines.map(r => r.partnerOrderId),
+      createdAt: new Date().toISOString()
+    };
+    addOrder(newOrder);
+    trackEvent('purchase', {
+      transaction_id: newOrder.partnerOrderId,
+      value: priceLkr,
+      currency: 'LKR',
+      payment_type: newOrder.paymentMethod,
+      items: okLines.map(r => ({ item_id: String(r.packageId), item_name: r.name, item_category: selectedGame.name, quantity: r.quantity || 1 }))
+    });
+    const show = (voucherCodes) => {
+      setCompletedOrder(isVoucher ? { ...newOrder, voucherCodes } : newOrder);
+      try { confetti({ particleCount: 100, spread: 80, origin: { y: 0.5 }, colors: ['#1677ff', '#1677ff', '#10B981', '#F59E0B'] }); } catch { /* no canvas */ }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    if (isVoucher) {
+      const ids = new Set(okLines.map(r => r.partnerOrderId));
+      fetchMyVouchers().then(({ vouchers }) => show(vouchers.filter(v => ids.has(v.partnerOrderId)).flatMap(v => v.codes || [])));
+    } else {
+      show();
+    }
+    if (failed.length) {
+      showToast(`${failed.map(r => r.name).join(', ')} could not be delivered. That money is back in your wallet.`, 'error');
+    } else {
+      showToast('✅ Card payment confirmed and your order is placed.');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverCardOrder, isLoggedIn, userProfile?.uid]);
 
   if (!selectedGame) return null;
 
@@ -282,6 +364,8 @@ export const GameTopupPage = () => {
           playerId: isVoucherGame ? '' : playerId.trim(),
           zoneId: isVoucherGame ? '' : zoneId.trim(),
           userName: userProfile?.name || auth?.currentUser?.displayName || 'Gamer',
+          // The server places the order, so it also pays the referral cashback.
+          referralCode: (() => { try { return localStorage.getItem('mads_ref_used') ? '' : (localStorage.getItem('mads_pending_ref') || ''); } catch { return ''; } })(),
           redirectUrl: `${window.location.origin}${returnPath}?genie=order`,
           orderRef
         })
