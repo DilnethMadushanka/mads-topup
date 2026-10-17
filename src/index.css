@@ -5347,3 +5347,56 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
 .mads-admin.theme-light .sys-card, .mads-admin.theme-light .sys-mini-row { --c: #059669; }
 .mads-admin.theme-light .sys-card.is-bad, .mads-admin.theme-light .sys-mini-row.is-bad { --c: #dc2626; }
 @media (min-width: 900px) { .sys-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ============================================================
+   Admin · Game prices (src/components/admin/PricesDesk.jsx)
+   ============================================================ */
+.prc-desk { padding-bottom: 72px; }
+.prc-note { display: flex; align-items: flex-start; gap: 8px; padding: 12px 14px; font-size: 12px; font-weight: 600; color: var(--adm-text-muted); }
+.prc-note svg { flex-shrink: 0; width: 15px; height: 15px; margin-top: 1px; color: var(--adm-accent); }
+.prc-game { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--adm-border); background: var(--adm-surface-2); }
+.prc-game .ord-stack b { font-family: var(--font-heading); font-size: 15px; font-weight: 900; }
+.prc-row { cursor: default; grid-template-areas: "order order" "price m" "cost tiers"; align-items: center; }
+.prc-row:hover { background: transparent; }
+.prc-row.is-edited { background: color-mix(in srgb, #f59e0b 7%, transparent); }
+.prc-row.is-edited::before { content: ''; position: absolute; left: 0; top: 12px; bottom: 12px; width: 3px; border-radius: 0 3px 3px 0; background: #f59e0b; }
+.prc-img { flex-shrink: 0; width: 38px; height: 38px; border-radius: 11px; object-fit: contain; background: var(--adm-surface-hover); }
+.prc-row .ord-stack b { white-space: normal; }
+.prc-cost { grid-area: cost; font-size: 12px; font-weight: 700; color: var(--adm-text-muted); }
+.prc-cost::before { content: 'Cost '; color: var(--adm-text-faint); }
+.prc-price { grid-area: price; display: flex; align-items: center; gap: 4px; }
+.prc-input { position: relative; flex: 1; max-width: 150px; }
+.prc-input i { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); font-style: normal; font-size: 12px; font-weight: 700; color: var(--adm-text-faint); pointer-events: none; }
+.prc-input input { width: 100%; height: 38px; padding: 0 10px 0 36px; border-radius: 11px; font: 800 13.5px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--adm-text); background: var(--adm-input-bg); border: 1px solid var(--adm-border); outline: none; }
+.prc-row.is-edited .prc-input input { border-color: #f59e0b; }
+.prc-m { grid-area: m; justify-self: end; }
+.prc-margin { --c: #10b981; display: inline-flex; padding: 4px 9px; border-radius: 999px; font-size: 11px; font-weight: 800; white-space: nowrap; color: var(--c); background: color-mix(in srgb, var(--c) 13%, transparent); }
+.prc-margin.is-warn { --c: #f59e0b; } .prc-margin.is-bad { --c: #ef4444; } .prc-margin.is-none { --c: #94a3b8; }
+.mads-admin.theme-light .prc-margin { --c: #059669; }
+.mads-admin.theme-light .prc-margin.is-warn { --c: #d97706; } .mads-admin.theme-light .prc-margin.is-bad { --c: #dc2626; } .mads-admin.theme-light .prc-margin.is-none { --c: #64748b; }
+.prc-tiers { grid-area: tiers; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px 10px; }
+.prc-tiers small { font-size: 11px; font-weight: 700; color: var(--adm-text-muted); white-space: nowrap; }
+.prc-tiers b { color: #f59e0b; }
+.prc-bar { position: fixed; left: 50%; bottom: 16px; z-index: 60; transform: translateX(-50%); width: min(720px, calc(100% - 24px)); display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 18px; background: var(--adm-surface); border: 1px solid var(--adm-border-strong); box-shadow: 0 20px 50px -18px rgba(0,0,0,.55); }
+.prc-bar > span { flex: 1 1 200px; display: block; line-height: 1.45; font-size: 13px; font-weight: 600; color: var(--adm-text-muted); }
+.prc-bar > span b { color: var(--adm-text); }
+.prc-bar > span svg { display: inline-block; width: 16px; height: 16px; margin-right: 6px; vertical-align: -3px; color: #ef4444; }
+.prc-bar .ord-act { flex: 0 0 auto; }
+@media (min-width: 1100px) {
+  .ord-head.prc-grid, .ord-row.prc-grid { grid-template-columns: minmax(240px, 1.6fr) 110px 190px 140px minmax(220px, 1.3fr); grid-template-areas: "order cost price m tiers"; gap: 14px; padding: 10px 18px; }
+  .prc-cost { text-align: right; }
+  .prc-cost::before { content: ''; }
+  .prc-m { justify-self: start; }
+}
+/* Price inputs: no spinner arrows (they hid the digits on phones). */
+.prc-input input::-webkit-inner-spin-button, .prc-input input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.prc-input input { -moz-appearance: textfield; }
+@media (max-width: 1099px) {
+  .prc-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .prc-input { max-width: none; }
+}
+@media (max-width: 639px) {
+  .prc-bar { gap: 8px; }
+  .prc-bar > span { flex: 1 1 100%; }
+  .prc-bar .ord-act { flex: 1 1 0; }
+}

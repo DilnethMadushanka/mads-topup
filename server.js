@@ -768,24 +768,44 @@ app.post('/api/ff-accounts/buy', rateLimiter(10, 60000), async (req, res) => {
 // Admin: save package price overrides ({ packageId: priceLkr }). Browsers
 // can't write settings/customPrices (database rules), because the server
 // charges these prices.
+// Admin price changes. Only the packages sent are changed: a price equal
+// to the built-in one (or null) removes that override, so later catalog
+// updates in code still reach every package nobody changed. (The panel
+// used to save every package's price, freezing all of them.) A price below
+// MooGold's cost is refused unless allowBelowCost is set.
 app.post('/api/admin/custom-prices', requireAdminSession, async (req, res) => {
   try {
     const input = req.body?.prices;
     if (!input || typeof input !== 'object' || Array.isArray(input)) {
       return res.status(400).json({ error: 'prices must be an object of packageId: priceLkr' });
     }
-    const known = new Set(GAMES_DATA.flatMap(g => (g.packages || []).map(p => p.id)));
-    const clean = {};
+    const pkgs = new Map(GAMES_DATA.flatMap(g => (g.packages || []).map(p => [p.id, p])));
+    const changes = {};
+    const belowCost = [];
     for (const [id, value] of Object.entries(input)) {
-      const price = Number(value);
-      if (!known.has(id) || !(price > 0)) continue;
-      if (price > 1000000) return res.status(400).json({ error: `Invalid price for ${id}` });
-      clean[id] = Math.round(price);
+      const pkg = pkgs.get(id);
+      if (!pkg) return res.status(400).json({ error: `Unknown package ${id}` });
+      if (value === null || value === '') { changes[id] = null; continue; }
+      const price = Math.round(Number(value));
+      if (!(price > 0) || price > 1000000) return res.status(400).json({ error: `Invalid price for ${pkg.name}` });
+      if (pkg.moongoldCost > 0 && price < pkg.moongoldCost) belowCost.push(`${pkg.name} (cost Rs. ${pkg.moongoldCost})`);
+      changes[id] = price === Number(pkg.priceLkr) ? null : price;
     }
-    await rtdbPut('settings/customPrices', clean);
-    customPricesCache = { at: Date.now(), map: clean };
-    console.log(`[Admin Prices] Saved ${Object.keys(clean).length} custom package prices`);
-    res.json({ success: true, prices: clean });
+    if (belowCost.length && req.body?.allowBelowCost !== true) {
+      return res.status(409).json({ error: `Below MooGold cost: ${belowCost.join(', ')}`, belowCost });
+    }
+    const tx = await rtdbTransaction('settings/customPrices', (cur) => {
+      const next = { ...(cur && typeof cur === 'object' ? cur : {}) };
+      for (const [id, price] of Object.entries(changes)) {
+        if (price === null) delete next[id]; else next[id] = price;
+      }
+      // Drop overrides for packages that no longer exist.
+      for (const id of Object.keys(next)) if (!pkgs.has(id)) delete next[id];
+      return next;
+    });
+    customPricesCache = { at: Date.now(), map: tx.value || {} };
+    console.log(`[Admin Prices] Changed ${Object.keys(changes).length} package price(s); ${Object.keys(tx.value || {}).length} overrides in total`);
+    res.json({ success: true, prices: tx.value || {} });
   } catch (e) {
     console.error('[Admin Prices Error]:', e.message);
     res.status(500).json({ error: SERVER_ERROR });

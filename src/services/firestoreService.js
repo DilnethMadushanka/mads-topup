@@ -786,14 +786,12 @@ export const sendResellerApprovalEmail = async ({ email, name, resellerCode, sec
 /**
  * Save custom game package prices to Firestore & Realtime Database
  */
-export const saveCustomGamePricesToFirestore = async (customPricesMap) => {
-  if (!customPricesMap) return false;
-
-  // The server charges these prices, so only it may store them (admin session).
-  const { ok, data } = await postServerApi('/api/admin/custom-prices', { prices: customPricesMap });
-  if (!ok) throw new Error(data?.error || 'Prices were not saved');
-
-  return true;
+// Admin: change some package prices ({ packageId: priceLkr | null }; null
+// goes back to the built-in price). The server charges these prices, so
+// only it stores them. Returns { ok, prices, error, belowCost }.
+export const saveCustomGamePricesToFirestore = async (changes, { allowBelowCost = false } = {}) => {
+  const { ok, data } = await postServerApi('/api/admin/custom-prices', { prices: changes || {}, allowBelowCost });
+  return ok && data?.success ? { ok: true, prices: data.prices || {} } : { ok: false, error: data?.error || 'Prices were not saved', belowCost: data?.belowCost };
 };
 
 // Prices come only from the Realtime Database settings/customPrices, the same
