@@ -25,6 +25,7 @@ import { parseWalletChange, applyWalletChange } from './lib/adminWallet.js';
 import { nextCode, codeStore } from './lib/authCodes.js';
 import { cleanVoucherInput, createVoucher, updateVoucher, deleteVoucher, voucherState } from './lib/vouchers.js';
 import { depositBonusLkr, newDepositId } from './src/data/depositRules.js';
+import { cardOrderLines, cardOrderStatus } from './lib/cardOrder.js';
 import { moogoldRequest, fetchVoucherCodes, saveUserVoucher, listUserVouchers, findCatalogPackage, isVoucherGame, redactVoucherCodes } from './lib/moogoldVoucher.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -2005,7 +2006,7 @@ const moogoldProcessingLocks = new Set();
 // leave no trace there, so the server writes its own record for every order.
 // The browser hides it when it already has its own order with the same
 // partnerOrderId (see subscribeOrdersFromFirestore).
-async function saveServerOrderRecord(partnerOrderId, { user, bodyObj, priceLkr, status, moongoldRef, reason, ip }) {
+async function saveServerOrderRecord(partnerOrderId, { user, bodyObj, priceLkr, status, moongoldRef, reason, ip, paymentLabel }) {
   try {
     const data = bodyObj?.data || {};
     const productId = String(data['product-id'] || '');
@@ -2026,7 +2027,7 @@ async function saveServerOrderRecord(partnerOrderId, { user, bodyObj, priceLkr, 
       packageName: pkg ? `${pkg.name}${Number(data.quantity) > 1 ? ` x${data.quantity}` : ''}` : productId,
       playerId: String(data['User ID'] || data['Player ID'] || data['Character ID'] || data['Riot Username'] || ''),
       zoneId: String(data['Server'] || data['Server ID'] || ''),
-      paymentMethod: bodyObj?.isResellerOrder ? 'Reseller Wallet' : 'MADS Wallet Balance',
+      paymentMethod: paymentLabel || (bodyObj?.isResellerOrder ? 'Reseller Wallet' : 'MADS Wallet Balance'),
       priceLkr,
       status,
       moongoldRef: moongoldRef || '',
@@ -2089,7 +2090,7 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
   const partnerOrderId = rawPartnerOrderId
     || (req.body?.path === 'order/create_order' ? `srv-${Date.now()}-${crypto.randomBytes(4).toString('hex')}` : null);
   try {
-    const { path: apiPath, bodyObj, priceLkr, paymentId } = req.body || {};
+    const { path: apiPath, bodyObj, priceLkr } = req.body || {};
 
     if (!apiPath || !bodyObj) {
       return res.status(400).json({ error: 'Missing path or bodyObj' });
@@ -2129,16 +2130,37 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
       return res.status(403).json({ error: 'Admin session required.' });
     }
 
+    const out = await placeMoogoldCall(authenticatedUser, { apiPath, bodyObj, priceLkr, partnerOrderId, referralCode: req.body?.referralCode, ip: clientIp(req) });
+    res.status(out.status);
+    return out.text !== undefined ? res.send(out.text) : res.json(out.json);
+  } catch (err) {
+    console.error('MooGold proxy error:', err);
+    return res.status(500).json({ error: SERVER_ERROR });
+  }
+});
+
+// The MooGold call behind /api/moogold. For order/create_order it checks the
+// price and the store balance, takes the money from the wallet, places the
+// order, refunds on failure and records it. It is also used by the server
+// itself to place card-paid orders (placeCardOrder below), so a closed
+// browser after a card payment no longer leaves the order unplaced.
+// Returns { status, json } or { status, text }.
+async function placeMoogoldCall(authenticatedUser, { apiPath, bodyObj, priceLkr, partnerOrderId, referralCode: extraReferralCode, ip, paymentLabel }) {
+  const reply = (status, json) => ({ status, json });
+  // Only the call that took the lock releases it (a duplicate that was turned
+  // away with 409 used to release the first call's lock on its way out).
+  let ownsLock = false;
+  try {
     // 2. HARDENED WALLET VERIFICATION FOR ORDER CREATION
     const isOrderCreation = apiPath === 'order/create_order';
-    const numPriceLkr = parseFloat(priceLkr || req.body.priceLkr || bodyObj?.priceLkr || 0);
+    const numPriceLkr = parseFloat(priceLkr || bodyObj?.priceLkr || 0);
 
     let deductResult = null;
     let verifiedReseller = null;
     let orderCatalog = { game: null, pkg: null };
     if (isOrderCreation) {
       if (numPriceLkr <= 0) {
-        return res.status(400).json({ error: 'Invalid order price specified.' });
+        return reply(400, { error: 'Invalid order price specified.' });
       }
 
       // Price-tampering guard: the client-supplied priceLkr must fall within
@@ -2153,7 +2175,7 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
       const requestedProductId = bodyObj?.data?.['product-id'];
       const unitCatalogPriceLkr = await getCatalogPriceLkr(requestedProductId);
       if (unitCatalogPriceLkr === null) {
-        return res.status(400).json({ error: 'Unrecognized product. Order rejected.' });
+        return reply(400, { error: 'Unrecognized product. Order rejected.' });
       }
       // The MooGold category comes from the catalog, not the browser. An
       // eVoucher (e.g. Garena Shells) is category 2 and takes no player fields.
@@ -2166,7 +2188,7 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
         const d = bodyObj.data || {};
         const field = orderCatalog.game.moongoldIdField;
         const accountId = sanitizeString(String(d[field] || d['User ID'] || d['Player ID'] || ''), 60);
-        if (!accountId) return res.status(400).json({ error: `Please enter your ${orderCatalog.game.idLabel || 'Player ID'}.` });
+        if (!accountId) return reply(400, { error: `Please enter your ${orderCatalog.game.idLabel || 'Player ID'}.` });
         bodyObj.data = { category: 1, 'product-id': d['product-id'], quantity: d.quantity, [field]: accountId };
       } else {
         bodyObj.data = { ...bodyObj.data, category: 1 };
@@ -2177,7 +2199,7 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
       // MooGold delivers `quantity` units, so this is also what gets charged.
       const requestedQty = Number(bodyObj?.data?.quantity ?? 1);
       if (!Number.isInteger(requestedQty) || requestedQty < 1 || requestedQty > MAX_ORDER_QUANTITY) {
-        return res.status(400).json({ error: 'Invalid order quantity.' });
+        return reply(400, { error: 'Invalid order quantity.' });
       }
       // The only discount the site offers is the approved reseller's tier
       // discount (3/5/8%, src/data/resellerTiers.js; rounded per unit by the
@@ -2190,12 +2212,12 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
         // A "Reseller Partner Wallet" order from an account that isn't an
         // admin-approved reseller is refused outright.
         console.warn(`[NON-RESELLER BLOCKED] ${authenticatedUser.uid} (${authenticatedUser.email}) attempted a reseller order`);
-        return res.status(403).json({ error: 'Reseller orders are only available to approved reseller accounts.' });
+        return reply(403, { error: 'Reseller orders are only available to approved reseller accounts.' });
       }
       const { min: minPriceLkr, max: maxPriceLkr } = orderPriceRange(unitCatalogPriceLkr, requestedQty, verifiedReseller?.tier.rate || 0);
       if (numPriceLkr > maxPriceLkr || numPriceLkr < minPriceLkr) {
         console.warn(`[PRICE TAMPER BLOCKED] ${authenticatedUser.uid} product-id=${requestedProductId} qty=${requestedQty} sent Rs. ${numPriceLkr}, minimum Rs. ${minPriceLkr}`);
-        return res.status(400).json({ error: 'Price mismatch detected. Order rejected.' });
+        return reply(400, { error: 'Price mismatch detected. Order rejected.' });
       }
 
       // MooGold keeps an order it can't pay for as "Pending payment" instead
@@ -2211,7 +2233,7 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
         const neededUsd = unitUsd * requestedQty;
         if (storeBalanceUsd !== null && storeBalanceUsd < neededUsd) {
           console.error(`[MOOGOLD LOW BALANCE] Store balance $${storeBalanceUsd} < ~$${neededUsd.toFixed(2)} needed for product-id=${requestedProductId} qty=${requestedQty}. Order refused before charging ${authenticatedUser.uid}.`);
-          return res.status(503).json({ error: 'This top-up is temporarily unavailable. Your wallet was not charged. Please try again shortly.' });
+          return reply(503, { error: 'This top-up is temporarily unavailable. Your wallet was not charged. Please try again shortly.' });
         }
       }
 
@@ -2220,17 +2242,18 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
       // instead of deducting/dispatching a second time.
       if (partnerOrderId) {
         if (moogoldProcessingLocks.has(partnerOrderId)) {
-          return res.status(409).json({ error: 'This order is already being processed. Please wait.' });
+          return reply(409, { error: 'This order is already being processed. Please wait.' });
         }
         const existingRecord = await getMoogoldOrderRecord(partnerOrderId);
         if (existingRecord) {
           console.warn(`[MooGold Duplicate Order Blocked] partnerOrderId=${partnerOrderId} already ${existingRecord.status} — replaying original result instead of reprocessing.`);
           if (existingRecord.status === 'COMPLETED') {
-            return res.status(200).json(existingRecord.response || { success: true, message: 'Order already completed.' });
+            return reply(200, existingRecord.response || { success: true, message: 'Order already completed.' });
           }
-          return res.status(409).json({ error: 'This order has already been submitted.' });
+          return reply(409, { error: 'This order has already been submitted.' });
         }
         moogoldProcessingLocks.add(partnerOrderId);
+        ownsLock = true;
         await saveMoogoldOrderRecord(partnerOrderId, { status: 'PROCESSING', uid: authenticatedUser.uid, priceLkr: numPriceLkr, createdAt: new Date().toISOString() });
       }
 
@@ -2239,7 +2262,7 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
       if (!deductResult.success) {
         console.warn(`[INSUFFICIENT BALANCE BLOCKED] User ${authenticatedUser.uid} (${authenticatedUser.email}) attempted order without balance. Required: Rs. ${numPriceLkr}`);
         if (partnerOrderId) await saveMoogoldOrderRecord(partnerOrderId, { status: 'FAILED', uid: authenticatedUser.uid, priceLkr: numPriceLkr, reason: deductResult.reason, createdAt: new Date().toISOString() });
-        return res.status(403).json({
+        return reply(403, {
           error: deductResult.reason || 'Insufficient wallet balance. Please top up your wallet first.'
         });
       }
@@ -2314,7 +2337,7 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
         status: isSuccess ? 'COMPLETED' : 'FAILED',
         moongoldRef: jsonResult?.order_id ? String(jsonResult.order_id) : '',
         reason: isSuccess ? null : (jsonResult?.message || jsonResult?.error || `HTTP ${apiRes.status}`),
-        ip: clientIp(req)
+        ip, paymentLabel
       });
     }
 
@@ -2340,7 +2363,7 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
     }
 
     // Referral cashback for the referrer on this user's first paid order.
-    const referralCode = bodyObj?.referralCode || req.body?.referralCode;
+    const referralCode = bodyObj?.referralCode || extraReferralCode;
     if (isOrderCreation && isSuccess && deductResult?.success && referralCode) {
       payReferralCashback(authenticatedUser.uid, authenticatedUser.email, numPriceLkr, referralCode)
         .catch(e => console.warn('[Referral Cashback Error]:', e.message));
@@ -2366,7 +2389,6 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
       });
     }
 
-    res.status(apiRes.status);
     if (jsonResult) {
       if (isOrderCreation && deductResult?.success) {
         const responseBody = {
@@ -2383,29 +2405,29 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
             createdAt: new Date().toISOString()
           });
         }
-        return res.json(voucherCodes ? { ...responseBody, isVoucher: true, voucherCodes } : responseBody);
+        return reply(apiRes.status, voucherCodes ? { ...responseBody, isVoucher: true, voucherCodes } : responseBody);
       }
-      return res.json(jsonResult);
+      return reply(apiRes.status, jsonResult);
     } else {
       if (isOrderCreation && partnerOrderId) {
         await saveMoogoldOrderRecord(partnerOrderId, { status: isSuccess ? 'COMPLETED' : 'FAILED', uid: authenticatedUser.uid, priceLkr: numPriceLkr, createdAt: new Date().toISOString() });
       }
-      return res.send(text);
+      return { status: apiRes.status, text };
     }
   } catch (err) {
     console.error('MooGold Serverless Proxy Error:', err);
-    if (partnerOrderId) {
+    if (ownsLock) {
       // Don't leave a permanently-stuck PROCESSING record on an unexpected
       // error — remove it so a genuine retry with the same id isn't blocked
       // forever (the in-flight lock release below still prevents a
       // concurrent duplicate during this same failure).
       await saveMoogoldOrderRecord(partnerOrderId, { status: 'FAILED', reason: err.message, createdAt: new Date().toISOString() }).catch(() => {});
     }
-    res.status(500).json({ error: SERVER_ERROR });
+    return reply(500, { error: SERVER_ERROR });
   } finally {
-    if (partnerOrderId) moogoldProcessingLocks.delete(partnerOrderId);
+    if (ownsLock) moogoldProcessingLocks.delete(partnerOrderId);
   }
-});
+}
 
 // ─────────────────────────────────────────────────────────────────────────
 // Private data, read through the server. Browsers can no longer read users,
@@ -3079,7 +3101,8 @@ async function verifyAndCreditGenieTransaction(transactionId) {
   if (record.status === 'CREDITED') {
     return {
       success: true, isPaid: true, alreadyCredited: true, purpose: record.purpose || 'DEPOSIT',
-      amount: record.amountLkr, newBalanceLkr: record.newBalanceLkr, newBalanceUsdt: record.newBalanceUsdt
+      amount: record.amountLkr, newBalanceLkr: record.newBalanceLkr, newBalanceUsdt: record.newBalanceUsdt,
+      order: await cardOrderFor(transactionId, record)
     };
   }
 
@@ -3115,14 +3138,16 @@ async function verifyAndCreditGenieTransaction(transactionId) {
   }
 
   genieCreditLocks.add(transactionId);
+  let credited;
   try {
     // Re-fetch immediately before writing to shrink the race window against a
     // concurrent request that read the record just before this one locked it.
     const freshRecord = await getGenieTransactionRecord(transactionId);
     if (freshRecord && freshRecord.status === 'CREDITED') {
       return {
-        success: true, isPaid: true, alreadyCredited: true,
-        amount: freshRecord.amountLkr, newBalanceLkr: freshRecord.newBalanceLkr, newBalanceUsdt: freshRecord.newBalanceUsdt
+        success: true, isPaid: true, alreadyCredited: true, purpose: freshRecord.purpose || 'DEPOSIT',
+        amount: freshRecord.amountLkr, newBalanceLkr: freshRecord.newBalanceLkr, newBalanceUsdt: freshRecord.newBalanceUsdt,
+        order: freshRecord.purpose === 'ORDER' ? cardOrderView(freshRecord) : undefined
       };
     }
 
@@ -3151,12 +3176,100 @@ async function verifyAndCreditGenieTransaction(transactionId) {
     await recordGenieManualPaymentToRtdb(transactionId, record, { rtdbKey: creditResult.rtdbKey, creditedLkr: record.amountLkr + bonusLkr });
 
     console.log(`[Genie Wallet Credited] txn=${transactionId} user=${record.uid || record.email} amount=Rs.${record.amountLkr} newBalance=Rs.${creditResult.newBalanceLkr}`);
-    return {
+    credited = {
       success: true, isPaid: true, credited: true, purpose: record.purpose || 'DEPOSIT',
       amount: record.amountLkr, newBalanceLkr: creditResult.newBalanceLkr, newBalanceUsdt: creditResult.newBalanceUsdt
     };
   } finally {
     genieCreditLocks.delete(transactionId);
+  }
+  // A card-paid cart: place the order now, from the wallet just credited.
+  if (credited.purpose === 'ORDER') {
+    const order = await cardOrderFor(transactionId, null);
+    if (order) credited.order = order;
+  }
+  return credited;
+}
+
+// ── Card-paid orders ────────────────────────────────────────────────────
+// After a card payment for a cart is credited to the wallet, the server
+// places each package itself (lib/cardOrder.js). Each line has a fixed order
+// id, so the webhook, the browser and the background check can all ask and
+// only one MooGold order is ever made per line. A line that fails is refunded
+// to the wallet by placeMoogoldCall, as for any wallet order.
+const cardOrderLocks = new Set();
+const CARD_ORDER_FINAL = new Set(['PLACED', 'PARTIAL', 'FAILED']);
+
+// What the browser may see (no voucher codes; those are in My Vouchers).
+const cardOrderView = (record) => (record?.orderStatus
+  ? { status: record.orderStatus, results: record.orderResults || [], gameName: record.order?.gameName || '' }
+  : { status: 'PLACING', results: [], gameName: record?.order?.gameName || '' });
+
+// The order state for a credited ORDER transaction, placing it first if
+// that has not happened yet. Older card payments (before the server placed
+// orders) have no serverPlacesOrder flag: their browser placed the order,
+// so they are never placed again here.
+async function cardOrderFor(transactionId, knownRecord) {
+  const record = knownRecord || await getGenieTransactionRecord(transactionId);
+  if (!record || record.purpose !== 'ORDER') return undefined;
+  if (!record.serverPlacesOrder) return undefined;
+  if (record.status === 'CREDITED' && !CARD_ORDER_FINAL.has(record.orderStatus)) {
+    await placeCardOrder(transactionId);
+    return cardOrderView(await getGenieTransactionRecord(transactionId));
+  }
+  return cardOrderView(record);
+}
+
+const isMoogoldOk = (out) => out && out.status >= 200 && out.status < 300 && out.json && !out.json.error
+  && (out.json.order_id || out.json.status === 'processing' || out.json.status === 'true' || out.json.status === true || out.json.status === 1);
+
+async function placeCardOrder(transactionId) {
+  if (cardOrderLocks.has(transactionId)) return;
+  cardOrderLocks.add(transactionId);
+  try {
+    const record = await getGenieTransactionRecord(transactionId);
+    if (!record || record.purpose !== 'ORDER' || !record.serverPlacesOrder || record.status !== 'CREDITED') return;
+    if (CARD_ORDER_FINAL.has(record.orderStatus)) return;
+    const user = { uid: record.uid, email: record.email || '', name: record.userName || '' };
+    const lines = cardOrderLines(transactionId, record, GAMES_DATA);
+    const results = [];
+    for (const [i, line] of lines.entries()) {
+      const base = { packageId: line.packageId, name: line.name, quantity: line.quantity, priceLkr: line.priceLkr, partnerOrderId: line.partnerOrderId };
+      const before = (record.orderResults || [])[i];
+      if (before?.ok || (before && !before.pending)) { results.push(before); continue; }
+      if (!line.bodyObj) { results.push({ ...base, ok: false, error: 'This package is no longer sold. The money is in your wallet.' }); continue; }
+      const out = await placeMoogoldCall(user, {
+        apiPath: 'order/create_order', bodyObj: line.bodyObj, priceLkr: line.priceLkr,
+        partnerOrderId: line.partnerOrderId, referralCode: record.referralCode || '', ip: 'card-payment',
+        paymentLabel: 'Card (Dialog Genie)'
+      });
+      if (isMoogoldOk(out)) {
+        results.push({ ...base, ok: true, moogoldOrderId: out.json.order_id ? String(out.json.order_id) : '', isVoucher: Boolean(out.json.isVoucher) });
+      } else if (out?.status === 409) {
+        // Already placed (or being placed) under this id by another call.
+        const prev = await getMoogoldOrderRecord(line.partnerOrderId);
+        if (prev?.status === 'COMPLETED') results.push({ ...base, ok: true, moogoldOrderId: prev.response?.order_id ? String(prev.response.order_id) : '' });
+        else if (prev?.status === 'FAILED') results.push({ ...base, ok: false, error: 'This package could not be delivered. The money is in your wallet.' });
+        else results.push({ ...base, ok: false, pending: true });
+      } else {
+        const reason = out?.json?.error || out?.json?.message || 'MooGold did not accept the order.';
+        results.push({ ...base, ok: false, error: `${reason} The money for this package is back in your wallet.` });
+      }
+    }
+    const pending = results.some(r => r.pending);
+    const status = pending ? 'PLACING' : cardOrderStatus(results);
+    const fresh = await getGenieTransactionRecord(transactionId) || record;
+    await saveGenieTransactionRecord(transactionId, {
+      ...fresh,
+      orderStatus: status,
+      orderResults: results,
+      orderTriedAt: new Date().toISOString()
+    });
+    console.log(`[Card Order] txn=${transactionId} user=${record.uid} ${status}: ${results.map(r => `${r.name}=${r.ok ? 'ok' : r.pending ? 'pending' : 'failed'}`).join(', ')}`);
+  } catch (e) {
+    console.error(`[Card Order Error] txn=${transactionId}:`, e.message);
+  } finally {
+    cardOrderLocks.delete(transactionId);
   }
 }
 
@@ -3381,6 +3494,9 @@ app.post('/api/genie/create-order-payment', rateLimiter(10, 60000), async (req, 
       returnUrl,
       extraRecord: {
         purpose: 'ORDER',
+        // The server places this order once the payment is confirmed.
+        serverPlacesOrder: true,
+        referralCode: sanitizeString(String(req.body?.referralCode || ''), 40),
         order: { gameId: game.id, gameName: game.name, items: lines, playerId: cleanPlayerId, zoneId: cleanZoneId, summary }
       }
     });
@@ -3796,11 +3912,16 @@ app.listen(PORT, () => {
       if (!allTxns || typeof allTxns !== 'object') return;
 
       const twoHoursAgo = Date.now() - (2 * 60 * 60 * 1000);
+      const dayAgo = Date.now() - (24 * 60 * 60 * 1000);
       for (const [txnId, record] of Object.entries(allTxns)) {
-        if (!record || record.status !== 'PENDING') continue;
+        if (!record) continue;
         const createdTime = new Date(record.createdAt || 0).getTime();
-        if (createdTime >= twoHoursAgo) {
+        if (record.status === 'PENDING' && createdTime >= twoHoursAgo) {
           await verifyAndCreditGenieTransaction(txnId);
+        } else if (record.status === 'CREDITED' && record.serverPlacesOrder && !CARD_ORDER_FINAL.has(record.orderStatus) && createdTime >= dayAgo) {
+          // A card-paid cart whose order was not placed (server restart, a
+          // line still being processed): try again.
+          await placeCardOrder(txnId);
         }
       }
     } catch (e) {
