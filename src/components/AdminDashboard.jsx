@@ -12,6 +12,7 @@ import { VouchersDesk, VoucherDetail } from './admin/VouchersDesk';
 import { ResellersDesk, ResellerDetail } from './admin/ResellersDesk';
 import { SystemStatusPage, SystemStatusMini } from './admin/SystemStatus';
 import { PricesDesk } from './admin/PricesDesk';
+import { TickerEditor, SmsLogDesk, ReviewsDesk } from './admin/MiscDesks';
 import { sortOrdersNewestFirst } from '../utils/ownership';
 import { newUsersToday, sriLankaTime, signupTime } from '../utils/newUsersToday';
 import { getAllPopupBanners, emptyPopupBanner, MAX_POPUP_BANNERS } from '../utils/popupBanners';
@@ -394,18 +395,18 @@ const TAB_TITLES = {
   orders: ['Orders Dispatch', 'Track, inspect and fulfil every top-up order'],
   profit: ['Daily Profit', 'Completed top-ups each day: sale price against MooGold cost'],
   deposits: ['Deposit Verifier', 'Check each deposit, then credit the wallet or reject it'],
-  ezcash: ['Dialog EZ Cash Webhook Logs', 'Live SMS records received from the phone forwarder gateway'],
+  ezcash: ['EZ Cash SMS Log', 'Dialog payment SMS sent by the forwarder phone since the last server restart'],
   vouchers: ['Promo Vouchers', 'Create codes, watch how they are used, pause or change them'],
   users: ['Customers', 'Find a customer, see their orders and wallet, verify or block them'],
   credit: ['Wallet Credit', "Add to, deduct from or set a customer's wallet, with a reason for every change"],
   resellers: ['Reseller Network', 'Check the joining deposit, then approve, reject or suspend resellers'],
   support: ['Support Desk', 'Live customer support tickets & chat'],
-  reviews: ['Customer Reviews', 'Read and delete the feedback shown on the Reviews page'],
+  reviews: ['Customer Reviews', 'Read and remove the reviews shown on the Reviews page'],
   games: ['Game Prices', 'Set package prices against MooGold cost; saving updates the site and the Telegram bot'],
   popupAd: ['Popup Banner Ad Manager', 'Configure the promotional popup shown to visitors'],
   gameStrip: ['Discover Games Bar', 'Choose the game icons shown in the scrolling bar on the home page'],
   ffAccounts: ['Free Fire Accounts for Sale', 'List, edit and remove the FF accounts shown under Other Services'],
-  announcement: ['Ticker Notice Banner', 'Update the marquee text shown across the website header'],
+  announcement: ['Ticker Notice', 'The scrolling text across the top of the website'],
   system: ['System Status', 'What is set up on the server and whether each part works right now'],
 };
 
@@ -485,15 +486,10 @@ export const AdminDashboard = () => {
 
 
   const [selectedVoucherCode, setSelectedVoucherCode] = useState(null);
-  const [reviewSearch, setReviewSearch] = useState('');
-  const [deletingReviewId, setDeletingReviewId] = useState(null);
 
-  const [tickerNoticeInput, setTickerNoticeInput] = useState(tickerNotice);
 
   const [ezcashLogs, setEzcashLogs] = useState([]);
   const [isEzcashLogsLoading, setIsEzcashLogsLoading] = useState(false);
-  const [ezcashSearch, setEzcashSearch] = useState('');
-  const [ezcashStatusFilter, setEzcashStatusFilter] = useState('ALL');
 
   const [resellerSearch, setResellerSearch] = useState('');
   const [selectedResellerAppId, setSelectedResellerAppId] = useState(null);
@@ -793,16 +789,7 @@ export const AdminDashboard = () => {
     tickets: openTicketsCount
   };
 
-  const filteredEzcashLogs = (ezcashLogs || []).filter(item => {
-    if (!item) return false;
-    const query = (ezcashSearch || '').toLowerCase().trim();
-    const rn = String(item.rnNumber || '').toLowerCase();
-    const rawSms = String(item.rawSms || '').toLowerCase();
-    const redeemedBy = String(item.redeemedBy || '').toLowerCase();
-    const matchesSearch = !query || rn.includes(query) || rawSms.includes(query) || redeemedBy.includes(query);
-    const matchesStatus = ezcashStatusFilter === 'ALL' || item.status === ezcashStatusFilter;
-    return matchesSearch && matchesStatus;
-  });
+
 
 
 
@@ -953,13 +940,6 @@ export const AdminDashboard = () => {
     setIsSavingStrip(false);
     if (ok) showToast('🎮 GAMES BAR UPDATED & PUBLISHED LIVE!');
     else showToast('Failed to publish the games bar. Check your admin session and try again.', 'error');
-  };
-
-  const handleSaveNoticeSubmit = async (e) => {
-    e.preventDefault();
-    const ok = await updateTickerNotice(tickerNoticeInput);
-    if (ok) showToast('Ticker notice updated live across the website!');
-    else showToast('Ticker notice was not saved. Please log in to admin again and retry.', 'error');
   };
 
   const revenueTrend = (() => {
@@ -1406,81 +1386,22 @@ export const AdminDashboard = () => {
           )}
 
           {adminTab === 'ezcash' && (
-            <div className="space-y-4">
-              <div className="flex justify-end">
-                <button onClick={fetchEzcashLogs} disabled={isEzcashLogsLoading} className="px-3.5 py-2 border rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer" style={{ borderColor: 'var(--adm-border)', ...mutedStyle }}>
-                  <RefreshCw className={`w-3.5 h-3.5 text-emerald-400 ${isEzcashLogsLoading ? 'animate-spin' : ''}`} /><span>Refresh Logs</span>
-                </button>
-              </div>
-              <FilterBar>
-                <SearchInput value={ezcashSearch} onChange={setEzcashSearch} placeholder="Search RN Number, SMS Text, or User Email..." />
-                <select value={ezcashStatusFilter} onChange={(e) => setEzcashStatusFilter(e.target.value)} className={`${fieldCls} sm:max-w-[220px]`} style={fieldStyle}>
-                  <option value="ALL">All Statuses ({ezcashLogs.length})</option>
-                  <option value="UNCLAIMED">Unclaimed / Pending</option>
-                  <option value="REDEEMED">Auto-Approved / Redeemed</option>
-                </select>
-              </FilterBar>
-              <DataTable
-                emptyMessage="No EZ Cash webhook SMS logs received yet."
-                columns={[
-                  { key: 'rn', label: 'RN Trans Number', render: l => (
-                    <div className="font-mono font-bold text-amber-400 flex items-center gap-1.5">
-                      <span>{l.rnNumber}</span>
-                      <button onClick={() => { navigator.clipboard.writeText(l.rnNumber); showToast(`Copied RN ${l.rnNumber}`); }} className="p-1 rounded cursor-pointer" style={faintStyle}><Copy className="w-3 h-3" /></button>
-                    </div>
-                  )},
-                  { key: 'amount', label: 'Amount (LKR)', sortable: true, sortValue: l => l.amountLkr || 0, render: l => <span className="font-black text-emerald-400 font-heading text-sm">Rs. {(l.amountLkr || 0).toLocaleString()}</span> },
-                  { key: 'status', label: 'Status', sortable: true, sortValue: l => l.status || '', render: l => <StatusPill status={l.status} /> },
-                  { key: 'redeemedBy', label: 'Redeemed By', render: l => l.redeemedBy ? <span className="text-emerald-400 font-bold font-mono text-[11px]">{l.redeemedBy}</span> : <span className="italic text-[11px]" style={faintStyle}>Not redeemed yet</span> },
-                  { key: 'receivedAt', label: 'Received', sortable: true, sortValue: l => new Date(l.receivedAt).getTime() || 0, render: l => <span className="font-mono text-[10px]" style={mutedStyle}>{new Date(l.receivedAt).toLocaleString()}</span> },
-                  { key: 'rawSms', label: 'Raw SMS', render: l => <div className="p-2 rounded-lg text-[10px] font-mono border truncate max-w-xs" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)', ...mutedStyle }} title={l.rawSms}>{l.rawSms || 'No raw SMS text recorded'}</div> }
-                ]}
-                rows={filteredEzcashLogs}
-                rowKey="rnNumber"
-              />
-            </div>
+            <SmsLogDesk
+              logs={ezcashLogs}
+              loading={isEzcashLogsLoading}
+              onRefresh={fetchEzcashLogs}
+              onFindDeposit={(rn) => { setAdminTab('deposits'); setPaymentSearch(rn); }}
+              showToast={showToast}
+            />
           )}
 
           {adminTab === 'vouchers' && (
             <VouchersDesk vouchers={safeVouchers} onCreate={addVoucher} onOpen={(v) => setSelectedVoucherCode(v.code)} />
           )}
 
-          {adminTab === 'reviews' && (() => {
-            const reviewTime = (r) => Number(String(r.id || '').replace(/^rev-/, '')) || new Date(r.date || 0).getTime() || 0;
-            const q = reviewSearch.trim().toLowerCase();
-            const rows = (Array.isArray(userReviews) ? userReviews : [])
-              .filter(r => r && r.id)
-              .filter(r => !q || [r.name, r.text, r.location].some(v => String(v || '').toLowerCase().includes(q)))
-              .sort((a, b) => reviewTime(b) - reviewTime(a));
-            const onDelete = async (r) => {
-              if (!window.confirm(`Delete the review by "${r.name || 'Unknown'}"? This can't be undone.`)) return;
-              setDeletingReviewId(r.id);
-              await deleteReview(r);
-              setDeletingReviewId(null);
-            };
-            return (
-              <div className="space-y-4">
-                <SearchInput value={reviewSearch} onChange={setReviewSearch} placeholder="Search name or review text..." />
-                <DataTable
-                  emptyMessage="No customer reviews yet."
-                  columns={[
-                    { key: 'name', label: 'Customer', sortable: true, sortValue: r => r.name || '', render: r => (
-                      <div>
-                        <div className="font-bold" style={{ color: 'var(--adm-text)' }}>{r.flag ? `${r.flag} ` : ''}{r.name || 'Unknown'}</div>
-                        <div className="text-[10px] font-mono" style={mutedStyle}>{r.location || ''}{r.date ? ` · ${r.date}` : ''}</div>
-                      </div>
-                    )},
-                    { key: 'rating', label: 'Rating', sortable: true, sortValue: r => Number(r.rating) || 0, render: r => <span className="font-black text-amber-400 whitespace-nowrap">{'★'.repeat(Math.max(0, Math.min(5, Number(r.rating) || 0)))}</span> },
-                    { key: 'text', label: 'Review', render: r => <span className="text-xs break-words" style={{ color: 'var(--adm-text)' }}>{r.text}</span> },
-                    { key: 'actions', label: 'Actions', align: 'right', render: r => (
-                      <button onClick={() => onDelete(r)} disabled={deletingReviewId === r.id} className="px-2.5 py-1 bg-red-600/15 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 rounded-lg text-[11px] font-bold cursor-pointer inline-flex items-center gap-1 disabled:opacity-60"><Trash2 className="w-3 h-3" /><span>{deletingReviewId === r.id ? 'Deleting...' : 'Delete'}</span></button>
-                    )}
-                  ]}
-                  rows={rows}
-                />
-              </div>
-            );
-          })()}
+          {adminTab === 'reviews' && (
+            <ReviewsDesk reviews={Array.isArray(userReviews) ? userReviews : []} onDelete={deleteReview} />
+          )}
 
           {adminTab === 'users' && (
             <UsersDesk
@@ -1708,15 +1629,14 @@ export const AdminDashboard = () => {
           )}
 
           {adminTab === 'announcement' && (
-            <div className="max-w-2xl rounded-3xl border-2 p-6 space-y-4" style={cardStyle}>
-              <form onSubmit={handleSaveNoticeSubmit} className="space-y-4 text-xs">
-                <div>
-                  <label className="block font-extrabold mb-1" style={mutedStyle}>Banner Announcement Text</label>
-                  <textarea rows={4} value={tickerNoticeInput} onChange={(e) => setTickerNoticeInput(e.target.value)} className={`${fieldCls} font-mono`} style={fieldStyle} />
-                </div>
-                <button type="submit" className="px-6 py-3 bg-pink-600 hover:bg-pink-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl cursor-pointer shadow-lg shadow-pink-600/30">Save & Update Announcement Live</button>
-              </form>
-            </div>
+            <TickerEditor
+              liveText={tickerNotice}
+              onSave={async (text) => {
+                const ok = await updateTickerNotice(text);
+                showToast(ok ? 'Ticker published to the website.' : 'Ticker was not saved. Log in to admin again and retry.', ok ? 'success' : 'error');
+                return ok;
+              }}
+            />
           )}
 
           {adminTab === 'system' && <SystemStatusPage />}
