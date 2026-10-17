@@ -45,7 +45,7 @@ import { postServerApi, clearSessionToken, getUserAuthToken, endExpiredSessionOn
 import { 
   syncUserProfileToFirestore, updateUserProfileInFirestore, subscribeUserProfile, 
   saveOrderToFirestore, subscribeAllUsersFromFirestore, subscribeOrdersFromFirestore, updateOrderStatusInFirestore,
-  saveResellerApplicationToFirestore, subscribeResellerApplicationsFromFirestore, updateResellerApplicationStatusInFirestore,
+  saveResellerApplicationToFirestore, subscribeResellerApplicationsFromFirestore, approveResellerOnServer, setResellerStatusOnServer, sendResellerApprovalEmail,
   saveCustomGamePricesToFirestore, subscribeCustomGamePricesFromFirestore, generateUniqueSecurityKey, ensureResellerCredentials,
   saveManualPaymentToFirestore, rejectManualPaymentOnServer, createManualPaymentOnServer, approveManualPaymentOnServer, subscribeManualPaymentsFromFirestore, adjustUserWalletOnServer, fetchAdminWalletLog,
   createVoucherOnServer, updateVoucherOnServer, deleteVoucherOnServer, fetchVoucherLog, subscribeVouchersFromFirestore, redeemVoucherInDatabase,
@@ -1471,26 +1471,16 @@ export const AppProvider = ({ children }) => {
   };
 
   // Reseller Applications State & Handlers
+  // Reseller applications. The admin panel replaces this with the server's
+  // list; a customer's browser only keeps the application they sent.
   const [resellerApplications, setResellerApplications] = useState(() => {
-    const saved = localStorage.getItem('mads_reseller_applications');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
+    try {
+      const saved = JSON.parse(localStorage.getItem('mads_reseller_applications') || '[]');
+      // APP-90182 was a demo application seeded into every browser.
+      return Array.isArray(saved) ? saved.filter(a => a && typeof a === 'object' && a.id !== 'APP-90182') : [];
+    } catch (e) {
+      return [];
     }
-    return [
-      {
-        id: 'APP-90182',
-        userId: 'usr-101',
-        realName: 'Kasun Priyashantha',
-        storeName: 'Kasun TopUp Store',
-        whatsappNumber: '+94 77 987 6543',
-        emailAddress: 'kasun@madstopup.com',
-        isRunningStore: true,
-        hasSocialReach: true,
-        dailySale: '5,000 - 10,000 LKR',
-        status: 'PENDING',
-        submittedAt: new Date(Date.now() - 3600000).toISOString()
-      }
-    ];
   });
 
   useEffect(() => {
@@ -1500,25 +1490,7 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     if (!isAdminAuthenticated) return;
     const unsub = subscribeResellerApplicationsFromFirestore((remoteApps) => {
-      if (remoteApps && remoteApps.length > 0) {
-        setResellerApplications(prev => {
-          const map = new Map();
-          remoteApps.forEach(item => {
-            const key = item.id || item.firestoreId || item.userId;
-            if (key) map.set(key, { ...item, id: key });
-          });
-          prev.forEach(item => {
-            const key = item.id || item.firestoreId || item.userId;
-            if (key) {
-              const existing = map.get(key);
-              if (!existing || item.status === 'APPROVED' || item.status === 'REJECTED') {
-                map.set(key, { ...item, id: key });
-              }
-            }
-          });
-          return Array.from(map.values());
-        });
-      }
+      if (Array.isArray(remoteApps)) setResellerApplications(remoteApps);
     });
     return () => {
       if (typeof unsub === 'function') unsub();
@@ -1526,188 +1498,68 @@ export const AppProvider = ({ children }) => {
   }, [isAdminAuthenticated]);
 
   const addResellerApplication = (appData) => {
-    const newId = appData.id || appData.firestoreId || `app-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    // Short random ids ("APP-12345") clash, and the database refuses to
+    // overwrite an existing application, which lost the new one.
+    const newId = appData.id && !/^APP-\d{5}$/.test(appData.id) ? appData.id : newDepositId('APP');
     const fullApp = { ...appData, id: newId };
     setResellerApplications(prev => [fullApp, ...prev]);
     saveResellerApplicationToFirestore(fullApp);
     setUserProfileState(prev => ({ ...prev, resellerStatus: 'PENDING' }));
   };
 
-  const updateResellerApplicationStatus = async (appId, userId, newStatus, appObject = null) => {
-    const targetApp = appObject || resellerApplications.find(app => (appId && (app.id === appId || app.firestoreId === appId)) || (userId && app.userId === userId));
-    const targetId = appId || targetApp?.id || targetApp?.firestoreId;
-    const targetUserId = userId || targetApp?.userId;
+  // Admin: approve, reject, suspend or re-open a reseller application.
+  // Everything is decided and saved by the server; this updates the lists
+  // only after it said yes. Returns { ok, error, emailSent }.
+  const updateResellerApplicationStatus = async (app, newStatus, reason = '') => {
+    if (!app?.id) return { ok: false, error: 'Application not found.' };
+    const appId = app.id;
+    const markApp = (fields) => setResellerApplications(prev => prev.map(a => (a.id === appId ? { ...a, ...fields, updatedAt: new Date().toISOString() } : a)));
+    const markUser = (key, fields) => setUsersList(prev => prev.map(u => (u.uid === key ? { ...u, ...fields } : u)));
 
-    if (!targetId && !targetUserId) {
-      console.warn('[updateResellerApplicationStatus] No valid target ID found.');
-      return;
+    if (newStatus !== 'APPROVED') {
+      const result = await setResellerStatusOnServer(appId, newStatus, reason);
+      if (!result.ok) { showToast(result.error, 'error'); return result; }
+      markApp({ status: newStatus, statusReason: reason || null });
+      if (result.revokedKey) markUser(result.revokedKey, { isReseller: false, resellerStatus: newStatus, role: undefined });
+      showToast(result.revokedKey
+        ? `${app.storeName || appId} ${newStatus === 'SUSPENDED' ? 'suspended' : 'rejected'}. Reseller prices are off for this account.`
+        : `${app.storeName || appId} set to ${newStatus.toLowerCase()}.`);
+      return result;
     }
 
-    setResellerApplications(prev => {
-      const updated = prev.map(app => {
-        const matchesById = Boolean(targetId && (app.id === targetId || app.firestoreId === targetId));
-        const matchesByUserId = Boolean(targetUserId && app.userId === targetUserId);
-        const matchesTargetApp = Boolean(targetApp && ((targetApp.id && app.id === targetApp.id) || (targetApp.firestoreId && app.firestoreId === targetApp.firestoreId)));
+    // Codes the email will show. The server keeps an account's existing ones
+    // and returns what it saved.
+    const creds = ensureResellerCredentials({ uid: app.userId, email: app.emailAddress, name: app.realName, resellerCode: app.resellerCode, securityKey: app.securityKey });
+    const result = await approveResellerOnServer(appId, { userId: app.userId, resellerCode: creds.resellerCode, securityKey: creds.securityKey });
+    if (!result.ok) { showToast(result.error, 'error'); return result; }
+    const resellerCode = result.resellerCode || creds.resellerCode;
+    const securityKey = result.securityKey || creds.securityKey;
+    const key = result.keys?.[0];
+    markApp({ status: 'APPROVED', approvedKey: key, resellerCode, securityKey });
+    if (key) markUser(key, { isReseller: true, role: 'reseller', resellerStatus: 'APPROVED', resellerCode, securityKey });
 
-        if (matchesById || matchesByUserId || matchesTargetApp) {
-          return { ...app, status: newStatus, updatedAt: new Date().toISOString() };
-        }
-        return app;
-      });
-      localStorage.setItem('mads_reseller_applications', JSON.stringify(updated));
-      return updated;
-    });
-
-    // Generate / retrieve credentials for email dispatch and database save
-    const creds = ensureResellerCredentials({
-      uid: targetUserId,
-      email: targetApp?.emailAddress || targetApp?.email,
-      name: targetApp?.realName || targetApp?.name,
-      resellerCode: targetApp?.resellerCode,
-      securityKey: targetApp?.securityKey
-    });
-
-    let resellerCode = creds.resellerCode;
-    let securityKey = creds.securityKey;
-
-    const targetFirestoreId = targetApp?.firestoreId || (targetId && targetId !== targetUserId ? targetId : null);
-    const approval = await updateResellerApplicationStatusInFirestore(targetId || targetUserId, targetUserId, newStatus, targetFirestoreId, securityKey, resellerCode);
-    if (approval?.error) {
-      // Put the application back the way it was and say why.
-      setResellerApplications(prev => {
-        const reverted = prev.map(app => {
-          const same = (targetId && (app.id === targetId || app.firestoreId === targetId)) || (targetUserId && app.userId === targetUserId);
-          return same && targetApp ? { ...app, status: targetApp.status } : app;
-        });
-        localStorage.setItem('mads_reseller_applications', JSON.stringify(reverted));
-        return reverted;
-      });
-      showToast(approval.error, 'error');
-      return;
+    const email = app.emailAddress || app.email || usersList.find(u => u.uid === key)?.email || '';
+    let emailSent = false;
+    if (email) {
+      const mail = await sendResellerApprovalEmail({ email, name: app.realName || app.storeName || 'Valued Reseller', resellerCode, securityKey });
+      emailSent = mail.ok;
     }
-    // The server keeps an account's existing codes; the email must match them.
-    if (approval?.resellerCode) resellerCode = approval.resellerCode;
-    if (approval?.securityKey) securityKey = approval.securityKey;
-    
-    if (newStatus === 'APPROVED') {
-      // Bug 8: Update usersList so the approved user's record reflects reseller status
-      setUsersList(prev => prev.map(u => {
-        const matchUid = targetUserId && u.uid === targetUserId;
-        const matchEmail = targetApp?.emailAddress && u.email &&
-          u.email.toLowerCase() === targetApp.emailAddress.toLowerCase();
-        if (matchUid || matchEmail) {
-          return { ...u, isReseller: true, role: 'reseller', resellerStatus: 'APPROVED', resellerCode, securityKey };
-        }
-        return u;
-      }));
+    showToast(emailSent
+      ? `${app.storeName || 'Reseller'} approved. Codes emailed to ${email}.`
+      : `${app.storeName || 'Reseller'} approved, but the email was not sent. Send it again from the application.`, emailSent ? 'success' : 'warning');
+    return { ...result, ok: true, emailSent, resellerCode, securityKey };
+  };
 
-      if (userId && userProfile?.uid === userId) {
-        setUserProfileState(prev => ({ ...prev, isReseller: true, role: 'reseller', resellerStatus: 'APPROVED', resellerCode, securityKey }));
-      }
-      
-      const targetEmail = 
-        targetApp?.emailAddress || 
-        targetApp?.email || 
-        targetApp?.userEmail || 
-        usersList.find(u => u.uid === userId || (targetApp?.userId && u.uid === targetApp.userId))?.email || 
-        (userId && userProfile?.uid === userId ? userProfile?.email : '');
-
-      const targetName = 
-        targetApp?.realName || 
-        targetApp?.fullName || 
-        targetApp?.name || 
-        targetApp?.userName || 
-        targetApp?.storeName || 
-        'Valued Reseller';
-
-      if (targetEmail) {
-        let sentSuccess = false;
-        const apiEndpoints = [
-          '/api/send-reseller-approval',
-          'https://madstopup.com/api/send-reseller-approval'
-        ];
-
-        for (const endpoint of apiEndpoints) {
-          if (sentSuccess) break;
-          try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 45000);
-
-            const res = await fetch(endpoint, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                email: targetEmail,
-                name: targetName,
-                resellerCode,
-                securityKey
-              }),
-              signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-
-            if (res.status === 401) {
-              showToast('Admin session expired — reseller was approved, but you need to log out/in to Admin Dashboard to resend the approval email.', 'error');
-            } else if (res.ok) {
-              const data = await res.json();
-              if (data && data.success && !data.simulated) {
-                sentSuccess = true;
-                showToast(`Reseller Approved! Approval email sent to ${targetEmail} via ${data.provider || 'Zoho SMTP'}`, 'success');
-              } else if (data && data.simulated) {
-                console.warn(`[Approval Email Note]: ${endpoint} returned simulated: true (Server needs git pull & pm2 restart).`);
-              }
-            }
-          } catch (e) {
-            console.warn(`[Approval Email Note for ${endpoint}]:`, e.message);
-          }
-        }
-
-        if (!sentSuccess) {
-          // Attempt EmailJS fallback directly from browser
-          const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_42ovub5';
-          const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_e9m409d';
-          const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'UL_Cr3VmylKk8r2Dp';
-
-          try {
-            let emailjsModule;
-            try { emailjsModule = await import('@emailjs/browser'); } catch (e) {}
-            const emailjsLib = emailjsModule?.default || emailjsModule || window.emailjs;
-
-            if (emailjsLib && typeof emailjsLib.send === 'function') {
-              if (typeof emailjsLib.init === 'function') {
-                try { emailjsLib.init(publicKey); } catch (e) {}
-              }
-              await emailjsLib.send(
-                serviceId,
-                templateId,
-                {
-                  to_email: targetEmail,
-                  email: targetEmail,
-                  user_name: targetName,
-                  otp_code: `RS CODE: ${resellerCode} | KEY: ${securityKey}`,
-                  passcode: `RS CODE: ${resellerCode} | KEY: ${securityKey}`,
-                  message: `🎉 Official Reseller Partner Approved!\nReseller Code: ${resellerCode}\nSecurity Key: ${securityKey}\nTelegram Bot Auth: /auth ${securityKey}\nReseller Portal: https://madstopup.com/reseller-login`,
-                  time: 'Immediate'
-                },
-                publicKey
-              );
-              sentSuccess = true;
-              showToast(`Reseller Approved! Credentials email sent to ${targetEmail}`, 'success');
-            }
-          } catch (ejsErr) {
-            console.warn('[EmailJS Reseller Approval Fallback Note]:', ejsErr.message);
-          }
-        }
-
-        if (!sentSuccess) {
-          showToast(`Reseller Approved! Credentials: Code ${resellerCode} | Key ${securityKey} (Restart live server for Zoho SMTP)`, 'warning');
-        }
-      } else {
-        showToast(`Reseller Application ${appId} APPROVED successfully!`);
-      }
-    } else {
-      showToast(`Reseller Application ${appId} set to ${newStatus}`);
+  // Admin: send the approval email again with the account's saved codes.
+  const resendResellerEmail = async (app) => {
+    const email = app?.emailAddress || app?.email;
+    if (!email || !app?.resellerCode || !app?.securityKey) {
+      showToast('This application has no saved codes yet. Approve it first.', 'error');
+      return { ok: false };
     }
+    const mail = await sendResellerApprovalEmail({ email, name: app.realName || app.storeName || 'Valued Reseller', resellerCode: app.resellerCode, securityKey: app.securityKey });
+    showToast(mail.ok ? `Approval email sent to ${email}.` : mail.error, mail.ok ? 'success' : 'error');
+    return mail;
   };
 
   return (
@@ -1772,6 +1624,7 @@ export const AppProvider = ({ children }) => {
       resellerApplications,
       addResellerApplication,
       updateResellerApplicationStatus,
+      resendResellerEmail,
       userReviews,
       addReview,
       userProfile,

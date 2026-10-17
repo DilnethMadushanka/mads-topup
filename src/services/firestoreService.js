@@ -750,126 +750,38 @@ export const saveResellerApplicationToFirestore = async (appData) => {
 /**
  * Subscribe to all reseller applications
  */
+// Admin reseller application list, from the server's copy only (it is the
+// one approvals are written to). An empty list is passed on too.
 export const subscribeResellerApplicationsFromFirestore = (callback) => {
-  let unsubRtdb = null;
-  let unsubFirestore = null;
-
-  if (rtdb) {
-    try {
-      unsubRtdb = pollAdminList('applications', (data) => {
-        if (!data || typeof data !== 'object') return;
-        const list = Object.keys(data).map(key => ({ id: key, ...data[key] }));
-        if (list.length > 0) callback(list);
-      });
-    } catch (e) {
-      console.warn('RTDB reseller apps listener note:', e);
-    }
+  if (!rtdb) return () => {};
+  try {
+    return pollAdminList('applications', (data) => {
+      const entries = data && typeof data === 'object' ? Object.entries(data) : [];
+      callback(entries.filter(([, v]) => v && typeof v === 'object').map(([key, v]) => ({ ...v, id: key })));
+    });
+  } catch (e) {
+    console.warn('Reseller application poll note:', e);
+    return () => {};
   }
+};
 
-  if (db) {
-    try {
-      const colRef = collection(db, 'reseller_applications');
-      unsubFirestore = onSnapshot(colRef, (snapshot) => {
-        const list = snapshot.docs.map(docSnap => ({ firestoreId: docSnap.id, ...docSnap.data() }));
-        if (list.length > 0) callback(list);
-      }, (err) => {
-        console.warn('Firestore reseller apps permission notice:', err.code);
-      });
-    } catch (err) {
-      console.warn('Firestore reseller apps listener note:', err);
-    }
-  }
-
-  return () => {
-    if (typeof unsubRtdb === 'function') unsubRtdb();
-    if (typeof unsubFirestore === 'function') unsubFirestore();
-  };
+// Admin reseller actions on the server. Each returns { ok, ...data, error }.
+export const approveResellerOnServer = async (appId, codes = {}) => {
+  const { ok, data } = await postServerApi('/api/admin/reseller-approve', { appId, ...codes });
+  return ok ? { ok: true, ...data } : { ok: false, ...data, error: data?.error || 'Reseller approval was not saved.' };
+};
+export const setResellerStatusOnServer = async (appId, status, reason = '') => {
+  const { ok, data } = await postServerApi('/api/admin/reseller-status', { appId, status, reason });
+  return ok ? { ok: true, ...data } : { ok: false, error: data?.error || 'The application was not updated.' };
+};
+export const sendResellerApprovalEmail = async ({ email, name, resellerCode, securityKey }) => {
+  const { ok, data } = await postServerApi('/api/send-reseller-approval', { email, name, resellerCode, securityKey });
+  return ok && data?.success && !data?.simulated ? { ok: true, provider: data.provider } : { ok: false, error: data?.error || 'The approval email was not sent.' };
 };
 
 /**
  * Update reseller application status and sync user reseller role
  */
-export const updateResellerApplicationStatusInFirestore = async (appId, userId, newStatus, firestoreId = null, targetSecurityKey = null, targetResellerCode = null) => {
-  const creds = ensureResellerCredentials({
-    uid: userId || appId,
-    securityKey: targetSecurityKey,
-    resellerCode: targetResellerCode
-  });
-  let securityKey = creds.securityKey;
-  let resellerCode = creds.resellerCode;
-  let approval = null;
-
-  if (rtdb) {
-    try {
-      const appRef = dbRef(rtdb, `reseller_applications/${appId}`);
-      // Application status is written by the server (browsers can only
-      // create an application).
-      if (newStatus !== 'APPROVED') {
-        const { ok, data } = await postServerApi('/api/admin/reseller-status', { appId, status: newStatus });
-        if (!ok) console.warn('Reseller status was not saved:', data?.error);
-      }
-      if (newStatus === 'APPROVED') {
-        let approvedAppEmail = '';
-        try {
-          const appSnap = await rtdbGet(appRef);
-          if (appSnap.exists()) {
-            const appVal = appSnap.val();
-            approvedAppEmail = (appVal?.emailAddress || appVal?.email || appVal?.userEmail || '').trim().toLowerCase();
-          }
-        } catch (e) {}
-
-        // The reseller flag itself is granted by the server.
-        const { ok, data } = await postServerApi('/api/admin/reseller-approve', {
-          appId,
-          userId,
-          email: approvedAppEmail,
-          resellerCode,
-          securityKey
-        });
-        // Refused (e.g. the applicant has not deposited enough yet): stop
-        // here so nothing marks them approved.
-        if (!ok) return { error: data?.error || 'Reseller approval was not saved.' };
-        approval = data;
-      }
-    } catch (e) {
-      console.warn('RTDB reseller app status update note:', e);
-    }
-  }
-
-  // The server keeps an account's existing codes; use what it saved.
-  if (approval?.resellerCode) resellerCode = approval.resellerCode;
-  if (approval?.securityKey) securityKey = approval.securityKey;
-
-  if (db) {
-    try {
-      if (firestoreId) {
-        const docRef = doc(db, 'reseller_applications', firestoreId);
-        await updateDoc(docRef, { status: newStatus, resellerCode, securityKey, updatedAt: new Date().toISOString() });
-      } else {
-        const appsCol = collection(db, 'reseller_applications');
-        const q = query(appsCol, where('id', '==', appId));
-        const qSnap = await getDocs(q);
-        qSnap.forEach(async (d) => {
-          await updateDoc(doc(db, 'reseller_applications', d.id), { status: newStatus, resellerCode, securityKey, updatedAt: new Date().toISOString() });
-        });
-      }
-
-      if (userId && newStatus === 'APPROVED') {
-        const userRef = doc(db, 'users', userId);
-        await setDoc(userRef, { 
-          isReseller: true, 
-          role: 'Reseller Partner', 
-          resellerStatus: 'APPROVED',
-          resellerCode,
-          securityKey
-        }, { merge: true });
-      }
-    } catch (err) {
-      console.warn('Firestore reseller status update note:', err);
-    }
-  }
-  return approval;
-};
 
 /**
  * Save custom game package prices to Firestore & Realtime Database

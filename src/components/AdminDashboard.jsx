@@ -9,6 +9,7 @@ import { OrdersDesk, OrderDetail, orderNeedsAction } from './admin/OrdersDesk';
 import { DepositsDesk, DepositDetail, RecordDepositSheet } from './admin/DepositsDesk';
 import { UsersDesk, UserDetail, WalletCreditPage } from './admin/UsersDesk';
 import { VouchersDesk, VoucherDetail } from './admin/VouchersDesk';
+import { ResellersDesk, ResellerDetail } from './admin/ResellersDesk';
 import { sortOrdersNewestFirst } from '../utils/ownership';
 import { newUsersToday, sriLankaTime, signupTime } from '../utils/newUsersToday';
 import { getAllPopupBanners, emptyPopupBanner, MAX_POPUP_BANNERS } from '../utils/popupBanners';
@@ -34,27 +35,6 @@ const fieldStyle = { background: 'var(--adm-input-bg)', borderColor: 'var(--adm-
 const cardStyle = { background: 'var(--adm-surface)', borderColor: 'var(--adm-border)', boxShadow: 'var(--adm-shadow)' };
 const mutedStyle = { color: 'var(--adm-text-muted)' };
 const faintStyle = { color: 'var(--adm-text-faint)' };
-
-// Verified deposit towards the reseller joining deposit, for one application.
-const ResellerDepositCell = ({ appId, fetchResellerDeposit }) => {
-  const [info, setInfo] = useState(null);
-  useEffect(() => {
-    let alive = true;
-    if (appId && fetchResellerDeposit) fetchResellerDeposit(appId).then(d => { if (alive) setInfo(d); });
-    return () => { alive = false; };
-  }, [appId]);
-  const done = info && info.depositLkr >= info.requiredLkr;
-  return (
-    <div className="rounded-xl border p-3" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
-      <span className="text-[10px] font-mono font-bold uppercase block mb-0.5" style={mutedStyle}>Joining Deposit</span>
-      {info ? (
-        <span className={`font-bold ${done ? 'text-emerald-400' : 'text-amber-400'}`}>
-          Rs. {info.depositLkr.toLocaleString()} / {info.requiredLkr.toLocaleString()} {done ? '✓' : ''}
-        </span>
-      ) : <span style={mutedStyle}>Checking…</span>}
-    </div>
-  );
-};
 
 const STATUS_STYLES = {
   COMPLETED: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
@@ -417,7 +397,7 @@ const TAB_TITLES = {
   vouchers: ['Promo Vouchers', 'Create codes, watch how they are used, pause or change them'],
   users: ['Customers', 'Find a customer, see their orders and wallet, verify or block them'],
   credit: ['Wallet Credit', "Add to, deduct from or set a customer's wallet, with a reason for every change"],
-  resellers: ['Reseller Partner Network', 'Review, approve, or reject reseller partner applications'],
+  resellers: ['Reseller Network', 'Check the joining deposit, then approve, reject or suspend resellers'],
   support: ['Support Desk', 'Live customer support tickets & chat'],
   reviews: ['Customer Reviews', 'Read and delete the feedback shown on the Reviews page'],
   games: ['Game Catalog & Live Price Manager', 'Edit retail prices — publish instantly to web & Telegram bot'],
@@ -437,7 +417,7 @@ export const AdminDashboard = () => {
     tickerNotice, updateTickerNotice, usersList, verifyUserAccount, toggleBlockUser, adjustUserWallet,
     fetchAdminWalletLog, manualPayments, approveManualPayment, rejectManualPayment, recordOfflinePayment,
     supportTickets, sendTicketMessage, updateTicketStatus, updateTicketPriority, resellerApplications,
-    updateResellerApplicationStatus, gamesCatalog, updateGamePrices, popupAdConfig, updatePopupAdConfig,
+    updateResellerApplicationStatus, resendResellerEmail, gamesCatalog, updateGamePrices, popupAdConfig, updatePopupAdConfig,
     gameStripConfig, updateGameStripConfig, ffAccounts, userReviews, deleteReview,
     isAdminAuthenticated, setIsAdminAuthenticated, setResellerTier, fetchResellerDeposit
   } = useApp();
@@ -531,7 +511,7 @@ export const AdminDashboard = () => {
   const [ezcashStatusFilter, setEzcashStatusFilter] = useState('ALL');
 
   const [resellerSearch, setResellerSearch] = useState('');
-  const [resellerStatusFilter, setResellerStatusFilter] = useState('ALL');
+  const [selectedResellerAppId, setSelectedResellerAppId] = useState(null);
 
   const fetchEzcashLogs = async () => {
     try {
@@ -839,17 +819,7 @@ export const AdminDashboard = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const filteredResellerApps = safeResellerApps.filter(app => {
-    if (!app) return false;
-    const search = (resellerSearch || '').toLowerCase();
-    const realName = String(app.realName || '').toLowerCase();
-    const storeName = String(app.storeName || '').toLowerCase();
-    const whatsapp = String(app.whatsappNumber || '');
-    const email = String(app.emailAddress || '').toLowerCase();
-    const matchSearch = realName.includes(search) || storeName.includes(search) || whatsapp.includes(resellerSearch) || email.includes(search);
-    const matchStatus = resellerStatusFilter === 'ALL' || app.status === resellerStatusFilter;
-    return matchSearch && matchStatus;
-  });
+
 
 
 
@@ -1608,55 +1578,14 @@ export const AdminDashboard = () => {
           )}
 
           {adminTab === 'resellers' && (
-            <div className="space-y-4">
-              <FilterBar>
-                <SearchInput value={resellerSearch} onChange={setResellerSearch} placeholder="Search by applicant, store, whatsapp or email..." />
-                <div className="flex items-center gap-2 overflow-x-auto">
-                  {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map(st => (
-                    <button key={st} onClick={() => setResellerStatusFilter(st)} className={`px-3.5 py-2 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer whitespace-nowrap ${resellerStatusFilter === st ? 'bg-[#1677ff] text-white shadow-md shadow-blue-600/30' : 'border'}`} style={resellerStatusFilter !== st ? { borderColor: 'var(--adm-border)', ...mutedStyle } : undefined}>{st}</button>
-                  ))}
-                </div>
-              </FilterBar>
-
-              <div className="space-y-4">
-                {filteredResellerApps.length === 0 ? (
-                  <div className="rounded-2xl border p-8 text-center text-xs" style={{ ...cardStyle, ...mutedStyle }}>No reseller applications found.</div>
-                ) : filteredResellerApps.map(app => (
-                  <div key={app.id || app.firestoreId} className="rounded-2xl border-2 p-5 space-y-4" style={cardStyle}>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b" style={{ borderColor: 'var(--adm-border)' }}>
-                      <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0"><Crown className="w-6 h-6" /></div>
-                        <div>
-                          <h4 className="text-base font-black" style={{ color: 'var(--adm-text)' }}>{app.storeName}</h4>
-                          <p className="text-xs" style={mutedStyle}>Applicant: <span className="font-bold" style={{ color: 'var(--adm-text)' }}>{app.realName}</span> ({app.id})</p>
-                        </div>
-                      </div>
-                      <StatusPill status={app.status} />
-                    </div>
-                    <div className={`grid grid-cols-1 sm:grid-cols-2 ${app.status !== 'APPROVED' ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-3 text-xs`}>
-                      <div className="rounded-xl border p-3" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}><span className="text-[10px] font-mono font-bold uppercase block mb-0.5" style={mutedStyle}>WhatsApp</span><span className="font-bold" style={{ color: 'var(--adm-text)' }}>{app.whatsappNumber}</span></div>
-                      <div className="rounded-xl border p-3" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}><span className="text-[10px] font-mono font-bold uppercase block mb-0.5" style={mutedStyle}>Email</span><span className="font-bold" style={{ color: 'var(--adm-text)' }}>{app.emailAddress}</span></div>
-                      <div className="rounded-xl border p-3" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}><span className="text-[10px] font-mono font-bold uppercase block mb-0.5" style={mutedStyle}>Daily Sale</span><span className="text-amber-400 font-bold">{app.dailySale}</span></div>
-                      <div className="rounded-xl border p-3" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}><span className="text-[10px] font-mono font-bold uppercase block mb-0.5" style={mutedStyle}>Store & Reach</span><span style={mutedStyle}>{app.isRunningStore ? 'Active Store' : 'No Store'} • {app.hasSocialReach ? 'Social Reach' : 'No Reach'}</span></div>
-                      {app.status !== 'APPROVED' && <ResellerDepositCell appId={app.id || app.firestoreId} fetchResellerDeposit={fetchResellerDeposit} />}
-                    </div>
-                    <div className="flex items-center justify-between pt-2 flex-wrap gap-2">
-                      <span className="text-[11px] font-mono" style={faintStyle}>Submitted: {new Date(app.submittedAt).toLocaleString()}</span>
-                      <div className="flex items-center gap-2">
-                        {app.status !== 'APPROVED' ? (
-                          <button onClick={() => updateResellerApplicationStatus(app.id || app.firestoreId, app.userId, 'APPROVED', app)} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer"><UserCheck className="w-4 h-4" /><span>Approve Reseller</span></button>
-                        ) : (
-                          <button onClick={() => updateResellerApplicationStatus(app.id || app.firestoreId, app.userId, 'APPROVED', app)} className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer" title="Resend Approval Email"><Mail className="w-4 h-4" /><span>Resend Approval Email</span></button>
-                        )}
-                        {app.status !== 'REJECTED' && (
-                          <button onClick={() => updateResellerApplicationStatus(app.id || app.firestoreId || app.userId, app.userId, 'REJECTED', app)} className="px-3.5 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl text-xs font-extrabold flex items-center gap-1.5 cursor-pointer"><UserX className="w-4 h-4" /><span>Reject</span></button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <ResellersDesk
+              applications={safeResellerApps}
+              users={safeUsers}
+              search={resellerSearch}
+              onSearch={setResellerSearch}
+              onOpen={(a) => setSelectedResellerAppId(a.id)}
+              fetchDeposit={fetchResellerDeposit}
+            />
           )}
 
           {adminTab === 'support' && (
@@ -2070,6 +1999,19 @@ export const AdminDashboard = () => {
           onUpdate={updateVoucher}
           onDelete={deleteVoucher}
           fetchLog={fetchVoucherLog}
+          showToast={showToast}
+        />
+      )}
+
+      {selectedResellerAppId && safeResellerApps.some(a => a.id === selectedResellerAppId) && (
+        <ResellerDetail
+          app={safeResellerApps.find(a => a.id === selectedResellerAppId)}
+          users={safeUsers}
+          onClose={() => setSelectedResellerAppId(null)}
+          onSetStatus={updateResellerApplicationStatus}
+          onResendEmail={resendResellerEmail}
+          fetchDeposit={fetchResellerDeposit}
+          onOpenUser={(u) => { setSelectedResellerAppId(null); setSelectedInspectUser(u); }}
           showToast={showToast}
         />
       )}
