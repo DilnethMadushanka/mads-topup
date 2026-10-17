@@ -11,7 +11,7 @@ export const GAMES_DATA = [
     banner: '/game_logos/mobile_legends.jpg',
     popArt: { src: '/game_pop/mobile_legends.webp', scale: 1.12 },
     logo: '/game_logos/mobile_legends.jpg',
-    heroBanner: '/game_banners/mobilelegends.jpg',
+    heroBanner: '/game_banners/mobilelegends.webp',
     gradient: 'from-blue-600 via-indigo-600 to-purple-700',
     requiresServer: true,
     idLabel: 'User ID & Zone ID',
@@ -22,33 +22,33 @@ export const GAMES_DATA = [
     moongoldCode: 'MOBILE_LEGENDS',
     moongoldCategoryId: '1',
     packages: [
-      { id: 'ml-500-first', name: '500 + 65 Diamonds (First Top-Up Bonus)', amount: 565, bonus: 'First Top-Up Bonus', priceLkr: 2920, moongoldCost: 2601, priceUsd: 7.65, moongoldProductId: '15972915', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.png', isPopular: true },
-      { id: 'ml-250-first', name: '250 + 25 Diamonds (First Top-Up Bonus)', amount: 275, bonus: 'First Top-Up Bonus', priceLkr: 1440, moongoldCost: 1268, priceUsd: 3.73, moongoldProductId: '15972923', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.png', isPopular: false },
-      { id: 'ml-150-first', name: '150 + 15 Diamonds (First Top-Up Bonus)', amount: 165, bonus: 'First Top-Up Bonus', priceLkr: 900, moongoldCost: 789, priceUsd: 2.32, moongoldProductId: '15972925', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.png', isPopular: false },
-      { id: 'ml-50-first', name: '50 + 5 Diamonds (First Top-Up Bonus)', amount: 55, bonus: 'First Top-Up Bonus', priceLkr: 310, moongoldCost: 265, priceUsd: 0.78, moongoldProductId: '15972928', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.png', isPopular: false },
-      { id: 'ml-1084', name: '1084 Diamonds', amount: 1084, bonus: '', priceLkr: 6180, moongoldCost: 5576, priceUsd: 16.40, moongoldProductId: '7576658', image: '/product_images/prod_220_Diamonds_1768964821_diamondpng.png', isPopular: false },
-      { id: 'ml-7740', name: '7740 Diamonds + 1548 Bonus', amount: 9288, bonus: '+1548 Bonus', priceLkr: 43900, moongoldCost: 40113, priceUsd: 117.98, moongoldProductId: '5555341', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: false },
-      { id: 'ml-4649', name: '4649 Diamonds + 883 Bonus', amount: 5532, bonus: '+883 Bonus', priceLkr: 27300, moongoldCost: 24854, priceUsd: 73.10, moongoldProductId: '5555342', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: false },
-      { id: 'ml-3099', name: '3099 Diamonds + 589 Bonus', amount: 3688, bonus: '+589 Bonus', priceLkr: 17650, moongoldCost: 16075, priceUsd: 47.28, moongoldProductId: '5555343', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: false },
-      { id: 'ml-1860', name: '1860 Diamonds + 335 Bonus', amount: 2195, bonus: '+335 Bonus', priceLkr: 10900, moongoldCost: 9928, priceUsd: 29.20, moongoldProductId: '5555344', image: '/product_images/prod_220_Diamonds_1768964821_diamondpng.png', isPopular: true },
-      { id: 'ml-625', name: '625 Diamonds + 81 Bonus', amount: 706, bonus: '+81 Bonus', priceLkr: 3900, moongoldCost: 3502, priceUsd: 10.30, moongoldProductId: '5555345', image: '/product_images/prod_220_Diamonds_1768964821_diamondpng.png', isPopular: false },
-      { id: 'ml-234', name: '234 Diamonds + 23 Bonus', amount: 257, bonus: '+23 Bonus', priceLkr: 1470, moongoldCost: 1295, priceUsd: 3.81, moongoldProductId: '5555346', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.png', isPopular: false },
-      { id: 'ml-156', name: '156 Diamonds + 16 Bonus', amount: 172, bonus: '+16 Bonus', priceLkr: 880, moongoldCost: 775, priceUsd: 2.28, moongoldProductId: '5555347', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.png', isPopular: false },
-      { id: 'ml-78', name: '78 Diamonds + 8 Bonus', amount: 86, bonus: '+8 Bonus', priceLkr: 470, moongoldCost: 401, priceUsd: 1.18, moongoldProductId: '5555348', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.png', isPopular: false },
-      { id: 'ml-14', name: '14 Diamonds', amount: 14, bonus: '', priceLkr: 100, moongoldCost: 82, priceUsd: 0.24, moongoldProductId: '4690759', image: '/product_images/prod_10_Diamonds_1768964623_diamondpng.png', isPopular: false },
-      { id: 'ml-42', name: '42 Diamonds', amount: 42, bonus: '', priceLkr: 280, moongoldCost: 241, priceUsd: 0.71, moongoldProductId: '4690772', image: '/product_images/prod_20_Diamonds_1768964671_diamondpng.png', isPopular: false },
-      { id: 'ml-70', name: '70 Diamonds', amount: 70, bonus: '', priceLkr: 465, moongoldCost: 401, priceUsd: 1.18, moongoldProductId: '4690774', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.png', isPopular: false },
-      { id: 'ml-140', name: '140 Diamonds', amount: 140, bonus: '', priceLkr: 910, moongoldCost: 802, priceUsd: 2.36, moongoldProductId: '4690775', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.png', isPopular: false },
-      { id: 'ml-284', name: '284 Diamonds', amount: 284, bonus: '', priceLkr: 1820, moongoldCost: 1608, priceUsd: 4.73, moongoldProductId: '4690776', image: '/product_images/prod_220_Diamonds_1768964821_diamondpng.png', isPopular: false },
-      { id: 'ml-355', name: '355 Diamonds', amount: 355, bonus: '', priceLkr: 2260, moongoldCost: 2009, priceUsd: 5.91, moongoldProductId: '4690777', image: '/product_images/prod_220_Diamonds_1768964821_diamondpng.png', isPopular: false },
-      { id: 'ml-429', name: '429 Diamonds', amount: 429, bonus: '', priceLkr: 2710, moongoldCost: 2411, priceUsd: 7.09, moongoldProductId: '4690778', image: '/product_images/prod_220_Diamonds_1768964821_diamondpng.png', isPopular: false },
-      { id: 'ml-716', name: '716 Diamonds', amount: 716, bonus: '', priceLkr: 4500, moongoldCost: 4019, priceUsd: 11.82, moongoldProductId: '4690779', image: '/product_images/prod_220_Diamonds_1768964821_diamondpng.png', isPopular: false },
-      { id: 'ml-1446', name: '1446 Diamonds', amount: 1446, bonus: '', priceLkr: 8900, moongoldCost: 8014, priceUsd: 23.57, moongoldProductId: '4690780', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: false },
-      { id: 'ml-2976', name: '2976 Diamonds', amount: 2976, bonus: '', priceLkr: 17700, moongoldCost: 16075, priceUsd: 47.28, moongoldProductId: '4690781', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: false },
-      { id: 'ml-7502', name: '7502 Diamonds', amount: 7502, bonus: '', priceLkr: 43900, moongoldCost: 40113, priceUsd: 117.98, moongoldProductId: '4690782', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: false },
-      { id: 'ml-weekly-pass', name: 'Weekly Pass', amount: 1, bonus: 'Weekly Pass', priceLkr: 580, moongoldCost: 503, priceUsd: 1.48, moongoldProductId: '4690783', image: '/product_images/prod_Weekly_1769672449_logo_2.png', isPopular: true, isSpecial: true },
-      { id: 'ml-twilight-pass', name: 'Twilight Pass', amount: 1, bonus: 'Twilight Pass', priceLkr: 3750, moongoldCost: 3332, priceUsd: 9.80, moongoldProductId: '4690786', image: '/product_images/prod_Weekly_1769672449_logo_2.png', isPopular: false, isSpecial: true },
-      { id: 'ml-5', name: '5 Diamonds', amount: 5, bonus: '', priceLkr: 40, moongoldCost: 27, priceUsd: 0.08, moongoldProductId: '578634', image: '/product_images/prod_10_Diamonds_1768964623_diamondpng.png', isPopular: false }
+      { id: 'ml-500-first', name: '500 + 65 Diamonds (First Top-Up Bonus)', amount: 565, bonus: 'First Top-Up Bonus', priceLkr: 2920, moongoldCost: 2601, priceUsd: 7.65, moongoldProductId: '15972915', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.webp', isPopular: true },
+      { id: 'ml-250-first', name: '250 + 25 Diamonds (First Top-Up Bonus)', amount: 275, bonus: 'First Top-Up Bonus', priceLkr: 1440, moongoldCost: 1268, priceUsd: 3.73, moongoldProductId: '15972923', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.webp', isPopular: false },
+      { id: 'ml-150-first', name: '150 + 15 Diamonds (First Top-Up Bonus)', amount: 165, bonus: 'First Top-Up Bonus', priceLkr: 900, moongoldCost: 789, priceUsd: 2.32, moongoldProductId: '15972925', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.webp', isPopular: false },
+      { id: 'ml-50-first', name: '50 + 5 Diamonds (First Top-Up Bonus)', amount: 55, bonus: 'First Top-Up Bonus', priceLkr: 310, moongoldCost: 265, priceUsd: 0.78, moongoldProductId: '15972928', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.webp', isPopular: false },
+      { id: 'ml-1084', name: '1084 Diamonds', amount: 1084, bonus: '', priceLkr: 6180, moongoldCost: 5576, priceUsd: 16.40, moongoldProductId: '7576658', image: '/product_images/prod_220_Diamonds_1768964821_diamondpng.webp', isPopular: false },
+      { id: 'ml-7740', name: '7740 Diamonds + 1548 Bonus', amount: 9288, bonus: '+1548 Bonus', priceLkr: 43900, moongoldCost: 40113, priceUsd: 117.98, moongoldProductId: '5555341', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.webp', isPopular: false },
+      { id: 'ml-4649', name: '4649 Diamonds + 883 Bonus', amount: 5532, bonus: '+883 Bonus', priceLkr: 27300, moongoldCost: 24854, priceUsd: 73.10, moongoldProductId: '5555342', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.webp', isPopular: false },
+      { id: 'ml-3099', name: '3099 Diamonds + 589 Bonus', amount: 3688, bonus: '+589 Bonus', priceLkr: 17650, moongoldCost: 16075, priceUsd: 47.28, moongoldProductId: '5555343', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.webp', isPopular: false },
+      { id: 'ml-1860', name: '1860 Diamonds + 335 Bonus', amount: 2195, bonus: '+335 Bonus', priceLkr: 10900, moongoldCost: 9928, priceUsd: 29.20, moongoldProductId: '5555344', image: '/product_images/prod_220_Diamonds_1768964821_diamondpng.webp', isPopular: true },
+      { id: 'ml-625', name: '625 Diamonds + 81 Bonus', amount: 706, bonus: '+81 Bonus', priceLkr: 3900, moongoldCost: 3502, priceUsd: 10.30, moongoldProductId: '5555345', image: '/product_images/prod_220_Diamonds_1768964821_diamondpng.webp', isPopular: false },
+      { id: 'ml-234', name: '234 Diamonds + 23 Bonus', amount: 257, bonus: '+23 Bonus', priceLkr: 1470, moongoldCost: 1295, priceUsd: 3.81, moongoldProductId: '5555346', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.webp', isPopular: false },
+      { id: 'ml-156', name: '156 Diamonds + 16 Bonus', amount: 172, bonus: '+16 Bonus', priceLkr: 880, moongoldCost: 775, priceUsd: 2.28, moongoldProductId: '5555347', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.webp', isPopular: false },
+      { id: 'ml-78', name: '78 Diamonds + 8 Bonus', amount: 86, bonus: '+8 Bonus', priceLkr: 470, moongoldCost: 401, priceUsd: 1.18, moongoldProductId: '5555348', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.webp', isPopular: false },
+      { id: 'ml-14', name: '14 Diamonds', amount: 14, bonus: '', priceLkr: 100, moongoldCost: 82, priceUsd: 0.24, moongoldProductId: '4690759', image: '/product_images/prod_10_Diamonds_1768964623_diamondpng.webp', isPopular: false },
+      { id: 'ml-42', name: '42 Diamonds', amount: 42, bonus: '', priceLkr: 280, moongoldCost: 241, priceUsd: 0.71, moongoldProductId: '4690772', image: '/product_images/prod_20_Diamonds_1768964671_diamondpng.webp', isPopular: false },
+      { id: 'ml-70', name: '70 Diamonds', amount: 70, bonus: '', priceLkr: 465, moongoldCost: 401, priceUsd: 1.18, moongoldProductId: '4690774', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.webp', isPopular: false },
+      { id: 'ml-140', name: '140 Diamonds', amount: 140, bonus: '', priceLkr: 910, moongoldCost: 802, priceUsd: 2.36, moongoldProductId: '4690775', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.webp', isPopular: false },
+      { id: 'ml-284', name: '284 Diamonds', amount: 284, bonus: '', priceLkr: 1820, moongoldCost: 1608, priceUsd: 4.73, moongoldProductId: '4690776', image: '/product_images/prod_220_Diamonds_1768964821_diamondpng.webp', isPopular: false },
+      { id: 'ml-355', name: '355 Diamonds', amount: 355, bonus: '', priceLkr: 2260, moongoldCost: 2009, priceUsd: 5.91, moongoldProductId: '4690777', image: '/product_images/prod_220_Diamonds_1768964821_diamondpng.webp', isPopular: false },
+      { id: 'ml-429', name: '429 Diamonds', amount: 429, bonus: '', priceLkr: 2710, moongoldCost: 2411, priceUsd: 7.09, moongoldProductId: '4690778', image: '/product_images/prod_220_Diamonds_1768964821_diamondpng.webp', isPopular: false },
+      { id: 'ml-716', name: '716 Diamonds', amount: 716, bonus: '', priceLkr: 4500, moongoldCost: 4019, priceUsd: 11.82, moongoldProductId: '4690779', image: '/product_images/prod_220_Diamonds_1768964821_diamondpng.webp', isPopular: false },
+      { id: 'ml-1446', name: '1446 Diamonds', amount: 1446, bonus: '', priceLkr: 8900, moongoldCost: 8014, priceUsd: 23.57, moongoldProductId: '4690780', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.webp', isPopular: false },
+      { id: 'ml-2976', name: '2976 Diamonds', amount: 2976, bonus: '', priceLkr: 17700, moongoldCost: 16075, priceUsd: 47.28, moongoldProductId: '4690781', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.webp', isPopular: false },
+      { id: 'ml-7502', name: '7502 Diamonds', amount: 7502, bonus: '', priceLkr: 43900, moongoldCost: 40113, priceUsd: 117.98, moongoldProductId: '4690782', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.webp', isPopular: false },
+      { id: 'ml-weekly-pass', name: 'Weekly Pass', amount: 1, bonus: 'Weekly Pass', priceLkr: 580, moongoldCost: 503, priceUsd: 1.48, moongoldProductId: '4690783', image: '/product_images/prod_Weekly_1769672449_logo_2.webp', isPopular: true, isSpecial: true },
+      { id: 'ml-twilight-pass', name: 'Twilight Pass', amount: 1, bonus: 'Twilight Pass', priceLkr: 3750, moongoldCost: 3332, priceUsd: 9.80, moongoldProductId: '4690786', image: '/product_images/prod_Weekly_1769672449_logo_2.webp', isPopular: false, isSpecial: true },
+      { id: 'ml-5', name: '5 Diamonds', amount: 5, bonus: '', priceLkr: 40, moongoldCost: 27, priceUsd: 0.08, moongoldProductId: '578634', image: '/product_images/prod_10_Diamonds_1768964623_diamondpng.webp', isPopular: false }
     ]
   },
   {
@@ -63,7 +63,7 @@ export const GAMES_DATA = [
     flag: '🇸🇬',
     banner: '/game_logos/free_fire_tile.webp',
     logo: '/game_logos/free_fire.webp',
-    heroBanner: '/game_banners/freefire.jpg',
+    heroBanner: '/game_banners/freefire.webp',
     gradient: 'from-red-600 via-rose-500 to-amber-500',
     requiresServer: false,
     idLabel: 'Player ID (UID)',
@@ -73,24 +73,24 @@ export const GAMES_DATA = [
     moongoldCode: 'FREEFIRE_SG',
     moongoldCategoryId: '50',
     packages: [
-      { id: 'ff-20', name: '20 Diamonds', amount: 20, bonus: '', priceLkr: 85, priceUsd: 0.25, moongoldProductId: '47639123', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.png', isPopular: false },
-      { id: 'ff-25', name: '25 Diamonds', amount: 25, bonus: '', priceLkr: 105, moongoldCost: 88, priceUsd: 0.26, moongoldProductId: '14704215', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.png', isPopular: false },
-      { id: 'ff-40', name: '40 Diamonds', amount: 40, bonus: '', priceLkr: 165, priceUsd: 0.49, moongoldProductId: '47639125', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.png', isPopular: false },
-      { id: 'ff-100', name: '100 Diamonds', amount: 100, bonus: '', priceLkr: 380, moongoldCost: 326, priceUsd: 0.96, moongoldProductId: '14704216', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.png', isPopular: false },
-      { id: 'ff-205', name: '205 Diamonds', amount: 205, bonus: '', priceLkr: 690, priceUsd: 2.03, moongoldProductId: '47639126', image: '/product_images/prod_220_Diamonds_1768964821_diamondpng.png', isPopular: false },
-      { id: 'ff-310', name: '310 Diamonds', amount: 310, bonus: '', priceLkr: 900, moongoldCost: 789, priceUsd: 2.32, moongoldProductId: '618927', image: '/product_images/prod_220_Diamonds_1768964821_diamondpng.png', isPopular: false },
-      { id: 'ff-420', name: '420 Diamonds', amount: 420, bonus: '', priceLkr: 1200, priceUsd: 3.53, moongoldProductId: '47639127', image: '/product_images/prod_220_Diamonds_1768964821_diamondpng.png', isPopular: false },
-      { id: 'ff-520', name: '520 Diamonds', amount: 520, bonus: '', priceLkr: 1450, moongoldCost: 1282, priceUsd: 3.77, moongoldProductId: '14704217', image: '/product_images/prod_520_1769709482_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: true },
-      { id: 'ff-650', name: '650 Diamonds', amount: 650, bonus: '', priceLkr: 1800, priceUsd: 5.29, moongoldProductId: '47639129', image: '/product_images/prod_520_1769709482_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: false },
-      { id: 'ff-1060', name: '1060 Diamonds', amount: 1060, bonus: '', priceLkr: 2880, moongoldCost: 2570, priceUsd: 7.56, moongoldProductId: '14704219', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: false },
-      { id: 'ff-1100', name: '1100 Diamonds', amount: 1100, bonus: '', priceLkr: 2990, priceUsd: 8.79, moongoldProductId: '47639130', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: false },
-      { id: 'ff-2180', name: '2180 Diamonds', amount: 2180, bonus: '', priceLkr: 5700, moongoldCost: 5144, priceUsd: 15.13, moongoldProductId: '14704220', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: false },
-      { id: 'ff-2250', name: '2250 Diamonds', amount: 2250, bonus: '', priceLkr: 5880, priceUsd: 17.29, moongoldProductId: '47639131', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: false },
-      { id: 'ff-5600', name: '5600 Diamonds', amount: 5600, bonus: '', priceLkr: 14500, moongoldCost: 13192, priceUsd: 38.80, moongoldProductId: '14704221', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: false },
-      { id: 'ff-11500', name: '11500 Diamonds', amount: 11500, bonus: '', priceLkr: 28800, moongoldCost: 26180, priceUsd: 77.00, moongoldProductId: '14704222', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: false },
-      { id: 'ff-weekly', name: 'Weekly Membership', amount: 450, bonus: 'Daily Rewards', priceLkr: 640, moongoldCost: 558, priceUsd: 1.64, moongoldProductId: '618940', image: '/product_images/prod_Weekly_1769672449_logo_2.png', isPopular: true, isSpecial: true },
-      { id: 'ff-monthly', name: 'Monthly Membership', amount: 2600, bonus: 'Super Discount', priceLkr: 2920, moongoldCost: 2604, priceUsd: 7.66, moongoldProductId: '618941', image: '/product_images/prod_Monthly_Membership_1768967679_mmm_1.png', isPopular: false, isSpecial: true },
-      { id: 'ff-weekly-lite', name: 'Weekly Lite', amount: 1, bonus: 'Lite Membership', priceLkr: 115, moongoldCost: 95, priceUsd: 0.28, moongoldProductId: '8814600', image: '/product_images/prod_Weekly_1769672449_logo_2.png', isPopular: false, isSpecial: true },
+      { id: 'ff-20', name: '20 Diamonds', amount: 20, bonus: '', priceLkr: 85, priceUsd: 0.25, moongoldProductId: '47639123', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.webp', isPopular: false },
+      { id: 'ff-25', name: '25 Diamonds', amount: 25, bonus: '', priceLkr: 105, moongoldCost: 88, priceUsd: 0.26, moongoldProductId: '14704215', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.webp', isPopular: false },
+      { id: 'ff-40', name: '40 Diamonds', amount: 40, bonus: '', priceLkr: 165, priceUsd: 0.49, moongoldProductId: '47639125', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.webp', isPopular: false },
+      { id: 'ff-100', name: '100 Diamonds', amount: 100, bonus: '', priceLkr: 380, moongoldCost: 326, priceUsd: 0.96, moongoldProductId: '14704216', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.webp', isPopular: false },
+      { id: 'ff-205', name: '205 Diamonds', amount: 205, bonus: '', priceLkr: 690, priceUsd: 2.03, moongoldProductId: '47639126', image: '/product_images/prod_220_Diamonds_1768964821_diamondpng.webp', isPopular: false },
+      { id: 'ff-310', name: '310 Diamonds', amount: 310, bonus: '', priceLkr: 900, moongoldCost: 789, priceUsd: 2.32, moongoldProductId: '618927', image: '/product_images/prod_220_Diamonds_1768964821_diamondpng.webp', isPopular: false },
+      { id: 'ff-420', name: '420 Diamonds', amount: 420, bonus: '', priceLkr: 1200, priceUsd: 3.53, moongoldProductId: '47639127', image: '/product_images/prod_220_Diamonds_1768964821_diamondpng.webp', isPopular: false },
+      { id: 'ff-520', name: '520 Diamonds', amount: 520, bonus: '', priceLkr: 1450, moongoldCost: 1282, priceUsd: 3.77, moongoldProductId: '14704217', image: '/product_images/prod_520_1769709482_prod_100_1769359707_prod_1060_1767980911_Diams_copy.webp', isPopular: true },
+      { id: 'ff-650', name: '650 Diamonds', amount: 650, bonus: '', priceLkr: 1800, priceUsd: 5.29, moongoldProductId: '47639129', image: '/product_images/prod_520_1769709482_prod_100_1769359707_prod_1060_1767980911_Diams_copy.webp', isPopular: false },
+      { id: 'ff-1060', name: '1060 Diamonds', amount: 1060, bonus: '', priceLkr: 2880, moongoldCost: 2570, priceUsd: 7.56, moongoldProductId: '14704219', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.webp', isPopular: false },
+      { id: 'ff-1100', name: '1100 Diamonds', amount: 1100, bonus: '', priceLkr: 2990, priceUsd: 8.79, moongoldProductId: '47639130', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.webp', isPopular: false },
+      { id: 'ff-2180', name: '2180 Diamonds', amount: 2180, bonus: '', priceLkr: 5700, moongoldCost: 5144, priceUsd: 15.13, moongoldProductId: '14704220', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.webp', isPopular: false },
+      { id: 'ff-2250', name: '2250 Diamonds', amount: 2250, bonus: '', priceLkr: 5880, priceUsd: 17.29, moongoldProductId: '47639131', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.webp', isPopular: false },
+      { id: 'ff-5600', name: '5600 Diamonds', amount: 5600, bonus: '', priceLkr: 14500, moongoldCost: 13192, priceUsd: 38.80, moongoldProductId: '14704221', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.webp', isPopular: false },
+      { id: 'ff-11500', name: '11500 Diamonds', amount: 11500, bonus: '', priceLkr: 28800, moongoldCost: 26180, priceUsd: 77.00, moongoldProductId: '14704222', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.webp', isPopular: false },
+      { id: 'ff-weekly', name: 'Weekly Membership', amount: 450, bonus: 'Daily Rewards', priceLkr: 640, moongoldCost: 558, priceUsd: 1.64, moongoldProductId: '618940', image: '/product_images/prod_Weekly_1769672449_logo_2.webp', isPopular: true, isSpecial: true },
+      { id: 'ff-monthly', name: 'Monthly Membership', amount: 2600, bonus: 'Super Discount', priceLkr: 2920, moongoldCost: 2604, priceUsd: 7.66, moongoldProductId: '618941', image: '/product_images/prod_Monthly_Membership_1768967679_mmm_1.webp', isPopular: false, isSpecial: true },
+      { id: 'ff-weekly-lite', name: 'Weekly Lite', amount: 1, bonus: 'Lite Membership', priceLkr: 115, moongoldCost: 95, priceUsd: 0.28, moongoldProductId: '8814600', image: '/product_images/prod_Weekly_1769672449_logo_2.webp', isPopular: false, isSpecial: true },
     ]
   },
   {
@@ -106,7 +106,7 @@ export const GAMES_DATA = [
     // Character cut-out that breaks out of the top of the home-page tile.
     popArt: { src: '/game_pop/pubg.webp', scale: 1.12 },
     logo: '/game_logos/pubg.webp',
-    heroBanner: '/game_banners/pubg.jpg',
+    heroBanner: '/game_banners/pubg.webp',
     gradient: 'from-amber-500 via-orange-600 to-red-600',
     requiresServer: false,
     idLabel: 'Character ID (5-12 Digits)',
@@ -137,7 +137,7 @@ export const GAMES_DATA = [
     banner: '/game_logos/blood_strike_tile.webp',
     popArt: { src: '/game_pop/blood_strike.webp', scale: 1.2 },
     logo: '/game_logos/blood_strike.webp',
-    heroBanner: '/game_banners/bloodstrike.jpg',
+    heroBanner: '/game_banners/bloodstrike.webp',
     gradient: 'from-red-700 to-rose-900',
     requiresServer: false,
     idLabel: 'User ID (UID)',
@@ -163,8 +163,8 @@ export const GAMES_DATA = [
     badge: 'ACTIVE',
     banner: '/game_logos/delta_force_tile.webp',
     popArt: { src: '/game_pop/delta_force_v2.webp', scale: 1.1 },
-    logo: '/game_logos/delta_force.jpg',
-    heroBanner: '/game_banners/deltaforce.jpg',
+    logo: '/game_logos/delta_force.webp',
+    heroBanner: '/game_banners/deltaforce.webp',
     gradient: 'from-emerald-700 to-teal-900',
     requiresServer: false,
     idLabel: 'Player ID (UID)',
@@ -174,9 +174,9 @@ export const GAMES_DATA = [
     moongoldCode: 'DELTAFORCE_GLOBAL',
     resellerDisabled: true, // moongoldProductId not configured — reseller dispatch blocked until IDs are added
     packages: [
-      { id: 'df-60', name: '60 Delta Coins', amount: 60, bonus: '', priceLkr: 460, moongoldCost: 411, priceUsd: 1.21, image: '/game_logos/delta_force.jpg', isPopular: false },
-      { id: 'df-300', name: '300 + 30 Delta Coins', amount: 330, bonus: '+30 Extra', priceLkr: 2150, moongoldCost: 1914, priceUsd: 5.63, image: '/game_logos/delta_force.jpg', isPopular: true },
-      { id: 'df-680', name: '680 Delta Coins', amount: 680, bonus: '', priceLkr: 4480, moongoldCost: 4012, priceUsd: 11.80, image: '/game_logos/delta_force.jpg', isPopular: false }
+      { id: 'df-60', name: '60 Delta Coins', amount: 60, bonus: '', priceLkr: 460, moongoldCost: 411, priceUsd: 1.21, image: '/game_logos/delta_force.webp', isPopular: false },
+      { id: 'df-300', name: '300 + 30 Delta Coins', amount: 330, bonus: '+30 Extra', priceLkr: 2150, moongoldCost: 1914, priceUsd: 5.63, image: '/game_logos/delta_force.webp', isPopular: true },
+      { id: 'df-680', name: '680 Delta Coins', amount: 680, bonus: '', priceLkr: 4480, moongoldCost: 4012, priceUsd: 11.80, image: '/game_logos/delta_force.webp', isPopular: false }
     ]
   },
   {
@@ -191,7 +191,7 @@ export const GAMES_DATA = [
     flag: '🇮🇩',
     banner: '/game_logos/free_fire_tile.webp',
     logo: '/game_logos/free_fire.webp',
-    heroBanner: '/game_banners/freefire.jpg',
+    heroBanner: '/game_banners/freefire.webp',
     gradient: 'from-red-600 via-rose-500 to-amber-500',
     requiresServer: false,
     idLabel: 'Player ID (UID)',
@@ -200,13 +200,13 @@ export const GAMES_DATA = [
     popular: true,
     moongoldCode: 'FREEFIRE_ID',
     packages: [
-      { id: 'ff-id-weekly', name: 'Weekly Membership', amount: 450, bonus: 'Indo Region', priceLkr: 640, moongoldCost: 558, priceUsd: 1.64, moongoldProductId: '10034489', image: '/product_images/prod_Weekly_1769672449_logo_2.png', isPopular: true, isSpecial: true },
-      { id: 'ff-id-monthly', name: 'Monthly Membership', amount: 2600, bonus: 'Indo Region', priceLkr: 2920, moongoldCost: 2604, priceUsd: 7.66, moongoldProductId: '10034484', image: '/product_images/prod_Monthly_Membership_1768967679_mmm_1.png', isPopular: false, isSpecial: true },
-      { id: 'ff-id-100', name: '100 + 10 Diamonds', amount: 110, bonus: 'Indo Region', priceLkr: 380, moongoldCost: 326, priceUsd: 0.96, moongoldProductId: '899643', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.png', isPopular: false },
-      { id: 'ff-id-310', name: '310 + 31 Diamonds', amount: 341, bonus: 'Indo Region', priceLkr: 900, moongoldCost: 789, priceUsd: 2.32, moongoldProductId: '899644', image: '/product_images/prod_220_Diamonds_1768964821_diamondpng.png', isPopular: false },
-      { id: 'ff-id-520', name: '520 + 52 Diamonds', amount: 572, bonus: 'Indo Region', priceLkr: 1450, moongoldCost: 1282, priceUsd: 3.77, moongoldProductId: '899645', image: '/product_images/prod_520_1769709482_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: true },
-      { id: 'ff-id-1060', name: '1060 + 106 Diamonds', amount: 1166, bonus: 'Indo Region', priceLkr: 2880, moongoldCost: 2570, priceUsd: 7.56, moongoldProductId: '899646', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: false },
-      { id: 'ff-id-2180', name: '2180 + 218 Diamonds', amount: 2398, bonus: 'Indo Region', priceLkr: 5700, moongoldCost: 5144, priceUsd: 15.13, moongoldProductId: '899647', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.png', isPopular: false }
+      { id: 'ff-id-weekly', name: 'Weekly Membership', amount: 450, bonus: 'Indo Region', priceLkr: 640, moongoldCost: 558, priceUsd: 1.64, moongoldProductId: '10034489', image: '/product_images/prod_Weekly_1769672449_logo_2.webp', isPopular: true, isSpecial: true },
+      { id: 'ff-id-monthly', name: 'Monthly Membership', amount: 2600, bonus: 'Indo Region', priceLkr: 2920, moongoldCost: 2604, priceUsd: 7.66, moongoldProductId: '10034484', image: '/product_images/prod_Monthly_Membership_1768967679_mmm_1.webp', isPopular: false, isSpecial: true },
+      { id: 'ff-id-100', name: '100 + 10 Diamonds', amount: 110, bonus: 'Indo Region', priceLkr: 380, moongoldCost: 326, priceUsd: 0.96, moongoldProductId: '899643', image: '/product_images/prod_100_Diamonds_1768964745_diamondpng.webp', isPopular: false },
+      { id: 'ff-id-310', name: '310 + 31 Diamonds', amount: 341, bonus: 'Indo Region', priceLkr: 900, moongoldCost: 789, priceUsd: 2.32, moongoldProductId: '899644', image: '/product_images/prod_220_Diamonds_1768964821_diamondpng.webp', isPopular: false },
+      { id: 'ff-id-520', name: '520 + 52 Diamonds', amount: 572, bonus: 'Indo Region', priceLkr: 1450, moongoldCost: 1282, priceUsd: 3.77, moongoldProductId: '899645', image: '/product_images/prod_520_1769709482_prod_100_1769359707_prod_1060_1767980911_Diams_copy.webp', isPopular: true },
+      { id: 'ff-id-1060', name: '1060 + 106 Diamonds', amount: 1166, bonus: 'Indo Region', priceLkr: 2880, moongoldCost: 2570, priceUsd: 7.56, moongoldProductId: '899646', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.webp', isPopular: false },
+      { id: 'ff-id-2180', name: '2180 + 218 Diamonds', amount: 2398, bonus: 'Indo Region', priceLkr: 5700, moongoldCost: 5144, priceUsd: 15.13, moongoldProductId: '899647', image: '/product_images/prod_1060_1769709491_prod_100_1769359707_prod_1060_1767980911_Diams_copy.webp', isPopular: false }
     ]
   },
   {
@@ -221,7 +221,7 @@ export const GAMES_DATA = [
     flag: '🇸🇬',
     banner: '/game_logos/valorant.webp',
     logo: '/game_logos/valorant.webp',
-    heroBanner: '/game_banners/valorant.jpg',
+    heroBanner: '/game_banners/valorant.webp',
     gradient: 'from-rose-500 to-red-700',
     requiresServer: false,
     // MooGold's Valorant (Singapore) products take the Riot ID (Name#TAG) in
@@ -253,8 +253,8 @@ export const GAMES_DATA = [
     currencyIcon: '🐚',
     badge: 'ACTIVE',
     banner: '/game_logos/garena_shells_card.webp',
-    logo: '/game_logos/garena_shells.jpg',
-    heroBanner: '/game_banners/freefire.jpg',
+    logo: '/game_logos/garena_shells.webp',
+    heroBanner: '/game_banners/freefire.webp',
     gradient: 'from-purple-600 to-indigo-700',
     requiresServer: false,
     // eVoucher product (MooGold category 2): the buyer gets a PIN code to
@@ -270,9 +270,9 @@ export const GAMES_DATA = [
     popular: true,
     moongoldCode: 'GARENA_SHELLS',
     packages: [
-      { id: 'gs-320', name: '320 Shells', amount: 320, bonus: 'Instant PIN (SG)', priceLkr: 2950, moongoldCost: 2628, priceUsd: 7.73, moongoldProductId: '122274', image: '/gift_cards/shell.png', isPopular: false },
-      { id: 'gs-960', name: '960 Shells', amount: 960, bonus: 'Instant PIN (SG)', priceLkr: 8840, moongoldCost: 7888, priceUsd: 23.20, moongoldProductId: '122276', image: '/gift_cards/shell.png', isPopular: true },
-      { id: 'gs-1600', name: '1600 Shells', amount: 1600, bonus: 'Instant PIN (SG)', priceLkr: 14580, moongoldCost: 13015, priceUsd: 38.28, moongoldProductId: '122277', image: '/gift_cards/shell.png', isPopular: false }
+      { id: 'gs-320', name: '320 Shells', amount: 320, bonus: 'Instant PIN (SG)', priceLkr: 2950, moongoldCost: 2628, priceUsd: 7.73, moongoldProductId: '122274', image: '/gift_cards/shell.webp', isPopular: false },
+      { id: 'gs-960', name: '960 Shells', amount: 960, bonus: 'Instant PIN (SG)', priceLkr: 8840, moongoldCost: 7888, priceUsd: 23.20, moongoldProductId: '122276', image: '/gift_cards/shell.webp', isPopular: true },
+      { id: 'gs-1600', name: '1600 Shells', amount: 1600, bonus: 'Instant PIN (SG)', priceLkr: 14580, moongoldCost: 13015, priceUsd: 38.28, moongoldProductId: '122277', image: '/gift_cards/shell.webp', isPopular: false }
     ]
   },
   {
@@ -286,7 +286,7 @@ export const GAMES_DATA = [
     badge: 'ACTIVE',
     banner: '/game_logos/garena_shells_card.webp',
     logo: '/game_logos/garena_shells_my.jpg',
-    heroBanner: '/game_banners/freefire.jpg',
+    heroBanner: '/game_banners/freefire.webp',
     gradient: 'from-red-600 to-rose-800',
     requiresServer: false,
     // Malaysia eVoucher (MooGold category 2): the buyer gets a PIN code to
@@ -302,14 +302,14 @@ export const GAMES_DATA = [
     popular: false,
     moongoldCode: 'GARENA_SHELLS_MY',
     packages: [
-      { id: 'gsmy-65', name: '65 Shells', amount: 65, bonus: 'Instant PIN (MY)', priceLkr: 490, moongoldCost: 435, priceUsd: 1.28, moongoldProductId: '40591', image: '/gift_cards/shell.png', isPopular: false },
-      { id: 'gsmy-130', name: '130 Shells', amount: 130, bonus: 'Instant PIN (MY)', priceLkr: 980, moongoldCost: 867, priceUsd: 2.55, moongoldProductId: '40592', image: '/gift_cards/shell.png', isPopular: false },
-      { id: 'gsmy-260', name: '260 Shells', amount: 260, bonus: 'Instant PIN (MY)', priceLkr: 1950, moongoldCost: 1734, priceUsd: 5.10, moongoldProductId: '40593', image: '/gift_cards/shell.png', isPopular: false },
-      { id: 'gsmy-390', name: '390 Shells', amount: 390, bonus: 'Instant PIN (MY)', priceLkr: 2920, moongoldCost: 2601, priceUsd: 7.65, moongoldProductId: '40594', image: '/gift_cards/shell.png', isPopular: false },
-      { id: 'gsmy-650', name: '650 Shells', amount: 650, bonus: 'Instant PIN (MY)', priceLkr: 4860, moongoldCost: 4335, priceUsd: 12.75, moongoldProductId: '40595', image: '/gift_cards/shell.png', isPopular: true },
-      { id: 'gsmy-1300', name: '1300 Shells', amount: 1300, bonus: 'Instant PIN (MY)', priceLkr: 9720, moongoldCost: 8670, priceUsd: 25.50, moongoldProductId: '40596', image: '/gift_cards/shell.png', isPopular: false },
-      { id: 'gsmy-1300-rgg', name: '1300 Shells (RGG PIN)', amount: 1300, bonus: 'Instant PIN (MY)', priceLkr: 8870, moongoldCost: 7915, priceUsd: 23.28, moongoldProductId: '1222078', image: '/gift_cards/shell.png', isPopular: false },
-      { id: 'gsmy-2600', name: '2600 Shells', amount: 2600, bonus: 'Instant PIN (MY)', priceLkr: 19430, moongoldCost: 17340, priceUsd: 51.00, moongoldProductId: '40597', image: '/gift_cards/shell.png', isPopular: false }
+      { id: 'gsmy-65', name: '65 Shells', amount: 65, bonus: 'Instant PIN (MY)', priceLkr: 490, moongoldCost: 435, priceUsd: 1.28, moongoldProductId: '40591', image: '/gift_cards/shell.webp', isPopular: false },
+      { id: 'gsmy-130', name: '130 Shells', amount: 130, bonus: 'Instant PIN (MY)', priceLkr: 980, moongoldCost: 867, priceUsd: 2.55, moongoldProductId: '40592', image: '/gift_cards/shell.webp', isPopular: false },
+      { id: 'gsmy-260', name: '260 Shells', amount: 260, bonus: 'Instant PIN (MY)', priceLkr: 1950, moongoldCost: 1734, priceUsd: 5.10, moongoldProductId: '40593', image: '/gift_cards/shell.webp', isPopular: false },
+      { id: 'gsmy-390', name: '390 Shells', amount: 390, bonus: 'Instant PIN (MY)', priceLkr: 2920, moongoldCost: 2601, priceUsd: 7.65, moongoldProductId: '40594', image: '/gift_cards/shell.webp', isPopular: false },
+      { id: 'gsmy-650', name: '650 Shells', amount: 650, bonus: 'Instant PIN (MY)', priceLkr: 4860, moongoldCost: 4335, priceUsd: 12.75, moongoldProductId: '40595', image: '/gift_cards/shell.webp', isPopular: true },
+      { id: 'gsmy-1300', name: '1300 Shells', amount: 1300, bonus: 'Instant PIN (MY)', priceLkr: 9720, moongoldCost: 8670, priceUsd: 25.50, moongoldProductId: '40596', image: '/gift_cards/shell.webp', isPopular: false },
+      { id: 'gsmy-1300-rgg', name: '1300 Shells (RGG PIN)', amount: 1300, bonus: 'Instant PIN (MY)', priceLkr: 8870, moongoldCost: 7915, priceUsd: 23.28, moongoldProductId: '1222078', image: '/gift_cards/shell.webp', isPopular: false },
+      { id: 'gsmy-2600', name: '2600 Shells', amount: 2600, bonus: 'Instant PIN (MY)', priceLkr: 19430, moongoldCost: 17340, priceUsd: 51.00, moongoldProductId: '40597', image: '/gift_cards/shell.webp', isPopular: false }
     ]
   }
 ];
@@ -321,7 +321,7 @@ export const BLOG_POSTS = [
     date: 'Sep 08, 2026',
     author: 'MADS Admin',
     summary: 'Discover how MADS TOPUP delivers Free Fire diamonds directly to your UID in under 2 seconds with zero password risks.',
-    image: '/uploads/blog_images/cover_d18ea674c7.jpg',
+    image: '/uploads/blog_images/cover_d18ea674c7.webp',
     tag: 'GUIDE'
   },
   {
@@ -330,7 +330,7 @@ export const BLOG_POSTS = [
     date: 'Sep 05, 2026',
     author: 'Esports News',
     summary: 'Everything you need to know about purchasing cheap Garena Shells, Weekly Cards, and PUBG UC with local bank transfer and eZ Cash.',
-    image: '/uploads/blog_images/cover_d3246d118d.jpg',
+    image: '/uploads/blog_images/cover_d3246d118d.webp',
     tag: 'UPDATES'
   }
 ];

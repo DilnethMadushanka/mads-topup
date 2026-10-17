@@ -12,7 +12,7 @@ import {
 const WHATSAPP = '94740436276';
 const waLink = (text) => `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(text)}`;
 const lkr = (v) => `Rs. ${Math.round(Number(v) || 0).toLocaleString('en-US')}`;
-const FALLBACK_ART = '/game_banners/freefire.jpg';
+const FALLBACK_ART = '/game_banners/freefire.webp';
 const PROMO_PCT = Math.round(FF_ACCOUNT_PROMO.rate * 100);
 const PROMO_LAST_DAY = new Date(Date.parse(FF_ACCOUNT_PROMO.endsAt) - 1).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', timeZone: 'Asia/Colombo' });
 

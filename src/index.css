@@ -4896,3 +4896,10 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
   .mads-admin .pbn-card, .mads-admin .pbn-change { transition: none; }
   .mads-admin .pbn-card:hover { transform: none; }
 }
+
+/* Shown for a moment while a page's code downloads the first time */
+.page-loading { min-height: 60vh; display: flex; align-items: center; justify-content: center; }
+.page-loading span { width: 34px; height: 34px; border-radius: 999px; border: 3px solid #e5ecf6; border-top-color: #1677ff; animation: pageLoadingSpin .8s linear infinite; }
+.home-dark .page-loading span, .page-loading:where(.home-dark *) span { border-color: rgba(255,255,255,.1); border-top-color: #5aa8ff; }
+@keyframes pageLoadingSpin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .page-loading span { animation-duration: 2.4s; } }

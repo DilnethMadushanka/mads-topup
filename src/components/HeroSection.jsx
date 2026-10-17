@@ -16,9 +16,9 @@ export const HeroSection = () => {
   const { openCatalog, openTopup, openWalletModal, openReferralPage, setIsSupportOpen } = useApp();
 
   const slides = [
-    { src: '/uploads/hero_media/hero_freefire.jpg', label: 'Free Fire', sub: 'Diamonds · Instant delivery', gameId: 'freefire_sg' },
-    { src: '/uploads/hero_media/hero_pubg.jpg',     label: 'PUBG Mobile', sub: 'UC · Instant delivery', gameId: 'pubg' },
-    { src: '/uploads/hero_media/hero_mlbb.jpg',     label: 'Mobile Legends', sub: 'Diamonds · Instant delivery', gameId: 'mobilelegends' },
+    { src: '/uploads/hero_media/hero_freefire.webp', label: 'Free Fire', sub: 'Diamonds · Instant delivery', gameId: 'freefire_sg' },
+    { src: '/uploads/hero_media/hero_pubg.webp',     label: 'PUBG Mobile', sub: 'UC · Instant delivery', gameId: 'pubg' },
+    { src: '/uploads/hero_media/hero_mlbb.webp',     label: 'Mobile Legends', sub: 'Diamonds · Instant delivery', gameId: 'mobilelegends' },
   ];
   const SLIDE_MS = 5000;
 
