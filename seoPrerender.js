@@ -14,6 +14,18 @@ const esc = (v = '') => String(v)
   .replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;');
 
+// Link previews (WhatsApp, Facebook) get the original JPG/PNG of a banner the
+// site itself shows as WebP, since not every app previews WebP.
+const PUBLIC_DIR = path.join(path.dirname(new URL(import.meta.url).pathname), 'public');
+const shareImage = (p) => {
+  if (!p.endsWith('.webp')) return p;
+  for (const ext of ['.jpg', '.png']) {
+    const alt = p.replace(/\.webp$/, ext);
+    if (fs.existsSync(path.join(PUBLIC_DIR, decodeURIComponent(alt)))) return alt;
+  }
+  return p;
+};
+
 // Swap the value of one tag in the built index.html; fails the build if the tag is missing
 // so a template change can't silently ship pages with the home page's metadata.
 const swap = (html, pattern, replacement, label) => {
@@ -182,7 +194,7 @@ export function seoPrerenderPlugin() {
           title: page.title,
           description: page.description,
           url,
-          image: game.heroBanner ? SITE_URL + game.heroBanner : null,
+          image: game.heroBanner ? SITE_URL + shareImage(game.heroBanner) : null,
         });
         const prices = (game.packages || []).map((p) => p.priceLkr).filter((n) => n > 0);
         html = withJsonLd(html, {
@@ -207,7 +219,7 @@ export function seoPrerenderPlugin() {
               '@type': 'Product',
               name: page.h1,
               description: page.description,
-              image: game.heroBanner ? SITE_URL + game.heroBanner : `${SITE_URL}/mads-icon.png`,
+              image: game.heroBanner ? SITE_URL + shareImage(game.heroBanner) : `${SITE_URL}/mads-icon.png`,
               brand: { '@type': 'Brand', name: 'MADS TOPUP' },
               offers: {
                 '@type': 'AggregateOffer',

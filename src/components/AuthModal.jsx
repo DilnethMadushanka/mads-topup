@@ -6,7 +6,7 @@ import { syncUserProfileToFirestore, updateUserProfileInFirestore, getResellerPr
 import { X, Eye, EyeOff, Shield, Zap, Clock, User, Mail, Phone, Lock, Check, Send, LogIn, ArrowRight, Loader2 } from 'lucide-react';
 
 // Game art for the brand side of the full-page login / register screen.
-const AUTH_ART = ['/game_logos/free_fire.webp', '/game_logos/pubg.webp', '/game_logos/mobile_legends.jpg', '/game_logos/delta_force.jpg', '/game_logos/blood_strike.webp', '/game_logos/farlight84.jpg'];
+const AUTH_ART = ['/game_logos/free_fire.webp', '/game_logos/pubg.webp', '/game_logos/mobile_legends.jpg', '/game_logos/delta_force.webp', '/game_logos/blood_strike.webp', '/game_logos/farlight84.webp'];
 
 export const AuthModal = () => {
   const { isAuthModalOpen, setIsAuthModalOpen, authMode, setAuthMode, showToast, setUserProfile, setIsLoggedIn, openResellerPage } = useApp();

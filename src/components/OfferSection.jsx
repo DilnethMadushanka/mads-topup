@@ -7,37 +7,37 @@ const OFFERS = [
     tag: 'Trusted',
     title: "Sri Lanka's top-up store",
     text: 'MADS TOPUP sells diamonds, UC and gift cards for the biggest mobile games, priced in rupees for Sri Lankan players.',
-    image: '/game_banners/freefire.jpg',
+    image: '/game_banners/freefire.webp',
   },
   {
     tag: 'Speed',
     title: 'Instant delivery',
     text: 'Orders go straight to the game and usually land in your account within seconds, day or night.',
-    image: '/game_banners/pubg.jpg',
+    image: '/game_banners/pubg.webp',
   },
   {
     tag: 'Safety',
     title: 'Payment security',
     text: 'Card payments run through Dialog Genie, and every wallet deposit is checked by our server before it is credited.',
-    image: '/game_banners/deltaforce.jpg',
+    image: '/game_banners/deltaforce.webp',
   },
   {
     tag: 'Privacy',
     title: 'No password needed',
     text: 'We only ask for your player ID. Your game login and password always stay with you.',
-    image: '/game_banners/mobilelegends.jpg',
+    image: '/game_banners/mobilelegends.webp',
   },
   {
     tag: 'Payments',
     title: 'Multiple payment channels',
     text: 'Pay with eZ Cash, bank transfer, Visa or Mastercard, Binance USDT or your MADS wallet.',
-    image: '/game_banners/bloodstrike.jpg',
+    image: '/game_banners/bloodstrike.webp',
   },
   {
     tag: 'Support',
     title: '24/7 support',
     text: 'Questions about an order? Our support team is on live chat whenever you need help.',
-    image: '/game_banners/freefire.jpg',
+    image: '/game_banners/freefire.webp',
   },
 ];
 

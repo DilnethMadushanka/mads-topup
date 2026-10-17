@@ -52,7 +52,7 @@ export const GameGrid = () => {
         {/* Background artwork + ambience */}
         <div
           className="absolute inset-0 bg-cover bg-center opacity-30 pointer-events-none"
-          style={{ backgroundImage: `url('/uploads/hero_media/hero_03f995f15258.jpg')` }}
+          style={{ backgroundImage: `url('/uploads/hero_media/hero_03f995f15258.webp')` }}
         ></div>
         <div className="absolute inset-0 bg-gradient-to-b from-[#0D1322]/70 via-[#0D1322]/60 to-[#0D1322] pointer-events-none"></div>
         <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[520px] h-[320px] rounded-full bg-[#1677ff]/25 blur-[110px] pointer-events-none"></div>

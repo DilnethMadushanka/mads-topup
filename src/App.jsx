@@ -12,36 +12,45 @@ import { HowItWorksSection } from './components/HowItWorksSection';
 import { ReviewsSection } from './components/ReviewsSection';
 import { PromoSection } from './components/PromoSection';
 import { BlogSection } from './components/BlogSection';
-import { GameTopupPage } from './components/GameTopupPage';
 import { AuthModal } from './components/AuthModal';
-import { UserProfilePage } from './components/UserProfilePage';
-import { WalletPage } from './components/WalletPage';
-import { AdminDashboard } from './components/AdminDashboard';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ImportantNoticeModal } from './components/ImportantNoticeModal';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { SupportModal } from './components/SupportModal';
 import { DownloadAppModal } from './components/DownloadAppModal';
-import { ReviewsPage } from './components/ReviewsPage';
-import { ContactPage } from './components/ContactPage';
-import { ReferralProgramPage } from './components/ReferralProgramPage';
-import { ResellerProgramPage } from './components/ResellerProgramPage';
-import { ResellerLoginPage } from './components/ResellerLoginPage';
-import { ResellerDashboard } from './components/ResellerDashboard';
 import { ResellerBannerSection } from './components/ResellerBannerSection';
 import { PopupAdModal } from './components/PopupAdModal';
 import { PolicyModal } from './components/PolicyModal';
 import { ToastNotification } from './components/ToastNotification';
-import { BlogPage } from './components/BlogPage';
-import { LeaderboardPage } from './components/LeaderboardPage';
-import { FfAccountsPage } from './components/FfAccountsPage';
 import { ScrollReveal } from './hooks/useScrollReveal';
 import { GAMES_DATA } from './data/games';
 import { GAME_SEO_PAGES } from './data/seoPages';
 import { SocialIconRow } from './components/SocialIcons';
 
+// Pages other than the home page load on first open, so the home page
+// doesn't download the admin dashboard, wallet, reseller panel and so on.
+const lazyNamed = (load, name) => React.lazy(() => load().then(m => ({ default: m[name] })));
+const loadGameTopupPage = () => import('./components/GameTopupPage');
+const GameTopupPage = lazyNamed(loadGameTopupPage, 'GameTopupPage');
+const UserProfilePage = lazyNamed(() => import('./components/UserProfilePage'), 'UserProfilePage');
+const WalletPage = lazyNamed(() => import('./components/WalletPage'), 'WalletPage');
+const AdminDashboard = lazyNamed(() => import('./components/AdminDashboard'), 'AdminDashboard');
+const ReviewsPage = lazyNamed(() => import('./components/ReviewsPage'), 'ReviewsPage');
+const ContactPage = lazyNamed(() => import('./components/ContactPage'), 'ContactPage');
+const ReferralProgramPage = lazyNamed(() => import('./components/ReferralProgramPage'), 'ReferralProgramPage');
+const ResellerProgramPage = lazyNamed(() => import('./components/ResellerProgramPage'), 'ResellerProgramPage');
+const ResellerLoginPage = lazyNamed(() => import('./components/ResellerLoginPage'), 'ResellerLoginPage');
+const ResellerDashboard = lazyNamed(() => import('./components/ResellerDashboard'), 'ResellerDashboard');
+const BlogPage = lazyNamed(() => import('./components/BlogPage'), 'BlogPage');
+const LeaderboardPage = lazyNamed(() => import('./components/LeaderboardPage'), 'LeaderboardPage');
+const FfAccountsPage = lazyNamed(() => import('./components/FfAccountsPage'), 'FfAccountsPage');
+
+const PageLoading = () => (
+  <div className="page-loading" role="status" aria-label="Loading"><span /></div>
+);
+
 const MainContent = () => {
-  const { userProfile, setIsAdminOpen, isUserProfileOpen, isWalletModalOpen, openUserProfilePage, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, isReferralPageOpen, isResellerPageOpen, isResellerLoginPageOpen, isResellerDashboardOpen, openResellerPage, openContactPage, openPolicyModal, selectedGame, isBlogPageOpen, openBlogPage, isLeaderboardPageOpen, isFfAccountsPageOpen, openTopup } = useApp();
+  const { userProfile, isAdminOpen, setIsAdminOpen, isUserProfileOpen, isWalletModalOpen, openUserProfilePage, isGameCatalogOpen, isReviewsPageOpen, isContactPageOpen, isReferralPageOpen, isResellerPageOpen, isResellerLoginPageOpen, isResellerDashboardOpen, openResellerPage, openContactPage, openPolicyModal, selectedGame, isBlogPageOpen, openBlogPage, isLeaderboardPageOpen, isFfAccountsPageOpen, openTopup } = useApp();
 
   // Security: Prevent Right-Click Inspect Element & DevTools Keyboard Shortcuts
   React.useEffect(() => {
@@ -81,6 +90,13 @@ const MainContent = () => {
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // The top-up page is where most visitors go next, so fetch it once the
+  // home page has settled instead of waiting for the click.
+  React.useEffect(() => {
+    const idle = window.requestIdleCallback || ((cb) => setTimeout(cb, 2000));
+    idle(() => { loadGameTopupPage().catch(() => {}); });
+  }, []);
+
   const { isDark } = useSiteTheme();
   const themeCls = isDark ? 'home-dark' : '';
 
@@ -93,6 +109,7 @@ const MainContent = () => {
         <CookieNotice />
         <Navbar />
         <div key={pageKey} className="page-enter">
+        <React.Suspense fallback={<PageLoading />}>
         {selectedGame ? (
           <GameTopupPage />
         ) : isUserProfileOpen ? (
@@ -167,6 +184,7 @@ const MainContent = () => {
             </ScrollReveal>
           </>
         )}
+        </React.Suspense>
         </div>
       </div>
 
@@ -355,9 +373,13 @@ const MainContent = () => {
         <PolicyModal />
         <AuthModal />
       </div>
-      <ErrorBoundary name="admin" fullScreen onClose={() => setIsAdminOpen(false)}>
-        <AdminDashboard />
-      </ErrorBoundary>
+      {isAdminOpen && (
+        <ErrorBoundary name="admin" fullScreen onClose={() => setIsAdminOpen(false)}>
+          <React.Suspense fallback={<PageLoading />}>
+            <AdminDashboard />
+          </React.Suspense>
+        </ErrorBoundary>
+      )}
       <div className={`${themeCls} contents`}>
         <ImportantNoticeModal />
         <SupportModal />
