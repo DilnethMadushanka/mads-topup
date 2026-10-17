@@ -593,7 +593,10 @@ export const updateOrderStatusInFirestore = async (orderId, newStatus, moongoldR
 
   // Existing orders can only be changed by the server (admin session).
   const { ok, data } = await postServerApi('/api/admin/order-status', { orderId, status: newStatus, moongoldRef });
-  if (!ok) console.warn('Order status was not saved:', data?.error);
+  if (!ok) {
+    console.warn('Order status was not saved:', data?.error);
+    return false;
+  }
 
   // Also update Firestore orders collection (was missing before)
   if (db) {
@@ -606,6 +609,7 @@ export const updateOrderStatusInFirestore = async (orderId, newStatus, moongoldR
       });
     } catch (e) { console.warn('Firestore order status update note:', e); }
   }
+  return true;
 };
 
 /**
