@@ -1074,7 +1074,11 @@ app.post('/api/admin/reseller-approve', requireAdminSession, async (req, res) =>
     const user = await rtdbGet(`users/${key}`);
     const update = { isReseller: true, role: 'Reseller Partner', resellerStatus: 'APPROVED' };
     const alreadyReseller = user?.isReseller && user?.resellerStatus === 'APPROVED';
-    if (!alreadyReseller) {
+    // A reseller who was suspended and is approved again keeps their sales,
+    // tier and joining date; they already paid the joining deposit.
+    const returning = !alreadyReseller && Boolean(user?.resellerJoinedAt);
+    if (returning) update.resellerRevokedAt = null;
+    if (!alreadyReseller && !returning) {
       const depositLkr = await verifiedDepositsLkr(key);
       if (depositLkr < RESELLER_MIN_DEPOSIT_LKR) {
         return res.status(409).json({
@@ -1103,7 +1107,7 @@ app.post('/api/admin/reseller-approve', requireAdminSession, async (req, res) =>
       ...(finalUser.securityKey ? { securityKey: finalUser.securityKey } : {}),
       updatedAt: new Date().toISOString()
     });
-    console.log(`[Reseller Approved] ${appId} → ${key}${alreadyReseller ? ' (already a reseller)' : ` with Rs. ${update.resellerJoinDepositLkr} deposited`}`);
+    console.log(`[Reseller Approved] ${appId} → ${key}${alreadyReseller ? ' (already a reseller)' : returning ? ' (approved again)' : ` with Rs. ${update.resellerJoinDepositLkr} deposited`}`);
     res.json({ success: true, keys: [key], resellerCode: finalUser.resellerCode, securityKey: finalUser.securityKey });
   } catch (e) {
     console.error('[Admin Reseller Approve Error]:', e.message);
@@ -1170,16 +1174,33 @@ app.post('/api/reseller/telegram-link', rateLimiter(10, 60000), async (req, res)
 });
 
 // Admin: set any other application status (browsers can only create one).
+// Admin: reject, suspend or re-open an application. Rejecting or suspending
+// an APPROVED reseller also takes the reseller access off their account
+// (before, only the application's label changed and they kept wholesale
+// prices). Their sales total and codes are kept for a later re-approval.
 app.post('/api/admin/reseller-status', requireAdminSession, async (req, res) => {
   try {
     const { appId, status } = req.body || {};
     if (!appId || !/^[A-Za-z0-9_-]{1,80}$/.test(String(appId)) || !['PENDING', 'REJECTED', 'SUSPENDED'].includes(status)) {
       return res.status(400).json({ error: 'A valid appId and status are required.' });
     }
+    const reason = sanitizeString(String(req.body?.reason || ''), 200);
     const application = await rtdbGet(`reseller_applications/${appId}`);
-    if (!application) return res.status(404).json({ error: 'Application not found.' });
-    await rtdbPatch(`reseller_applications/${appId}`, { status, updatedAt: new Date().toISOString() });
-    res.json({ success: true });
+    if (!application || typeof application !== 'object') return res.status(404).json({ error: 'Application not found.' });
+
+    let revokedKey = null;
+    if (status !== 'PENDING') {
+      let key = /^[A-Za-z0-9_-]{1,128}$/.test(String(application.approvedKey || '')) ? application.approvedKey : null;
+      if (!key) key = (await resolveApplicationKey(application)).key || null;
+      const user = key ? await rtdbGet(`users/${key}`).catch(() => null) : null;
+      if (user?.isReseller) {
+        await rtdbPatch(`users/${key}`, { isReseller: false, resellerStatus: status, role: null, resellerRevokedAt: new Date().toISOString() });
+        revokedKey = key;
+        console.log(`[Reseller Access Removed] ${appId} → ${key} (${status})`);
+      }
+    }
+    await rtdbPatch(`reseller_applications/${appId}`, { status, statusReason: reason || null, updatedAt: new Date().toISOString() });
+    res.json({ success: true, revokedKey });
   } catch (e) {
     console.error('[Admin Reseller Status Error]:', e.message);
     res.status(500).json({ error: 'Could not update this application.' });
