@@ -5347,6 +5347,11 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
 .mads-admin.theme-light .sys-card, .mads-admin.theme-light .sys-mini-row { --c: #059669; }
 .mads-admin.theme-light .sys-card.is-bad, .mads-admin.theme-light .sys-mini-row.is-bad { --c: #dc2626; }
 @media (min-width: 900px) { .sys-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.sys-test { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+.sys-test .ord-ghost { height: 32px; }
+.sys-test small { font-size: 11.5px; font-weight: 700; }
+.sys-test small.is-ok { color: #10b981; } .sys-test small.is-bad { color: #ef4444; }
+.mads-admin.theme-light .sys-test small.is-ok { color: #059669; } .mads-admin.theme-light .sys-test small.is-bad { color: #dc2626; }
 
 /* ============================================================
    Admin · Game prices (src/components/admin/PricesDesk.jsx)
