@@ -6,6 +6,7 @@ import { SupportDesk, SupportDeskStats } from './admin/SupportDesk';
 import { FfAccountsAdmin } from './admin/FfAccountsAdmin';
 import { ProfitReport } from './admin/ProfitReport';
 import { OrdersDesk, OrderDetail, orderNeedsAction } from './admin/OrdersDesk';
+import { DepositsDesk, DepositDetail, RecordDepositSheet } from './admin/DepositsDesk';
 import { sortOrdersNewestFirst } from '../utils/ownership';
 import { getAllPopupBanners, emptyPopupBanner, MAX_POPUP_BANNERS } from '../utils/popupBanners';
 import {
@@ -408,7 +409,7 @@ const TAB_TITLES = {
   overview: ['System Analytics & Revenue', 'Real-time overview of sales, active dispatches & supplier gateways'],
   orders: ['Orders Dispatch', 'Track, inspect and fulfil every top-up order'],
   profit: ['Daily Profit', 'Completed top-ups each day: sale price against MooGold cost'],
-  deposits: ['Manual Payment Verification Queue', 'Review, verify, and approve EZ Cash, Binance & Bank deposits'],
+  deposits: ['Deposit Verifier', 'Check each deposit, then credit the wallet or reject it'],
   ezcash: ['Dialog EZ Cash Webhook Logs', 'Live SMS records received from the phone forwarder gateway'],
   vouchers: ['Promo Voucher Codes', 'Create and manage redeemable voucher codes'],
   users: ['User Management & Verification', 'Grant verified badges, block accounts & inspect balances'],
@@ -431,7 +432,7 @@ export const AdminDashboard = () => {
     r2Config, updateR2Config, formatPrice,
     formatLkr, showToast, userProfile, vouchers, addVoucher, deleteVoucher,
     tickerNotice, updateTickerNotice, usersList, verifyUserAccount, toggleBlockUser, updateUserBalance,
-    setUserExactBalance, manualPayments, approveManualPayment, rejectManualPayment, addManualPayment,
+    setUserExactBalance, manualPayments, approveManualPayment, rejectManualPayment, recordOfflinePayment,
     supportTickets, sendTicketMessage, updateTicketStatus, updateTicketPriority, resellerApplications,
     updateResellerApplicationStatus, gamesCatalog, updateGamePrices, popupAdConfig, updatePopupAdConfig,
     gameStripConfig, updateGameStripConfig, ffAccounts, userReviews, deleteReview,
@@ -466,7 +467,6 @@ export const AdminDashboard = () => {
   const [commandQuery, setCommandQuery] = useState('');
 
   const [selectedReceiptPay, setSelectedReceiptPay] = useState(null);
-  const [receiptImgError, setReceiptImgError] = useState(false);
 
   const [editedPricesMap, setEditedPricesMap] = useState({});
   const [selectedGameCatalogId, setSelectedGameCatalogId] = useState('ALL');
@@ -503,15 +503,8 @@ export const AdminDashboard = () => {
   const [editUsdtVal, setEditUsdtVal] = useState('');
 
   const [paymentSearch, setPaymentSearch] = useState('');
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState('ALL');
-  const [paymentMethodFilter, setPaymentMethodFilter] = useState('ALL');
 
   const [isAddPaymentOpen, setIsAddPaymentOpen] = useState(false);
-  const [newPayUserEmail, setNewPayUserEmail] = useState('');
-  const [newPayMethod, setNewPayMethod] = useState('EZ Cash');
-  const [newPayRef, setNewPayRef] = useState('');
-  const [newPayAmount, setNewPayAmount] = useState('');
-  const [newPayCurrency, setNewPayCurrency] = useState('LKR');
 
   const [apiKeyInput, setApiKeyInput] = useState(moongoldConfig.apiKey);
   const [secretKeyInput, setSecretKeyInput] = useState(moongoldConfig.secretKey);
@@ -875,24 +868,6 @@ export const AdminDashboard = () => {
     return userSortOrder === 'oldest' ? ta - tb : tb - ta;
   });
 
-  const filteredPayments = safePayments.filter(pay => {
-    if (!pay) return false;
-    const query = (paymentSearch || '').toLowerCase().trim();
-    const payId = String(pay.id || '').toLowerCase();
-    const payEmail = String(pay.userEmail || '').toLowerCase();
-    const payName = String(pay.userName || '').toLowerCase();
-    const payRef = String(pay.referenceNumber || '').toLowerCase();
-    const payMethod = String(pay.method || '').toLowerCase();
-    const payAmount = String(pay.amount || '');
-    const matchesSearch = !query || payId.includes(query) || payEmail.includes(query) || payName.includes(query) || payRef.includes(query) || payMethod.includes(query) || payAmount.includes(query);
-    const matchesStatus = paymentStatusFilter === 'ALL' || pay.status === paymentStatusFilter;
-    let matchesMethod = true;
-    if (paymentMethodFilter === 'EZ_CASH') matchesMethod = payMethod.includes('ez');
-    else if (paymentMethodFilter === 'BINANCE') matchesMethod = payMethod.includes('binance');
-    else if (paymentMethodFilter === 'BANK') matchesMethod = payMethod.includes('bank') || payMethod.includes('slip');
-    return matchesSearch && matchesStatus && matchesMethod;
-  });
-
   const filteredEzcashLogs = (ezcashLogs || []).filter(item => {
     if (!item) return false;
     const query = (ezcashSearch || '').toLowerCase().trim();
@@ -1150,18 +1125,6 @@ export const AdminDashboard = () => {
     const ok = await updateTickerNotice(tickerNoticeInput);
     if (ok) showToast('Ticker notice updated live across the website!');
     else showToast('Ticker notice was not saved. Please log in to admin again and retry.', 'error');
-  };
-
-  const handleAddManualPaymentRecord = (e) => {
-    e.preventDefault();
-    if (!newPayUserEmail || !newPayRef || !newPayAmount) {
-      showToast('Please fill all required payment fields!', 'error');
-      return;
-    }
-    addManualPayment({ id: `PAY-${Date.now().toString().slice(-4)}`, userEmail: newPayUserEmail, userName: newPayUserEmail.split('@')[0], method: newPayMethod, referenceNumber: newPayRef, amount: parseFloat(newPayAmount), currency: newPayCurrency, slipUrl: '', status: 'PENDING', createdAt: 'Just Now' });
-    setNewPayRef('');
-    setNewPayAmount('');
-    setIsAddPaymentOpen(false);
   };
 
   const revenueTrend = (() => {
@@ -1604,104 +1567,16 @@ export const AdminDashboard = () => {
           {adminTab === 'profit' && <ProfitReport />}
 
           {adminTab === 'deposits' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-end gap-2 flex-wrap">
-                <button onClick={() => handleTabSelect('ezcash')} className="px-3.5 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-xl font-extrabold text-xs flex items-center gap-2 cursor-pointer">
-                  <Smartphone className="w-4 h-4" /><span>SMS Webhook Logs ({ezcashLogs.length})</span>
-                </button>
-                <button onClick={() => setIsAddPaymentOpen(true)} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-lg shadow-emerald-600/20 cursor-pointer">
-                  <Plus className="w-4 h-4" /><span>Record Offline Payment</span>
-                </button>
-              </div>
-
-              <FilterBar>
-                <SearchInput value={paymentSearch} onChange={setPaymentSearch} placeholder="Search RN, Order ID, Email, Name, or Amount..." />
-                <select value={paymentMethodFilter} onChange={(e) => setPaymentMethodFilter(e.target.value)} className={`${fieldCls} sm:max-w-[200px]`} style={fieldStyle}>
-                  <option value="ALL">All Payment Methods</option>
-                  <option value="EZ_CASH">EZ Cash Only</option>
-                  <option value="BINANCE">Binance Pay Only</option>
-                  <option value="BANK">Bank Deposit Only</option>
-                </select>
-                <select value={paymentStatusFilter} onChange={(e) => setPaymentStatusFilter(e.target.value)} className={`${fieldCls} sm:max-w-[200px]`} style={fieldStyle}>
-                  <option value="ALL">All Statuses</option>
-                  <option value="PENDING">Pending Verification</option>
-                  <option value="VERIFIED">Verified & Credited</option>
-                  <option value="REJECTED">Rejected</option>
-                </select>
-              </FilterBar>
-
-              <DataTable
-                emptyMessage="No payment verification requests found."
-                columns={[
-                  { key: 'id', label: 'Payment Ref', render: p => <div className="font-mono" style={mutedStyle}><div>{p.id}</div>{p.createdAt && <div className="text-[9px]" style={faintStyle}>{p.createdAt}</div>}</div> },
-                  { key: 'method', label: 'Method', sortable: true, sortValue: p => p.method || '', render: p => {
-                    const isEz = p.method && p.method.toLowerCase().includes('ez');
-                    const isBinance = p.method && p.method.toLowerCase().includes('binance');
-                    return isEz ? <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold inline-flex items-center gap-1.5"><Smartphone className="w-3.5 h-3.5" /><span>EZ Cash</span></span>
-                      : isBinance ? <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold inline-flex items-center gap-1.5"><Zap className="w-3.5 h-3.5" /><span>Binance Pay</span></span>
-                      : <span className="px-2.5 py-1 rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-400 font-bold inline-flex items-center gap-1.5"><Building2 className="w-3.5 h-3.5" /><span>Bank Deposit</span></span>;
-                  }},
-                  { key: 'ref', label: 'RN / Order ID', render: p => {
-                    const isEz = p.method && p.method.toLowerCase().includes('ez');
-                    const cleanRn = String(p.referenceNumber || '').trim();
-                    const matchedSms = isEz ? (ezcashLogs || []).find(l => {
-                      if (!l.rnNumber) return false;
-                      const logRn = String(l.rnNumber).trim();
-                      return logRn === cleanRn || (cleanRn.length >= 10 && logRn.includes(cleanRn));
-                    }) : null;
-                    return (
-                      <div className="font-mono font-bold text-amber-400">
-                        <div className="flex items-center gap-1.5">
-                          <span>{p.referenceNumber}</span>
-                          <button type="button" onClick={() => { navigator.clipboard.writeText(p.referenceNumber); showToast(`Copied: ${p.referenceNumber}`); }} className="p-1 rounded cursor-pointer" style={faintStyle}><Copy className="w-3 h-3" /></button>
-                        </div>
-                        {isEz && p.payerPhone && <div className="mt-1 text-[10px] font-mono" style={faintStyle}>Paid from {p.payerPhone}</div>}
-                        {isEz && matchedSms && (matchedSms.payerPhones || []).length > 0 && p.payerPhone && !(matchedSms.payerPhones || []).includes(String(p.payerPhone).replace(/\D/g, '').slice(-9)) && (
-                          <div className="mt-1 text-[10px] text-red-400 font-extrabold flex items-center gap-1"><AlertTriangle className="w-3 h-3" /><span>SMS shows a different number: possible stolen RN</span></div>
-                        )}
-                        {isEz && (matchedSms ? (
-                          <div className="mt-1 text-[10px] text-emerald-400 font-extrabold flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /><span>SMS Matched (Rs. {(matchedSms.amountLkr || 0).toLocaleString()})</span></div>
-                        ) : (
-                          <div className="mt-1 text-[10px] font-mono flex items-center gap-1" style={faintStyle}><Clock className="w-3 h-3" /><span>Pending SMS Webhook</span></div>
-                        ))}
-                        {(p.slipUrl || p.receiptUrl) && (
-                          <button type="button" onClick={() => setSelectedReceiptPay(p)} className="mt-1 text-[10px] font-extrabold text-sky-400 hover:text-sky-300 underline inline-flex items-center gap-1 cursor-pointer"><Eye className="w-3 h-3" /><span>View Receipt Slip</span></button>
-                        )}
-                      </div>
-                    );
-                  }},
-                  { key: 'userName', label: 'User', sortable: true, sortValue: p => p.userName || '', render: p => (
-                    <div>
-                      <div className="font-bold" style={{ color: 'var(--adm-text)' }}>{p.userName}</div>
-                      <div className="text-[10px] font-mono" style={mutedStyle}>{p.userEmail}</div>
-                    </div>
-                  )},
-                  { key: 'amount', label: 'Amount', sortable: true, sortValue: p => Number(p.amount) || 0, render: p => (
-                    <div className="font-black text-emerald-400 font-heading">
-                      <div>{p.amount} {p.currency}</div>
-                      {p.currency !== 'USDT' && p.amount >= 5000 && <div className="text-[9px] text-amber-400 font-normal">+{p.amount >= 20000 ? '600' : p.amount >= 10000 ? '250' : '100'} Bonus</div>}
-                    </div>
-                  )},
-                  { key: 'status', label: 'Status', sortable: true, sortValue: p => p.status || '', render: p => <StatusPill status={p.status} /> },
-                  { key: 'actions', label: 'Actions', align: 'right', render: p => (
-                    <div className="flex justify-end gap-1.5 flex-wrap">
-                      {(p.slipUrl || p.receiptUrl || p.method === 'Bank Deposit' || p.method === 'Bank Slip') && (
-                        <button type="button" onClick={() => setSelectedReceiptPay(p)} className="px-2.5 py-1 bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-400 font-extrabold text-[10px] rounded-lg cursor-pointer inline-flex items-center gap-1"><Eye className="w-3 h-3" /><span>Slip</span></button>
-                      )}
-                      {p.status === 'PENDING' && (
-                        <>
-                          <button onClick={() => approveManualPayment(p.id)} className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[10px] rounded-lg cursor-pointer">Approve</button>
-                          <button onClick={() => rejectManualPayment(p.id)} className="px-3 py-1 bg-red-600/25 hover:bg-red-600 text-white font-extrabold text-[10px] rounded-lg cursor-pointer border border-red-500/40">Reject</button>
-                        </>
-                      )}
-                      {p.status === 'REJECTED' && <button onClick={() => approveManualPayment(p.id)} className="px-2.5 py-1 bg-emerald-600/30 hover:bg-emerald-600 text-emerald-200 hover:text-white font-extrabold text-[10px] rounded-lg cursor-pointer border border-emerald-500/40">Re-Approve</button>}
-                      {p.status === 'VERIFIED' && <button onClick={() => rejectManualPayment(p.id)} className="px-2 py-1 hover:bg-red-900/40 font-bold text-[9px] rounded-lg cursor-pointer border" style={{ borderColor: 'var(--adm-border)', ...mutedStyle }}>Reject</button>}
-                    </div>
-                  )}
-                ]}
-                rows={filteredPayments}
-              />
-            </div>
+            <DepositsDesk
+              payments={safePayments}
+              users={safeUsers}
+              smsLogs={ezcashLogs}
+              search={paymentSearch}
+              onSearch={setPaymentSearch}
+              onOpen={setSelectedReceiptPay}
+              onOpenSmsLogs={() => handleTabSelect('ezcash')}
+              onRecord={() => setIsAddPaymentOpen(true)}
+            />
           )}
 
           {adminTab === 'ezcash' && (
@@ -2491,89 +2366,25 @@ export const AdminDashboard = () => {
       )}
 
       {isAddPaymentOpen && (
-        <ModalShell onClose={() => setIsAddPaymentOpen(false)} title="Record Offline Payment Receipt">
-          <form onSubmit={handleAddManualPaymentRecord} className="space-y-4 text-xs">
-            <div><label className="block font-extrabold mb-1" style={mutedStyle}>User Email Address</label><input type="email" required placeholder="e.g. user@gmail.com" value={newPayUserEmail} onChange={(e) => setNewPayUserEmail(e.target.value)} className={fieldCls} style={fieldStyle} /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block font-extrabold mb-1" style={mutedStyle}>Payment Method</label>
-                <select value={newPayMethod} onChange={(e) => setNewPayMethod(e.target.value)} className={fieldCls} style={fieldStyle}>
-                  <option value="EZ Cash">EZ Cash</option>
-                  <option value="Binance Pay">Binance Pay</option>
-                  <option value="Bank Slip">Bank Slip</option>
-                </select>
-              </div>
-              <div><label className="block font-extrabold mb-1" style={mutedStyle}>Transaction RN / Order ID</label><input type="text" required placeholder="e.g. 20260910123456" value={newPayRef} onChange={(e) => setNewPayRef(e.target.value)} className={`${fieldCls} font-mono`} style={fieldStyle} /></div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className="block font-extrabold mb-1" style={mutedStyle}>Amount</label><input type="number" required placeholder="1500" value={newPayAmount} onChange={(e) => setNewPayAmount(e.target.value)} className={`${fieldCls} font-mono`} style={fieldStyle} /></div>
-              <div>
-                <label className="block font-extrabold mb-1" style={mutedStyle}>Currency</label>
-                <select value={newPayCurrency} onChange={(e) => setNewPayCurrency(e.target.value)} className={fieldCls} style={fieldStyle}>
-                  <option value="LKR">LKR (Rs.)</option>
-                  <option value="USDT">USDT ($)</option>
-                </select>
-              </div>
-            </div>
-            <button type="submit" className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl cursor-pointer shadow-lg shadow-emerald-600/20">Record Payment Request</button>
-          </form>
-        </ModalShell>
+        <RecordDepositSheet
+          users={safeUsers}
+          onClose={() => setIsAddPaymentOpen(false)}
+          onSubmit={recordOfflinePayment}
+        />
       )}
 
       {selectedReceiptPay && (
-        <ModalShell
-          onClose={() => { setSelectedReceiptPay(null); setReceiptImgError(false); }}
-          title={selectedReceiptPay.method?.toLowerCase().includes('ez') ? 'EZ Cash Payment Record' : selectedReceiptPay.method?.toLowerCase().includes('binance') ? 'Binance Pay Payment Record' : 'Bank Deposit Payment Receipt'}
-          subtitle={`Payment ID: ${selectedReceiptPay.id}`}
-          maxWidth="max-w-2xl"
-          footer={selectedReceiptPay.status === 'PENDING' ? (
-            <>
-              <button onClick={() => { rejectManualPayment(selectedReceiptPay.id); setSelectedReceiptPay(null); }} className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 font-extrabold text-xs rounded-xl cursor-pointer">Reject Payment</button>
-              <button onClick={() => { approveManualPayment(selectedReceiptPay.id); setSelectedReceiptPay(null); }} className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl cursor-pointer shadow-lg shadow-emerald-600/20">Approve & Credit Wallet</button>
-            </>
-          ) : (
-            <button onClick={() => setSelectedReceiptPay(null)} className="px-5 py-2 rounded-xl font-bold text-xs cursor-pointer border" style={{ borderColor: 'var(--adm-border)', ...mutedStyle }}>Close</button>
-          )}
-        >
-          <div className="rounded-2xl border p-4 flex flex-col items-center justify-center min-h-[160px]" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
-            {selectedReceiptPay.method?.toLowerCase().includes('ez') ? (
-              <div className="text-center p-4 space-y-2 w-full">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto"><Smartphone className="w-6 h-6" /></div>
-                <h4 className="font-extrabold text-sm" style={{ color: 'var(--adm-text)' }}>EZ Cash 14-Digit Transaction RN</h4>
-                <p className="font-mono text-base font-black text-amber-400 tracking-wider px-4 py-2 rounded-xl inline-block border" style={{ background: 'var(--adm-input-bg)', borderColor: 'var(--adm-border)' }}>{selectedReceiptPay.referenceNumber}</p>
-                <p className="text-[11px] max-w-md mx-auto pt-1" style={mutedStyle}>Check the SMS Webhook Logs tab or your Dialog EZ Cash merchant phone to verify this RN. No image upload required for EZ Cash.</p>
-              </div>
-            ) : selectedReceiptPay.method?.toLowerCase().includes('binance') ? (
-              <div className="text-center p-4 space-y-2 w-full">
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto"><Zap className="w-6 h-6" /></div>
-                <h4 className="font-extrabold text-sm" style={{ color: 'var(--adm-text)' }}>Binance Pay Order ID / Transaction Ref</h4>
-                <p className="font-mono text-base font-black text-amber-400 tracking-wider px-4 py-2 rounded-xl inline-block border" style={{ background: 'var(--adm-input-bg)', borderColor: 'var(--adm-border)' }}>{selectedReceiptPay.referenceNumber}</p>
-                <p className="text-[11px] max-w-md mx-auto pt-1" style={mutedStyle}>Check your Binance Merchant Portal or app history to verify this USDT transaction.</p>
-              </div>
-            ) : (selectedReceiptPay.slipUrl || selectedReceiptPay.receiptUrl) && !receiptImgError ? (
-              <div className="space-y-2 text-center w-full">
-                <img src={selectedReceiptPay.slipUrl || selectedReceiptPay.receiptUrl} alt="Bank Receipt Slip" onError={() => setReceiptImgError(true)} className="max-h-[380px] w-auto max-w-full rounded-xl object-contain mx-auto border shadow-md" style={{ borderColor: 'var(--adm-border)' }} />
-                <a href={selectedReceiptPay.slipUrl || selectedReceiptPay.receiptUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-bold text-sky-400 hover:text-sky-300 pt-1"><ExternalLink className="w-3.5 h-3.5" /><span>Open Full Size Image</span></a>
-              </div>
-            ) : (
-              <div className="text-center py-8 space-y-2">
-                <div className="w-12 h-12 rounded-2xl bg-sky-500/10 border border-sky-500/30 text-sky-400 flex items-center justify-center mx-auto"><Building2 className="w-6 h-6" /></div>
-                <h4 className="font-extrabold text-sm" style={{ color: 'var(--adm-text)' }}>Bank Transfer Reference</h4>
-                <p className="font-mono text-sm font-bold text-amber-400 px-3 py-1.5 rounded-lg inline-block border" style={{ background: 'var(--adm-input-bg)', borderColor: 'var(--adm-border)' }}>{selectedReceiptPay.referenceNumber}</p>
-                <p className="font-medium text-xs" style={mutedStyle}>{receiptImgError ? 'Receipt image link expired or not found on storage server.' : 'No receipt image file attached to this payment record.'}</p>
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-            <div className="rounded-xl border p-3" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}><span className="text-[10px] font-mono font-bold uppercase block mb-0.5" style={mutedStyle}>User Name</span><span className="font-bold" style={{ color: 'var(--adm-text)' }}>{selectedReceiptPay.userName}</span></div>
-            <div className="rounded-xl border p-3" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}><span className="text-[10px] font-mono font-bold uppercase block mb-0.5" style={mutedStyle}>User Email</span><span className="font-bold font-mono text-[11px] truncate block" style={{ color: 'var(--adm-text)' }}>{selectedReceiptPay.userEmail}</span></div>
-            <div className="rounded-xl border p-3" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}><span className="text-[10px] font-mono font-bold uppercase block mb-0.5" style={mutedStyle}>Deposit Method</span><span className="font-bold" style={{ color: 'var(--adm-text)' }}>{selectedReceiptPay.method}</span></div>
-            <div className="rounded-xl border p-3" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}><span className="text-[10px] font-mono font-bold uppercase block mb-0.5" style={mutedStyle}>Reference / Sender</span><span className="text-amber-400 font-mono font-bold">{selectedReceiptPay.referenceNumber}</span></div>
-            <div className="rounded-xl border p-3" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}><span className="text-[10px] font-mono font-bold uppercase block mb-0.5" style={mutedStyle}>Amount</span><span className="text-emerald-400 font-heading font-black text-sm">{selectedReceiptPay.amount} {selectedReceiptPay.currency}</span></div>
-            <div className="rounded-xl border p-3" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}><span className="text-[10px] font-mono font-bold uppercase block mb-0.5" style={mutedStyle}>Current Status</span><StatusPill status={selectedReceiptPay.status} /></div>
-          </div>
-        </ModalShell>
+        <DepositDetail
+          pay={safePayments.find(p => p.id === selectedReceiptPay.id) || selectedReceiptPay}
+          payments={safePayments}
+          users={safeUsers}
+          smsLogs={ezcashLogs}
+          onClose={() => setSelectedReceiptPay(null)}
+          onApprove={approveManualPayment}
+          onReject={rejectManualPayment}
+          onOpenUser={(owner) => { setSelectedReceiptPay(null); setSelectedInspectUser(owner); }}
+          showToast={showToast}
+        />
       )}
 
     </div>

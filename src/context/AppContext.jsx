@@ -1,9 +1,13 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { GAMES_DATA } from '../data/games';
+import { newDepositId } from '../data/depositRules';
 import { HOME_SEO, SITE_URL, seoPageForPath } from '../data/seoPages';
 import { pageForPath, pagePathFor, gamePathFor, gameForPath } from '../data/sitePages';
 import { initAnalytics, trackPageView } from '../services/analytics';
+
+// Demo deposits older versions seeded into every browser's saved list.
+const DEMO_PAYMENT_IDS = new Set(['PAY-1001', 'PAY-1002', 'PAY-1003']);
 
 // A date as an ISO string, or null. Accepts ISO strings, ms numbers and
 // Firestore Timestamps; never throws (an invalid date used to crash the page).
@@ -41,7 +45,7 @@ import {
   saveOrderToFirestore, subscribeAllUsersFromFirestore, subscribeOrdersFromFirestore, updateOrderStatusInFirestore,
   saveResellerApplicationToFirestore, subscribeResellerApplicationsFromFirestore, updateResellerApplicationStatusInFirestore,
   saveCustomGamePricesToFirestore, subscribeCustomGamePricesFromFirestore, generateUniqueSecurityKey, ensureResellerCredentials,
-  saveManualPaymentToFirestore, updateManualPaymentStatusInFirestore, approveManualPaymentOnServer, subscribeManualPaymentsFromFirestore, creditUserWalletInDatabase, setUserExactBalanceInDatabase,
+  saveManualPaymentToFirestore, rejectManualPaymentOnServer, createManualPaymentOnServer, approveManualPaymentOnServer, subscribeManualPaymentsFromFirestore, creditUserWalletInDatabase, setUserExactBalanceInDatabase,
   saveVouchersToFirestore, subscribeVouchersFromFirestore, redeemVoucherInDatabase,
   savePopupAdConfigToFirestore, subscribePopupAdConfigFromFirestore, DEFAULT_POPUP_AD_CONFIG,
   saveGameStripConfig, subscribeGameStripConfig, DEFAULT_GAME_STRIP_CONFIG,
@@ -1170,50 +1174,16 @@ export const AppProvider = ({ children }) => {
     ];
   });
 
-  // Manual Payments Verification Queue State
+  // Deposit records. Customers keep their own submissions here (their wallet
+  // history); the admin panel replaces the list with the server's copy.
+  // Demo records that older versions seeded into every browser are dropped.
   const [manualPayments, setManualPayments] = useState(() => {
-    const saved = localStorage.getItem('mads_manual_payments');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
+    try {
+      const saved = JSON.parse(localStorage.getItem('mads_manual_payments') || '[]');
+      return Array.isArray(saved) ? saved.filter(p => p && typeof p === 'object' && !DEMO_PAYMENT_IDS.has(p.id)) : [];
+    } catch (e) {
+      return [];
     }
-    return [
-      {
-        id: 'PAY-1001',
-        userEmail: 'kasun.gamer@gmail.com',
-        userName: 'Kasun SLAyer',
-        method: 'EZ Cash',
-        referenceNumber: '20260910982314',
-        amount: 1500,
-        currency: 'LKR',
-        slipUrl: '',
-        status: 'PENDING',
-        createdAt: '2026-09-10 14:15'
-      },
-      {
-        id: 'PAY-1002',
-        userEmail: 'madsruzza@gmail.com',
-        userName: 'Dilneth Madushanka',
-        method: 'Binance Pay',
-        referenceNumber: '298102451901',
-        amount: 25,
-        currency: 'USDT',
-        slipUrl: '',
-        status: 'PENDING',
-        createdAt: '2026-09-10 14:30'
-      },
-      {
-        id: 'PAY-1003',
-        userEmail: 'nuwan.ff@yahoo.com',
-        userName: 'Nuwan Perera',
-        method: 'Bank Slip',
-        referenceNumber: 'BOC-TXN-881902',
-        amount: 5000,
-        currency: 'LKR',
-        slipUrl: 'https://mads-topup.r2.cloudflarestorage.com/slips/boc_1003.jpg',
-        status: 'VERIFIED',
-        createdAt: '2026-09-10 12:00'
-      }
-    ];
   });
 
   useEffect(() => {
@@ -1227,18 +1197,7 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     if (!isAdminAuthenticated) return;
     const unsub = subscribeManualPaymentsFromFirestore((liveList) => {
-      if (liveList && Array.isArray(liveList) && liveList.length > 0) {
-        setManualPayments(prev => {
-          const map = new Map();
-          (prev || []).forEach(item => {
-            if (item && item.id) map.set(item.id, item);
-          });
-          liveList.forEach(item => {
-            if (item && item.id) map.set(item.id, { ...map.get(item.id), ...item });
-          });
-          return Array.from(map.values());
-        });
-      }
+      if (Array.isArray(liveList)) setManualPayments(liveList);
     });
     return () => {
       if (typeof unsub === 'function') unsub();
@@ -1424,43 +1383,69 @@ export const AppProvider = ({ children }) => {
     return true;
   };
 
+  // Admin: approve a deposit. The server reads the amount and account from
+  // the stored record and credits it once (with the bonus), so nothing here
+  // is trusted. Returns the server's answer ({ ok, creditedLkr, ... }).
   const approveManualPayment = async (paymentId) => {
     const pay = manualPayments.find(p => p.id === paymentId);
-    if (!pay) return;
-    // Guard against a double click firing two requests; the server also
-    // refuses to credit the same deposit twice.
-    if (approvingPaymentIdsRef.current.has(paymentId) || pay.status === 'VERIFIED') return;
+    if (!pay) return { ok: false, error: 'Deposit not found.' };
+    // A double click must not fire two requests; the server also refuses
+    // to credit the same deposit twice.
+    if (approvingPaymentIdsRef.current.has(paymentId)) return { ok: false, error: 'Already being approved.' };
+    if (pay.credited) return { ok: false, error: 'This deposit was already credited.' };
     approvingPaymentIdsRef.current.add(paymentId);
-
     try {
-      // The server reads the amount and account from the stored deposit and
-      // credits it once (with the launch bonus), so nothing here is trusted.
       const result = await approveManualPaymentOnServer(paymentId);
       if (!result.ok) {
         showToast(result.error || 'Could not approve this deposit.', 'error');
-        return;
+        return result;
       }
-      setManualPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status: 'VERIFIED', credited: true } : p));
-      if (result.creditedUsdt > 0) {
-        showToast(`Payment ${paymentId} approved! Credited $${result.creditedUsdt} USDT to ${pay.userName}`);
-      } else {
-        showToast(`Payment ${paymentId} approved! Credited Rs. ${Number(result.creditedLkr || 0).toLocaleString()} LKR to ${pay.userName}`);
-      }
+      setManualPayments(prev => prev.map(p => p.id === paymentId
+        ? { ...p, status: 'VERIFIED', credited: true, creditedTo: result.key, creditedLkr: result.creditedLkr, creditedUsdt: result.creditedUsdt, creditedAt: new Date().toISOString() }
+        : p));
+      const who = pay.userName || pay.userEmail || 'the customer';
+      showToast(result.creditedUsdt > 0
+        ? `Approved ${paymentId}: $${result.creditedUsdt} USDT credited to ${who}`
+        : `Approved ${paymentId}: Rs. ${Number(result.creditedLkr || 0).toLocaleString()} credited to ${who}`);
+      return result;
     } finally {
       approvingPaymentIdsRef.current.delete(paymentId);
     }
   };
 
-  const rejectManualPayment = (paymentId) => {
-    setManualPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status: 'REJECTED' } : p));
-    updateManualPaymentStatusInFirestore(paymentId, 'REJECTED');
-    showToast(`Payment ${paymentId} rejected.`, 'error');
+  // Admin: reject a pending deposit. The list only changes once the server
+  // has saved it.
+  const rejectManualPayment = async (paymentId, reason = '') => {
+    const result = await rejectManualPaymentOnServer(paymentId, reason);
+    if (!result.ok) {
+      showToast(result.error || 'Could not reject this deposit.', 'error');
+      return result;
+    }
+    setManualPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status: 'REJECTED', rejectReason: reason || null } : p));
+    showToast(`Deposit ${paymentId} rejected.`);
+    return result;
   };
 
+  // Admin: record a payment received outside the site (server finds the account).
+  const recordOfflinePayment = async (fields) => {
+    const result = await createManualPaymentOnServer(fields);
+    if (!result.ok) {
+      showToast(result.error || 'Could not record this payment.', 'error');
+      return result;
+    }
+    if (result.payment) setManualPayments(prev => [result.payment, ...prev.filter(p => p.id !== result.payment.id)]);
+    showToast(`Payment recorded for ${result.payment?.userEmail || fields.email}. Approve it to credit the wallet.`);
+    return result;
+  };
+
+  // Customer: save a deposit request (EZ Cash / Binance / bank slip).
   const addManualPayment = (newPay) => {
+    // Old short ids ("PAY-1234") clash easily, and the database refuses to
+    // overwrite an existing deposit, which used to lose the new one.
+    const shortId = !newPay.id || /^PAY-\d{4}$/.test(newPay.id);
     const fullPay = {
       ...newPay,
-      id: newPay.id || `PAY-${Math.floor(1000 + Math.random() * 9000)}`,
+      id: shortId ? newDepositId() : newPay.id,
       userId: newPay.userId || userProfile?.uid || '',
       userEmail: newPay.userEmail || userProfile?.email || '',
       userName: newPay.userName || userProfile?.name || 'Gamer',
@@ -1469,7 +1454,6 @@ export const AppProvider = ({ children }) => {
     };
     setManualPayments(prev => [fullPay, ...prev]);
     saveManualPaymentToFirestore(fullPay);
-    showToast(`Manual payment record created!`);
   };
 
   // -------------------------------------------------------------
@@ -1975,6 +1959,7 @@ export const AppProvider = ({ children }) => {
       approveManualPayment,
       rejectManualPayment,
       addManualPayment,
+      recordOfflinePayment,
       isSupportOpen,
       setIsSupportOpen,
       activeTicketId,

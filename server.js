@@ -21,6 +21,7 @@ import { scheduleDailyBackup } from './lib/dbBackup.js';
 import { sendOrderCompleteEmail } from './lib/orderEmail.js';
 import { phoneTail, phonesInSms as phonesInSmsFrom, paymentRefKey } from './lib/paymentRefs.js';
 import { orderPriceRange } from './lib/orderPrice.js';
+import { depositBonusLkr, newDepositId } from './src/data/depositRules.js';
 import { moogoldRequest, fetchVoucherCodes, saveUserVoucher, listUserVouchers, findCatalogPackage, isVoucherGame, redactVoucherCodes } from './lib/moogoldVoucher.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -801,7 +802,6 @@ app.post('/api/user/profile', rateLimiter(60, 60000), async (req, res) => {
 // amount, currency and account are read here from the stored record, never
 // taken from the browser, and a "credited" flag set in the same transaction
 // as the status change means a deposit can only ever be credited once.
-const depositBonusLkr = (amt) => (amt >= 20000 ? 600 : amt >= 10000 ? 250 : amt >= 5000 ? 100 : 0);
 app.post('/api/admin/manual-payment/approve', requireAdminSession, async (req, res) => {
   const payId = String(req.body?.payId || '');
   if (!/^[A-Za-z0-9_-]{1,80}$/.test(payId)) return res.status(400).json({ error: 'A valid payId is required.' });
@@ -856,19 +856,73 @@ app.post('/api/admin/manual-payment/approve', requireAdminSession, async (req, r
   }
 });
 
-// Admin: reject a deposit. Rejecting never removes money; a credited
-// deposit stays marked credited, so it can't be approved and paid again.
+// Admin: reject a deposit. Rejecting never removes money, so a deposit that
+// was already credited can't be rejected (it would only change the label);
+// take the money back with Wallet Credit instead.
 app.post('/api/admin/manual-payment/reject', requireAdminSession, async (req, res) => {
   const payId = String(req.body?.payId || '');
   if (!/^[A-Za-z0-9_-]{1,80}$/.test(payId)) return res.status(400).json({ error: 'A valid payId is required.' });
+  const reason = sanitizeString(String(req.body?.reason || ''), 200);
   try {
-    const cur = await rtdbGet(`manual_payments/${payId}`);
-    if (!cur) return res.status(404).json({ error: 'Deposit not found.' });
-    await rtdbPatch(`manual_payments/${payId}`, { status: 'REJECTED', updatedAt: new Date().toISOString() });
+    const result = await rtdbTransaction(`manual_payments/${payId}`, (cur) => {
+      if (!cur || typeof cur !== 'object' || cur.credited || cur.status !== 'PENDING') return undefined;
+      return { ...cur, status: 'REJECTED', rejectReason: reason || null, updatedAt: new Date().toISOString() };
+    });
+    if (!result.committed) {
+      const cur = result.value;
+      const why = !cur ? 'Deposit not found.'
+        : cur.credited ? 'This deposit was already credited, so rejecting it would not take the money back. Use Wallet Credit to deduct it.'
+        : `Deposit is ${cur.status}, not pending.`;
+      return res.status(cur ? 409 : 404).json({ error: why });
+    }
     res.json({ success: true });
   } catch (e) {
     console.error('[Deposit Reject Error]:', e.message);
     res.status(500).json({ error: 'Could not reject this deposit.' });
+  }
+});
+
+// Admin: record a payment that came in outside the site (a bank transfer
+// sent on WhatsApp, cash, ...). It goes into the queue as PENDING and is
+// credited with the normal Approve button. The account is looked up here by
+// email, so the deposit always belongs to that customer.
+const OFFLINE_METHODS = ['EZ Cash', 'Binance Pay', 'Bank Deposit'];
+app.post('/api/admin/manual-payment/create', requireAdminSession, async (req, res) => {
+  try {
+    const email = String(req.body?.email || '').trim().toLowerCase().slice(0, 120);
+    const method = OFFLINE_METHODS.includes(req.body?.method) ? req.body.method : null;
+    const referenceNumber = sanitizeString(String(req.body?.referenceNumber || ''), 120);
+    const currency = req.body?.currency === 'USDT' ? 'USDT' : 'LKR';
+    const amount = Math.round((parseFloat(req.body?.amount) || 0) * 100) / 100;
+    const note = sanitizeString(String(req.body?.note || ''), 200);
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return res.status(400).json({ error: 'Enter the customer\'s email address.' });
+    if (!method) return res.status(400).json({ error: 'Choose a payment method.' });
+    if (!referenceNumber) return res.status(400).json({ error: 'Enter the payment reference.' });
+    const max = currency === 'USDT' ? 5000 : 1000000;
+    if (!(amount > 0) || amount > max) return res.status(400).json({ error: 'Enter a valid amount.' });
+
+    const key = await findUserKey(email);
+    if (!key) return res.status(404).json({ error: 'No customer account uses that email.' });
+    const user = (await rtdbGet(`users/${key}`)) || {};
+
+    const refKey = paymentRefKey(method, referenceNumber);
+    const usedBy = refKey ? await findCreditedPaymentRef(refKey, null) : null;
+    if (usedBy) return res.status(409).json({ error: `This reference was already credited on ${usedBy}.` });
+
+    const now = new Date().toISOString();
+    const id = newDepositId('PAY-ADM');
+    const record = {
+      id, userId: key, userEmail: user.email || email,
+      userName: user.name || user.displayName || email.split('@')[0],
+      method, referenceNumber, amount, currency, slipUrl: '', status: 'PENDING',
+      note: note || null, source: 'admin',
+      createdAt: now.replace('T', ' ').substring(0, 16), timestamp: now
+    };
+    await rtdbPut(`manual_payments/${id}`, record);
+    res.json({ success: true, payment: record });
+  } catch (e) {
+    console.error('[Deposit Create Error]:', e.message);
+    res.status(500).json({ error: 'Could not record this payment.' });
   }
 });
 
@@ -1699,13 +1753,15 @@ async function getApprovedReseller(uid, email) {
 }
 
 // Real money an account has deposited: admin-verified bank deposits, bank
-// SMS and Binance auto-credits (manual_payments marked credited). Bonuses
+// SMS, Binance and Genie card auto-credits (manual_payments marked credited). Bonuses
 // are left out. USDT counts at the refund rate (305).
 async function verifiedDepositsLkr(key) {
   const all = (await rtdbGet('manual_payments')) || {};
   let total = 0;
   for (const p of Object.values(all)) {
-    if (!p || !p.credited || p.creditedTo !== key) continue;
+    // Card payments for a top-up order are spent straight away; they are not
+    // money left in the wallet.
+    if (!p || !p.credited || p.creditedTo !== key || p.purpose === 'ORDER') continue;
     const amount = Number(p.amount) || 0;
     total += p.currency === 'USDT' ? amount * 305 : amount;
   }
@@ -2972,7 +3028,28 @@ async function verifyAndCreditGenieTransaction(transactionId) {
       return { success: false, error: creditResult.reason || 'Wallet credit failed', isPaid: true };
     }
 
-async function recordGenieManualPaymentToRtdb(transactionId, record) {
+    await saveGenieTransactionRecord(transactionId, {
+      ...record,
+      status: 'CREDITED',
+      creditedAt: new Date().toISOString(),
+      newBalanceLkr: creditResult.newBalanceLkr,
+      newBalanceUsdt: creditResult.newBalanceUsdt
+    });
+
+    await recordGenieManualPaymentToRtdb(transactionId, record, { rtdbKey: creditResult.rtdbKey, creditedLkr: record.amountLkr + bonusLkr });
+
+    console.log(`[Genie Wallet Credited] txn=${transactionId} user=${record.uid || record.email} amount=Rs.${record.amountLkr} newBalance=Rs.${creditResult.newBalanceLkr}`);
+    return {
+      success: true, isPaid: true, credited: true, purpose: record.purpose || 'DEPOSIT',
+      amount: record.amountLkr, newBalanceLkr: creditResult.newBalanceLkr, newBalanceUsdt: creditResult.newBalanceUsdt
+    };
+  } finally {
+    genieCreditLocks.delete(transactionId);
+  }
+}
+
+// The deposit record the admin Deposit Desk lists for a paid Genie checkout.
+async function recordGenieManualPaymentToRtdb(transactionId, record, credit = {}) {
   try {
     const payId = 'PAY-GENIE-' + String(transactionId).slice(-6).toUpperCase();
     const payload = {
@@ -2987,6 +3064,12 @@ async function recordGenieManualPaymentToRtdb(transactionId, record) {
       slipUrl: '',
       status: 'VERIFIED',
       credited: true,
+      creditedAt: new Date().toISOString(),
+      // Counts towards the reseller joining deposit (verifiedDepositsLkr).
+      creditedTo: credit.rtdbKey || null,
+      creditedLkr: credit.creditedLkr || record.amountLkr,
+      creditedUsdt: 0,
+      purpose: record.purpose || 'DEPOSIT',
       createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
       timestamp: new Date().toISOString()
     };
@@ -2997,26 +3080,6 @@ async function recordGenieManualPaymentToRtdb(transactionId, record) {
     });
   } catch (e) {
     console.error('[Genie Manual Payment Save Error]:', e.message);
-  }
-}
-
-    await saveGenieTransactionRecord(transactionId, {
-      ...record,
-      status: 'CREDITED',
-      creditedAt: new Date().toISOString(),
-      newBalanceLkr: creditResult.newBalanceLkr,
-      newBalanceUsdt: creditResult.newBalanceUsdt
-    });
-
-    await recordGenieManualPaymentToRtdb(transactionId, record);
-
-    console.log(`[Genie Wallet Credited] txn=${transactionId} user=${record.uid || record.email} amount=Rs.${record.amountLkr} newBalance=Rs.${creditResult.newBalanceLkr}`);
-    return {
-      success: true, isPaid: true, credited: true, purpose: record.purpose || 'DEPOSIT',
-      amount: record.amountLkr, newBalanceLkr: creditResult.newBalanceLkr, newBalanceUsdt: creditResult.newBalanceUsdt
-    };
-  } finally {
-    genieCreditLocks.delete(transactionId);
   }
 }
 

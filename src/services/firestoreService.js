@@ -653,65 +653,37 @@ export const approveManualPaymentOnServer = async (paymentId) => {
   return { ok, ...(data || {}) };
 };
 
-export const updateManualPaymentStatusInFirestore = async (paymentId, newStatus) => {
-  if (!paymentId) return;
+// Rejecting goes through the server, which refuses a deposit that was
+// already credited. Returns { ok, error }.
+export const rejectManualPaymentOnServer = async (paymentId, reason = '') => {
+  const { ok, data } = await postServerApi('/api/admin/manual-payment/reject', { payId: paymentId, reason });
+  return { ok, ...(data || {}) };
+};
 
-  if (newStatus === 'REJECTED') {
-    const { ok, data } = await postServerApi('/api/admin/manual-payment/reject', { payId: paymentId });
-    if (!ok) console.warn('Deposit was not rejected:', data?.error);
-  }
-
-  if (db) {
-    try {
-      const payCol = collection(db, 'manual_payments');
-      const q = query(payCol, where('id', '==', paymentId));
-      const qSnap = await getDocs(q);
-      qSnap.forEach(async (docSnap) => {
-        await updateDoc(doc(db, 'manual_payments', docSnap.id), { status: newStatus, updatedAt: new Date().toISOString() });
-      });
-    } catch (err) {
-      console.warn('Firestore manual payment status update note:', err);
-    }
-  }
+// Admin: record a payment received outside the site. The server finds the
+// customer's account by email. Returns { ok, payment, error }.
+export const createManualPaymentOnServer = async (fields) => {
+  const { ok, data } = await postServerApi('/api/admin/manual-payment/create', fields);
+  return { ok, ...(data || {}) };
 };
 
 /**
- * Subscribe to manual payments in Realtime Database or Firestore
+ * Admin deposit list. The server's copy (Realtime Database) is the only one
+ * it credits from, so it is the only one listed: the old Firestore copy was
+ * never updated on approval and kept flipping approved deposits back to
+ * PENDING. An empty list is passed on too, so removed deposits disappear.
  */
 export const subscribeManualPaymentsFromFirestore = (callback) => {
-  let unsubRtdb = null;
-  let unsubFirestore = null;
-
-  if (rtdb) {
-    try {
-      unsubRtdb = pollAdminList('payments', (data) => {
-        if (!data || typeof data !== 'object') return;
-        const list = Object.keys(data).map(key => ({ id: key, ...data[key] }));
-        if (list.length > 0) callback(list);
-      });
-    } catch (e) {
-      console.warn('RTDB manual payments listener note:', e);
-    }
+  if (!rtdb) return () => {};
+  try {
+    return pollAdminList('payments', (data) => {
+      const entries = data && typeof data === 'object' ? Object.entries(data) : [];
+      callback(entries.filter(([, v]) => v && typeof v === 'object').map(([key, v]) => ({ ...v, id: key })));
+    });
+  } catch (e) {
+    console.warn('Deposit list poll note:', e);
+    return () => {};
   }
-
-  if (db) {
-    try {
-      const payCol = collection(db, 'manual_payments');
-      unsubFirestore = onSnapshot(payCol, (snapshot) => {
-        const list = snapshot.docs.map(docSnap => ({ firestoreId: docSnap.id, ...docSnap.data() }));
-        if (list.length > 0) callback(list);
-      }, (err) => {
-        console.warn('Firestore manual payments permission notice:', err.code);
-      });
-    } catch (err) {
-      console.warn('Firestore manual payments listener note:', err);
-    }
-  }
-
-  return () => {
-    if (typeof unsubRtdb === 'function') unsubRtdb();
-    if (typeof unsubFirestore === 'function') unsubFirestore();
-  };
 };
 
 // Admin dashboard lists come from the server (/api/admin/data/<name>, admin
