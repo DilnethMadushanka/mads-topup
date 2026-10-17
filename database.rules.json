@@ -132,6 +132,10 @@
     "adminWalletLog": {
       ".read": false,
       ".write": false
+    },
+    "authCodes": {
+      ".read": false,
+      ".write": false
     }
   }
 }
