@@ -4,13 +4,14 @@
 // successful payment is credited the same, idempotent, server-authoritative
 // way regardless of which deployment target actually receives the request.
 
-export const GENIE_DEFAULT_APP_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBJZCI6ImM5OWI0NTBkLTM4ZTktNDU1Ny04OWYxLTVjZGM5MWZkN2EwZiIsImNvbXBhbnlJZCI6IjY5OWMyOTRiZWM5YWFlMDAwMjA2NjAxNiIsImlhdCI6MTc3MTg0MjE0OSwiZXhwIjo0OTI3NTE1NzQ5fQ.LutDa2obyzXY6MsCGtrK3bPZHMrNpxI-T8Q4cCtKZo4';
+// The app key comes only from the environment (GENIE_APP_KEY); the one that
+// used to be written here is public in the git history and must be rotated.
 export const GENIE_DEFAULT_BASE_URL = 'https://api.geniebiz.lk';
 
 import { rtdbUrl, rtdbGet, findUserKey, adjustWallet } from '../lib/rtdbAdmin.js';
 
 export function getGenieAppKey() {
-  return (process.env.GENIE_APP_KEY || process.env.VITE_GENIE_APP_KEY || GENIE_DEFAULT_APP_KEY).replace(/[\r\n\s]/g, '');
+  return String(process.env.GENIE_APP_KEY || process.env.VITE_GENIE_APP_KEY || '').replace(/[\r\n\s]/g, '');
 }
 
 export function getGenieBaseUrl() {

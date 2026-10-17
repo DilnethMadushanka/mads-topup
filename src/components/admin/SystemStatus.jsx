@@ -78,7 +78,7 @@ export const statusRows = (d) => {
     detail: !p.ezcashWebhook ? 'EZCASH_WEBHOOK_SECRET not set: SMS are refused, deposits wait for manual approval.'
       : `${p.ezcashSmsInMemory} SMS since the last restart${p.ezcashLastSmsAt ? `, last ${fmtAgo(p.ezcashLastSmsAt)}` : ''}. SMS are kept in memory only.`,
   });
-  rows.push({ key: 'genie', icon: Wallet, title: 'Card payments (Genie)', level: p.genieOwnKey ? 'ok' : 'warn', detail: p.genieOwnKey ? 'Own app key set in .env.' : 'Using the key written in the code (public on GitHub). Put GENIE_APP_KEY in .env and rotate it.' });
+  rows.push({ key: 'genie', icon: Wallet, title: 'Card payments (Genie)', level: p.genieOwnKey ? 'ok' : 'bad', detail: p.genieOwnKey ? 'App key set in .env.' : 'GENIE_APP_KEY is not set: card payments are off. Make a new key in the Genie dashboard and put it in .env.' });
   const a = d.admin || {};
   rows.push({ key: 'admin', icon: ShieldCheck, title: 'Admin login', level: a.totpSet && a.passwordSet ? 'ok' : 'bad', detail: a.totpSet && a.passwordSet ? 'Password + authenticator code required.' : 'ADMIN_PASSWORD or ADMIN_TOTP_SECRET missing.' });
   const b = d.backups || {};

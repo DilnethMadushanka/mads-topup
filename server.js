@@ -3020,9 +3020,13 @@ app.get('/api/ezcash/webhook-logs', requireAdminSession, (req, res) => {
 });
 
 // Dialog Genie Business IPG Integration Endpoints
-const GENIE_DEFAULT_APP_ID = 'c99b450d-38e9-4557-89f1-5cdc91fd7a0f';
-const GENIE_DEFAULT_APP_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBJZCI6ImM5OWI0NTBkLTM4ZTktNDU1Ny04OWYxLTVjZGM5MWZkN2EwZiIsImNvbXBhbnlJZCI6IjY5OWMyOTRiZWM5YWFlMDAwMjA2NjAxNiIsImlhdCI6MTc3MTg0MjE0OSwiZXhwIjo0OTI3NTE1NzQ5fQ.LutDa2obyzXY6MsCGtrK3bPZHMrNpxI-T8Q4cCtKZo4';
+// The Genie app key comes only from .env (GENIE_APP_KEY). The key that used
+// to be written here is public in the git history and must be rotated in
+// the Genie Business dashboard. Without a key, card payments are turned off.
 const GENIE_DEFAULT_BASE_URL = 'https://api.geniebiz.lk';
+const genieAppKey = () => String(process.env.GENIE_APP_KEY || process.env.VITE_GENIE_APP_KEY || '').replace(/[\r\n\s]/g, '');
+const genieBaseUrl = () => String(process.env.GENIE_BASE_URL || process.env.VITE_GENIE_BASE_URL || GENIE_DEFAULT_BASE_URL).replace(/[\r\n\s\/]+$/, '');
+const GENIE_OFF_MESSAGE = 'Card payments are turned off right now. Please use EZ Cash, bank deposit or Binance Pay.';
 
 // Same-process lock to stop the webhook and the client's redirect-triggered
 // verify-status poll from both crediting the same transaction if they land
@@ -3103,8 +3107,12 @@ async function verifyAndCreditGenieTransaction(transactionId) {
     };
   }
 
-  const appKey = (process.env.GENIE_APP_KEY || process.env.VITE_GENIE_APP_KEY || GENIE_DEFAULT_APP_KEY).replace(/[\r\n\s]/g, '');
-  const baseUrl = (process.env.GENIE_BASE_URL || process.env.VITE_GENIE_BASE_URL || GENIE_DEFAULT_BASE_URL).replace(/[\r\n\s\/]+$/, '');
+  const appKey = genieAppKey();
+  const baseUrl = genieBaseUrl();
+  if (!appKey) {
+    console.error(`[Genie] GENIE_APP_KEY is not set; cannot check txn=${transactionId}`);
+    return { success: false, error: GENIE_OFF_MESSAGE };
+  }
 
   let state = '';
   try {
@@ -3215,8 +3223,12 @@ async function recordGenieManualPaymentToRtdb(transactionId, record, credit = {}
 // BEFORE the customer is sent to pay, so the webhook/verify-status can credit
 // the right wallet even if the browser never comes back.
 async function startGenieCheckout({ uid, email, name, amountLkr, localId, returnUrl, extraRecord = {} }) {
-  const appKey = (process.env.GENIE_APP_KEY || process.env.VITE_GENIE_APP_KEY || GENIE_DEFAULT_APP_KEY).replace(/[\r\n\s]/g, '');
-  const baseUrl = (process.env.GENIE_BASE_URL || process.env.VITE_GENIE_BASE_URL || GENIE_DEFAULT_BASE_URL).replace(/[\r\n\s\/]+$/, '');
+  const appKey = genieAppKey();
+  const baseUrl = genieBaseUrl();
+  if (!appKey) {
+    console.error('[Genie] GENIE_APP_KEY is not set in .env; card payments are off.');
+    return { success: false, status: 503, error: GENIE_OFF_MESSAGE };
+  }
 
   const cleanEmail = sanitizeString(email || 'customer@madstopup.com', 100);
   const cleanName = sanitizeString(name || 'MADS Gamer', 100);
@@ -3287,7 +3299,8 @@ async function startGenieCheckout({ uid, email, name, amountLkr, localId, return
 
   let friendlyError = resJson?.message || resText.substring(0, 200) || 'Failed to create Genie Business IPG transaction';
   if (apiRes.status === 401 || friendlyError === 'Unauthorized') {
-    friendlyError = 'Dialog Genie IPG Key Unauthorized. Please use eZ Cash, Bank Deposit or Binance Pay!';
+    friendlyError = GENIE_OFF_MESSAGE;
+    console.error('[Genie] The app key in .env was refused (401). Check GENIE_APP_KEY.');
   }
   return { success: false, status: apiRes.status || 400, error: friendlyError };
 }
@@ -3683,7 +3696,7 @@ app.get('/api/admin/system-status', requireAdminSession, async (req, res) => {
         ezcashWebhook: env('EZCASH_WEBHOOK_SECRET'),
         ezcashSmsInMemory: smsLogs.length,
         ezcashLastSmsAt: lastSms || null,
-        genieOwnKey: env('GENIE_APP_KEY') || env('VITE_GENIE_APP_KEY'),
+        genieOwnKey: Boolean(genieAppKey()),
       },
       admin: { totpSet: env('ADMIN_TOTP_SECRET'), passwordSet: env('ADMIN_PASSWORD') },
       backups: { count: backups.length, latest: backups[0] || null, disabled: process.env.BACKUP_DISABLED === '1' },
