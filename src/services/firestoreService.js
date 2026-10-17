@@ -414,41 +414,29 @@ export const confirmPasswordReset = async (email, code, newPassword) => {
 /**
  * Credit user or reseller wallet balance in Realtime Database & Firestore by UID, Email, or Reseller Code
  */
-export const creditUserWalletInDatabase = async (identifier, lkrAmount, usdtAmount = 0, opts = {}) => {
-  if (!identifier || (!lkrAmount && !usdtAmount)) return false;
-  return adminWalletRequest({ identifier: String(identifier).trim(), mode: 'credit', lkr: lkrAmount || 0, usdt: usdtAmount || 0 }, opts);
-};
-
 /**
- * Set exact user wallet balance (admin only) by UID, Email, Reseller Code, or Security Key
+ * Admin wallet change through the server: mode 'add' | 'deduct' | 'set'.
+ * `key` is the account's database key (preferred); `identifier` (email,
+ * uid, code) is a fallback. Every change is logged on the server with the
+ * reason. Returns { ok, key, before, newBalanceLkr, newBalanceUsdt, log, error }.
  */
-export const setUserExactBalanceInDatabase = async (identifier, exactLkr, exactUsdt, opts = {}) => {
-  if (!identifier) return false;
-  return adminWalletRequest({
-    identifier: String(identifier).trim(),
-    mode: 'set',
-    lkr: Math.max(0, parseFloat(exactLkr) || 0),
-    usdt: Math.max(0, parseFloat(exactUsdt) || 0)
-  }, opts);
-};
-
-// Wallet changes are made by the server (admin session required). Returns
-// the user's database key, or false/throws (strict) on failure.
-const adminWalletRequest = async (body, opts = {}) => {
-  const { ok, data } = await postServerApi('/api/admin/wallet', body);
-  if (!ok || !data?.success) {
-    const message = data?.error || 'Wallet update failed';
-    console.warn('Admin wallet update failed:', message);
-    if (opts.strict) throw new Error(message);
-    return false;
-  }
+export const adjustUserWalletOnServer = async ({ key, identifier, mode, lkr = 0, usdt = 0, reason = '' }) => {
+  const { ok, data } = await postServerApi('/api/admin/wallet', { key, identifier, mode, lkr, usdt, reason });
+  if (!ok || !data?.success) return { ok: false, error: data?.error || 'Wallet update failed' };
   for (const [, profile] of activeResellerRegistry.entries()) {
     if (profile && profile.uid === data.key) {
       profile.walletBalance = data.newBalanceLkr;
       profile.walletUsdt = data.newBalanceUsdt;
     }
   }
-  return data.key;
+  return { ok: true, ...data };
+};
+
+// Admin: recent wallet changes (newest first), for one account when key is given.
+export const fetchAdminWalletLog = async (key = '', limit = 50) => {
+  const qs = new URLSearchParams({ limit: String(limit), ...(key ? { key } : {}) }).toString();
+  const { ok, data } = await getServerApi(`/api/admin/wallet-log?${qs}`);
+  return ok && Array.isArray(data?.entries) ? data.entries : null;
 };
 
 /**

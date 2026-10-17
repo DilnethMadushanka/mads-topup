@@ -7,6 +7,7 @@ import { FfAccountsAdmin } from './admin/FfAccountsAdmin';
 import { ProfitReport } from './admin/ProfitReport';
 import { OrdersDesk, OrderDetail, orderNeedsAction } from './admin/OrdersDesk';
 import { DepositsDesk, DepositDetail, RecordDepositSheet } from './admin/DepositsDesk';
+import { UsersDesk, UserDetail, WalletCreditPage } from './admin/UsersDesk';
 import { sortOrdersNewestFirst } from '../utils/ownership';
 import { newUsersToday, sriLankaTime, signupTime } from '../utils/newUsersToday';
 import { getAllPopupBanners, emptyPopupBanner, MAX_POPUP_BANNERS } from '../utils/popupBanners';
@@ -413,8 +414,8 @@ const TAB_TITLES = {
   deposits: ['Deposit Verifier', 'Check each deposit, then credit the wallet or reject it'],
   ezcash: ['Dialog EZ Cash Webhook Logs', 'Live SMS records received from the phone forwarder gateway'],
   vouchers: ['Promo Voucher Codes', 'Create and manage redeemable voucher codes'],
-  users: ['User Management & Verification', 'Grant verified badges, block accounts & inspect balances'],
-  credit: ['Direct User Wallet Top-Up Tool', "Manually credit or deduct a user's LKR or USDT balance"],
+  users: ['Customers', 'Find a customer, see their orders and wallet, verify or block them'],
+  credit: ['Wallet Credit', "Add to, deduct from or set a customer's wallet, with a reason for every change"],
   resellers: ['Reseller Partner Network', 'Review, approve, or reject reseller partner applications'],
   support: ['Support Desk', 'Live customer support tickets & chat'],
   reviews: ['Customer Reviews', 'Read and delete the feedback shown on the Reviews page'],
@@ -432,8 +433,8 @@ export const AdminDashboard = () => {
     isAdminOpen, setIsAdminOpen, orders, updateOrderStatus, moongoldConfig, updateMoongoldConfig,
     r2Config, updateR2Config, formatPrice,
     formatLkr, showToast, userProfile, vouchers, addVoucher, deleteVoucher,
-    tickerNotice, updateTickerNotice, usersList, verifyUserAccount, toggleBlockUser, updateUserBalance,
-    setUserExactBalance, manualPayments, approveManualPayment, rejectManualPayment, recordOfflinePayment,
+    tickerNotice, updateTickerNotice, usersList, verifyUserAccount, toggleBlockUser, adjustUserWallet,
+    fetchAdminWalletLog, manualPayments, approveManualPayment, rejectManualPayment, recordOfflinePayment,
     supportTickets, sendTicketMessage, updateTicketStatus, updateTicketPriority, resellerApplications,
     updateResellerApplicationStatus, gamesCatalog, updateGamePrices, popupAdConfig, updatePopupAdConfig,
     gameStripConfig, updateGameStripConfig, ffAccounts, userReviews, deleteReview,
@@ -497,11 +498,8 @@ export const AdminDashboard = () => {
   const [selectedInspectOrder, setSelectedInspectOrder] = useState(null);
 
   const [userSearch, setUserSearch] = useState('');
-  const [userStatusFilter, setUserStatusFilter] = useState('ALL');
   const [userSortOrder, setUserSortOrder] = useState('newest');
   const [selectedInspectUser, setSelectedInspectUser] = useState(null);
-  const [editLkrVal, setEditLkrVal] = useState('');
-  const [editUsdtVal, setEditUsdtVal] = useState('');
 
   const [paymentSearch, setPaymentSearch] = useState('');
 
@@ -519,10 +517,6 @@ export const AdminDashboard = () => {
   const [r2BucketName, setR2BucketName] = useState(r2Config?.bucketName || 'mads-topup');
   const [isTestingR2, setIsTestingR2] = useState(false);
 
-  const [creditUserEmail, setCreditUserEmail] = useState(userProfile?.email || 'admin@madstopup.com');
-  const [creditLkrAmount, setCreditLkrAmount] = useState('');
-  const [creditUsdtAmount, setCreditUsdtAmount] = useState('');
-  const [creditReason, setCreditReason] = useState('EZ Cash Topup Approval');
 
   const [newVoucherCode, setNewVoucherCode] = useState('');
   const [newVoucherValue, setNewVoucherValue] = useState('');
@@ -837,35 +831,6 @@ export const AdminDashboard = () => {
     tickets: openTicketsCount
   };
 
-  // How many customer records share each email. Before Google logins were
-  // joined to email signups, one person could end up with two records.
-  const emailCounts = safeUsers.reduce((m, u) => {
-    const e = String(u?.email || '').trim().toLowerCase();
-    if (e) m[e] = (m[e] || 0) + 1;
-    return m;
-  }, {});
-  const sharesEmail = (u) => (emailCounts[String(u?.email || '').trim().toLowerCase()] || 0) > 1;
-
-  const filteredUsers = safeUsers.filter(usr => {
-    if (!usr) return false;
-    const search = (userSearch || '').toLowerCase();
-    const usrName = String(usr.name || usr.username || usr.displayName || '').toLowerCase();
-    const usrEmail = String(usr.email || '').toLowerCase();
-    const usrPhone = String(usr.phone || '');
-    const usrUid = String(usr.uid || '').toLowerCase();
-    const matchesSearch = usrName.includes(search) || usrEmail.includes(search) || usrUid.includes(search) || (usrPhone && usrPhone.includes(userSearch));
-    const matchesStatus = userStatusFilter === 'ALL' ||
-      (userStatusFilter === 'VERIFIED' && usr.isVerified) ||
-      (userStatusFilter === 'UNVERIFIED' && !usr.isVerified) ||
-      (userStatusFilter === 'BLOCKED' && usr.status === 'BLOCKED') ||
-      (userStatusFilter === 'DUPLICATE' && sharesEmail(usr));
-    return matchesSearch && matchesStatus;
-  }).sort((a, b) => {
-    const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-    const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    return userSortOrder === 'oldest' ? ta - tb : tb - ta;
-  });
-
   const filteredEzcashLogs = (ezcashLogs || []).filter(item => {
     if (!item) return false;
     const query = (ezcashSearch || '').toLowerCase().trim();
@@ -1090,21 +1055,6 @@ export const AdminDashboard = () => {
     await new Promise(res => setTimeout(res, 700));
     setIsTestingR2(false);
     showToast(`Cloudflare R2 Bucket Connected! Endpoint: ${r2UrlInput}`);
-  };
-
-  const handleManualCreditSubmit = (e) => {
-    e.preventDefault();
-    const lkr = parseFloat(creditLkrAmount) || 0;
-    const usdt = parseFloat(creditUsdtAmount) || 0;
-    if (lkr === 0 && usdt === 0) {
-      showToast('Please enter an amount to credit!', 'error');
-      return;
-    }
-    updateUserBalance(creditUserEmail, lkr, usdt, { strict: true }).then((ok) => {
-      if (ok === false) return;
-      setCreditLkrAmount('');
-      setCreditUsdtAmount('');
-    });
   };
 
   const handleCreateVoucherSubmit = (e) => {
@@ -1701,105 +1651,24 @@ export const AdminDashboard = () => {
           })()}
 
           {adminTab === 'users' && (
-            <div className="space-y-4">
-              <FilterBar>
-                <SearchInput value={userSearch} onChange={setUserSearch} placeholder="Search User Name, Email, Phone, or UID..." />
-                <select value={userStatusFilter} onChange={(e) => setUserStatusFilter(e.target.value)} className={`${fieldCls} sm:max-w-[220px]`} style={fieldStyle}>
-                  <option value="ALL">All Account Types</option>
-                  <option value="VERIFIED">Verified Accounts Only</option>
-                  <option value="UNVERIFIED">Unverified Accounts</option>
-                  <option value="BLOCKED">Blocked Accounts</option>
-                  <option value="DUPLICATE">Same Email (2+ accounts)</option>
-                </select>
-                <select value={userSortOrder} onChange={(e) => setUserSortOrder(e.target.value)} className={`${fieldCls} sm:max-w-[200px]`} style={fieldStyle}>
-                  <option value="newest">⬇ Newest First</option>
-                  <option value="oldest">⬆ Oldest First</option>
-                </select>
-              </FilterBar>
-
-              <DataTable
-                emptyMessage="No users found matching search criteria."
-                columns={[
-                  { key: 'uid', label: 'UID', render: u => <span className="font-mono text-[11px]" style={mutedStyle}>{u.uid}</span> },
-                  { key: 'name', label: 'Name & Email', sortable: true, sortValue: u => u.name || '', render: u => (
-                    <div>
-                      <div className="font-bold flex items-center gap-1.5" style={{ color: 'var(--adm-text)' }}>
-                        <span>{u.name}</span>
-                        {u.isVerified && <BadgeCheck className="w-4 h-4 text-emerald-400" />}
-                      </div>
-                      <div className="text-[10px] font-mono" style={mutedStyle}>{u.email}</div>
-                      <div className="flex flex-wrap justify-end md:justify-start gap-1 mt-1">
-                        <span className="adm-acct-tag">{String(u.uid || '').startsWith('usr_') ? 'Email login' : 'Google login'}</span>
-                        {sharesEmail(u) && <span className="adm-acct-tag adm-acct-tag--dup" title="Another customer record has this same email">Same email ×{emailCounts[String(u.email).trim().toLowerCase()]}</span>}
-                      </div>
-                    </div>
-                  )},
-                  { key: 'phone', label: 'WhatsApp', render: u => (
-                    u.phone ? (
-                      <a
-                        href={`https://wa.me/${u.phone.replace(/[^\d]/g, '')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-[11px] font-mono font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
-                        title="Open WhatsApp Chat"
-                      >
-                        <Smartphone className="w-3 h-3" />
-                        {u.phone}
-                      </a>
-                    ) : <span className="text-[10px]" style={{ color: 'var(--adm-text-faint)' }}>—</span>
-                  ) },
-                  { key: 'verify', label: 'Verification', render: u => u.isVerified ? <StatusPill status="VERIFIED" /> : <StatusPill status="UNVERIFIED" /> },
-                  { key: 'status', label: 'Account Status', sortable: true, sortValue: u => u.status || '', render: u => <StatusPill status={u.status} /> },
-                  { key: 'lkr', label: 'EZ Wallet LKR', sortable: true, sortValue: u => u.walletBalance || 0, render: u => <span className="font-mono font-bold" style={{ color: 'var(--adm-text)' }}>Rs. {(u.walletBalance || 0).toLocaleString()}</span> },
-                  { key: 'usdt', label: 'Binance USDT', sortable: true, sortValue: u => u.walletUsdt || 0, render: u => <span className="font-mono font-bold text-emerald-400">${Number(u.walletUsdt || 0).toFixed(2)}</span> },
-                  { key: 'createdAt', label: 'Joined', sortable: false, sortValue: u => { const t = u.createdAt ? new Date(u.createdAt).getTime() : 0; return isNaN(t) ? 0 : t; }, render: u => (
-                    <div className="text-[11px] font-mono" style={mutedStyle}>
-                      {u.createdAt ? (
-                        <>
-                          <div>{new Date(u.createdAt).toLocaleDateString()}</div>
-                          <div className="text-[10px]" style={{ color: 'var(--adm-text-faint)' }}>{timeAgo(u.createdAt)}</div>
-                        </>
-                      ) : <span style={{ color: 'var(--adm-text-faint)' }}>—</span>}
-                    </div>
-                  )},
-                  { key: 'actions', label: 'Actions', align: 'right', render: u => (
-                    <div className="flex justify-end gap-1.5 flex-wrap">
-                      {!u.isVerified && <button onClick={() => verifyUserAccount(u.uid)} className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[10px] rounded-lg cursor-pointer">Verify</button>}
-                      <button onClick={() => toggleBlockUser(u.uid)} className={`px-2.5 py-1 font-extrabold text-[10px] rounded-lg cursor-pointer ${u.status === 'BLOCKED' ? 'bg-slate-500/20' : 'bg-red-600/25 hover:bg-red-600 text-red-300 border border-red-500/40'}`} style={u.status === 'BLOCKED' ? mutedStyle : undefined}>{u.status === 'BLOCKED' ? 'Unblock' : 'Block'}</button>
-                      <button onClick={() => setSelectedInspectUser(u)} className="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/40 font-extrabold text-[10px] rounded-lg cursor-pointer">Top Up</button>
-                    </div>
-                  )}
-                ]}
-                rows={filteredUsers}
-                rowKey="uid"
-              />
-            </div>
+            <UsersDesk
+              users={safeUsers}
+              orders={safeOrders}
+              search={userSearch}
+              onSearch={setUserSearch}
+              sort={userSortOrder}
+              onSort={setUserSortOrder}
+              onOpen={setSelectedInspectUser}
+            />
           )}
 
           {adminTab === 'credit' && (
-            <div className="max-w-2xl rounded-3xl border-2 p-6 space-y-5" style={cardStyle}>
-              <form onSubmit={handleManualCreditSubmit} className="space-y-4 text-xs">
-                <div>
-                  <label className="block font-extrabold mb-1" style={mutedStyle}>Target User Account Email</label>
-                  <input type="email" value={creditUserEmail} onChange={(e) => setCreditUserEmail(e.target.value)} className={fieldCls} style={fieldStyle} />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block font-extrabold mb-1" style={mutedStyle}>EZ Cash LKR Amount</label>
-                    <input type="number" placeholder="e.g. 1500" value={creditLkrAmount} onChange={(e) => setCreditLkrAmount(e.target.value)} className={`${fieldCls} font-mono`} style={fieldStyle} />
-                  </div>
-                  <div>
-                    <label className="block font-extrabold mb-1" style={mutedStyle}>Binance USDT Amount</label>
-                    <input type="number" placeholder="e.g. 10.50" value={creditUsdtAmount} onChange={(e) => setCreditUsdtAmount(e.target.value)} className={`${fieldCls} font-mono`} style={fieldStyle} />
-                  </div>
-                </div>
-                <div>
-                  <label className="block font-extrabold mb-1" style={mutedStyle}>Credit Reason / Audit Note</label>
-                  <input type="text" value={creditReason} onChange={(e) => setCreditReason(e.target.value)} className={fieldCls} style={fieldStyle} />
-                </div>
-                <button type="submit" className="w-full py-3 bg-[#1677ff] hover:bg-[#0b5ed7] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-blue-600/30 cursor-pointer">Credit Balance to User Wallet</button>
-              </form>
-            </div>
+            <WalletCreditPage
+              users={safeUsers}
+              onAdjust={adjustUserWallet}
+              fetchLog={fetchAdminWalletLog}
+              onOpenUser={setSelectedInspectUser}
+            />
           )}
 
           {adminTab === 'resellers' && (
@@ -2242,125 +2111,20 @@ export const AdminDashboard = () => {
       )}
 
       {selectedInspectUser && (
-        <ModalShell onClose={() => setSelectedInspectUser(null)} title={selectedInspectUser.name} subtitle={selectedInspectUser.email} icon={selectedInspectUser.isVerified ? BadgeCheck : Users}>
-          {/* WhatsApp number display */}
-          {selectedInspectUser.phone && (
-            <div className="flex items-center gap-2 rounded-xl border px-4 py-2.5 text-xs" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
-              <Smartphone className="w-4 h-4 text-emerald-400 shrink-0" />
-              <div>
-                <span className="text-[10px] font-bold uppercase block" style={mutedStyle}>WhatsApp Number</span>
-                <a
-                  href={`https://wa.me/${selectedInspectUser.phone.replace(/[^\d]/g, '')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
-                >
-                  {selectedInspectUser.phone}
-                </a>
-              </div>
-            </div>
-          )}
-          <div className="grid grid-cols-2 gap-3 text-xs rounded-2xl border p-4" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
-            <div><span className="text-[10px] font-bold uppercase block" style={mutedStyle}>EZ Cash Balance</span><span className="text-base font-black font-heading" style={{ color: 'var(--adm-text)' }}>Rs. {(selectedInspectUser.walletBalance || 0).toLocaleString()}</span></div>
-            <div><span className="text-[10px] font-bold uppercase block" style={mutedStyle}>Binance USDT</span><span className="text-base font-black text-emerald-400 font-heading">${Number(selectedInspectUser.walletUsdt || 0).toFixed(2)}</span></div>
-          </div>
-
-          {selectedInspectUser.isReseller && selectedInspectUser.resellerStatus === 'APPROVED' && (
-            <div className="rounded-2xl border p-4 space-y-2 text-xs" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] font-bold uppercase" style={mutedStyle}>Reseller Tier</span>
-                <span className="font-bold" style={mutedStyle}>Sales: Rs. {(Number(selectedInspectUser.resellerSalesLkr) || 0).toLocaleString()}</span>
-              </div>
-              <select
-                value={selectedInspectUser.resellerTier || 'AUTO'}
-                onChange={async (e) => {
-                  const tier = e.target.value;
-                  if (await setResellerTier(selectedInspectUser.uid, tier)) {
-                    setSelectedInspectUser(prev => ({ ...prev, resellerTier: tier === 'AUTO' ? undefined : tier }));
-                    showToast(`Tier set to ${tier === 'AUTO' ? 'automatic (by sales)' : tier}`);
-                  }
-                }}
-                className={fieldCls}
-                style={fieldStyle}
-              >
-                <option value="AUTO">Automatic by sales (Bronze 3% / Silver 5% / Gold 8%)</option>
-                <option value="BRONZE">Bronze 3% (fixed)</option>
-                <option value="SILVER">Silver 5% (fixed)</option>
-                <option value="GOLD">Gold 8% (fixed)</option>
-              </select>
-            </div>
-          )}
-
-          <div className="space-y-3 pt-2 border-t" style={{ borderColor: 'var(--adm-border)' }}>
-            <h4 className="text-xs font-bold" style={mutedStyle}>Manual Wallet Balance Editor</h4>
-            <div className="grid grid-cols-2 gap-2">
-              <button onClick={async () => { if (!window.confirm(`Add +Rs. 1,000 LKR to ${selectedInspectUser.name}?`)) return; const ok = await updateUserBalance(selectedInspectUser.email, 1000, 0, { strict: true }); if (ok !== false) { showToast(`Added +1,000 LKR to ${selectedInspectUser.name}`); setSelectedInspectUser(null); } }} className="py-2 bg-emerald-500/15 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 rounded-xl text-xs font-bold cursor-pointer">+ Rs. 1,000 LKR</button>
-              <button onClick={async () => { if (!window.confirm(`Add +$10 USDT to ${selectedInspectUser.name}?`)) return; const ok = await updateUserBalance(selectedInspectUser.email, 0, 10, { strict: true }); if (ok !== false) { showToast(`Added +$10 USDT to ${selectedInspectUser.name}`); setSelectedInspectUser(null); } }} className="py-2 bg-amber-500/15 hover:bg-amber-600 text-amber-400 hover:text-white border border-amber-500/30 rounded-xl text-xs font-bold cursor-pointer">+ $10 USDT</button>
-            </div>
-
-            <div className="rounded-2xl border p-3.5 space-y-3" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
-              {/* Current balance reminder */}
-              <div className="text-[10px] font-bold px-1 py-0.5 rounded" style={{ color: 'var(--adm-muted)', background: 'var(--adm-surface)' }}>
-                Current: Rs.{(selectedInspectUser.walletBalance||0).toLocaleString()} LKR &nbsp;|&nbsp; ${Number(selectedInspectUser.walletUsdt||0).toFixed(2)} USDT
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[10px] font-bold block mb-1" style={mutedStyle}>LKR Amount</label>
-                  <input type="number" placeholder="e.g. 5000" value={editLkrVal} onChange={(e) => setEditLkrVal(e.target.value)} className={`${fieldCls} font-mono`} style={fieldStyle} />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold block mb-1" style={mutedStyle}>USDT Amount</label>
-                  <input type="number" placeholder="e.g. 50" value={editUsdtVal} onChange={(e) => setEditUsdtVal(e.target.value)} className={`${fieldCls} font-mono`} style={fieldStyle} />
-                </div>
-              </div>
-              <div className="flex gap-2 pt-1">
-                {/* SET EXACT: overwrites both fields. Blank field = 0 (NOT keep existing) */}
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (editLkrVal === '' && editUsdtVal === '') {
-                      showToast('Enter LKR or USDT to set exact balance', 'error');
-                      return;
-                    }
-                    const lkr = editLkrVal !== '' ? parseFloat(editLkrVal) : 0;
-                    const usdt = editUsdtVal !== '' ? parseFloat(editUsdtVal) : 0;
-                    const targetId = selectedInspectUser.uid || selectedInspectUser.email || selectedInspectUser.resellerCode || selectedInspectUser.securityKey;
-                    if (!window.confirm(`SET balance for ${selectedInspectUser.name} to:\nRs. ${lkr.toLocaleString()} LKR / $${usdt.toFixed(2)} USDT\n\nThis REPLACES the current balance. Are you sure?`)) return;
-                    const ok = await setUserExactBalance(targetId, lkr, usdt);
-                    if (ok === false) return;
-                    showToast(`✅ Set ${selectedInspectUser.name} balance → Rs.${lkr.toLocaleString()} LKR / $${usdt} USDT`);
-                    setEditLkrVal(''); setEditUsdtVal(''); setSelectedInspectUser(null);
-                  }}
-                  className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-extrabold cursor-pointer border-2 border-blue-400"
-                  title="REPLACES the existing balance with the value you enter"
-                >🔵 Set Exact</button>
-                {/* ADD: adds on top of existing balance */}
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (editLkrVal === '' && editUsdtVal === '') {
-                      showToast('Enter amount to add', 'error');
-                      return;
-                    }
-                    const lkr = parseFloat(editLkrVal) || 0;
-                    const usdt = parseFloat(editUsdtVal) || 0;
-                    const newLkr = (selectedInspectUser.walletBalance || 0) + lkr;
-                    const newUsdt = (selectedInspectUser.walletUsdt || 0) + usdt;
-                    const targetId = selectedInspectUser.uid || selectedInspectUser.email || selectedInspectUser.resellerCode || selectedInspectUser.securityKey;
-                    if (!window.confirm(`ADD funds to ${selectedInspectUser.name}:\n+Rs.${lkr.toLocaleString()} LKR / +$${usdt} USDT\nNew total: Rs.${newLkr.toLocaleString()} LKR / $${newUsdt.toFixed(2)} USDT`)) return;
-                    const ok = await updateUserBalance(targetId, lkr, usdt, { strict: true });
-                    if (ok === false) return;
-                    showToast(`✅ Added +Rs.${lkr.toLocaleString()} LKR / +$${usdt} USDT to ${selectedInspectUser.name}`);
-                    setEditLkrVal(''); setEditUsdtVal(''); setSelectedInspectUser(null);
-                  }}
-                  className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-extrabold cursor-pointer border-2 border-emerald-400"
-                  title="ADDS to the existing balance (does not replace it)"
-                >🟢 + Add Funds</button>
-              </div>
-              <p className="text-[9px] text-center" style={{ color: 'var(--adm-muted)' }}>🔵 Set Exact = overwrites balance &nbsp;|&nbsp; 🟢 Add Funds = adds on top</p>
-            </div>
-          </div>
-        </ModalShell>
+        <UserDetail
+          user={safeUsers.find(u => u.uid === selectedInspectUser.uid) || selectedInspectUser}
+          orders={safeOrders}
+          onClose={() => setSelectedInspectUser(null)}
+          onVerify={verifyUserAccount}
+          onToggleBlock={toggleBlockUser}
+          onAdjust={adjustUserWallet}
+          fetchLog={fetchAdminWalletLog}
+          onSetTier={async (u, tier) => {
+            if (await setResellerTier(u.uid, tier)) showToast(`Tier set to ${tier === 'AUTO' ? 'automatic (by sales)' : tier}`);
+          }}
+          onOpenOrders={(u) => { setSelectedInspectUser(null); setAdminTab('orders'); setOrderSearch(u.email || u.uid); }}
+          showToast={showToast}
+        />
       )}
 
       {isAddPaymentOpen && (

@@ -21,6 +21,7 @@ import { scheduleDailyBackup } from './lib/dbBackup.js';
 import { sendOrderCompleteEmail } from './lib/orderEmail.js';
 import { phoneTail, phonesInSms as phonesInSmsFrom, paymentRefKey } from './lib/paymentRefs.js';
 import { orderPriceRange } from './lib/orderPrice.js';
+import { parseWalletChange, applyWalletChange } from './lib/adminWallet.js';
 import { depositBonusLkr, newDepositId } from './src/data/depositRules.js';
 import { moogoldRequest, fetchVoucherCodes, saveUserVoucher, listUserVouchers, findCatalogPackage, isVoucherGame, redactVoucherCodes } from './lib/moogoldVoucher.js';
 
@@ -454,38 +455,74 @@ app.post('/api/admin/logout', (req, res) => {
 
 // Admin: credit or set a user's wallet. identifier = uid, email, reseller
 // code or security key.
+// Admin wallet change: add, deduct or set a customer's balance. Every change
+// is saved in adminWalletLog with the reason and the balance before/after,
+// and a deduction that would go below zero is refused. `key` (the account's
+// database key) is preferred over `identifier` (email / uid / code), which
+// can match more than one record.
+const WALLET_KEY_RE = /^[A-Za-z0-9_-]{1,128}$/;
 app.post('/api/admin/wallet', requireAdminSession, async (req, res) => {
   try {
-    const { identifier, mode } = req.body || {};
-    const lkr = Number(req.body?.lkr) || 0;
-    const usdt = Number(req.body?.usdt) || 0;
-    if (!identifier || !['credit', 'set'].includes(mode)) {
-      return res.status(400).json({ error: 'identifier and mode (credit|set) are required.' });
+    const change = parseWalletChange(req.body);
+    if (change.error) return res.status(400).json({ error: change.error });
+    const reason = sanitizeString(String(req.body?.reason || ''), 200);
+    const rawKey = String(req.body?.key || '');
+    let key = null;
+    if (WALLET_KEY_RE.test(rawKey)) {
+      const own = await rtdbGet(`users/${rawKey}`).catch(() => null);
+      if (own && typeof own === 'object') key = rawKey;
     }
-    const key = await findUserKey(identifier);
+    if (!key && req.body?.identifier) key = await findUserKey(req.body.identifier);
     if (!key) return res.status(404).json({ error: 'User not found in database' });
 
-    let result;
-    if (mode === 'credit') {
-      result = await adjustWallet(key, lkr, usdt);
-    } else {
-      const target = { lkr: Math.max(0, lkr), usdt: Math.max(0, usdt) };
-      const user = await rtdbGet(`users/${key}`);
-      // Some accounts have a second record under their auth uid; keep both in step.
-      const keys = new Set([key]);
-      if (user?.uid && user.uid !== key) {
-        const other = await rtdbGet(`users/${user.uid}`).catch(() => null);
-        if (other && typeof other === 'object') keys.add(user.uid);
+    let outcome = null;
+    const tx = await rtdbTransaction(`users/${key}`, (cur) => {
+      if (!cur || typeof cur !== 'object') { outcome = { error: 'User not found in database' }; return undefined; }
+      outcome = applyWalletChange(cur, change);
+      if (outcome.error) return undefined;
+      return { ...cur, walletBalance: outcome.after.lkr, walletUsdt: outcome.after.usdt, updatedAt: new Date().toISOString() };
+    });
+    if (!tx.committed) return res.status(outcome?.before ? 409 : 404).json({ error: outcome?.error || 'Wallet was not changed.' });
+    const user = tx.value;
+
+    // Some accounts have a second record under their auth uid; a set keeps both in step.
+    if (change.mode === 'set' && user?.uid && user.uid !== key && WALLET_KEY_RE.test(user.uid)) {
+      const other = await rtdbGet(`users/${user.uid}`).catch(() => null);
+      if (other && typeof other === 'object') {
+        await rtdbPatch(`users/${user.uid}`, { walletBalance: outcome.after.lkr, walletUsdt: outcome.after.usdt, updatedAt: new Date().toISOString() });
       }
-      for (const k of keys) {
-        await rtdbPatch(`users/${k}`, { walletBalance: target.lkr, walletUsdt: target.usdt, updatedAt: new Date().toISOString() });
-      }
-      result = { newBalanceLkr: target.lkr, newBalanceUsdt: target.usdt };
     }
-    console.log(`[Admin Wallet] ${mode} ${identifier} (key: ${key}) LKR ${lkr} / USDT ${usdt} → Rs. ${result.newBalanceLkr} / $${result.newBalanceUsdt}`);
-    res.json({ success: true, key, ...result });
+
+    const at = new Date().toISOString();
+    const logId = `${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
+    const entry = {
+      id: logId, key, email: user.email || '', name: user.name || user.displayName || '',
+      mode: change.mode, lkr: change.lkr, usdt: change.usdt,
+      before: outcome.before, after: outcome.after, reason: reason || null, at
+    };
+    await rtdbPut(`adminWalletLog/${logId}`, entry).catch(e => console.error('[Admin Wallet Log Error]:', e.message));
+    console.log(`[Admin Wallet] ${change.mode} ${key} LKR ${change.lkr} / USDT ${change.usdt} → Rs. ${outcome.after.lkr} / $${outcome.after.usdt}${reason ? ` (${reason})` : ''}`);
+    res.json({ success: true, key, before: outcome.before, newBalanceLkr: outcome.after.lkr, newBalanceUsdt: outcome.after.usdt, log: entry });
   } catch (e) {
     console.error('[Admin Wallet Error]:', e.message);
+    res.status(500).json({ error: SERVER_ERROR });
+  }
+});
+
+// Admin: recent wallet changes, newest first; ?key= limits it to one account.
+app.get('/api/admin/wallet-log', requireAdminSession, async (req, res) => {
+  try {
+    const key = String(req.query?.key || '');
+    const limit = Math.min(200, Math.max(1, parseInt(req.query?.limit, 10) || 50));
+    const r = await fetch(rtdbUrl('adminWalletLog', { orderBy: '"$key"', limitToLast: key ? 1000 : limit }));
+    const data = r.ok ? (await r.json()) || {} : {};
+    let list = Object.values(data).filter(e => e && typeof e === 'object');
+    if (key) list = list.filter(e => e.key === key);
+    list.sort((a, b) => String(b.at).localeCompare(String(a.at)));
+    res.set('Cache-Control', 'no-store');
+    res.json({ success: true, entries: list.slice(0, limit) });
+  } catch (e) {
+    console.error('[Admin Wallet Log Read Error]:', e.message);
     res.status(500).json({ error: SERVER_ERROR });
   }
 });
