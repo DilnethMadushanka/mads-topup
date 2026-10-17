@@ -90,80 +90,21 @@ async function getMooGoldHeaders(path, bodyObj, partnerId, secretKey) {
  * Fetch Live Merchant Balance from MooGold Reseller API
  * Endpoint: POST /user/balance
  */
+// The store's real MooGold balance, read by the server with its own keys
+// (admin session). Returns { success, balanceUsd, balanceLkr, isRealtime }
+// or { success: false, error } — never a made-up number.
 export const checkMoongoldBalance = async () => {
-  const config = getMoongoldConfig();
-  const partnerId = config.apiKey || '';
-  const secretKey = config.secretKey || '';
-
-  const path = 'user/balance';
-  const bodyObj = { path };
-
-  // 1. Primary: Server-Side Express Proxy (/api/moogold) for secure live balance
   try {
-    const proxyRes = await fetch('/api/moogold', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path, bodyObj })
-    });
-    if (proxyRes.ok) {
-      const data = await proxyRes.json();
-      if (data && (data.balance !== undefined || data.usd !== undefined || data.data?.balance !== undefined)) {
-        const usdBal = parseFloat(data.balance || data.usd || data.amount || data.data?.balance || 0);
-        return {
-          success: true,
-          balanceUsd: usdBal,
-          balanceLkr: usdBal * 305,
-          currency: 'USD',
-          data,
-          isRealtime: true
-        };
-      }
+    const res = await fetch('/api/admin/moogold-balance', { credentials: 'same-origin' });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data?.success && Number.isFinite(Number(data.balanceUsd))) {
+      const usd = Number(data.balanceUsd);
+      return { success: true, balanceUsd: usd, balanceLkr: Math.round(usd * 305), currency: 'USD', isRealtime: true };
     }
-  } catch (err) {
-    console.warn('MooGold balance proxy note:', err);
+    return { success: false, error: data?.error || (res.status === 401 ? 'Admin session expired.' : 'Could not read the MooGold balance.') };
+  } catch (e) {
+    return { success: false, error: 'Could not reach the server.' };
   }
-
-  // 2. Secondary: Direct browser HMAC fetch (if secret key configured in admin settings)
-  if (partnerId && secretKey && secretKey !== '••••••••••••') {
-    try {
-      const headers = await getMooGoldHeaders(path, bodyObj, partnerId, secretKey);
-      const baseUrl = config.baseUrl || 'https://moogold.com/wp-json/v1/api';
-
-      const response = await fetch(`${baseUrl}/${path}`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(bodyObj)
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data && (data.balance !== undefined || data.usd !== undefined || data.data?.balance !== undefined)) {
-          const usdBal = parseFloat(data.balance || data.usd || data.amount || data.data?.balance || 0);
-          return {
-            success: true,
-            balanceUsd: usdBal,
-            balanceLkr: usdBal * 305,
-            currency: 'USD',
-            data,
-            isRealtime: true
-          };
-        }
-      }
-    } catch (err) {
-      console.warn('MooGold live balance fetch warning:', err);
-    }
-  }
-
-  // Fallback to configured merchant balance
-  const savedUsd = parseFloat(config.merchantBalanceUsd !== undefined ? config.merchantBalanceUsd : 480.00);
-  const savedLkr = parseFloat(config.merchantBalanceLkr !== undefined ? config.merchantBalanceLkr : (savedUsd * 305));
-  return {
-    success: true,
-    balanceUsd: savedUsd,
-    balanceLkr: savedLkr,
-    currency: 'USD',
-    isRealtime: false
-  };
 };
 
 import { lookupFreePlayerIgn, saveCachedIgn } from './playerLookup.js';
@@ -214,7 +155,6 @@ export const checkPlayerIGN = async (gameId = '', playerId = '', zoneId = '') =>
  * Endpoint: POST /order/create_order
  */
 export const dispatchMoongoldOrder = async (orderData) => {
-  const config = getMoongoldConfig();
 
   // Get current Firebase Auth user ID token for secure backend verification
   let idToken = null;
@@ -252,15 +192,8 @@ export const dispatchMoongoldOrder = async (orderData) => {
 
   const partnerOrderId = generateUuid();
 
-  if (config.simulationMode) {
-    return {
-      success: true,
-      moongoldRef: partnerOrderId,
-      status: 'COMPLETED',
-      message: 'Topup Success! Items credited instantly.',
-      timestamp: new Date().toISOString()
-    };
-  }
+  // (A browser-only "simulation mode" used to return a fake success here
+  // without placing the order. Orders always go to the server now.)
 
   const gameId = (orderData.gameId || orderData.game?.id || '').toLowerCase();
   const idLabel = (orderData.idLabel || orderData.game?.idLabel || '').toLowerCase();

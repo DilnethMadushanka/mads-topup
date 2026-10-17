@@ -5319,3 +5319,31 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
 /* Sheet footer notes ("can't approve…") read as a sentence, not a caps label. */
 .ord-sheet-foot > small.dep-foot-note { margin: 8px 0 0; font-size: 11.5px; font-weight: 700; letter-spacing: 0; text-transform: none; color: #ef4444; }
 .rsl-summary > span:last-child { margin-left: 0; }
+
+/* ============================================================
+   Admin · System status (src/components/admin/SystemStatus.jsx)
+   ============================================================ */
+.sys-head { align-items: center; }
+.sys-head > span { flex: 1; }
+.sys-head code, .sys-foot code { padding: 1px 6px; border-radius: 6px; font-size: 11.5px; background: var(--adm-surface-hover); color: var(--adm-text); }
+.sys-head .ord-ghost { flex-shrink: 0; }
+.sys-grid { display: grid; gap: 10px; }
+.sys-card { --c: #10b981; display: flex; align-items: flex-start; gap: 12px; padding: 14px; border-left: 3px solid var(--c); }
+.sys-card.is-warn { --c: #f59e0b; } .sys-card.is-bad { --c: #ef4444; }
+.sys-ico { flex-shrink: 0; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 13px; color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); }
+.sys-ico svg { width: 19px; height: 19px; }
+.sys-card .ord-stack { flex: 1; }
+.sys-card .ord-stack small { white-space: normal; line-height: 1.45; }
+.sys-level { flex-shrink: 0; width: 18px; height: 18px; color: var(--c); }
+.sys-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 16px; font-size: 12px; font-weight: 600; color: var(--adm-text-muted); }
+.sys-foot svg { width: 15px; height: 15px; color: var(--adm-accent); }
+.sys-mini { display: flex; flex-direction: column; gap: 6px; }
+.sys-mini-row { --c: #10b981; display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 10px 12px; border-radius: 12px; text-align: left; cursor: pointer; border: 1px solid var(--adm-border); background: transparent; }
+.sys-mini-row:hover { background: var(--adm-surface-hover); }
+.sys-mini-row.is-warn { --c: #f59e0b; } .sys-mini-row.is-bad { --c: #ef4444; }
+.sys-mini-row > svg { flex-shrink: 0; width: 16px; height: 16px; margin-top: 1px; color: var(--c); }
+.sys-mini-row .ord-stack small { white-space: normal; }
+.mads-admin.theme-light .sys-card.is-warn, .mads-admin.theme-light .sys-mini-row.is-warn { --c: #d97706; }
+.mads-admin.theme-light .sys-card, .mads-admin.theme-light .sys-mini-row { --c: #059669; }
+.mads-admin.theme-light .sys-card.is-bad, .mads-admin.theme-light .sys-mini-row.is-bad { --c: #dc2626; }
+@media (min-width: 900px) { .sys-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

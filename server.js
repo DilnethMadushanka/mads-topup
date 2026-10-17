@@ -4,7 +4,7 @@ import path from 'path';
 import crypto from 'crypto';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, HeadBucketCommand } from '@aws-sdk/client-s3';
 import { initTelegramBot, getTelegramBotHealthStatus, forceTelegramBotRefresh, createTelegramLinkCode } from './src/services/telegramBotService.js';
 import { lookupFreePlayerIgn } from './src/services/playerLookup.js';
 import { GAMES_DATA } from './src/data/games.js';
@@ -17,7 +17,7 @@ import { otpEmailHtml } from './lib/otpEmail.js';
 import { verifyPasswordLogin, setPasswordForEmail, publicProfile } from './lib/userAuth.js';
 import { rtdbUrl, rtdbGet, rtdbPut, rtdbPatch, rtdbTransaction, findUserKey, findUserKeysByEmail, adjustWallet, spendWallet, isUserBlocked, addResellerSales } from './lib/rtdbAdmin.js';
 import { buildProfitReport, fetchMoogoldHistory, slDate } from './lib/profitReport.js';
-import { scheduleDailyBackup } from './lib/dbBackup.js';
+import { scheduleDailyBackup, listBackups, backupDir } from './lib/dbBackup.js';
 import { sendOrderCompleteEmail } from './lib/orderEmail.js';
 import { phoneTail, phonesInSms as phonesInSmsFrom, paymentRefKey } from './lib/paymentRefs.js';
 import { orderPriceRange } from './lib/orderPrice.js';
@@ -3597,6 +3597,84 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 // Express endpoint for Telegram Bot 24/7 Health Status
+// Admin: the store's real MooGold wallet balance. (The panel used to ask
+// /api/moogold without a login token, always got 401 and showed a made-up
+// $480 instead.)
+// Cached for a minute: the overview asks every few seconds.
+let moogoldBalanceCache = { at: 0, value: null, fetchedAt: null };
+app.get('/api/admin/moogold-balance', requireAdminSession, async (req, res) => {
+  if (Date.now() - moogoldBalanceCache.at > 60 * 1000 || moogoldBalanceCache.value === null) {
+    const value = await getMoogoldStoreBalanceUsd();
+    moogoldBalanceCache = { at: Date.now(), value, fetchedAt: new Date().toISOString() };
+  }
+  const balanceUsd = moogoldBalanceCache.value;
+  res.set('Cache-Control', 'no-store');
+  if (balanceUsd === null) return res.status(502).json({ success: false, error: 'MooGold did not answer. Check the partner ID and secret in .env.' });
+  res.json({ success: true, balanceUsd, at: moogoldBalanceCache.fetchedAt });
+});
+
+// The commit this server runs, read once from .git (shows whether a deploy
+// really happened).
+let deployedCommit = null;
+try {
+  const head = fs.readFileSync(path.join(__dirname, '.git', 'HEAD'), 'utf8').trim();
+  const ref = head.startsWith('ref: ') ? head.slice(5) : null;
+  const sha = ref ? fs.readFileSync(path.join(__dirname, '.git', ref), 'utf8').trim() : head;
+  deployedCommit = /^[0-9a-f]{40}$/.test(sha) ? sha : null;
+} catch (_) { /* packed refs or no .git: leave it unknown */ }
+const serverStartedAt = new Date().toISOString();
+
+// Admin: what is set up and working, for the System status tab. Says
+// whether each secret is set, never what it is.
+app.get('/api/admin/system-status', requireAdminSession, async (req, res) => {
+  try {
+    const env = (k) => Boolean(String(process.env[k] || '').trim());
+    const check = async (fn, ms = 6000) => {
+      const t0 = Date.now();
+      try {
+        const value = await Promise.race([fn(), new Promise((_, rej) => setTimeout(() => rej(new Error('Timed out')), ms))]);
+        return { ok: true, ms: Date.now() - t0, value };
+      } catch (e) {
+        return { ok: false, ms: Date.now() - t0, error: e.message };
+      }
+    };
+    const moogoldSet = (env('MOONGOLD_PARTNER_ID') || env('VITE_MOONGOLD_PARTNER_ID')) && (env('MOONGOLD_SECRET_KEY') || env('VITE_MOONGOLD_SECRET_KEY'));
+    const [moogold, db, r2] = await Promise.all([
+      moogoldSet ? check(async () => { const b = await getMoogoldStoreBalanceUsd(); if (b === null) throw new Error('No balance returned'); return b; }) : null,
+      check(async () => { const r = await fetch(rtdbUrl('settings', { shallow: true })); if (!r.ok) throw new Error(`HTTP ${r.status}`); return true; }),
+      r2Client ? check(() => r2Client.send(new HeadBucketCommand({ Bucket: process.env.VITE_R2_BUCKET_NAME || process.env.R2_BUCKET_NAME || 'mads-topup' })).then(() => true)) : null,
+    ]);
+    const backups = listBackups(backupDir(__dirname));
+    const smsLogs = Array.from(receivedEzCashSmsLog.values());
+    const lastSms = smsLogs.reduce((m, l) => (l.receivedAt > m ? l.receivedAt : m), '');
+    let telegram = null;
+    try { telegram = getTelegramBotHealthStatus(); } catch (_) { /* bot not started */ }
+
+    res.set('Cache-Control', 'no-store');
+    res.json({
+      success: true,
+      server: { startedAt: serverStartedAt, uptimeSeconds: Math.round(process.uptime()), node: process.version, commit: deployedCommit },
+      moogold: { configured: Boolean(moogoldSet), ...(moogold || {}), balanceUsd: moogold?.ok ? moogold.value : null },
+      database: { secretSet: env('FIREBASE_DB_SECRET'), ...db },
+      r2: { configured: Boolean(r2Client), bucket: process.env.VITE_R2_BUCKET_NAME || process.env.R2_BUCKET_NAME || 'mads-topup', ...(r2 || {}) },
+      email: { providers: mailProvidersConfigured() },
+      payments: {
+        binance: env('BINANCE_API_KEY') && env('BINANCE_API_SECRET'),
+        ezcashWebhook: env('EZCASH_WEBHOOK_SECRET'),
+        ezcashSmsInMemory: smsLogs.length,
+        ezcashLastSmsAt: lastSms || null,
+        genieOwnKey: env('GENIE_APP_KEY') || env('VITE_GENIE_APP_KEY'),
+      },
+      admin: { totpSet: env('ADMIN_TOTP_SECRET'), passwordSet: env('ADMIN_PASSWORD') },
+      backups: { count: backups.length, latest: backups[0] || null, disabled: process.env.BACKUP_DISABLED === '1' },
+      telegram: telegram ? { status: telegram.status, uptime: telegram.uptime, lastLatencyMs: telegram.lastLatencyMs, botUsername: telegram.botUsername } : null,
+    });
+  } catch (e) {
+    console.error('[System Status Error]:', e.message);
+    res.status(500).json({ error: SERVER_ERROR });
+  }
+});
+
 app.get('/api/telegram/status', requireAdminSession, (req, res) => {
   try {
     const health = getTelegramBotHealthStatus();

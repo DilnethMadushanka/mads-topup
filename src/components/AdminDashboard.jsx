@@ -10,6 +10,7 @@ import { DepositsDesk, DepositDetail, RecordDepositSheet } from './admin/Deposit
 import { UsersDesk, UserDetail, WalletCreditPage } from './admin/UsersDesk';
 import { VouchersDesk, VoucherDetail } from './admin/VouchersDesk';
 import { ResellersDesk, ResellerDetail } from './admin/ResellersDesk';
+import { SystemStatusPage, SystemStatusMini } from './admin/SystemStatus';
 import { sortOrdersNewestFirst } from '../utils/ownership';
 import { newUsersToday, sriLankaTime, signupTime } from '../utils/newUsersToday';
 import { getAllPopupBanners, emptyPopupBanner, MAX_POPUP_BANNERS } from '../utils/popupBanners';
@@ -22,7 +23,7 @@ import {
   Smartphone, Copy, Crown, Mail, Building2, Sparkles, ArrowRight, Loader2,
   LayoutDashboard, PanelLeftClose, PanelLeftOpen, Moon, Sun, Bell, LogOut,
   ArrowUp, ArrowDown, ChevronsUpDown, ShoppingCart,
-  Gamepad2, Command, Inbox, LayoutGrid, Star, TrendingUp
+  Gamepad2, Command, Inbox, LayoutGrid, Star, TrendingUp, Activity
 } from 'lucide-react';
 
 /* ============================================================
@@ -383,8 +384,7 @@ const NAV_GROUPS = [
     { id: 'announcement', label: 'Ticker Notice', icon: Megaphone }
   ]},
   { label: 'System', items: [
-    { id: 'moongold', label: 'Moongold API', icon: Zap },
-    { id: 'r2', label: 'R2 Storage', icon: Cloud }
+    { id: 'system', label: 'System Status', icon: Activity }
   ]}
 ];
 
@@ -405,14 +405,12 @@ const TAB_TITLES = {
   gameStrip: ['Discover Games Bar', 'Choose the game icons shown in the scrolling bar on the home page'],
   ffAccounts: ['Free Fire Accounts for Sale', 'List, edit and remove the FF accounts shown under Other Services'],
   announcement: ['Ticker Notice Banner', 'Update the marquee text shown across the website header'],
-  moongold: ['Moongold Supplier Gateway', 'Configure live API credentials and automated dispatch'],
-  r2: ['Cloudflare R2 Object Storage', 'Configure the bucket endpoint used for receipts & assets']
+  system: ['System Status', 'What is set up on the server and whether each part works right now'],
 };
 
 export const AdminDashboard = () => {
   const {
-    isAdminOpen, setIsAdminOpen, orders, updateOrderStatus, moongoldConfig, updateMoongoldConfig,
-    r2Config, updateR2Config, formatPrice,
+    isAdminOpen, setIsAdminOpen, orders, updateOrderStatus, formatPrice,
     formatLkr, showToast, userProfile, vouchers, addVoucher, updateVoucher, deleteVoucher, fetchVoucherLog,
     tickerNotice, updateTickerNotice, usersList, verifyUserAccount, toggleBlockUser, adjustUserWallet,
     fetchAdminWalletLog, manualPayments, approveManualPayment, rejectManualPayment, recordOfflinePayment,
@@ -486,17 +484,7 @@ export const AdminDashboard = () => {
 
   const [isAddPaymentOpen, setIsAddPaymentOpen] = useState(false);
 
-  const [apiKeyInput, setApiKeyInput] = useState(moongoldConfig.apiKey);
-  const [secretKeyInput, setSecretKeyInput] = useState(moongoldConfig.secretKey);
-  const [baseUrlInput, setBaseUrlInput] = useState(moongoldConfig.baseUrl);
-  const [autoFulfillInput, setAutoFulfillInput] = useState(moongoldConfig.autoFulfill);
-  const [simModeInput, setSimModeInput] = useState(moongoldConfig.simulationMode);
-  const [showSecret, setShowSecret] = useState(false);
-  const [isCheckingBalance, setIsCheckingBalance] = useState(false);
 
-  const [r2UrlInput, setR2UrlInput] = useState(r2Config?.bucketUrl || 'https://bfda3f43ac31b00be80bcb82772eb8fa.r2.cloudflarestorage.com/mads-topup');
-  const [r2BucketName, setR2BucketName] = useState(r2Config?.bucketName || 'mads-topup');
-  const [isTestingR2, setIsTestingR2] = useState(false);
 
 
   const [selectedVoucherCode, setSelectedVoucherCode] = useState(null);
@@ -531,8 +519,8 @@ export const AdminDashboard = () => {
   };
 
   const [liveMoongoldBalance, setLiveMoongoldBalance] = useState({
-    balanceUsd: moongoldConfig.merchantBalanceUsd || 480.00,
-    balanceLkr: moongoldConfig.merchantBalanceLkr || 145800.00,
+    balanceUsd: null,
+    balanceLkr: null,
     isLoading: false,
     lastFetched: null
   });
@@ -993,33 +981,6 @@ export const AdminDashboard = () => {
     else showToast('Failed to publish the games bar. Check your admin session and try again.', 'error');
   };
 
-  const handleSaveMoongoldSettings = () => {
-    updateMoongoldConfig({ ...moongoldConfig, apiKey: apiKeyInput, secretKey: secretKeyInput, baseUrl: baseUrlInput, autoFulfill: autoFulfillInput, simulationMode: simModeInput });
-  };
-
-  const handleCheckBalance = async () => {
-    setIsCheckingBalance(true);
-    const result = await checkMoongoldBalance();
-    setIsCheckingBalance(false);
-    if (result && result.success) {
-      setLiveMoongoldBalance({ balanceUsd: result.balanceUsd, balanceLkr: result.balanceLkr, isLoading: false, lastFetched: new Date().toLocaleTimeString() });
-      showToast(`API Merchant Live Balance: Rs. ${result.balanceLkr.toLocaleString()} ($${result.balanceUsd} USD)`);
-    } else {
-      showToast(`API Merchant Live Balance: Rs. ${moongoldConfig.merchantBalanceLkr.toLocaleString()} ($${moongoldConfig.merchantBalanceUsd} USD)`);
-    }
-  };
-
-  const handleSaveR2Settings = () => {
-    updateR2Config({ ...r2Config, bucketUrl: r2UrlInput, bucketName: r2BucketName, status: 'ACTIVE' });
-  };
-
-  const handleTestR2Connection = async () => {
-    setIsTestingR2(true);
-    await new Promise(res => setTimeout(res, 700));
-    setIsTestingR2(false);
-    showToast(`Cloudflare R2 Bucket Connected! Endpoint: ${r2UrlInput}`);
-  };
-
   const handleSaveNoticeSubmit = async (e) => {
     e.preventDefault();
     const ok = await updateTickerNotice(tickerNoticeInput);
@@ -1434,20 +1395,11 @@ export const AdminDashboard = () => {
                 </div>
 
                 <div className="rounded-2xl border-2 p-5 space-y-3" style={cardStyle}>
-                  <h4 className="text-xs font-black uppercase tracking-wider font-mono mb-1" style={mutedStyle}>System Status</h4>
-                  {[
-                    { label: 'Firebase Auth & Database', desc: 'Google OAuth & Firestore sync connected.', color: 'bg-emerald-400' },
-                    { label: 'Moongold Dispatch Gateway', desc: moongoldConfig.simulationMode ? 'Simulation mode active.' : 'Live dispatch mode active.', color: moongoldConfig.simulationMode ? 'bg-amber-400' : 'bg-emerald-400' },
-                    { label: 'Cloudflare R2 Storage', desc: 'Object storage ready for uploads.', color: 'bg-sky-400' }
-                  ].map(s => (
-                    <div key={s.label} className="rounded-xl border p-3.5 space-y-1.5" style={{ borderColor: 'var(--adm-border)' }}>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-black uppercase tracking-wide" style={{ color: 'var(--adm-text)' }}>{s.label}</span>
-                        <span className={`w-2.5 h-2.5 rounded-full ${s.color} animate-pulse`}></span>
-                      </div>
-                      <p className="text-[11px]" style={mutedStyle}>{s.desc}</p>
-                    </div>
-                  ))}
+                  <div className="flex items-center justify-between mb-1">
+                    <h4 className="text-xs font-black uppercase tracking-wider font-mono" style={mutedStyle}>System Status</h4>
+                    <button type="button" onClick={() => setAdminTab('system')} className="text-[10px] px-3 py-1.5 rounded-lg border font-bold cursor-pointer" style={{ borderColor: 'var(--adm-border)', ...mutedStyle }}>Details</button>
+                  </div>
+                  <SystemStatusMini onOpen={() => setAdminTab('system')} />
                 </div>
               </div>
             </div>
@@ -1911,51 +1863,7 @@ export const AdminDashboard = () => {
             </div>
           )}
 
-          {adminTab === 'moongold' && (
-            <div className="space-y-6 max-w-3xl">
-              <div className="rounded-3xl border-2 p-6 space-y-4" style={cardStyle}>
-                <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--adm-border)' }}>
-                  <p className="text-xs" style={mutedStyle}>Configure live API credentials and automated topup dispatch</p>
-                  <button onClick={handleCheckBalance} disabled={isCheckingBalance} className="px-3.5 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 cursor-pointer shrink-0" style={{ borderColor: 'var(--adm-border)', color: '#fbbf24' }}>
-                    <RefreshCw className={`w-3.5 h-3.5 ${isCheckingBalance ? 'animate-spin' : ''}`} /><span>Check Balance</span>
-                  </button>
-                </div>
-                <div className="space-y-4 text-xs">
-                  <div><label className="block font-bold mb-1" style={mutedStyle}>Moongold API Key</label><input type="text" value={apiKeyInput} onChange={(e) => setApiKeyInput(e.target.value)} className={`${fieldCls} font-mono`} style={fieldStyle} /></div>
-                  <div>
-                    <label className="block font-bold mb-1" style={mutedStyle}>Moongold Secret Key</label>
-                    <div className="relative">
-                      <input type={showSecret ? 'text' : 'password'} value={secretKeyInput} onChange={(e) => setSecretKeyInput(e.target.value)} className={`${fieldCls} font-mono pr-10`} style={fieldStyle} />
-                      <button type="button" onClick={() => setShowSecret(!showSecret)} className="absolute right-3 top-3 cursor-pointer" style={mutedStyle}>{showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
-                    </div>
-                  </div>
-                  <div className="pt-2 flex flex-col sm:flex-row gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={autoFulfillInput} onChange={(e) => setAutoFulfillInput(e.target.checked)} className="w-4 h-4 accent-blue-600 rounded" /><span className="font-bold" style={{ color: 'var(--adm-text)' }}>Auto-fulfill top-ups on checkout</span></label>
-                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={simModeInput} onChange={(e) => setSimModeInput(e.target.checked)} className="w-4 h-4 accent-blue-600 rounded" /><span className="font-bold text-amber-400">Simulation Mode (Demo without real money)</span></label>
-                  </div>
-                </div>
-                <button onClick={handleSaveMoongoldSettings} className="px-6 py-2.5 bg-[#1677ff] hover:bg-[#0b5ed7] text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-lg shadow-blue-600/30 cursor-pointer"><Save className="w-4 h-4" /><span>Save Moongold Settings</span></button>
-              </div>
-            </div>
-          )}
-
-          {adminTab === 'r2' && (
-            <div className="space-y-6 max-w-3xl">
-              <div className="rounded-3xl border-2 p-6 space-y-4" style={cardStyle}>
-                <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--adm-border)' }}>
-                  <p className="text-xs" style={mutedStyle}>Configure the Cloudflare R2 bucket used for game assets & receipt uploads</p>
-                  <button onClick={handleTestR2Connection} disabled={isTestingR2} className="px-3.5 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 cursor-pointer shrink-0" style={{ borderColor: 'var(--adm-border)', color: '#38bdf8' }}>
-                    <RefreshCw className={`w-3.5 h-3.5 ${isTestingR2 ? 'animate-spin' : ''}`} /><span>Test Connection</span>
-                  </button>
-                </div>
-                <div className="space-y-4 text-xs">
-                  <div><label className="block font-bold mb-1" style={mutedStyle}>R2 Bucket Endpoint URL</label><input type="text" value={r2UrlInput} onChange={(e) => setR2UrlInput(e.target.value)} className={`${fieldCls} font-mono`} style={{ ...fieldStyle, color: '#7dd3fc' }} /></div>
-                  <div><label className="block font-bold mb-1" style={mutedStyle}>R2 Bucket Name</label><input type="text" value={r2BucketName} onChange={(e) => setR2BucketName(e.target.value)} className={`${fieldCls} font-mono`} style={{ ...fieldStyle, color: '#7dd3fc' }} /></div>
-                </div>
-                <button onClick={handleSaveR2Settings} className="px-6 py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-lg shadow-sky-600/30 cursor-pointer"><Save className="w-4 h-4" /><span>Save R2 Settings</span></button>
-              </div>
-            </div>
-          )}
+          {adminTab === 'system' && <SystemStatusPage />}
 
         </main>
       </div>
