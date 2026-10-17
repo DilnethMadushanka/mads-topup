@@ -26,6 +26,7 @@ import { nextCode, codeStore } from './lib/authCodes.js';
 import { cleanVoucherInput, createVoucher, updateVoucher, deleteVoucher, voucherState } from './lib/vouchers.js';
 import { depositBonusLkr, newDepositId } from './src/data/depositRules.js';
 import { cardOrderLines, cardOrderStatus } from './lib/cardOrder.js';
+import { buildWalletHistory } from './lib/walletHistory.js';
 import { moogoldRequest, fetchVoucherCodes, saveUserVoucher, listUserVouchers, findCatalogPackage, isVoucherGame, redactVoucherCodes } from './lib/moogoldVoucher.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -2670,6 +2671,37 @@ app.get('/api/public-stats', rateLimiter(60, 60000), async (req, res) => {
 
 // The logged-in user's eVoucher PIN codes (e.g. Garena Shells). Kept out of
 // the public order list, so this is the only place they can be read back.
+// The signed-in customer's wallet history (lib/walletHistory.js). The
+// record lists are read whole, so they are cached for 30 seconds and shared
+// by everyone asking in that time.
+const historyNodeCache = new Map();
+async function cachedNode(path) {
+  const hit = historyNodeCache.get(path);
+  if (hit && Date.now() - hit.at < 30000) return hit.value;
+  const pending = rtdbGet(path).then(v => v || {}, e => { historyNodeCache.delete(path); throw e; });
+  historyNodeCache.set(path, { at: Date.now(), value: pending });
+  return pending;
+}
+app.get('/api/my-wallet-history', rateLimiter(30, 60000), async (req, res) => {
+  try {
+    const authenticatedUser = await verifyFirebaseIdToken(req.headers.authorization || '');
+    if (!authenticatedUser) return res.status(401).json({ error: 'Please log in.' });
+    if (await rejectIfBlocked(authenticatedUser, res)) return;
+    const email = authenticatedUser.email || authenticatedUser.displayEmail || '';
+    const [keys, payments, orders, adminLog, vouchersLog, referrals] = await Promise.all([
+      email ? findUserKeysByEmail(email).catch(() => []) : [],
+      cachedNode('manual_payments'), cachedNode('orders'), cachedNode('adminWalletLog'),
+      cachedNode('vouchers_log'), cachedNode('referrals_cashback')
+    ]);
+    const history = buildWalletHistory({ uid: authenticatedUser.uid, email, keys }, { payments, orders, adminLog, vouchersLog, referrals });
+    res.set('Cache-Control', 'no-store');
+    res.json({ success: true, ...history });
+  } catch (e) {
+    console.error(`[API Error] ${req.path}:`, e.message);
+    res.status(500).json({ error: SERVER_ERROR });
+  }
+});
+
 app.get('/api/my-vouchers', rateLimiter(30, 60000), async (req, res) => {
   try {
     const authenticatedUser = await verifyFirebaseIdToken(req.headers.authorization || '');
