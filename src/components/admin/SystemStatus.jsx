@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Activity, RefreshCw, Zap, Database, Cloud, Mail, Wallet, Smartphone, ShieldCheck, Archive,
-  Send, Server, CheckCircle2, AlertTriangle, XCircle, GitBranch
+  Send, Server, CheckCircle2, AlertTriangle, XCircle, GitBranch, Bell, Loader2
 } from 'lucide-react';
 
 // Admin "System status": what the server has set up and whether each part
@@ -85,11 +85,45 @@ export const statusRows = (d) => {
   const ageH = (() => { const m = String(b.latest || '').match(/rtdb-(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})/); return m ? (Date.now() - Date.parse(`${m[1]}T${m[2]}:${m[3]}:00Z`)) / 3600000 : Infinity; })();
   rows.push({ key: 'backup', icon: Archive, title: 'Daily database backup', level: b.disabled ? 'warn' : ageH < 30 ? 'ok' : 'bad', detail: b.disabled ? 'Turned off (BACKUP_DISABLED=1).' : b.latest ? `${b.count} kept, newest ${backupAge(b.latest)}` : 'No backup yet.' });
   const tg = d.telegram;
+  const al = d.alerts;
+  if (al) {
+    const where = [al.telegramChats ? `Telegram (${al.telegramChats} chat${al.telegramChats > 1 ? 's' : ''})` : '', al.emails ? `email for ${al.emailTypes.filter(t => t !== 'test').map(t => t.replace('_', ' ')).join(', ')}` : ''].filter(Boolean);
+    rows.push({
+      key: 'alerts', icon: Bell, title: 'Admin alerts',
+      level: al.off ? 'warn' : where.length ? (al.telegramChats ? 'ok' : 'warn') : 'warn',
+      detail: al.off ? 'Turned off (ADMIN_ALERTS=off).'
+        : where.length ? `${where.join(' + ')}. MooGold alert below $${al.lowBalanceUsd}.${al.telegramChats ? '' : ' Add ADMIN_ALERT_TELEGRAM_CHAT_ID for Telegram alerts.'}`
+          : `Not set up. Put your Telegram id in ADMIN_ALERT_TELEGRAM_CHAT_ID${al.botTokenSet ? '' : ' (and TELEGRAM_BOT_TOKEN)'} in .env.`,
+      canTest: !al.off && where.length > 0,
+    });
+  }
   rows.push({ key: 'tg', icon: Send, title: 'Telegram bot', level: !tg ? 'warn' : /online|active|running|healthy/i.test(String(tg.status)) ? 'ok' : 'warn', detail: tg ? `@${tg.botUsername} · ${tg.status}${tg.lastLatencyMs ? ` · ${tg.lastLatencyMs} ms` : ''}` : 'Not running.' });
   return rows;
 };
 
 const LEVEL_ICON = { ok: CheckCircle2, warn: AlertTriangle, bad: XCircle };
+
+const AlertTest = () => {
+  const [state, setState] = useState({ busy: false, msg: '', ok: null });
+  const run = async () => {
+    setState({ busy: true, msg: '', ok: null });
+    try {
+      const res = await fetch('/api/admin/alerts/test', { method: 'POST', credentials: 'same-origin' });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success) throw new Error(json.error || 'Not sent.');
+      const parts = [json.telegram ? `Telegram ${json.telegram}` : '', json.email ? `email ${json.email}` : ''].filter(Boolean).join(', ');
+      setState({ busy: false, ok: !json.errors?.length, msg: `Sent (${parts}).${json.errors?.length ? ` Problems: ${json.errors.join('; ')}` : ''}` });
+    } catch (e) {
+      setState({ busy: false, ok: false, msg: e.message });
+    }
+  };
+  return (
+    <span className="sys-test">
+      <button type="button" className="ord-ghost" onClick={run} disabled={state.busy}>{state.busy ? <Loader2 className="dep-spin" /> : <Bell />}<span>Send test alert</span></button>
+      {state.msg && <small className={state.ok ? 'is-ok' : 'is-bad'}>{state.msg}</small>}
+    </span>
+  );
+};
 
 export const SystemStatusPage = () => {
   const { data, loading, error, reload } = useSystemStatus(0);
@@ -118,6 +152,7 @@ export const SystemStatusPage = () => {
               <span className="ord-stack">
                 <b>{r.title}</b>
                 <small>{r.detail}</small>
+                {r.canTest && <AlertTest />}
               </span>
               <L className="sys-level" />
             </div>

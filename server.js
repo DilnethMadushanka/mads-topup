@@ -27,6 +27,7 @@ import { cleanVoucherInput, createVoucher, updateVoucher, deleteVoucher, voucher
 import { depositBonusLkr, newDepositId } from './src/data/depositRules.js';
 import { cardOrderLines, cardOrderStatus } from './lib/cardOrder.js';
 import { buildWalletHistory } from './lib/walletHistory.js';
+import { alertConfig, createAlerter, pickNew } from './lib/adminAlerts.js';
 import { moogoldRequest, fetchVoucherCodes, saveUserVoucher, listUserVouchers, findCatalogPackage, isVoucherGame, redactVoucherCodes } from './lib/moogoldVoucher.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -2140,6 +2141,19 @@ app.post('/api/moogold', rateLimiter(20, 60000), async (req, res) => {
   }
 });
 
+// ── Admin alerts (lib/adminAlerts.js) ──────────────────────────────────
+// Set up from .env on first use. Never throws: an alert that can't be sent
+// is only logged.
+let adminAlerter = null;
+const alerts = () => (adminAlerter ||= createAlerter({ config: alertConfig(process.env), sendMail }));
+const sendAlert = (type, msg) => alerts().send(type, msg).catch(e => console.warn(`[Admin Alert] ${type}: ${e.message}`));
+const LOW_BALANCE_EVERY_MS = 6 * 3600000;
+const lowBalanceAlert = (balanceUsd, extra = []) => sendAlert('low_balance', {
+  title: `$${Number(balanceUsd).toFixed(2)} left`,
+  lines: [['Alert below', `$${alerts().config.lowBalanceUsd}`], ...extra, ['Do', 'Top up the MooGold wallet']],
+  key: 'low_balance', throttleMs: LOW_BALANCE_EVERY_MS
+});
+
 // The MooGold call behind /api/moogold. For order/create_order it checks the
 // price and the store balance, takes the money from the wallet, places the
 // order, refunds on failure and records it. It is also used by the server
@@ -2234,6 +2248,7 @@ async function placeMoogoldCall(authenticatedUser, { apiPath, bodyObj, priceLkr,
         const neededUsd = unitUsd * requestedQty;
         if (storeBalanceUsd !== null && storeBalanceUsd < neededUsd) {
           console.error(`[MOOGOLD LOW BALANCE] Store balance $${storeBalanceUsd} < ~$${neededUsd.toFixed(2)} needed for product-id=${requestedProductId} qty=${requestedQty}. Order refused before charging ${authenticatedUser.uid}.`);
+          lowBalanceAlert(storeBalanceUsd, [['Order refused', `${orderCatalog.game?.name || ''} ${orderCatalog.pkg?.name || requestedProductId} x${requestedQty} (needs ~$${neededUsd.toFixed(2)})`]]);
           return reply(503, { error: 'This top-up is temporarily unavailable. Your wallet was not charged. Please try again shortly.' });
         }
       }
@@ -2328,6 +2343,18 @@ async function placeMoogoldCall(authenticatedUser, { apiPath, bodyObj, priceLkr,
     const isSuccess = apiRes.ok && jsonResult && (jsonResult.status === 'processing' || jsonResult.status === 'true' || jsonResult.status === true || jsonResult.status === 1 || jsonResult.order_id);
 
     if (isOrderCreation && !isSuccess) {
+      sendAlert('failed_order', {
+        title: `${orderCatalog.game?.name || 'Order'} · ${orderCatalog.pkg?.name || moongoldPayload.data?.['product-id']}${Number(moongoldPayload.data?.quantity) > 1 ? ` x${moongoldPayload.data.quantity}` : ''}`,
+        lines: [
+          ['Customer', authenticatedUser.email || authenticatedUser.uid],
+          ['Price', `Rs. ${numPriceLkr}`],
+          ['Player', String(Object.entries(moongoldPayload.data || {}).filter(([k]) => !['category', 'product-id', 'quantity'].includes(k)).map(([, v]) => v).join(' / '))],
+          ['MooGold said', String(jsonResult?.message || jsonResult?.error || `HTTP ${apiRes.status}`).slice(0, 300)],
+          ['Paid by', paymentLabel || 'Wallet'],
+          ['Wallet', deductResult?.success ? 'Refunded to the customer' : 'Not charged'],
+          ['Order id', partnerOrderId]
+        ]
+      });
       console.error(`[MOOGOLD ORDER REJECTED] product-id=${moongoldPayload.data?.['product-id']} category=${moongoldPayload.data?.category} reason="${jsonResult?.message || jsonResult?.error || text}"`);
     }
 
@@ -3825,9 +3852,25 @@ app.get('/api/admin/system-status', requireAdminSession, async (req, res) => {
       admin: { totpSet: env('ADMIN_TOTP_SECRET'), passwordSet: env('ADMIN_PASSWORD') },
       backups: { count: backups.length, latest: backups[0] || null, disabled: process.env.BACKUP_DISABLED === '1' },
       telegram: telegram ? { status: telegram.status, uptime: telegram.uptime, lastLatencyMs: telegram.lastLatencyMs, botUsername: telegram.botUsername } : null,
+      alerts: (() => {
+        const c = alerts().config;
+        return { off: c.off, telegramChats: c.botToken ? c.chatIds.length : 0, botTokenSet: Boolean(c.botToken), emails: c.emails.length, emailTypes: [...c.emailTypes], lowBalanceUsd: c.lowBalanceUsd };
+      })(),
     });
   } catch (e) {
     console.error('[System Status Error]:', e.message);
+    res.status(500).json({ error: SERVER_ERROR });
+  }
+});
+
+// Admin: send a test alert to every place alerts are set up to go.
+app.post('/api/admin/alerts/test', requireAdminSession, async (req, res) => {
+  try {
+    const r = await alerts().send('test', { title: 'Alerts are working', lines: [['From', 'madstopup.com server'], ['Time', new Date().toISOString()]] });
+    if (!r.sent) return res.status(400).json({ success: false, error: r.reason === 'not set up' ? 'Alerts are not set up. Put ADMIN_ALERT_TELEGRAM_CHAT_ID (and/or ADMIN_ALERT_EMAIL) in .env.' : (r.errors?.join('; ') || r.reason || 'Not sent.') });
+    res.json({ success: true, telegram: r.telegram, email: r.email, errors: r.errors });
+  } catch (e) {
+    console.error('[Alert Test Error]:', e.message);
     res.status(500).json({ error: SERVER_ERROR });
   }
 });
@@ -3922,8 +3965,75 @@ app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
+// Watches for new deposits, reseller applications and support tickets (the
+// browser writes those straight to the database) and for a low MooGold
+// balance, and alerts the admin. What was last seen is kept in
+// adminAlertState, so a restart neither repeats nor misses alerts.
+const ALERT_WATCH = [
+  {
+    node: 'manual_payments', type: 'deposit',
+    timeOf: (p) => p.timestamp || p.createdAt,
+    message: (p) => ({
+      title: `${p.currency === 'LKR' || !p.currency ? 'Rs.' : p.currency} ${p.amount} · ${p.method || 'Deposit'}`,
+      lines: [
+        ['Status', p.status === 'VERIFIED' ? 'Credited automatically' : p.status === 'REJECTED' ? 'Rejected' : 'Waiting for you to check'],
+        ['Customer', p.userEmail || p.userName || p.userId],
+        ['Reference', p.referenceNumber],
+        ['Id', p.id]
+      ]
+    })
+  },
+  {
+    node: 'reseller_applications', type: 'reseller',
+    timeOf: (a) => a.submittedAt || a.createdAt,
+    message: (a) => ({
+      title: a.businessName || a.name || a.fullName || a.email || '',
+      lines: [['Email', a.email || a.userEmail], ['Phone', a.phone || a.whatsapp], ['Id', a.id]]
+    })
+  },
+  {
+    node: 'supportTickets', type: 'ticket',
+    timeOf: (t) => t.createdAt,
+    message: (t) => ({
+      title: t.subject || 'Support ticket',
+      lines: [['From', t.userEmail || t.userName], ['Category', t.category], ['Order', t.orderId], ['Message', String(t.messages?.[0]?.text || '').slice(0, 300)], ['Id', t.id]]
+    })
+  }
+];
+const MAX_ALERTS_PER_CHECK = 5;
+async function checkForNewRecords() {
+  if (!alerts().ready()) return;
+  for (const w of ALERT_WATCH) {
+    try {
+      const [node, prevState] = await Promise.all([rtdbGet(w.node), rtdbGet(`adminAlertState/${w.node}`)]);
+      const { fresh, state } = pickNew(node, prevState, { timeOf: w.timeOf });
+      // The database drops empty objects and sorts keys, so compare by content.
+      const same = (x, y) => x?.watermark === y?.watermark && Object.keys(x?.recent || {}).sort().join() === Object.keys(y?.recent || {}).sort().join();
+      if (!same(state, prevState)) await rtdbPut(`adminAlertState/${w.node}`, state);
+      if (fresh.length > MAX_ALERTS_PER_CHECK) {
+        await sendAlert(w.type, { title: `${fresh.length} new`, lines: [['Open', 'the admin panel to see them']] });
+      } else {
+        for (const item of fresh) await sendAlert(w.type, w.message(item));
+      }
+    } catch (e) {
+      console.warn(`[Admin Alert Watch] ${w.node}: ${e.message}`);
+    }
+  }
+}
+async function checkMoogoldBalanceForAlert() {
+  if (!alerts().ready()) return;
+  const balance = await getMoogoldStoreBalanceUsd();
+  if (balance !== null && balance < alerts().config.lowBalanceUsd) lowBalanceAlert(balance);
+}
+
 app.listen(PORT, () => {
   console.log(`🚀 Production Server running on port ${PORT}`);
+  if (alerts().ready()) console.log(`[Admin Alerts] On: ${alerts().config.chatIds.length} Telegram chat(s), ${alerts().config.emails.length} email(s).`);
+  else console.log('[Admin Alerts] Off. Set ADMIN_ALERT_TELEGRAM_CHAT_ID and/or ADMIN_ALERT_EMAIL in .env to get alerts.');
+  setTimeout(checkForNewRecords, 20000);
+  setInterval(checkForNewRecords, 2 * 60000);
+  setTimeout(checkMoogoldBalanceForAlert, 60000);
+  setInterval(checkMoogoldBalanceForAlert, 30 * 60000);
   const mailers = mailProvidersConfigured();
   if (mailers.length) console.log('[Mail] Email providers:', mailers.join(', '));
   else console.error('[Mail] No email provider set. OTP and reset emails will fail. Set ZOHO_PASSWORD or RESEND_API_KEY in .env.');
