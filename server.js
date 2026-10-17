@@ -22,6 +22,7 @@ import { sendOrderCompleteEmail } from './lib/orderEmail.js';
 import { phoneTail, phonesInSms as phonesInSmsFrom, paymentRefKey } from './lib/paymentRefs.js';
 import { orderPriceRange } from './lib/orderPrice.js';
 import { parseWalletChange, applyWalletChange } from './lib/adminWallet.js';
+import { nextCode, codeStore } from './lib/authCodes.js';
 import { cleanVoucherInput, createVoucher, updateVoucher, deleteVoucher, voucherState } from './lib/vouchers.js';
 import { depositBonusLkr, newDepositId } from './src/data/depositRules.js';
 import { moogoldRequest, fetchVoucherCodes, saveUserVoucher, listUserVouchers, findCatalogPackage, isVoucherGame, redactVoucherCodes } from './lib/moogoldVoucher.js';
@@ -1455,13 +1456,22 @@ app.post('/api/auth/login', rateLimiter(10, 60000), async (req, res) => {
 
 // Password reset: the server makes and checks the code (it used to be made
 // and checked in the browser, so anyone could reset anyone's password).
-const passwordResetCodes = new Map(); // email -> { hash, expires, attempts }
-const RESET_CODE_TTL_MS = 15 * 60 * 1000;
-const hashResetCode = (code) => crypto.createHash('sha256').update(String(code)).digest('hex');
-setInterval(() => {
-  const now = Date.now();
-  for (const [k, v] of passwordResetCodes) if (now > v.expires) passwordResetCodes.delete(k);
-}, 5 * 60 * 1000).unref();
+// Codes are kept in the database (lib/authCodes.js) so a restart doesn't
+// throw away codes people are waiting for.
+const resetCodes = codeStore('reset', { rtdbGet, rtdbPut, rtdbTransaction });
+const signupCodes = codeStore('signup', { rtdbGet, rtdbPut, rtdbTransaction });
+// Expired codes are removed every few hours.
+setInterval(async () => {
+  try {
+    const all = (await rtdbGet('authCodes')) || {};
+    const now = Date.now();
+    for (const [kind, list] of Object.entries(all)) {
+      for (const [k, v] of Object.entries(list || {})) {
+        if (!v || !(v.expires > now)) await rtdbPut(`authCodes/${kind}/${k}`, null).catch(() => {});
+      }
+    }
+  } catch (e) { console.warn('[authCodes cleanup]:', e.message); }
+}, 6 * 60 * 60 * 1000).unref();
 
 app.post('/api/auth/reset-request', rateLimiter(5, 60000), async (req, res) => {
   try {
@@ -1475,18 +1485,12 @@ app.post('/api/auth/reset-request', rateLimiter(5, 60000), async (req, res) => {
       // A new code keeps the wrong-guess count of the last one, and each
       // email gets at most 3 codes per 15 minutes, so asking again and again
       // never gives more guesses.
-      const prev = passwordResetCodes.get(email);
-      const live = prev && Date.now() < prev.expires;
-      if (live && (prev.sends || 1) >= 3) {
+      const issued = nextCode(await resetCodes.get(email));
+      if (issued.error) {
         return res.status(429).json({ success: false, message: 'Too many codes asked for this email. Please wait 15 minutes.' });
       }
-      const code = String(crypto.randomInt(100000, 1000000));
-      passwordResetCodes.set(email, {
-        hash: hashResetCode(code),
-        expires: live ? prev.expires : Date.now() + RESET_CODE_TTL_MS,
-        attempts: live ? prev.attempts : 0,
-        sends: live ? (prev.sends || 1) + 1 : 1
-      });
+      const { code } = issued;
+      await resetCodes.set(email, issued.entry);
       const name = email.split('@')[0];
       const sent = await sendOtpEmail(email, code, name.charAt(0).toUpperCase() + name.slice(1), 'reset');
       if (!sent.success) return res.status(503).json({ success: false, message: 'Email service temporarily unavailable. Please try again.' });
@@ -1508,18 +1512,9 @@ app.post('/api/auth/reset-confirm', rateLimiter(10, 60000), async (req, res) => 
     if (newPassword.length < 8 || newPassword.length > 200 || newPassword.startsWith('sha256:')) {
       return res.status(400).json({ success: false, message: 'Password must be at least 8 characters!' });
     }
-    const entry = passwordResetCodes.get(email);
-    if (!entry || Date.now() > entry.expires || entry.attempts >= 5) {
-      // A used-up entry stays until it expires, so a new code can't reset the count.
-      if (entry && Date.now() > entry.expires) passwordResetCodes.delete(email);
-      return res.status(400).json({ success: false, message: 'This code has expired. Please request a new one.' });
-    }
-    entry.attempts += 1;
-    const given = Buffer.from(hashResetCode(code));
-    if (!crypto.timingSafeEqual(Buffer.from(entry.hash), given)) {
-      return res.status(400).json({ success: false, message: 'Invalid verification code! Please check your email inbox.' });
-    }
-    passwordResetCodes.delete(email);
+    const result = await resetCodes.check(email, code);
+    if (result === 'expired') return res.status(400).json({ success: false, message: 'This code has expired. Please request a new one.' });
+    if (result !== 'ok') return res.status(400).json({ success: false, message: 'Invalid verification code! Please check your email inbox.' });
     const updated = await setPasswordForEmail(email, newPassword);
     if (!updated) return res.status(404).json({ success: false, message: 'No account found with that email.' });
     res.json({ success: true });
@@ -1547,11 +1542,6 @@ async function sendOtpEmail(email, otp, displayName, purpose = 'signup') {
 // Signup email check. The server makes the code and checks it (the browser
 // used to choose the code, so this endpoint could email any text to anyone
 // and the check itself happened in the browser).
-const signupOtps = new Map(); // email -> { hash, expires, attempts, sentAt }
-setInterval(() => {
-  const now = Date.now();
-  for (const [k, v] of signupOtps) if (now > v.expires) signupOtps.delete(k);
-}, 5 * 60 * 1000).unref();
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 app.post('/api/send-otp', rateLimiter(5, 60000), async (req, res) => {
@@ -1564,28 +1554,17 @@ app.post('/api/send-otp', rateLimiter(5, 60000), async (req, res) => {
     if (taken.length) {
       return res.status(409).json({ success: false, exists: true, error: 'This email already has an account. Please log in (or use Continue with Google / Forgot password).' });
     }
-    const prev = signupOtps.get(email);
-    if (prev && Date.now() - prev.sentAt < 60000) {
-      return res.status(429).json({ success: false, error: 'Please wait a minute before asking for another code.' });
-    }
-    const live = prev && Date.now() < prev.expires;
-    if (live && (prev.sends || 1) >= 3) {
-      return res.status(429).json({ success: false, error: 'Too many codes asked for this email. Please wait 15 minutes.' });
-    }
-    const code = crypto.randomInt(100000, 1000000).toString();
-    signupOtps.set(email, {
-      hash: hashResetCode(code),
-      expires: live ? prev.expires : Date.now() + RESET_CODE_TTL_MS,
-      attempts: live ? prev.attempts : 0,
-      sends: live ? (prev.sends || 1) + 1 : 1,
-      sentAt: Date.now()
-    });
+    const issued = nextCode(await signupCodes.get(email), Date.now(), { minGapMs: 60000 });
+    if (issued.error === 'wait') return res.status(429).json({ success: false, error: 'Please wait a minute before asking for another code.' });
+    if (issued.error) return res.status(429).json({ success: false, error: 'Too many codes asked for this email. Please wait 15 minutes.' });
+    const { code } = issued;
+    await signupCodes.set(email, issued.entry);
     const local = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '').slice(0, 20);
     const displayName = local ? local.charAt(0).toUpperCase() + local.slice(1) : 'Gamer';
 
     const sent = await sendOtpEmail(email, code, displayName);
     if (sent.success) return res.json({ success: true });
-    signupOtps.delete(email);
+    await signupCodes.remove(email);
     return res.status(503).json({ success: false, error: 'Email service temporarily unavailable. Please try again.' });
   } catch (err) {
     console.error('Mail OTP Error:', err);
@@ -1593,20 +1572,17 @@ app.post('/api/send-otp', rateLimiter(5, 60000), async (req, res) => {
   }
 });
 
-app.post('/api/verify-otp', rateLimiter(10, 60000), (req, res) => {
-  const email = sanitizeString(String(req.body?.email || ''), 100).toLowerCase();
-  const code = String(req.body?.code || '').trim();
-  const entry = signupOtps.get(email);
-  if (!entry || Date.now() > entry.expires || entry.attempts >= 5) {
-    return res.status(400).json({ verified: false, error: 'This code has expired. Please ask for a new one.' });
+app.post('/api/verify-otp', rateLimiter(10, 60000), async (req, res) => {
+  try {
+    const email = sanitizeString(String(req.body?.email || ''), 100).toLowerCase();
+    const result = await signupCodes.check(email, String(req.body?.code || ''));
+    if (result === 'expired') return res.status(400).json({ verified: false, error: 'This code has expired. Please ask for a new one.' });
+    if (result !== 'ok') return res.status(400).json({ verified: false, error: 'Invalid verification code. Please check your email and try again!' });
+    res.json({ verified: true });
+  } catch (e) {
+    console.error('[Verify OTP Error]:', e.message);
+    res.status(500).json({ verified: false, error: 'Could not check the code. Please try again.' });
   }
-  entry.attempts += 1;
-  const given = Buffer.from(hashResetCode(code));
-  if (!crypto.timingSafeEqual(given, Buffer.from(entry.hash))) {
-    return res.status(400).json({ verified: false, error: 'Invalid verification code. Please check your email and try again!' });
-  }
-  signupOtps.delete(email);
-  res.json({ verified: true });
 });
 
 // Reseller Approval Email Endpoint
