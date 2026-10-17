@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { auth } from '../services/firebaseAuth';
 import { getUserAuthToken } from '../services/serverApi';
+import { WalletHistory } from './WalletHistory';
 import {
-  Wallet, Copy, Check, ArrowLeft, Zap, Clock, Crown,
+  Wallet, Copy, Check, ArrowLeft, Zap, Crown,
   Building2, Upload, ChevronRight, X, RefreshCw, AlertTriangle,
   CreditCard, Smartphone, DollarSign, Gift, Coins, Landmark, ShieldCheck
 } from 'lucide-react';
@@ -736,60 +737,8 @@ export const WalletPage = () => {
           </div>
         )}
 
-        {/* ── TRANSACTION HISTORY ── */}
-        <div className="bg-white rounded-3xl border border-slate-200/80 p-5 sm:p-6 shadow-sm space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#1677ff] flex items-center justify-center shadow-md shadow-brand-600/25">
-              <Clock className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h3 className="text-base font-black text-slate-900 font-heading leading-none">Recent Deposit History</h3>
-              <div className="w-10 h-1 bg-[#1677ff] rounded-full mt-1.5"></div>
-            </div>
-            {userPayments.length > 0 && (
-              <span className="ml-auto text-[11px] font-black text-[#1677ff] bg-brand-50 border border-brand-100 px-2.5 py-1 rounded-full">{userPayments.length} record{userPayments.length !== 1 ? 's' : ''}</span>
-            )}
-          </div>
-
-          {userPayments.length === 0 ? (
-            <div className="text-center py-10 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
-              <div className="text-3xl mb-2">📭</div>
-              <div className="text-sm font-bold text-slate-500">No deposit history yet</div>
-              <div className="text-xs text-slate-400 font-medium mt-1">Your recharge transactions will appear here</div>
-            </div>
-          ) : (
-            <div className="space-y-2.5">
-              {userPayments.slice(0, 10).map(pay => {
-                const ok = pay.status === 'VERIFIED';
-                return (
-                  <div key={pay.id} className={`p-4 bg-white rounded-2xl border border-slate-200 border-l-4 ${ok ? 'border-l-emerald-500' : 'border-l-amber-400'} flex flex-col sm:flex-row sm:items-center justify-between gap-3`}>
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-base ${ok ? 'bg-emerald-50' : 'bg-amber-50'}`}>
-                        {ok ? '✅' : '⏳'}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs font-black text-slate-900 font-mono">{pay.id}</span>
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide ${ok ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                            {pay.status}
-                          </span>
-                        </div>
-                        <div className="text-sm font-bold text-slate-700 mt-0.5 truncate">{pay.method}</div>
-                        <div className="text-[11px] text-slate-400 font-mono truncate">Ref: {pay.referenceNumber}</div>
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0 pl-[52px] sm:pl-0">
-                      <div className={`text-base font-black font-heading ${ok ? 'text-emerald-600' : 'text-amber-600'}`}>
-                        +{pay.amount} {pay.currency}
-                      </div>
-                      <div className="text-[10px] text-slate-400 font-mono">{pay.createdAt}</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        {/* ── WALLET HISTORY (from the server) ── */}
+        <WalletHistory localPayments={userPayments} />
 
       </div>
     </div>
