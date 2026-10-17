@@ -1050,6 +1050,13 @@ export const AdminDashboard = () => {
     showToast(`Cloudflare R2 Bucket Connected! Endpoint: ${r2UrlInput}`);
   };
 
+  const handleSaveNoticeSubmit = async (e) => {
+    e.preventDefault();
+    const ok = await updateTickerNotice(tickerNoticeInput);
+    if (ok) showToast('Ticker notice updated live across the website!');
+    else showToast('Ticker notice was not saved. Please log in to admin again and retry.', 'error');
+  };
+
   const revenueTrend = (() => {
     const days = revenueDays;
     const buckets = Array.from({ length: days }, (_, i) => {
