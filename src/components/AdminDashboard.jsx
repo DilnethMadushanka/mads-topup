@@ -8,6 +8,7 @@ import { ProfitReport } from './admin/ProfitReport';
 import { OrdersDesk, OrderDetail, orderNeedsAction } from './admin/OrdersDesk';
 import { DepositsDesk, DepositDetail, RecordDepositSheet } from './admin/DepositsDesk';
 import { sortOrdersNewestFirst } from '../utils/ownership';
+import { newUsersToday, sriLankaTime, signupTime } from '../utils/newUsersToday';
 import { getAllPopupBanners, emptyPopupBanner, MAX_POPUP_BANNERS } from '../utils/popupBanners';
 import {
   X, ShieldCheck, DollarSign, RefreshCw,
@@ -825,11 +826,8 @@ export const AdminDashboard = () => {
   const openTicketsCount = safeTickets.filter(t => t && t.status === 'OPEN').length;
   const pendingResellersCount = safeResellerApps.filter(a => a.status === 'PENDING').length;
 
-  // Today's new registrations
-  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-  const todayNewUsers = safeUsers
-    .filter(u => u.createdAt && new Date(u.createdAt) >= todayStart)
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  // Today's new registrations (Sri Lanka day, one entry per person)
+  const todayNewUsers = newUsersToday(safeUsers);
 
   const badges = {
     pending: pendingCount,
@@ -1422,7 +1420,7 @@ export const AdminDashboard = () => {
                           <div className="min-w-0">
                             <div className="text-xs font-bold truncate" style={{ color: 'var(--adm-text)' }}>{u.name || 'New User'}</div>
                             <div className="text-[10px] truncate" style={faintStyle}>{u.email}</div>
-                            <div className="text-[9px] font-mono" style={faintStyle}>{u.createdAt ? new Date(u.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</div>
+                            <div className="text-[9px] font-mono" style={faintStyle}>{signupTime(u) ? sriLankaTime(signupTime(u)) : ''}</div>
                           </div>
                         </div>
                       ))}

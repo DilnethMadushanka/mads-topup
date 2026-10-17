@@ -704,48 +704,31 @@ const pollAdminList = (name, onData, intervalMs = 15000) => {
 /**
  * Subscribe to all registered users in Firestore or Realtime Database
  */
+/**
+ * Admin user list. The server's copy (Realtime Database) is where sign-ups,
+ * wallet changes and blocks are saved, so it is the only one listed: the old
+ * Firestore copy was missing accounts and never saw wallet changes, and each
+ * source replaced the whole list in turn, so users (and today's sign-up
+ * count) kept appearing and disappearing.
+ */
 export const subscribeAllUsersFromFirestore = (callback) => {
-  let unsubRtdb = null;
-  let unsubFirestore = null;
-
-  if (rtdb) {
-    try {
-      unsubRtdb = pollAdminList('users', (data) => {
-        if (!data || typeof data !== 'object') return;
-        const list = Object.keys(data).map(key => {
+  if (!rtdb) return () => {};
+  try {
+    return pollAdminList('users', (data) => {
+      if (!data || typeof data !== 'object') return;
+      const list = Object.keys(data)
+        .filter(key => data[key] && typeof data[key] === 'object')
+        .map(key => {
           const creds = ensureResellerCredentials({ uid: key, ...data[key] });
           registerResellerInRegistry(creds);
           return creds;
         });
-        if (list.length > 0) callback(list);
-      });
-    } catch (e) {
-      console.warn('RTDB users listener note:', e);
-    }
+      if (list.length > 0) callback(list);
+    });
+  } catch (e) {
+    console.warn('User list poll note:', e);
+    return () => {};
   }
-
-  if (db) {
-    try {
-      const usersCol = collection(db, 'users');
-      unsubFirestore = onSnapshot(usersCol, (snapshot) => {
-        const list = snapshot.docs.map(docSnap => {
-          const creds = ensureResellerCredentials({ uid: docSnap.id, ...docSnap.data() });
-          registerResellerInRegistry(creds);
-          return creds;
-        });
-        if (list.length > 0) callback(list);
-      }, (err) => {
-        console.warn('Firestore users permission notice:', err.code);
-      });
-    } catch (err) {
-      console.warn('Firestore users listener note:', err);
-    }
-  }
-
-  return () => {
-    if (typeof unsubRtdb === 'function') unsubRtdb();
-    if (typeof unsubFirestore === 'function') unsubFirestore();
-  };
 };
 
 /**
