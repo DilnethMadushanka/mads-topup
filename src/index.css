@@ -5261,3 +5261,39 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
   .ord-stat-ico { width: 40px; height: 40px; border-radius: 13px; }
   .ord-stat strong { font-size: 17px; }
 }
+
+/* ============================================================
+   Admin · Promo vouchers (src/components/admin/VouchersDesk.jsx)
+   ============================================================ */
+.vch-layout { display: grid; gap: 14px; align-items: start; }
+.vch-create { padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+.vch-create .usr-h { margin-bottom: 2px; }
+.vch-code-row { display: flex; gap: 8px; }
+.vch-code-row .dep-input { flex: 1; min-width: 0; letter-spacing: .04em; }
+.vch-code-row .ord-ghost { flex-shrink: 0; height: 42px; }
+.vch-cur { grid-template-columns: 1fr 1fr; }
+.vch-cost { display: block; line-height: 1.5; padding: 10px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; color: var(--adm-text-muted); background: var(--adm-surface-2); border: 1px solid var(--adm-border); }
+.vch-cost svg { display: inline-block; width: 15px; height: 15px; margin-right: 6px; vertical-align: -3px; color: #f59e0b; }
+.vch-cost b { white-space: nowrap; }
+.vch-cost b { color: var(--adm-text); }
+.vch-ico { --c: #1677ff; flex-shrink: 0; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; color: #fff; background: linear-gradient(135deg, color-mix(in srgb, var(--c) 70%, #fff), var(--c)); box-shadow: 0 8px 18px -10px var(--c); }
+.vch-ico.is-amber { --c: #f59e0b; }
+.vch-ico svg { width: 20px; height: 20px; }
+.vch-ico.is-lg { width: 48px; height: 48px; border-radius: 15px; }
+.vch-row { grid-template-areas: "order amount" "usage status"; }
+.vch-row .ord-stack b { letter-spacing: .03em; }
+.vch-c-usage { grid-area: usage; display: flex; align-items: center; min-width: 0; }
+.vch-usage { display: flex; flex-direction: column; gap: 5px; width: 100%; max-width: 220px; }
+.vch-bar { display: block; height: 7px; border-radius: 999px; overflow: hidden; background: var(--adm-surface-hover); }
+.vch-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #3b8cff, #1677ff); }
+.vch-usage small { font-size: 11px; font-weight: 700; color: var(--adm-text-muted); }
+.vch-usage small b { color: var(--adm-text); }
+.ord-sec .vch-usage { max-width: none; margin-bottom: 12px; }
+.vch-grid { margin-top: 4px; }
+.vch-note { margin-top: 10px; }
+.vch-save { margin-top: 12px; }
+@media (min-width: 1100px) {
+  .vch-layout { grid-template-columns: 340px minmax(0, 1fr); }
+  .vch-row { grid-template-columns: minmax(200px, 1.4fr) 110px minmax(160px, 1fr) 110px; grid-template-areas: "order amount usage status"; align-items: center; gap: 14px; padding: 12px 18px; }
+  .vch-row .ord-c-status { align-items: flex-start; }
+}

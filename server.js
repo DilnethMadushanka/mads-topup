@@ -22,6 +22,7 @@ import { sendOrderCompleteEmail } from './lib/orderEmail.js';
 import { phoneTail, phonesInSms as phonesInSmsFrom, paymentRefKey } from './lib/paymentRefs.js';
 import { orderPriceRange } from './lib/orderPrice.js';
 import { parseWalletChange, applyWalletChange } from './lib/adminWallet.js';
+import { cleanVoucherInput, createVoucher, updateVoucher, deleteVoucher, voucherState } from './lib/vouchers.js';
 import { depositBonusLkr, newDepositId } from './src/data/depositRules.js';
 import { moogoldRequest, fetchVoucherCodes, saveUserVoucher, listUserVouchers, findCatalogPackage, isVoucherGame, redactVoucherCodes } from './lib/moogoldVoucher.js';
 
@@ -1257,14 +1258,62 @@ app.post('/api/admin/tickets/update', requireAdminSession, async (req, res) => {
 });
 
 // Admin: save the voucher list.
-app.post('/api/admin/vouchers', requireAdminSession, async (req, res) => {
+// Admin vouchers: create, change or delete ONE voucher at a time, inside a
+// transaction on settings/vouchers. (Saving the whole list from the browser
+// used to overwrite usage counts, so customers could redeem a code again.)
+const voucherListOut = (list) => (Array.isArray(list) ? list : []).map(v => ({ ...v, state: voucherState(v) }));
+const changeVoucherList = async (res, update) => {
+  let outcome = null;
+  const tx = await rtdbTransaction('settings/vouchers', (current) => {
+    outcome = update(current);
+    return outcome.error ? undefined : outcome.list;
+  });
+  if (!tx.committed) return res.status(outcome?.error === 'Voucher not found.' ? 404 : 409).json({ error: outcome?.error || 'Voucher was not saved.' });
+  res.json({ success: true, voucher: outcome.voucher || null, vouchers: voucherListOut(tx.value) });
+};
+app.post('/api/admin/vouchers/create', requireAdminSession, async (req, res) => {
   try {
-    const list = req.body?.vouchers;
-    if (!Array.isArray(list)) return res.status(400).json({ error: 'vouchers must be an array.' });
-    await rtdbPut('settings/vouchers', list);
-    res.json({ success: true });
+    const { voucher, error } = cleanVoucherInput(req.body);
+    if (error) return res.status(400).json({ error });
+    await changeVoucherList(res, (current) => createVoucher(current, voucher));
   } catch (e) {
-    console.error('[Admin Vouchers Error]:', e.message);
+    console.error('[Admin Voucher Create Error]:', e.message);
+    res.status(500).json({ error: SERVER_ERROR });
+  }
+});
+app.post('/api/admin/vouchers/update', requireAdminSession, async (req, res) => {
+  try {
+    const { voucher, error } = cleanVoucherInput(req.body, { partial: true });
+    if (error) return res.status(400).json({ error });
+    await changeVoucherList(res, (current) => updateVoucher(current, voucher));
+  } catch (e) {
+    console.error('[Admin Voucher Update Error]:', e.message);
+    res.status(500).json({ error: SERVER_ERROR });
+  }
+});
+app.post('/api/admin/vouchers/delete', requireAdminSession, async (req, res) => {
+  try {
+    const code = String(req.body?.code || '');
+    if (!code) return res.status(400).json({ error: 'A code is required.' });
+    await changeVoucherList(res, (current) => deleteVoucher(current, code));
+  } catch (e) {
+    console.error('[Admin Voucher Delete Error]:', e.message);
+    res.status(500).json({ error: SERVER_ERROR });
+  }
+});
+// Admin: latest redemptions, newest first; ?code= for one voucher.
+app.get('/api/admin/voucher-log', requireAdminSession, async (req, res) => {
+  try {
+    const code = String(req.query?.code || '').trim().toUpperCase();
+    const r = await fetch(rtdbUrl('vouchers_log', { orderBy: '"$key"', limitToLast: 1000 }));
+    const data = r.ok ? (await r.json()) || {} : {};
+    let list = Object.entries(data).filter(([, e]) => e && typeof e === 'object').map(([id, e]) => ({ id, ...e }));
+    if (code) list = list.filter(e => String(e.voucherCode || '').toUpperCase() === code);
+    list.sort((a, b) => String(b.redeemedAt).localeCompare(String(a.redeemedAt)));
+    res.set('Cache-Control', 'no-store');
+    res.json({ success: true, entries: list.slice(0, 200) });
+  } catch (e) {
+    console.error('[Admin Voucher Log Error]:', e.message);
     res.status(500).json({ error: SERVER_ERROR });
   }
 });
@@ -1297,8 +1346,9 @@ app.post('/api/vouchers/redeem', rateLimiter(10, 60000), async (req, res) => {
       const idx = list.findIndex(v => v && v.code && String(v.code).toUpperCase() === cleanCode);
       if (idx === -1) { outcome = { status: 'invalid' }; return undefined; }
       const voucher = list[idx];
-      if (!voucher.active) { outcome = { status: 'inactive' }; return undefined; }
-      if (voucher.maxUses && (voucher.usedCount || 0) >= voucher.maxUses) { outcome = { status: 'maxed' }; return undefined; }
+      const state = voucherState(voucher);
+      if (state === 'used_up') { outcome = { status: 'maxed' }; return undefined; }
+      if (state !== 'active') { outcome = { status: 'inactive' }; return undefined; }
       const usedBy = voucher.usedByUsers || [];
       const used = usedBy.some(id => (userEmail && String(id).toLowerCase() === userEmail) || String(id) === String(userId));
       if (used) { outcome = { status: 'already_used' }; return undefined; }
