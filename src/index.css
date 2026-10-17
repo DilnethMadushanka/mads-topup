@@ -5400,3 +5400,46 @@ body.has-cart-bar [data-support-fab] { bottom: calc(150px + env(safe-area-inset-
   .prc-bar > span { flex: 1 1 100%; }
   .prc-bar .ord-act { flex: 1 1 0; }
 }
+
+/* ============================================================
+   Admin · Ticker, EZ Cash SMS log, Reviews (src/components/admin/MiscDesks.jsx)
+   ============================================================ */
+.tkr-wrap { display: grid; gap: 14px; align-items: start; }
+.tkr-card, .tkr-side { padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+.tkr-card .usr-h, .tkr-side .usr-h { margin-bottom: 0; }
+.tkr-preview { position: relative; overflow: hidden; border-radius: 14px; background: linear-gradient(90deg, #0b5ed7, #1677ff 45%, #3b8cff); padding: 12px 0 10px; }
+.tkr-live { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 6px 12px; padding: 2px 8px; border-radius: 999px; font-size: 9.5px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; color: #fff; background: rgba(255,255,255,.18); }
+.tkr-live i { width: 6px; height: 6px; border-radius: 50%; background: #34d399; animation: ord-blink 1.6s ease-in-out infinite; }
+.tkr-track { white-space: nowrap; overflow: hidden; }
+.tkr-track span { display: inline-block; padding-left: 100%; font-size: 13px; font-weight: 800; color: #fff; animation: tkr-scroll 18s linear infinite; }
+@keyframes tkr-scroll { to { transform: translateX(-100%); } }
+.tkr-text { height: auto; min-height: 96px; padding: 12px 13px; line-height: 1.5; resize: vertical; }
+.tkr-now { padding: 12px 14px; border-radius: 14px; font-size: 13px; font-weight: 700; line-height: 1.5; color: var(--adm-text); background: var(--adm-surface-2); border: 1px solid var(--adm-border); word-break: break-word; }
+.tkr-now em { font-style: normal; color: var(--adm-text-muted); }
+.sms-note { margin: 0; }
+.sms-row { border-bottom: 1px solid var(--adm-border); }
+.sms-row:last-child { border-bottom: 0; }
+.sms-head { grid-template-areas: "order amount" "order status"; border-bottom: 0 !important; }
+.sms-row.is-open .sms-head { background: var(--adm-surface-hover); }
+.sms-who { max-width: 180px; font-size: 10.5px; font-weight: 700; color: var(--adm-text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sms-body { padding: 0 14px 14px; }
+.sms-body .dep-sms { margin-top: 0; }
+.sms-body .ord-links { align-items: center; }
+.rev-grid { display: grid; gap: 10px; padding: 14px; }
+.rev-card { display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 18px; background: var(--adm-surface-2); border: 1px solid var(--adm-border); }
+.rev-card.is-low { border-color: rgba(239, 68, 68, .35); }
+.rev-card header { display: flex; align-items: center; gap: 10px; }
+.rev-card header .ord-stack { flex: 1; }
+.rev-card .usr-avatar { width: 38px; height: 38px; border-radius: 12px; font-size: 14px; }
+.rev-card p { font-size: 13px; font-weight: 500; line-height: 1.55; color: var(--adm-text); white-space: pre-wrap; word-break: break-word; }
+.rev-del:hover { color: #ef4444 !important; background: rgba(239, 68, 68, .12) !important; }
+.rev-stars { display: inline-flex; gap: 2px; }
+.rev-stars svg { width: 15px; height: 15px; color: var(--adm-border-strong); }
+.rev-stars svg.is-on { color: #f59e0b; fill: #f59e0b; }
+@media (min-width: 900px) { .rev-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1100px) {
+  .tkr-wrap { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
+  .sms-head { grid-template-columns: minmax(0, 1fr) 120px 180px; grid-template-areas: "order amount status"; align-items: center; gap: 14px; padding: 12px 18px; }
+  .rev-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) { .tkr-track span { animation: none; padding-left: 12px; } }
