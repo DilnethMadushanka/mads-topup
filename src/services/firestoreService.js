@@ -905,66 +905,38 @@ export const subscribeCustomGamePricesFromFirestore = (callback) => {
 /**
  * Save master vouchers list to Firestore & Realtime Database
  */
-export const saveVouchersToFirestore = async (vouchersList) => {
-  if (!Array.isArray(vouchersList)) return false;
+// Admin vouchers change one at a time on the server (never the whole list,
+// which used to overwrite usage counts). Each returns { ok, vouchers, error }.
+const voucherCall = async (action, body) => {
+  const { ok, data } = await postServerApi(`/api/admin/vouchers/${action}`, body);
+  return ok && data?.success ? { ok: true, ...data } : { ok: false, error: data?.error || 'Voucher was not saved.' };
+};
+export const createVoucherOnServer = (voucher) => voucherCall('create', voucher);
+export const updateVoucherOnServer = (changes) => voucherCall('update', changes);
+export const deleteVoucherOnServer = (code) => voucherCall('delete', { code });
 
-  // Saved by the server (admin session required) — browsers can't write vouchers.
-  const { ok, data } = await postServerApi('/api/admin/vouchers', { vouchers: vouchersList });
-  if (!ok) {
-    console.warn('Vouchers save failed:', data?.error);
-    return false;
-  }
-
-  if (db) {
-    try {
-      const vDocRef = doc(db, 'settings', 'vouchers');
-      await setDoc(vDocRef, {
-        list: vouchersList,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
-    } catch (err) {
-      console.warn('Firestore vouchers save note:', err);
-    }
-  }
-
-  return true;
+// Admin: latest redemptions (for one code when given).
+export const fetchVoucherLog = async (code = '') => {
+  const { ok, data } = await getServerApi(`/api/admin/voucher-log${code ? `?code=${encodeURIComponent(code)}` : ''}`);
+  return ok && Array.isArray(data?.entries) ? data.entries : null;
 };
 
 /**
  * Subscribe to realtime master vouchers list from Firestore & Realtime Database
  */
+// Admin voucher list, from the server's copy only (the old Firestore copy
+// never saw redemptions). An empty list is passed on too.
 export const subscribeVouchersFromFirestore = (callback) => {
-  let unsubRtdb = null;
-  let unsubFirestore = null;
-
-  if (rtdb) {
-    try {
-      unsubRtdb = pollAdminList('vouchers', (data) => {
-        if (data) callback(Array.isArray(data) ? data : Object.values(data));
-      });
-    } catch (e) {
-      console.warn('RTDB vouchers listener note:', e);
-    }
+  if (!rtdb) return () => {};
+  try {
+    return pollAdminList('vouchers', (data) => {
+      const list = Array.isArray(data) ? data : data && typeof data === 'object' ? Object.values(data) : [];
+      callback(list.filter(v => v && typeof v === 'object' && v.code));
+    });
+  } catch (e) {
+    console.warn('Voucher list poll note:', e);
+    return () => {};
   }
-
-  if (db) {
-    try {
-      const docRef = doc(db, 'settings', 'vouchers');
-      unsubFirestore = onSnapshot(docRef, (docSnap) => {
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (data && Array.isArray(data.list)) callback(data.list);
-        }
-      });
-    } catch (err) {
-      console.warn('Firestore vouchers listener note:', err);
-    }
-  }
-
-  return () => {
-    if (typeof unsubRtdb === 'function') unsubRtdb();
-    if (typeof unsubFirestore === 'function') unsubFirestore();
-  };
 };
 
 /**

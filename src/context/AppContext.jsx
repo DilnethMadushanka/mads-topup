@@ -48,7 +48,7 @@ import {
   saveResellerApplicationToFirestore, subscribeResellerApplicationsFromFirestore, updateResellerApplicationStatusInFirestore,
   saveCustomGamePricesToFirestore, subscribeCustomGamePricesFromFirestore, generateUniqueSecurityKey, ensureResellerCredentials,
   saveManualPaymentToFirestore, rejectManualPaymentOnServer, createManualPaymentOnServer, approveManualPaymentOnServer, subscribeManualPaymentsFromFirestore, adjustUserWalletOnServer, fetchAdminWalletLog,
-  saveVouchersToFirestore, subscribeVouchersFromFirestore, redeemVoucherInDatabase,
+  createVoucherOnServer, updateVoucherOnServer, deleteVoucherOnServer, fetchVoucherLog, subscribeVouchersFromFirestore, redeemVoucherInDatabase,
   savePopupAdConfigToFirestore, subscribePopupAdConfigFromFirestore, DEFAULT_POPUP_AD_CONFIG,
   saveGameStripConfig, subscribeGameStripConfig, DEFAULT_GAME_STRIP_CONFIG,
   saveTickerNotice, subscribeTickerNotice,
@@ -1031,20 +1031,16 @@ export const AppProvider = ({ children }) => {
   };
 
   // Vouchers state synced with Realtime Database & Firestore
-  const [vouchers, setVouchers] = useState(() => [
-    { code: 'MADS-GIFT-500', value: 500, currency: 'LKR', maxUses: 100, usedCount: 14, active: true, usedByUsers: [] },
-    { code: 'WELCOME100', value: 100, currency: 'LKR', maxUses: 500, usedCount: 88, active: true, usedByUsers: [] },
-    { code: 'BINANCE-USDT-5', value: 5, currency: 'USDT', maxUses: 50, usedCount: 12, active: true, usedByUsers: [] }
-  ]);
+  // Admin voucher list (codes are for the admin only; customers just redeem).
+  const [vouchers, setVouchers] = useState([]);
+
 
   // Subscribe to real-time vouchers from Database
   // The voucher list (with its codes) is for the admin only.
   useEffect(() => {
     if (!isAdminAuthenticated) return undefined;
     const unsub = subscribeVouchersFromFirestore((realtimeVouchers) => {
-      if (Array.isArray(realtimeVouchers) && realtimeVouchers.length > 0) {
-        setVouchers(realtimeVouchers);
-      }
+      if (Array.isArray(realtimeVouchers)) setVouchers(realtimeVouchers);
     });
     return () => unsub();
   }, [isAdminAuthenticated]);
@@ -1063,19 +1059,18 @@ export const AppProvider = ({ children }) => {
     return ok;
   };
 
-  const addVoucher = async (newVoucher) => {
-    const updated = [newVoucher, ...(vouchers || [])];
-    setVouchers(updated);
-    await saveVouchersToFirestore(updated);
-    showToast(`Voucher code ${newVoucher.code} created successfully!`);
+  // Admin voucher changes. The server changes one voucher inside a
+  // transaction and returns the fresh list, which replaces ours.
+  const runVoucherChange = async (call, success) => {
+    const result = await call();
+    if (!result.ok) { showToast(result.error, 'error'); return result; }
+    if (Array.isArray(result.vouchers)) setVouchers(result.vouchers);
+    if (success) showToast(success);
+    return result;
   };
-
-  const deleteVoucher = async (code) => {
-    const updated = (vouchers || []).filter(v => v.code !== code);
-    setVouchers(updated);
-    await saveVouchersToFirestore(updated);
-    showToast(`Voucher code ${code} deleted.`);
-  };
+  const addVoucher = (voucher) => runVoucherChange(() => createVoucherOnServer(voucher), `Voucher ${String(voucher.code).toUpperCase()} created.`);
+  const updateVoucher = (changes, message) => runVoucherChange(() => updateVoucherOnServer(changes), message || `Voucher ${changes.code} saved.`);
+  const deleteVoucher = (code) => runVoucherChange(() => deleteVoucherOnServer(code), `Voucher ${code} deleted.`);
 
   const redeemVoucher = async (code) => {
     if (!userProfile || (!userProfile.uid && !userProfile.email)) {
@@ -1818,7 +1813,9 @@ export const AppProvider = ({ children }) => {
       setIsDownloadAppModalOpen,
       vouchers,
       addVoucher,
+      updateVoucher,
       deleteVoucher,
+      fetchVoucherLog,
       deleteReview,
       redeemVoucher,
       tickerNotice,

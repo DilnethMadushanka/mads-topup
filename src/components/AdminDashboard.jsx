@@ -8,6 +8,7 @@ import { ProfitReport } from './admin/ProfitReport';
 import { OrdersDesk, OrderDetail, orderNeedsAction } from './admin/OrdersDesk';
 import { DepositsDesk, DepositDetail, RecordDepositSheet } from './admin/DepositsDesk';
 import { UsersDesk, UserDetail, WalletCreditPage } from './admin/UsersDesk';
+import { VouchersDesk, VoucherDetail } from './admin/VouchersDesk';
 import { sortOrdersNewestFirst } from '../utils/ownership';
 import { newUsersToday, sriLankaTime, signupTime } from '../utils/newUsersToday';
 import { getAllPopupBanners, emptyPopupBanner, MAX_POPUP_BANNERS } from '../utils/popupBanners';
@@ -413,7 +414,7 @@ const TAB_TITLES = {
   profit: ['Daily Profit', 'Completed top-ups each day: sale price against MooGold cost'],
   deposits: ['Deposit Verifier', 'Check each deposit, then credit the wallet or reject it'],
   ezcash: ['Dialog EZ Cash Webhook Logs', 'Live SMS records received from the phone forwarder gateway'],
-  vouchers: ['Promo Voucher Codes', 'Create and manage redeemable voucher codes'],
+  vouchers: ['Promo Vouchers', 'Create codes, watch how they are used, pause or change them'],
   users: ['Customers', 'Find a customer, see their orders and wallet, verify or block them'],
   credit: ['Wallet Credit', "Add to, deduct from or set a customer's wallet, with a reason for every change"],
   resellers: ['Reseller Partner Network', 'Review, approve, or reject reseller partner applications'],
@@ -432,7 +433,7 @@ export const AdminDashboard = () => {
   const {
     isAdminOpen, setIsAdminOpen, orders, updateOrderStatus, moongoldConfig, updateMoongoldConfig,
     r2Config, updateR2Config, formatPrice,
-    formatLkr, showToast, userProfile, vouchers, addVoucher, deleteVoucher,
+    formatLkr, showToast, userProfile, vouchers, addVoucher, updateVoucher, deleteVoucher, fetchVoucherLog,
     tickerNotice, updateTickerNotice, usersList, verifyUserAccount, toggleBlockUser, adjustUserWallet,
     fetchAdminWalletLog, manualPayments, approveManualPayment, rejectManualPayment, recordOfflinePayment,
     supportTickets, sendTicketMessage, updateTicketStatus, updateTicketPriority, resellerApplications,
@@ -518,11 +519,7 @@ export const AdminDashboard = () => {
   const [isTestingR2, setIsTestingR2] = useState(false);
 
 
-  const [newVoucherCode, setNewVoucherCode] = useState('');
-  const [newVoucherValue, setNewVoucherValue] = useState('');
-  const [newVoucherCurrency, setNewVoucherCurrency] = useState('LKR');
-  const [newVoucherMaxUses, setNewVoucherMaxUses] = useState(100);
-  const [voucherSearch, setVoucherSearch] = useState('');
+  const [selectedVoucherCode, setSelectedVoucherCode] = useState(null);
   const [reviewSearch, setReviewSearch] = useState('');
   const [deletingReviewId, setDeletingReviewId] = useState(null);
 
@@ -854,11 +851,7 @@ export const AdminDashboard = () => {
     return matchSearch && matchStatus;
   });
 
-  const filteredVouchers = safeVouchers.filter(v => {
-    if (!v) return false;
-    const q = (voucherSearch || '').toLowerCase();
-    return String(v.code || '').toLowerCase().includes(q);
-  });
+
 
   const handleTabSelect = (tab) => {
     setAdminTab(tab);
@@ -1055,17 +1048,6 @@ export const AdminDashboard = () => {
     await new Promise(res => setTimeout(res, 700));
     setIsTestingR2(false);
     showToast(`Cloudflare R2 Bucket Connected! Endpoint: ${r2UrlInput}`);
-  };
-
-  const handleCreateVoucherSubmit = (e) => {
-    e.preventDefault();
-    if (!newVoucherCode || !newVoucherValue) {
-      showToast('Please enter voucher code and value', 'error');
-      return;
-    }
-    addVoucher({ code: newVoucherCode.toUpperCase(), value: parseFloat(newVoucherValue), currency: newVoucherCurrency, maxUses: parseInt(newVoucherMaxUses) || 100, usedCount: 0, active: true });
-    setNewVoucherCode('');
-    setNewVoucherValue('');
   };
 
   const handleSaveNoticeSubmit = async (e) => {
@@ -1564,53 +1546,7 @@ export const AdminDashboard = () => {
           )}
 
           {adminTab === 'vouchers' && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <form onSubmit={handleCreateVoucherSubmit} className="rounded-2xl border-2 p-5 space-y-3 lg:col-span-1" style={cardStyle}>
-                  <h4 className="text-sm font-black" style={{ color: 'var(--adm-text)' }}>Create New Voucher</h4>
-                  <div>
-                    <label className="text-[10px] font-bold uppercase block mb-1" style={mutedStyle}>Voucher Code</label>
-                    <input type="text" placeholder="e.g. WELCOME100" value={newVoucherCode} onChange={(e) => setNewVoucherCode(e.target.value)} className={`${fieldCls} font-mono`} style={fieldStyle} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[10px] font-bold uppercase block mb-1" style={mutedStyle}>Value</label>
-                      <input type="number" placeholder="500" value={newVoucherValue} onChange={(e) => setNewVoucherValue(e.target.value)} className={fieldCls} style={fieldStyle} />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold uppercase block mb-1" style={mutedStyle}>Currency</label>
-                      <select value={newVoucherCurrency} onChange={(e) => setNewVoucherCurrency(e.target.value)} className={fieldCls} style={fieldStyle}>
-                        <option value="LKR">LKR</option>
-                        <option value="USDT">USDT</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold uppercase block mb-1" style={mutedStyle}>Max Uses</label>
-                    <input type="number" value={newVoucherMaxUses} onChange={(e) => setNewVoucherMaxUses(e.target.value)} className={fieldCls} style={fieldStyle} />
-                  </div>
-                  <button type="submit" className="w-full py-2.5 bg-[#1677ff] hover:bg-[#0b5ed7] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl cursor-pointer">Create Voucher</button>
-                </form>
-
-                <div className="lg:col-span-2 space-y-3">
-                  <SearchInput value={voucherSearch} onChange={setVoucherSearch} placeholder="Search voucher code..." />
-                  <DataTable
-                    emptyMessage="No voucher codes created yet."
-                    columns={[
-                      { key: 'code', label: 'Code', sortable: true, render: v => <span className="font-mono font-black text-amber-400">{v.code}</span> },
-                      { key: 'value', label: 'Value', sortable: true, sortValue: v => Number(v.value) || 0, render: v => <span className="font-black text-emerald-400">{v.value} {v.currency}</span> },
-                      { key: 'usage', label: 'Usage', sortable: true, sortValue: v => v.usedCount || 0, render: v => <span style={mutedStyle}>{v.usedCount || 0} / {v.maxUses}</span> },
-                      { key: 'active', label: 'Status', render: v => <StatusPill status={v.active ? 'ACTIVE' : 'CLOSED'}>{v.active ? 'ACTIVE' : 'DISABLED'}</StatusPill> },
-                      { key: 'actions', label: 'Actions', align: 'right', render: v => (
-                        <button onClick={() => deleteVoucher(v.code)} className="px-2.5 py-1 bg-red-600/15 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 rounded-lg text-[11px] font-bold cursor-pointer inline-flex items-center gap-1"><Trash2 className="w-3 h-3" /><span>Delete</span></button>
-                      )}
-                    ]}
-                    rows={filteredVouchers}
-                    rowKey="code"
-                  />
-                </div>
-              </div>
-            </div>
+            <VouchersDesk vouchers={safeVouchers} onCreate={addVoucher} onOpen={(v) => setSelectedVoucherCode(v.code)} />
           )}
 
           {adminTab === 'reviews' && (() => {
@@ -2123,6 +2059,17 @@ export const AdminDashboard = () => {
             if (await setResellerTier(u.uid, tier)) showToast(`Tier set to ${tier === 'AUTO' ? 'automatic (by sales)' : tier}`);
           }}
           onOpenOrders={(u) => { setSelectedInspectUser(null); setAdminTab('orders'); setOrderSearch(u.email || u.uid); }}
+          showToast={showToast}
+        />
+      )}
+
+      {selectedVoucherCode && safeVouchers.some(v => v.code === selectedVoucherCode) && (
+        <VoucherDetail
+          voucher={safeVouchers.find(v => v.code === selectedVoucherCode)}
+          onClose={() => setSelectedVoucherCode(null)}
+          onUpdate={updateVoucher}
+          onDelete={deleteVoucher}
+          fetchLog={fetchVoucherLog}
           showToast={showToast}
         />
       )}
