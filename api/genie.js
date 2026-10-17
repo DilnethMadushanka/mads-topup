@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { saveGenieTransactionRecord } from './_genieWallet.js';
 
-const GENIE_DEFAULT_APP_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBJZCI6ImM5OWI0NTBkLTM4ZTktNDU1Ny04OWYxLTVjZGM5MWZkN2EwZiIsImNvbXBhbnlJZCI6IjY5OWMyOTRiZWM5YWFlMDAwMjA2NjAxNiIsImlhdCI6MTc3MTg0MjE0OSwiZXhwIjo0OTI3NTE1NzQ5fQ.LutDa2obyzXY6MsCGtrK3bPZHMrNpxI-T8Q4cCtKZo4';
+// The app key comes only from the environment (GENIE_APP_KEY).
 const GENIE_DEFAULT_BASE_URL = 'https://api.geniebiz.lk';
 
 function sanitizeString(str, maxLen = 100) {
@@ -56,8 +56,10 @@ export default async function handler(req, res) {
 
     const { amount, userId, userEmail, userName, redirectUrl, orderRef, transactionId } = body || {};
 
-    const appKey = (process.env.GENIE_APP_KEY || process.env.VITE_GENIE_APP_KEY || GENIE_DEFAULT_APP_KEY).replace(/[\r\n\s]/g, '');
+    const appKey = String(process.env.GENIE_APP_KEY || process.env.VITE_GENIE_APP_KEY || '').replace(/[\r\n\s]/g, '');
     const baseUrl = (process.env.GENIE_BASE_URL || process.env.VITE_GENIE_BASE_URL || GENIE_DEFAULT_BASE_URL).replace(/[\r\n\s\/]+$/, '');
+
+    if (!appKey) return res.status(503).json({ error: 'Card payments are turned off right now. Please use EZ Cash, bank deposit or Binance Pay.' });
 
     // Endpoint: /api/genie/create-transaction
     if (req.url.includes('create-transaction') || req.method === 'POST') {
