@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { dispatchMoongoldOrder, checkMoongoldBalance } from '../services/moongoldApi';
+import { checkMoongoldBalance } from '../services/moongoldApi';
 import { uploadToR2Storage } from '../services/storageService';
 import { SupportDesk, SupportDeskStats } from './admin/SupportDesk';
 import { FfAccountsAdmin } from './admin/FfAccountsAdmin';
 import { ProfitReport } from './admin/ProfitReport';
+import { OrdersDesk, OrderDetail, orderNeedsAction } from './admin/OrdersDesk';
 import { sortOrdersNewestFirst } from '../utils/ownership';
 import { getAllPopupBanners, emptyPopupBanner, MAX_POPUP_BANNERS } from '../utils/popupBanners';
 import {
@@ -492,8 +493,6 @@ export const AdminDashboard = () => {
   const [supportStatusFilter, setSupportStatusFilter] = useState('ALL');
 
   const [orderSearch, setOrderSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
-  const [paymentFilter, setPaymentFilter] = useState('ALL');
   const [selectedInspectOrder, setSelectedInspectOrder] = useState(null);
 
   const [userSearch, setUserSearch] = useState('');
@@ -521,13 +520,6 @@ export const AdminDashboard = () => {
   const [simModeInput, setSimModeInput] = useState(moongoldConfig.simulationMode);
   const [showSecret, setShowSecret] = useState(false);
   const [isCheckingBalance, setIsCheckingBalance] = useState(false);
-  const [retryingOrderId, setRetryingOrderId] = useState(null);
-  // Synchronous ref (not just the retryingOrderId state) so a genuine
-  // double-click on the same order's "Moongold" retry button can't fire
-  // dispatchMoongoldOrder twice before React commits the disabled state —
-  // a real supplier dispatch call, so a double-fire would send the top-up
-  // twice and burn double supplier credit for one order.
-  const retryingOrderIdsRef = useRef(new Set());
 
   const [r2UrlInput, setR2UrlInput] = useState(r2Config?.bucketUrl || 'https://bfda3f43ac31b00be80bcb82772eb8fa.r2.cloudflarestorage.com/mads-topup');
   const [r2BucketName, setR2BucketName] = useState(r2Config?.bucketName || 'mads-topup');
@@ -834,7 +826,8 @@ export const AdminDashboard = () => {
 
   const completedOrders = safeOrders.filter(o => o.status === 'COMPLETED');
   const totalRevenueLkr = completedOrders.reduce((sum, o) => sum + (o.priceLkr || 0), 0);
-  const pendingCount = safeOrders.filter(o => o.status === 'PROCESSING' || o.status === 'PENDING').length;
+  // Includes bank / EZ Cash orders waiting for their payment slip to be checked.
+  const pendingCount = safeOrders.filter(orderNeedsAction).length;
   const pendingPaymentsCount = safePayments.filter(d => d.status === 'PENDING').length;
   const openTicketsCount = safeTickets.filter(t => t && t.status === 'OPEN').length;
   const pendingResellersCount = safeResellerApps.filter(a => a.status === 'PENDING').length;
@@ -852,21 +845,6 @@ export const AdminDashboard = () => {
     resellers: pendingResellersCount,
     tickets: openTicketsCount
   };
-
-  const filteredOrders = safeOrders.filter(ord => {
-    if (!ord) return false;
-    const search = (orderSearch || '').toLowerCase();
-    const ordId = String(ord.id || '').toLowerCase();
-    const ordPlayerId = String(ord.playerId || '').toLowerCase();
-    const ordGameName = String(ord.gameName || '').toLowerCase();
-    const ordIgn = String(ord.ign || '').toLowerCase();
-    const ordPayMethod = String(ord.paymentMethod || '').toLowerCase();
-    const matchesSearch = ordId.includes(search) || ordPlayerId.includes(search) || ordGameName.includes(search) || ordIgn.includes(search);
-    const isTelegramOrder = Boolean(ord.viaTelegramBot || (ord.id && String(ord.id).startsWith('ORD-TG-')) || ord.channel === 'Telegram Bot' || ordPayMethod.includes('telegram'));
-    const matchesStatus = statusFilter === 'ALL' || ord.status === statusFilter;
-    const matchesPayment = paymentFilter === 'ALL' || (paymentFilter === 'TELEGRAM' ? isTelegramOrder : ordPayMethod.includes((paymentFilter || '').toLowerCase()));
-    return matchesSearch && matchesStatus && matchesPayment;
-  });
 
   // How many customer records share each email. Before Google logins were
   // joined to email signups, one person could end up with two records.
@@ -1116,25 +1094,6 @@ export const AdminDashboard = () => {
 
   const handleSaveMoongoldSettings = () => {
     updateMoongoldConfig({ ...moongoldConfig, apiKey: apiKeyInput, secretKey: secretKeyInput, baseUrl: baseUrlInput, autoFulfill: autoFulfillInput, simulationMode: simModeInput });
-  };
-
-  const handleRetryMoongold = async (order) => {
-    if (retryingOrderIdsRef.current.has(order.id)) return;
-    retryingOrderIdsRef.current.add(order.id);
-    setRetryingOrderId(order.id);
-    try {
-      const game = gamesCatalog.find(g => g.id === order.gameId);
-      const result = await dispatchMoongoldOrder({ game: game || { moongoldCode: 'GENERIC' }, playerId: order.playerId, zoneId: order.zoneId, package: { id: order.packageName } });
-      if (result.success) {
-        updateOrderStatus(order.id, 'COMPLETED', result.moongoldRef);
-        showToast(`Order ${order.id} synced with Moongold successfully!`);
-      } else {
-        showToast(`Moongold Sync Failed: ${result.message}`, 'error');
-      }
-    } finally {
-      retryingOrderIdsRef.current.delete(order.id);
-      setRetryingOrderId(null);
-    }
   };
 
   const handleCheckBalance = async () => {
@@ -1632,63 +1591,14 @@ export const AdminDashboard = () => {
           )}
 
           {adminTab === 'orders' && (
-            <div className="space-y-4">
-              <FilterBar>
-                <SearchInput value={orderSearch} onChange={setOrderSearch} placeholder="Search Order ID, Player ID, IGN, or Game..." />
-                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={`${fieldCls} sm:max-w-[200px]`} style={fieldStyle}>
-                  <option value="ALL">All Statuses</option>
-                  <option value="PENDING">Pending</option>
-                  <option value="PROCESSING">Processing</option>
-                  <option value="COMPLETED">Completed</option>
-                  <option value="FAILED">Failed</option>
-                </select>
-                <select value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)} className={`${fieldCls} sm:max-w-[220px]`} style={fieldStyle}>
-                  <option value="ALL">All Payment Methods</option>
-                  <option value="TELEGRAM">Telegram Bot Orders</option>
-                  <option value="EZ Cash">EZ Cash</option>
-                  <option value="Binance">Binance Pay</option>
-                  <option value="Bank">Bank Transfer</option>
-                </select>
-              </FilterBar>
-
-              <DataTable
-                emptyMessage="No orders found matching filters."
-                columns={[
-                  { key: 'id', label: 'Order ID', sortable: true, render: o => <span className="font-mono font-bold text-red-400">{o.id}</span> },
-                  { key: 'user', label: 'User Account', sortable: true, sortValue: o => o.userEmail || o.userName || '', render: o => (
-                    <div>
-                      <div className="font-bold text-sky-400 flex items-center gap-1"><Users className="w-3 h-3 shrink-0" /><span>{o.userEmail || o.userName || o.userId || 'Registered Gamer'}</span></div>
-                      {o.userName && <div className="text-[10px]" style={mutedStyle}>{o.userName}</div>}
-                    </div>
-                  )},
-                  { key: 'game', label: 'Game / Package', sortable: true, sortValue: o => o.gameName || '', render: o => (
-                    <div><div className="font-bold" style={{ color: 'var(--adm-text)' }}>{o.gameName}</div><div className="text-[10px]" style={mutedStyle}>{o.packageName}</div></div>
-                  )},
-                  { key: 'player', label: 'Player Credentials', render: o => (
-                    <div className="font-mono" style={mutedStyle}><div>{o.playerId} {o.zoneId && `(${o.zoneId})`}</div><div className="text-[10px] font-sans">{o.ign}</div></div>
-                  )},
-                  { key: 'payment', label: 'Payment', sortable: true, sortValue: o => o.paymentMethod || '', render: o => {
-                    const isTg = Boolean(o.viaTelegramBot || (o.id && o.id.startsWith('ORD-TG-')) || o.channel === 'Telegram Bot' || (o.paymentMethod && o.paymentMethod.toLowerCase().includes('telegram')));
-                    return (
-                      <div>
-                        <div className="font-semibold" style={{ color: 'var(--adm-text)' }}>{o.paymentMethod}</div>
-                        {isTg && <span className="px-2 py-0.5 mt-1 rounded bg-sky-500/10 border border-sky-500/30 text-sky-400 font-mono text-[9px] font-black inline-flex items-center gap-1"><span>Telegram Bot</span></span>}
-                      </div>
-                    );
-                  }},
-                  { key: 'price', label: 'Price', sortable: true, sortValue: o => o.priceLkr || 0, render: o => <span className="font-black font-heading" style={{ color: 'var(--adm-text)' }}>{formatLkr(o.priceLkr)}</span> },
-                  { key: 'status', label: 'Status', sortable: true, sortValue: o => o.status || '', render: o => <StatusPill status={o.status} /> },
-                  { key: 'actions', label: 'Actions', align: 'right', render: o => (
-                    <div className="flex justify-end gap-1.5 flex-wrap">
-                      <button onClick={() => setSelectedInspectOrder(o)} className="px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer border" style={{ borderColor: 'var(--adm-border)', ...mutedStyle }}>Inspect</button>
-                      {o.status !== 'COMPLETED' && <button onClick={() => updateOrderStatus(o.id, 'COMPLETED')} className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[11px] font-bold cursor-pointer">Approve</button>}
-                      {o.source !== 'ff-account' && <button onClick={() => handleRetryMoongold(o)} disabled={retryingOrderId === o.id} className="px-2.5 py-1 bg-red-600/15 hover:bg-red-600/25 text-red-400 border border-red-500/30 rounded-lg text-[11px] font-bold cursor-pointer">{retryingOrderId === o.id ? 'Syncing...' : 'Moongold'}</button>}
-                    </div>
-                  )}
-                ]}
-                rows={filteredOrders}
-              />
-            </div>
+            <OrdersDesk
+              orders={safeOrders}
+              gamesCatalog={gamesCatalog}
+              search={orderSearch}
+              onSearch={setOrderSearch}
+              onOpenOrder={setSelectedInspectOrder}
+              showToast={showToast}
+            />
           )}
 
           {adminTab === 'profit' && <ProfitReport />}
@@ -2444,50 +2354,18 @@ export const AdminDashboard = () => {
       </div>
 
       {selectedInspectOrder && (
-        <ModalShell
-          onClose={() => setSelectedInspectOrder(null)}
-          title={`Order Details #${selectedInspectOrder.id}`}
-          footer={<>
-            {selectedInspectOrder.status !== 'COMPLETED' && (
-              <button onClick={() => { updateOrderStatus(selectedInspectOrder.id, 'COMPLETED'); setSelectedInspectOrder(null); }} className="px-4 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl cursor-pointer">Approve Order</button>
-            )}
-            <button onClick={() => setSelectedInspectOrder(null)} className="px-4 py-2 rounded-xl font-bold text-xs cursor-pointer border" style={{ borderColor: 'var(--adm-border)', ...mutedStyle }}>Close</button>
-          </>}
-        >
-          <div className="space-y-2 text-xs font-mono rounded-2xl border p-4" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
-            <div style={mutedStyle}>Account: <strong style={{ color: 'var(--adm-text)' }}>{selectedInspectOrder.userEmail || 'N/A'}</strong></div>
-            <div style={mutedStyle}>User ID: <strong style={{ color: 'var(--adm-text)' }}>{selectedInspectOrder.userId || 'N/A'}</strong></div>
-            {selectedInspectOrder.userName && <div style={mutedStyle}>Name: <strong style={{ color: 'var(--adm-text)' }}>{selectedInspectOrder.userName}</strong></div>}
-            <div style={mutedStyle}>Game: <strong style={{ color: 'var(--adm-text)' }}>{selectedInspectOrder.gameName}</strong></div>
-            <div style={mutedStyle}>Package: <strong style={{ color: 'var(--adm-text)' }}>{selectedInspectOrder.packageName}</strong></div>
-            <div style={mutedStyle}>Player ID: <strong className="text-red-400">{selectedInspectOrder.playerId}{selectedInspectOrder.zoneId ? ` (${selectedInspectOrder.zoneId})` : ''}</strong></div>
-            <div style={mutedStyle}>IGN: <strong className="text-amber-400">{selectedInspectOrder.ign || 'N/A'}</strong></div>
-            <div style={mutedStyle}>Payment Method: <strong className="text-emerald-400">{selectedInspectOrder.paymentMethod}</strong></div>
-            <div style={mutedStyle}>Amount: <strong style={{ color: 'var(--adm-text)' }}>{formatLkr(selectedInspectOrder.priceLkr)}</strong></div>
-            {selectedInspectOrder.originalPriceLkr != null && selectedInspectOrder.originalPriceLkr !== selectedInspectOrder.priceLkr && (
-              <div style={mutedStyle}>Catalog Price: <strong style={{ color: 'var(--adm-text)' }}>{formatLkr(selectedInspectOrder.originalPriceLkr)}</strong></div>
-            )}
-            <div style={mutedStyle}>Status: <strong className="text-sky-400">{selectedInspectOrder.status}</strong></div>
-            {selectedInspectOrder.failureReason && <div style={mutedStyle}>Failure Reason: <strong className="text-red-400">{selectedInspectOrder.failureReason}</strong></div>}
-            <div style={mutedStyle}>MooGold Ref: <span>{selectedInspectOrder.moongoldRef || 'N/A'}</span></div>
-            {selectedInspectOrder.isResellerOrder && <div style={mutedStyle}>Type: <strong className="text-amber-400">Reseller order</strong></div>}
-            <div style={mutedStyle}>Created At: <span>{selectedInspectOrder.createdAt}</span></div>
-          </div>
-          {(() => {
+        <OrderDetail
+          order={selectedInspectOrder}
+          owner={(() => {
             const o = selectedInspectOrder;
-            const owner = safeUsers.find(u => (o.userId && (u.uid === o.userId || u.resellerCode === o.userId)) || (o.userEmail && String(u.email || '').toLowerCase() === String(o.userEmail).toLowerCase()));
-            if (!owner) return null;
-            return (
-              <div className="mt-3 rounded-2xl border p-4 text-xs space-y-1" style={{ background: 'var(--adm-surface-2)', borderColor: 'var(--adm-border)' }}>
-                <div className="font-black uppercase text-[10px] tracking-wider mb-1" style={mutedStyle}>Account now</div>
-                <div style={mutedStyle}>Name: <strong style={{ color: 'var(--adm-text)' }}>{owner.name || 'N/A'}</strong></div>
-                <div style={mutedStyle}>Wallet: <strong style={{ color: 'var(--adm-text)' }}>{formatLkr(owner.walletBalance || 0)} • ${Number(owner.walletUsdt || 0).toFixed(2)}</strong></div>
-                <div style={mutedStyle}>Status: <strong className={owner.status === 'BLOCKED' ? 'text-red-400' : 'text-emerald-400'}>{owner.status || 'ACTIVE'}</strong>{owner.isReseller ? ' • Reseller' : ''}</div>
-                <button onClick={() => { setSelectedInspectOrder(null); setSelectedInspectUser(owner); }} className="mt-2 px-3 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer border" style={{ borderColor: 'var(--adm-border)', ...mutedStyle }}>Open account</button>
-              </div>
-            );
+            return safeUsers.find(u => (o.userId && (u.uid === o.userId || u.resellerCode === o.userId)) || (o.userEmail && String(u.email || '').toLowerCase() === String(o.userEmail).toLowerCase()));
           })()}
-        </ModalShell>
+          gamesCatalog={gamesCatalog}
+          onClose={() => setSelectedInspectOrder(null)}
+          onSetStatus={updateOrderStatus}
+          onOpenUser={(owner) => { setSelectedInspectOrder(null); setSelectedInspectUser(owner); }}
+          showToast={showToast}
+        />
       )}
 
       {selectedInspectUser && (

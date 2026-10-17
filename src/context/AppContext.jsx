@@ -961,18 +961,25 @@ export const AppProvider = ({ children }) => {
     // dispatched (dispatchMoongoldOrder sends the pending referral code).
   };
 
-  const updateOrderStatus = (orderId, newStatus, moongoldRef = null) => {
+  // Resolves to true once the server saved it; on failure the old status comes back.
+  const updateOrderStatus = async (orderId, newStatus, moongoldRef = null) => {
+    const before = orders.find(ord => ord.id === orderId);
     setOrders(prev => prev.map(ord => {
       if (ord.id === orderId) {
         return {
           ...ord,
           status: newStatus,
-          moongoldRef: moongoldRef || ord.moongoldRef
+          moongoldRef: moongoldRef || ord.moongoldRef,
+          updatedAt: new Date().toISOString()
         };
       }
       return ord;
     }));
-    updateOrderStatusInFirestore(orderId, newStatus, moongoldRef);
+    const ok = await updateOrderStatusInFirestore(orderId, newStatus, moongoldRef);
+    if (!ok && before) {
+      setOrders(prev => prev.map(ord => (ord.id === orderId ? before : ord)));
+    }
+    return ok;
   };
 
   const formatPrice = (priceLkr, priceUsd) => {
