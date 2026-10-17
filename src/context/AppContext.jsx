@@ -47,7 +47,7 @@ import {
   saveOrderToFirestore, subscribeAllUsersFromFirestore, subscribeOrdersFromFirestore, updateOrderStatusInFirestore,
   saveResellerApplicationToFirestore, subscribeResellerApplicationsFromFirestore, updateResellerApplicationStatusInFirestore,
   saveCustomGamePricesToFirestore, subscribeCustomGamePricesFromFirestore, generateUniqueSecurityKey, ensureResellerCredentials,
-  saveManualPaymentToFirestore, rejectManualPaymentOnServer, createManualPaymentOnServer, approveManualPaymentOnServer, subscribeManualPaymentsFromFirestore, creditUserWalletInDatabase, setUserExactBalanceInDatabase,
+  saveManualPaymentToFirestore, rejectManualPaymentOnServer, createManualPaymentOnServer, approveManualPaymentOnServer, subscribeManualPaymentsFromFirestore, adjustUserWalletOnServer, fetchAdminWalletLog,
   saveVouchersToFirestore, subscribeVouchersFromFirestore, redeemVoucherInDatabase,
   savePopupAdConfigToFirestore, subscribePopupAdConfigFromFirestore, DEFAULT_POPUP_AD_CONFIG,
   saveGameStripConfig, subscribeGameStripConfig, DEFAULT_GAME_STRIP_CONFIG,
@@ -581,8 +581,8 @@ export const AppProvider = ({ children }) => {
   // can't be raced by two Approve clicks firing before a re-render commits.
   const approvingPaymentIdsRef = React.useRef(new Set());
 
-  // Debounce map for updateUserBalance — see its own comment for why.
-  const balanceUpdateDebounceRef = React.useRef(new Map());
+  // Accounts with an admin wallet change still saving (stops double clicks).
+  const walletChangeLocksRef = React.useRef(new Set());
   useEffect(() => {
     if (!auth) return;
 
@@ -1228,123 +1228,35 @@ export const AppProvider = ({ children }) => {
     showToast(`User account status updated to ${newStatus}.`);
   };
 
-  // opts.strict (admin actions): a failed database write shows an error and leaves the
-  // list untouched, instead of pretending the credit succeeded. Returns false on failure.
-  const updateUserBalance = async (userEmailOrId, lkrAmount, usdtAmount = 0, opts = {}) => {
-    if (!userEmailOrId) return false;
-    const cleanId = String(userEmailOrId).trim();
-    const cleanIdLower = cleanId.toLowerCase();
-
-    // Debounce guard against a rapid double-click applying the same admin
-    // credit twice — the quick "+Rs.1,000"/"+$10" buttons and the Credit
-    // tab form have no loading/disabled state, so two clicks fired close
-    // together would otherwise both call creditUserWalletInDatabase and
-    // double-credit the user. A short window is enough to absorb a double
-    // click while still allowing a deliberate second credit of the exact
-    // same amount moments later.
-    const debounceKey = `${cleanIdLower}:${lkrAmount}:${usdtAmount}`;
-    const now = Date.now();
-    const lastCall = balanceUpdateDebounceRef.current.get(debounceKey);
-    if (lastCall && now - lastCall < 2000) {
-      showToast('Please wait a moment before repeating that credit.', 'error');
-      return false;
-    }
-    balanceUpdateDebounceRef.current.set(debounceKey, now);
-
-    // 1. Write balance adjustment to DB (RTDB & Firestore) across UID, Email, Reseller Code, or Security Key
-    // Always strict: the server does the credit, so surface any failure
-    // (e.g. expired admin session) instead of showing a false success.
+  // Admin: add to, deduct from or set a customer's wallet. The server does
+  // the change, logs it with the reason and returns the real new balance,
+  // which is what the list then shows. Returns the server's answer.
+  const adjustUserWallet = async ({ user, mode, lkr = 0, usdt = 0, reason = '' }) => {
+    const key = user?.uid || '';
+    if (!key && !user?.email) return { ok: false, error: 'No account selected.' };
+    const lockKey = key || String(user.email).toLowerCase();
+    // A double click must not apply the same change twice.
+    if (walletChangeLocksRef.current.has(lockKey)) return { ok: false, error: 'A change for this account is still saving.' };
+    walletChangeLocksRef.current.add(lockKey);
     try {
-      await creditUserWalletInDatabase(cleanId, lkrAmount, usdtAmount, { strict: true });
-    } catch (e) {
-      balanceUpdateDebounceRef.current.delete(debounceKey);
-      showToast(`Credit failed — nothing was saved. (${e.message || 'database error'})`, 'error');
-      return false;
-    }
-
-    // 2. Update local usersList state
-    setUsersList(prev => prev.map(u => {
-      const matchEmail = u.email && String(u.email).toLowerCase() === cleanIdLower;
-      const matchUid = u.uid && String(u.uid).toLowerCase() === cleanIdLower;
-      const matchCode = u.resellerCode && String(u.resellerCode).toLowerCase() === cleanIdLower;
-
-      if (matchEmail || matchUid || matchCode) {
-        const newLkr = Math.max(0, (u.walletBalance || 0) + lkrAmount);
-        const newUsdt = Math.max(0, (u.walletUsdt || 0) + usdtAmount);
-        return {
-          ...u,
-          walletBalance: newLkr,
-          walletUsdt: newUsdt
-        };
+      const result = await adjustUserWalletOnServer({ key, identifier: user?.email, mode, lkr, usdt, reason });
+      if (!result.ok) {
+        showToast(result.error || 'Wallet was not changed.', 'error');
+        return result;
       }
-      return u;
-    }));
-
-    // 3. Update self userProfile locally if applicable (DB write is already handled above by creditUserWalletInDatabase)
-    // Do NOT call creditUserWallet() here as that writes to DB a second time and doubles the credit.
-    if (userProfile) {
-      const matchSelfEmail = userProfile.email && String(userProfile.email).toLowerCase() === cleanIdLower;
-      const matchSelfUid = userProfile.uid && String(userProfile.uid).toLowerCase() === cleanIdLower;
-      const matchSelfCode = userProfile.resellerCode && String(userProfile.resellerCode).toLowerCase() === cleanIdLower;
-
-      if (matchSelfEmail || matchSelfUid || matchSelfCode) {
-        setUserProfileState(prev => ({
-          ...prev,
-          walletBalance: Math.max(0, (prev.walletBalance || 0) + lkrAmount),
-          walletUsdt: Math.max(0, (prev.walletUsdt || 0) + usdtAmount)
-        }));
+      const apply = (u) => (u && (u.uid === result.key || u.uid === user?.uid)
+        ? { ...u, walletBalance: result.newBalanceLkr, walletUsdt: result.newBalanceUsdt }
+        : u);
+      setUsersList(prev => prev.map(apply));
+      if (userProfile?.uid && userProfile.uid === result.key) {
+        setUserProfileState(prev => ({ ...prev, walletBalance: result.newBalanceLkr, walletUsdt: result.newBalanceUsdt }));
       }
+      return result;
+    } finally {
+      walletChangeLocksRef.current.delete(lockKey);
     }
-    return true;
   };
 
-  const setUserExactBalance = async (userEmailOrId, exactLkr, exactUsdt) => {
-    if (!userEmailOrId) return false;
-    const cleanId = String(userEmailOrId).trim();
-    const cleanIdLower = cleanId.toLowerCase();
-    const newLkr = Math.max(0, parseFloat(exactLkr) || 0);
-    const newUsdt = Math.max(0, parseFloat(exactUsdt) || 0);
-
-    // 1. Write exact balance to DB (RTDB & Firestore)
-    try {
-      await setUserExactBalanceInDatabase(cleanId, newLkr, newUsdt, { strict: true });
-    } catch (e) {
-      showToast(`Set balance failed — nothing was saved. (${e.message || 'database error'})`, 'error');
-      return false;
-    }
-
-    // 2. Update local usersList state
-    setUsersList(prev => prev.map(u => {
-      const matchEmail = u.email && String(u.email).toLowerCase() === cleanIdLower;
-      const matchUid = u.uid && String(u.uid).toLowerCase() === cleanIdLower;
-      const matchCode = u.resellerCode && String(u.resellerCode).toLowerCase() === cleanIdLower;
-
-      if (matchEmail || matchUid || matchCode) {
-        return {
-          ...u,
-          walletBalance: newLkr,
-          walletUsdt: newUsdt
-        };
-      }
-      return u;
-    }));
-
-    // 3. Update self userProfile if applicable
-    if (userProfile) {
-      const matchSelfEmail = userProfile.email && String(userProfile.email).toLowerCase() === cleanIdLower;
-      const matchSelfUid = userProfile.uid && String(userProfile.uid).toLowerCase() === cleanIdLower;
-      const matchSelfCode = userProfile.resellerCode && String(userProfile.resellerCode).toLowerCase() === cleanIdLower;
-
-      if (matchSelfEmail || matchSelfUid || matchSelfCode) {
-        setUserProfile(prev => ({
-          ...prev,
-          walletBalance: newLkr,
-          walletUsdt: newUsdt
-        }));
-      }
-    }
-    return true;
-  };
 
   // Admin: approve a deposit. The server reads the amount and account from
   // the stored record and credits it once (with the bonus), so nothing here
@@ -1916,8 +1828,8 @@ export const AppProvider = ({ children }) => {
       usersList,
       verifyUserAccount,
       toggleBlockUser,
-      updateUserBalance,
-      setUserExactBalance,
+      adjustUserWallet,
+      fetchAdminWalletLog,
       manualPayments,
       approveManualPayment,
       rejectManualPayment,
